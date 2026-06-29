@@ -100,7 +100,7 @@ function MainLayout() {
           {/* 1. Medallion logo — fills full header height top-to-bottom */}
           <img
             src={logo407Img}
-            alt="CFunky Creations Lyricist 4.0.7"
+            alt="CFunky Creations Lyricist 4.0.12"
             style={{ height: 160, width: 'auto', objectFit: 'contain', display: 'block', flexShrink: 0 }}
           />
 
@@ -127,7 +127,7 @@ function MainLayout() {
               style={{"fontSize":"clamp(2.5rem, 4.5vw, 6.5rem)","fontWeight":400,"letterSpacing":"0.04em","marginBottom":4,"whiteSpace":"nowrap"}}
               data-help="Lyricist is your songwriting studio. Pick a vibe, give it a topic, and it helps you write full songs, line by line — then polish them. Everything here is explained: just hover over anything you don't recognize."
             >
-              LYRICIST 4.0.7
+              LYRICIST 4.0.12
             </h1>
             <p style={{ fontSize: '0.7rem', color: '#ff2d95', letterSpacing: '0.18em', textTransform: 'uppercase', margin: 0, textShadow: '0 0 8px rgba(255,45,149,0.7), 0 0 20px rgba(255,45,149,0.35)' }}>
               AI-Powered Songwriting Studio · CFunkyCreations LLC
@@ -313,7 +313,7 @@ function MainLayout() {
             style={{ fontSize: '0.6rem', color: '#ff9e2c', letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: "'JetBrains Mono', monospace", textAlign: 'center', lineHeight: 1.6, textShadow: '0 0 8px rgba(255,158,44,0.5)' }}
             data-help="CFunky's mission: powerful songwriting tools that stay free for everyone, no catch."
           >
-            Lyricist 4.0.7 · Free AI tools for the masses<br />
+            Lyricist 4.0.12 · Free AI tools for the masses<br />
             Always free, available for all · Keep Austin Wonky
           </div>
 

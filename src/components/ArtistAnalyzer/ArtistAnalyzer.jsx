@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { callAI, refineLyrics, analyzeClichés, checkSimilarity, checkThemeConsistency } from '../../services/AIService.js';
 import { Search, Sparkles, BookOpen, AlertTriangle, ShieldCheck, Check, Copy, Save, Heart, Send } from 'lucide-react';
@@ -43,11 +43,60 @@ export default function ArtistAnalyzer({ onGhostSend }) {
   const [themeCheck, setThemeCheck] = useState(null);
   const [loadingChecks, setLoadingChecks] = useState(false);
 
-  // Saved reports
-  const [savedReports, setSavedReports] = useState(() => {
-    const saved = localStorage.getItem('lyricistStyleReports');
-    return saved ? JSON.parse(saved) : [];
+  // Reports now auto-save to the user's Documents folder instead of an in-app list.
+  const [autoSaveReports, setAutoSaveReports] = useState(() => {
+    const v = localStorage.getItem('lyricistAutoSaveReports');
+    return v === null ? true : v === 'true';
   });
+  const [saveNote, setSaveNote] = useState('');
+
+  // One-time cleanup: clear the old in-app saved-reports list from earlier versions.
+  useEffect(() => {
+    if (localStorage.getItem('lyricistStyleReports')) {
+      localStorage.removeItem('lyricistStyleReports');
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('lyricistAutoSaveReports', String(autoSaveReports));
+  }, [autoSaveReports]);
+
+  // Write the current report to a .txt file in Documents\Lyricist Style Reports
+  // (in the desktop app). In a plain browser it falls back to a normal download.
+  const saveReportToDisk = async (txt) => {
+    if (!txt) return;
+    const stamp = new Date().toISOString().slice(0, 10);
+    const safeArtist = (artist.trim() || 'Unknown Artist');
+    const filename = `${safeArtist} - ${tab} - ${stamp}.txt`;
+    const header =
+      `LYRICIST — Artist Style Report\n` +
+      `Artist: ${safeArtist}\n` +
+      `Analysis type: ${tab}\n` +
+      `Saved: ${new Date().toLocaleString()}\n` +
+      `${'='.repeat(50)}\n\n`;
+    const content = header + txt;
+    try {
+      if (window.lyricistAPI?.saveReport) {
+        const res = await window.lyricistAPI.saveReport(filename, content);
+        setSaveNote(res?.ok
+          ? '✓ Saved to your Documents\\Lyricist Style Reports folder'
+          : `Could not save: ${res?.error || 'unknown error'}`);
+      } else {
+        // Browser / dev fallback — download the file.
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        setSaveNote(`✓ Downloaded "${filename}"`);
+      }
+    } catch (e) {
+      setSaveNote(`Could not save: ${e.message}`);
+    }
+    setTimeout(() => setSaveNote(''), 6000);
+  };
 
   const handleAnalyze = async () => {
     if (!artist.trim()) return;
@@ -68,6 +117,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
         { role: 'user', content: finalPrompt }
       ], store.config);
       setAnalysis(result);
+      if (autoSaveReports) saveReportToDisk(result);
     } catch (e) {
       setErrorMsg(e.message);
     } finally {
@@ -124,17 +174,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
 
   const handleSaveReport = () => {
     if (!analysis) return;
-    const newReport = {
-      id: Date.now(),
-      artist: artist.trim(),
-      tab,
-      text: analysis,
-      date: new Date().toLocaleDateString()
-    };
-    const updated = [newReport, ...savedReports];
-    setSavedReports(updated);
-    localStorage.setItem('lyricistStyleReports', JSON.stringify(updated));
-    alert('Style Report saved successfully!');
+    saveReportToDisk(analysis);
   };
 
   const handleRunChecks = async () => {
@@ -297,46 +337,26 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
           {loadingAnalysis ? '🔍 Analyzing style...' : '🔍 Analyze Artist'}
         </button>
 
-        {/* Saved Reports history */}
-        {savedReports.length > 0 && (
-          <div style={{ marginTop: 10, borderTop: '1px solid rgba(139,92,246,0.15)', paddingTop: 14 }}>
-            <span
-              style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(232,121,249,0.8)', marginBottom: 10, display: 'block' }}
-              data-help="Artist breakdowns you've saved. Click any one to load it back up. Each shows the artist and the date you saved it."
-            >
-              Saved Style Reports
+        {/* Auto-save setting (replaces the old in-app saved-reports list) */}
+        <div style={{ marginTop: 10, borderTop: '1px solid rgba(139,92,246,0.15)', paddingTop: 14 }}>
+          <label
+            style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}
+            data-help="When this is on, every artist breakdown is automatically saved as a text file in your Documents folder, inside a folder called 'Lyricist Style Reports'. Turn it off if you'd rather save them yourself with the Save Report button."
+          >
+            <input
+              type="checkbox"
+              checked={autoSaveReports}
+              onChange={(e) => setAutoSaveReports(e.target.checked)}
+              style={{ marginTop: 3, accentColor: '#e879f9', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: '0.72rem', color: '#c4b5fd', lineHeight: 1.4 }}>
+              Automatically save reports to my <strong>Documents</strong> folder
+              <span style={{ display: 'block', fontSize: '0.6rem', color: 'rgba(148,130,200,0.6)', marginTop: 2 }}>
+                Saved to: Documents\Lyricist Style Reports
+              </span>
             </span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: '200px', overflowY: 'auto' }}>
-              {savedReports.map(report => (
-                <button
-                  key={report.id}
-                  onClick={() => {
-                    setArtist(report.artist);
-                    setTab(report.tab);
-                    setAnalysis(report.text);
-                  }}
-                  className="card-cosmic"
-                  style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '8px 10px',
-                    borderRadius: 6,
-                    cursor: 'pointer',
-                    background: 'rgba(13,8,28,0.7)',
-                    border: '1px solid rgba(139,92,246,0.18)'
-                  }}
-                >
-                  <div style={{ fontSize: '0.74rem', fontWeight: 600, color: '#c4b5fd' }}>
-                    {report.artist}
-                  </div>
-                  <div style={{ fontSize: '0.6rem', color: 'rgba(148,130,200,0.5)' }}>
-                    {report.date} · {report.tab.toUpperCase()}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+          </label>
+        </div>
       </div>
 
       {/* Main Analysis Output View */}
@@ -357,28 +377,35 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
             Artist Intelligence Report
           </span>
 
-          {analysis && (
-            <button
-              onClick={handleSaveReport}
-              data-help="Saves this artist breakdown so you can pull it back up later from the list on the left. Handy for studying a few artists and comparing them."
-              style={{
-                fontSize: '0.72rem',
-                fontWeight: 600,
-                padding: '4px 12px',
-                borderRadius: 6,
-                border: '1px solid rgba(168,85,247,0.4)',
-                background: 'rgba(168,85,247,0.1)',
-                color: '#e879f9',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4
-              }}
-            >
-              <Save size={12} />
-              Save Report
-            </button>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {saveNote && (
+              <span style={{ fontSize: '0.66rem', color: '#34d399', fontWeight: 600 }}>
+                {saveNote}
+              </span>
+            )}
+            {analysis && (
+              <button
+                onClick={handleSaveReport}
+                data-help="Saves this artist breakdown as a text file in your Documents folder (Documents\Lyricist Style Reports). With auto-save on, this happens for you automatically — use this button to save again or re-save by hand."
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  padding: '4px 12px',
+                  borderRadius: 6,
+                  border: '1px solid rgba(168,85,247,0.4)',
+                  background: 'rgba(168,85,247,0.1)',
+                  color: '#e879f9',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4
+                }}
+              >
+                <Save size={12} />
+                Save Report
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Error message */}

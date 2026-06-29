@@ -1,8 +1,8 @@
 {
   "name": "lyricist",
-  "version": "4.0.11",
+  "version": "4.0.12",
   "main": "main.js",
-  "description": "AI Songwriting Studio — Lyricist 4.0.11",
+  "description": "AI Songwriting Studio — Lyricist 4.0.12",
   "author": "CFunky Creations LLC",
   "license": "MIT",
   "scripts": {
@@ -20,6 +20,7 @@
     "files": [
       "dist/**/*",
       "main.js",
+      "preload.js",
       "src/assets/icon.ico"
     ],
     "win": {
