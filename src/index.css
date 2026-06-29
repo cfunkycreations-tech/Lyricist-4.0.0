@@ -1,0 +1,443 @@
+@import "https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Dancing+Script:wght@600;700&display=swap";
+
+/* ── Bundled custom fonts ── */
+@font-face {
+  font-family: 'Rubik Glitch';
+  src: url('./assets/fonts/RubikGlitch-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Kalnia Glaze';
+  src: url('./assets/fonts/KalniaGlaze-Variable.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Metamorphous';
+  src: url('./assets/fonts/Metamorphous-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Orbitron';
+  src: url('./assets/fonts/Orbitron-Variable.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Audiowide';
+  src: url('./assets/fonts/Audiowide-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* ── Font roles ──
+   Rubik Glitch  → LYRICIST 4.0.7 main title
+   Kalnia Glaze  → all UI labels, tabs, buttons, section headings
+   Audiowide     → lyrics text, textareas, written content
+── */
+body, button, input, select, label {
+  font-family: 'Metamorphous', 'Space Grotesk', sans-serif;
+}
+textarea, .lyric-line, .lyric-output, .lyric-text, [contenteditable] {
+  font-family: 'Audiowide', 'Orbitron', 'JetBrains Mono', monospace;
+}
+h1.gradient-title {
+  font-family: 'Rubik Glitch', 'Syne', sans-serif !important;
+}
+
+/* ── Austin Sunset theme (4.0.6): warm magenta · sunset orange · electric blue ── */
+#root {
+  background: radial-gradient(80% 50% at 18% -10%, #ff2d9526 0%, #0000 60%),
+              radial-gradient(65% 45% at 85% 112%, #2d9bff21 0%, #0000 55%),
+              radial-gradient(55% 60% at 50% 50%, #ff7a1814 0%, #0000 72%),
+              #0a0510;
+  min-height: 100vh;
+}
+
+.gradient-title {
+  background: linear-gradient(90deg, #ff9e2c 0%, #ff2d95 45%, #2d9bff 100%);
+  -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.btn-neon-purple {
+  background: linear-gradient(135deg, #ff2d95, #ff5a1e, #ff9e2c);
+  transition: box-shadow .2s, transform .1s;
+  box-shadow: 0 0 12px #ff2d9580;
+}
+
+.btn-neon-purple:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px #ff2d95cc, 0 0 40px #ff7a184d;
+}
+
+.btn-neon-cyan {
+  background: linear-gradient(135deg, #1466ff, #2d9bff, #00c2ff);
+  transition: box-shadow .2s, transform .1s;
+  box-shadow: 0 0 12px #2d9bff66;
+}
+
+.btn-neon-cyan:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px #2d9bffb3, 0 0 40px #00c2ff40;
+}
+
+.input-cosmic {
+  color: #e8e0ff;
+  background: #0d081cb3;
+  border: 1px solid #8b5cf633;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.input-cosmic::placeholder {
+  color: #9482c866;
+}
+
+.input-cosmic:hover {
+  border-color: #ff4fa373;
+}
+
+.input-cosmic:focus {
+  border-color: #ff4fa3b3;
+  outline: none;
+  box-shadow: 0 0 0 1px #ff4fa34d, 0 0 12px #ff2d9526;
+}
+
+.tab-glow-line {
+  background: linear-gradient(90deg, #ff9e2c, #ff2d95, #2d9bff);
+  box-shadow: 0 0 8px #ff2d95cc;
+}
+
+.sidebar-cosmic {
+  background: #0c0612e6;
+  border-right: 1px solid #ff2d9526;
+  box-shadow: inset -1px 0 20px #ff7a180f;
+}
+
+.header-cosmic {
+  background: #0b0510f2;
+  border-bottom: 1px solid #ff2d953d;
+  box-shadow: 0 1px 20px #ff2d9522;
+}
+
+.output-cosmic {
+  background: #07050f99;
+}
+
+.card-cosmic {
+  background: #110a14cc;
+  border: 1px solid #ff2d9526;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.card-cosmic:hover {
+  border-color: #ff2d9566;
+  box-shadow: 0 0 12px #ff2d951a;
+}
+
+.pill-purple {
+  color: #ff7eb6;
+  background: #ff2d9526;
+  border: 1px solid #ff2d9566;
+}
+
+.pill-cyan {
+  color: #5cc4ff;
+  background: #2d9bff1a;
+  border: 1px solid #2d9bff66;
+}
+
+.pill-green {
+  color: #34d399;
+  background: #10b9811a;
+  border: 1px solid #34d39966;
+}
+
+.pill-red {
+  color: #f87171;
+  background: #dc26261f;
+  border: 1px solid #f8717166;
+}
+
+*, :before, :after, ::backdrop {
+  box-sizing: border-box;
+  border: 0 solid #e5e7eb;
+}
+
+html, :host {
+  -webkit-text-size-adjust: 100%;
+  tab-size: 4;
+  font-feature-settings: normal;
+  font-variation-settings: normal;
+  -webkit-tap-highlight-color: transparent;
+  font-family: Space Grotesk, ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+body {
+  line-height: inherit;
+  margin: 0;
+  color: #e8e0ff;
+  background: #07050f;
+  height: 100%;
+}
+
+#root {
+  height: 100%;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: 0 0;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #9c2d63;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff2d95;
+}
+
+::selection {
+  color: #fff;
+  background: #ff2d9566;
+}
+
+select option {
+  color: #e8e0ff;
+  background: #150c18;
+}
+
+.fixed { position: fixed; }
+.absolute { position: absolute; }
+.relative { position: relative; }
+.block { display: block; }
+.flex { display: flex; }
+.hidden { display: none; }
+.h-11 { height: 2.75rem; }
+.h-full { height: 100%; }
+.min-h-screen { min-height: 100vh; }
+.w-11 { width: 2.75rem; }
+.flex-shrink-0 { flex-shrink: 0; }
+.resize { resize: both; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-3 { gap: .75rem; }
+.rounded-xl { border-radius: .75rem; }
+.border { border-width: 1px; }
+.px-5 { padding-left: 1.25rem; padding-right: 1.25rem; }
+.py-3 { padding-top: .75rem; padding-bottom: .75rem; }
+.text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+.uppercase { text-transform: uppercase; }
+.italic { font-style: italic; }
+.leading-none { line-height: 1; }
+
+/* Custom additions for 3.1.1 features */
+.hover-line-actions {
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.lyric-line-row:hover .hover-line-actions {
+  opacity: 1;
+}
+
+.cliche-highlight {
+  background: rgba(239, 68, 68, 0.2);
+  border-bottom: 2px dashed #ef4444;
+  cursor: pointer;
+}
+
+.offtheme-highlight {
+  background: rgba(245, 158, 11, 0.15);
+  border-bottom: 2px dashed #f59e0b;
+}
+
+.rhyme-highlight-1 { background-color: rgba(168, 85, 247, 0.25); border-radius: 3px; }
+.rhyme-highlight-2 { background-color: rgba(34, 211, 238, 0.25); border-radius: 3px; }
+.rhyme-highlight-3 { background-color: rgba(232, 121, 249, 0.25); border-radius: 3px; }
+.rhyme-highlight-4 { background-color: rgba(52, 211, 153, 0.25); border-radius: 3px; }
+.rhyme-highlight-5 { background-color: rgba(248, 113, 113, 0.25); border-radius: 3px; }
+
+/* Glassmorphism card */
+.glass-panel {
+  background: rgba(13, 8, 28, 0.7);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 12px;
+}
+
+/* Animations */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 12px rgba(124, 58, 237, 0.4); }
+  50% { box-shadow: 0 0 24px rgba(124, 58, 237, 0.8); }
+}
+
+.pulse-glow {
+  animation: pulseGlow 2s infinite;
+}
+
+/* ── Hover-help / Tips system (4.0.0) ───────────────────────────── */
+.help-tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin-left: 5px;
+  cursor: help;
+  outline: none;
+}
+
+.help-tip-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.25);
+  color: #d6c8ff;
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  font-weight: 700;
+  font-family: 'Space Grotesk', sans-serif;
+  line-height: 1;
+  user-select: none;
+  transition: background .15s, color .15s, box-shadow .15s;
+}
+
+.help-tip:hover .help-tip-mark,
+.help-tip:focus .help-tip-mark {
+  background: rgba(168, 85, 247, 0.55);
+  color: #fff;
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
+}
+
+.help-tip-bubble {
+  position: absolute;
+  bottom: calc(100% + 9px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  width: max-content;
+  max-width: 260px;
+  padding: 8px 11px;
+  border-radius: 8px;
+  background: rgba(20, 12, 38, 0.98);
+  color: #e8e0ff;
+  border: 1px solid rgba(255, 45, 149, 0.55);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 12px rgba(124, 58, 237, 0.4);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  font-family: 'Space Grotesk', sans-serif;
+  white-space: normal;
+  text-align: left;
+  pointer-events: none;
+}
+
+.help-tip-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(168, 85, 247, 0.55);
+}
+
+/* Floating bubble shown by HelpLayer when hovering any [data-help] element */
+.help-layer-bubble {
+  position: fixed;
+  z-index: 9999;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(20, 12, 38, 0.98);
+  color: #e8e0ff;
+  border: 1px solid rgba(255, 45, 149, 0.55);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55), 0 0 12px rgba(124, 58, 237, 0.4);
+  font-size: 0.73rem;
+  line-height: 1.5;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  font-family: 'Space Grotesk', sans-serif;
+  text-align: left;
+  pointer-events: none;
+  animation: helpFade 0.12s ease-out;
+}
+
+@keyframes helpFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.help-layer-arrow {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+}
+
+.help-layer-arrow.down {
+  top: 100%;
+  border-top-color: rgba(255, 45, 149, 0.55);
+}
+
+.help-layer-arrow.up {
+  bottom: 100%;
+  border-bottom-color: rgba(255, 45, 149, 0.55);
+}
+
+/* Anything with help text gets a subtle "you can hover me" cue when Tips are on */
+body.tips-on [data-help] {
+  cursor: help;
+}
+
+/* ── Magenta / burnt-orange text glow (4.0.7) ───────────────────────── */
+/* Headings glow: warm burnt-orange halo + deeper magenta bloom */
+h1, h2, h3 {
+  text-shadow:
+    0 0 10px rgba(255, 90, 20, 0.6),
+    0 0 28px rgba(255, 45, 149, 0.38),
+    0 0 55px rgba(255, 45, 149, 0.15);
+}
+
+/* Utility class — apply to any label/text you want glowing */
+.text-glow {
+  text-shadow:
+    0 0 7px rgba(255, 90, 20, 0.55),
+    0 0 18px rgba(255, 45, 149, 0.32);
+}
+
+/* Pill labels and key UI text keep a subtle warm glow */
+.pill-purple, .pill-cyan, .pill-green, .pill-red {
+  text-shadow: 0 0 6px rgba(255, 90, 20, 0.4);
+}
+
+/* Tab buttons: active tab gets a punchy glow on the label */
+button[style*="ffe6f0"] {
+  text-shadow: 0 0 8px rgba(255, 90, 20, 0.5), 0 0 20px rgba(255, 45, 149, 0.3);
+}
+
+/* ── Metamorphous label glow — orange-red on all labels/section titles, NOT buttons ── */
+label {
+  color: #ff7a18 !important;
+  text-shadow: 0 0 8px rgba(255, 100, 10, 0.7), 0 0 22px rgba(255, 45, 149, 0.4) !important;
+}
+
+h2, h3, h4 {
+  color: #ff8020;
+  text-shadow:
+    0 0 8px rgba(255, 100, 10, 0.7),
+    0 0 22px rgba(255, 45, 149, 0.4),
+    0 0 45px rgba(255, 45, 149, 0.15);
+}

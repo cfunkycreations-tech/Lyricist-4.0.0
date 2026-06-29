@@ -1,0 +1,179 @@
+import React from 'react';
+import { useLyricStore, prebuiltTemplates, sectionLabels, sectionDefaultLines } from '../../context/LyricStore.jsx';
+import { ArrowUp, ArrowDown, Trash2, PlusCircle } from 'lucide-react';
+
+export default function StructureBuilder() {
+  const store = useLyricStore();
+
+  const handleTemplateChange = (id) => {
+    store.setStructureTemplate(id);
+    const preset = prebuiltTemplates.find(p => p.id === id);
+    if (preset) {
+      store.setCustomStructure(preset.structure);
+      
+      // Wipe or rebuild current sections based on template if empty
+      if (store.lyrics.length === 0) {
+        preset.structure.forEach(type => {
+          store.addSection(type);
+        });
+      }
+    }
+  };
+
+  const handleAddSectionType = (type) => {
+    store.setCustomStructure(prev => [...prev, type]);
+    // Also append directly to active lyrics if we have active song
+    store.addSection(type);
+  };
+
+  const handleRemoveCustomSection = (idx, sectionId) => {
+    const updated = [...store.customStructure];
+    updated.splice(idx, 1);
+    store.setCustomStructure(updated);
+
+    if (sectionId) {
+      store.removeSection(sectionId);
+    }
+  };
+
+  const handleMove = (idx, direction) => {
+    const nextIdx = idx + direction;
+    if (nextIdx < 0 || nextIdx >= store.lyrics.length) return;
+    
+    // Swap in active lyrics
+    store.reorderSections(idx, nextIdx);
+
+    // Swap in custom structure
+    const updated = [...store.customStructure];
+    const [moved] = updated.splice(idx, 1);
+    updated.splice(nextIdx, 0, moved);
+    store.setCustomStructure(updated);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Template selector */}
+      <div data-help="A song's STRUCTURE is the order of its parts — like Verse, then Chorus, then Verse again. A preset is a ready-made order you can pick so you don't have to build it from scratch. You can still rearrange it below.">
+        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+          Song Structure (the order of parts)
+        </label>
+        <select
+          value={store.structureTemplate}
+          onChange={(e) => handleTemplateChange(e.target.value)}
+          style={{
+            width: '100%',
+            background: 'rgba(13,8,28,0.7)',
+            border: '1px solid rgba(139,92,246,0.22)',
+            borderRadius: 8,
+            padding: '7px 10px',
+            fontSize: '0.82rem',
+            color: '#e8e0ff',
+            outline: 'none',
+            fontFamily: "'Space Grotesk', sans-serif"
+          }}
+        >
+          {prebuiltTemplates.map(t => (
+            <option key={t.id} value={t.id}>{t.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Custom structure builder */}
+      <div style={{ background: 'rgba(13,8,28,0.5)', borderRadius: 10, padding: 12, border: '1px solid rgba(139,92,246,0.14)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <span
+            style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(232,121,249,0.8)' }}
+            data-help="The exact running order of your song's parts, top to bottom. Use the up/down arrows to reorder a part, the trash can to remove it, and the buttons below to add a new part. This is YOUR arrangement — change it however you like."
+          >
+            Arrangement Sequence
+          </span>
+          <span style={{ fontSize: '0.6rem', color: 'rgba(167,139,250,0.45)' }}>
+            ({store.lyrics.length} sections)
+          </span>
+        </div>
+
+        {/* Section sequence drag/order view */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: '200px', overflowY: 'auto', paddingRight: 4 }}>
+          {store.lyrics.map((sec, idx) => (
+            <div
+              key={sec.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '5px 8px',
+                background: 'rgba(13,8,28,0.8)',
+                border: '1px solid rgba(139,92,246,0.18)',
+                borderRadius: 6,
+                fontSize: '0.74rem'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ opacity: 0.4 }}>{idx + 1}.</span>
+                <span style={{ fontWeight: 600 }}>{sec.name}</span>
+                <span style={{ fontSize: '0.6rem', opacity: 0.5 }}>({sec.type})</span>
+              </div>
+
+              {/* Move arrows & Trash */}
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <button
+                  onClick={() => handleMove(idx, -1)}
+                  disabled={idx === 0}
+                  style={{ background: 'transparent', border: 'none', color: '#c4b5fd', cursor: idx === 0 ? 'not-allowed' : 'pointer', opacity: idx === 0 ? 0.3 : 1 }}
+                >
+                  <ArrowUp size={12} />
+                </button>
+                <button
+                  onClick={() => handleMove(idx, 1)}
+                  disabled={idx === store.lyrics.length - 1}
+                  style={{ background: 'transparent', border: 'none', color: '#c4b5fd', cursor: idx === store.lyrics.length - 1 ? 'not-allowed' : 'pointer', opacity: idx === store.lyrics.length - 1 ? 0.3 : 1 }}
+                >
+                  <ArrowDown size={12} />
+                </button>
+                <button
+                  onClick={() => handleRemoveCustomSection(idx, sec.id)}
+                  style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer' }}
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            </div>
+          ))}
+          {store.lyrics.length === 0 && (
+            <div style={{ textAlign: 'center', color: 'rgba(148,130,200,0.4)', fontSize: '0.72rem', padding: '10px 0' }}>
+              No sections. Click below to add.
+            </div>
+          )}
+        </div>
+
+        {/* Add section triggers */}
+        <div
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(139,92,246,0.12)' }}
+          data-help="Add another part to your song. Each button adds that kind of section to the bottom of the arrangement above — then you can move it wherever you want."
+        >
+          {Object.keys(sectionLabels).map(type => (
+            <button
+              key={type}
+              onClick={() => handleAddSectionType(type)}
+              style={{
+                padding: '3px 6px',
+                fontSize: '0.62rem',
+                fontWeight: 600,
+                borderRadius: 5,
+                background: 'rgba(139,92,246,0.12)',
+                border: '1px solid rgba(139,92,246,0.25)',
+                color: '#c4b5fd',
+                cursor: 'pointer',
+                transition: 'all 0.1s'
+              }}
+              onMouseEnter={(e) => { e.target.style.background = 'rgba(139,92,246,0.22)'; }}
+              onMouseLeave={(e) => { e.target.style.background = 'rgba(139,92,246,0.12)'; }}
+            >
+              + {sectionLabels[type]}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
