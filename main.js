@@ -24,7 +24,7 @@ function createWindow() {
     height: 900,
     backgroundColor: '#07050f',
     icon: path.join(__dirname, 'src/assets/icon.ico'),
-    title: 'Lyricist 4.0.12',
+    title: 'Lyricist 4.0.13',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

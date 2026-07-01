@@ -2,12 +2,6 @@
 
 /* ── Bundled custom fonts ── */
 @font-face {
-  font-family: 'Rubik Glitch';
-  src: url('./assets/fonts/RubikGlitch-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-}
-@font-face {
   font-family: 'Kalnia Glaze';
   src: url('./assets/fonts/KalniaGlaze-Variable.ttf') format('truetype');
   font-weight: 100 900;
@@ -33,9 +27,8 @@
 }
 
 /* ── Font roles ──
-   Rubik Glitch  → LYRICIST 4.0.7 main title
+   Audiowide     → LYRICIST main title, lyrics text, textareas, written content
    Kalnia Glaze  → all UI labels, tabs, buttons, section headings
-   Audiowide     → lyrics text, textareas, written content
 ── */
 body, button, input, select, label {
   font-family: 'Metamorphous', 'Space Grotesk', sans-serif;
@@ -44,7 +37,7 @@ textarea, .lyric-line, .lyric-output, .lyric-text, [contenteditable] {
   font-family: 'Audiowide', 'Orbitron', 'JetBrains Mono', monospace;
 }
 h1.gradient-title {
-  font-family: 'Rubik Glitch', 'Syne', sans-serif !important;
+  font-family: 'Audiowide', 'Orbitron', sans-serif !important;
 }
 
 /* ── Austin Sunset theme (4.0.6): warm magenta · sunset orange · electric blue ── */

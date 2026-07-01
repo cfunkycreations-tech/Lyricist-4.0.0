@@ -1,8 +1,8 @@
 {
   "name": "lyricist",
-  "version": "4.0.12",
+  "version": "4.0.13",
   "main": "main.js",
-  "description": "AI Songwriting Studio — Lyricist 4.0.12",
+  "description": "AI Songwriting Studio — Lyricist 4.0.13",
   "author": "CFunky Creations LLC",
   "license": "MIT",
   "scripts": {
