@@ -18,13 +18,34 @@ ipcMain.handle('save-report', async (event, { filename, content }) => {
   }
 });
 
+// Save a Song Forge result (lyrics .txt + cover art .png, same base name) to
+// Documents\Lyricist Song Forge. Called via window.lyricistAPI.saveSongForge.
+ipcMain.handle('save-song-forge', async (event, { title, lyricsContent, imageBase64 }) => {
+  try {
+    const dir = path.join(app.getPath('documents'), 'Lyricist Song Forge');
+    fs.mkdirSync(dir, { recursive: true });
+    const safe = String(title || 'Untitled Song').replace(/[\\/:*?"<>|]/g, '-').slice(0, 150);
+    const base = `${safe} - ${new Date().toISOString().slice(0, 10)}`;
+    const lyricsPath = path.join(dir, `${base}.txt`);
+    fs.writeFileSync(lyricsPath, lyricsContent, 'utf8');
+    let imagePath = null;
+    if (imageBase64) {
+      imagePath = path.join(dir, `${base}.png`);
+      fs.writeFileSync(imagePath, Buffer.from(imageBase64, 'base64'));
+    }
+    return { ok: true, lyricsPath, imagePath };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
     backgroundColor: '#07050f',
     icon: path.join(__dirname, 'src/assets/icon.ico'),
-    title: 'Lyricist 4.0.13',
+    title: 'Lyricist 4.1.3',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -48,7 +69,7 @@ app.whenReady().then(() => {
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://fonts.gstatic.com https://openrouter.ai https://api.datamuse.com https://api.dictionaryapi.dev https://img.buymeacoffee.com data: blob:;"
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://fonts.gstatic.com https://openrouter.ai https://api.datamuse.com https://api.dictionaryapi.dev https://img.buymeacoffee.com https://generativelanguage.googleapis.com data: blob:;"
         ],
       },
     });

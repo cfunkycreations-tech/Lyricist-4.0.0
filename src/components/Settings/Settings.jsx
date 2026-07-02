@@ -223,6 +223,7 @@ function ModelSelector({ value, onChange }) {
 export default function Settings() {
   const store = useLyricStore();
   const [showKey, setShowKey] = useState(false);
+  const [showGoogleKey, setShowGoogleKey] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const handleUpdate = (field, val) => {
@@ -244,7 +245,14 @@ export default function Settings() {
         temperature: 0.75,
         maxTokens: 2000,
         fusionEnabled: false,
-        fusionModels: []
+        fusionModels: [],
+        googleApiKey: '',
+        geminiTextModel: 'gemini-3.5-flash',
+        geminiImageModel: 'gemini-3.1-flash-image',
+        useFlexTier: true,
+        imageAspectRatio: '1:1',
+        imageSize: '2K',
+        customArtStyle: ''
       });
       setSaved(false);
     }
@@ -411,6 +419,188 @@ export default function Settings() {
         )}
       </div>
 
+      {/* Song Forge — Gemini API key + cover art config */}
+      <div style={{ marginBottom: 22, background: 'rgba(34,211,238,0.06)', border: '1px solid rgba(34,211,238,0.22)', borderRadius: 10, padding: 14 }}>
+        <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(103,232,249,0.85)', marginBottom: 3 }}>
+          🪄 Song Forge — Gemini (Song + Cover Art) ✨ NEW
+        </div>
+        <p style={{ fontSize: '0.68rem', color: 'rgba(210,195,255,0.75)', marginBottom: 12, lineHeight: 1.4 }}>
+          Song Forge writes a complete song with Google Gemini, then generates matching cover art with a
+          Nano Banana image model. It uses its own Google AI API key, separate from the OpenRouter key above.
+        </p>
+
+        <div style={{ marginBottom: 14 }} data-help="Your Google AI Studio key. Song Forge sends requests straight to Google using this key — it never leaves your computer except to reach Google's API.">
+          <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+            Google AI API Key
+          </label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type={showGoogleKey ? 'text' : 'password'}
+              value={store.config.googleApiKey}
+              onChange={(e) => handleUpdate('googleApiKey', e.target.value)}
+              placeholder="AIza..."
+              style={{
+                flex: 1,
+                background: 'rgba(13,8,28,0.7)',
+                border: '1px solid rgba(34,211,238,0.25)',
+                borderRadius: 8,
+                padding: '8px 11px',
+                fontSize: '0.84rem',
+                color: '#e8e0ff',
+                outline: 'none',
+                fontFamily: "'Space Grotesk', sans-serif"
+              }}
+            />
+            <button
+              onClick={() => setShowGoogleKey(!showGoogleKey)}
+              style={{
+                padding: '7px 14px',
+                borderRadius: 8,
+                border: '1px solid rgba(34,211,238,0.25)',
+                background: 'rgba(13,8,28,0.7)',
+                color: 'rgba(196,181,253,0.7)',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: "'Space Grotesk', sans-serif"
+              }}
+            >
+              {showGoogleKey ? 'Hide' : 'Show'}
+            </button>
+          </div>
+          <p style={{ fontSize: '0.62rem', color: 'rgba(148,130,200,0.35)', marginTop: 5 }}>
+            Get a free key at{' '}
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style={{ color: '#67e8f9', textDecoration: 'underline' }}>
+              aistudio.google.com/apikey
+            </a>.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }} data-help="Flex tier is roughly half the cost of standard pricing, in exchange for possibly waiting longer during busy periods. Song Forge automatically retries and falls back to standard tier if Flex is full, so this is safe to leave on.">
+          <span style={{ fontSize: '0.68rem', color: 'rgba(196,181,253,0.75)' }}>
+            Use Flex tier (cheaper, may queue during peak load)
+          </span>
+          <button
+            type="button"
+            onClick={() => handleUpdate('useFlexTier', !store.config.useFlexTier)}
+            style={{
+              padding: '5px 14px',
+              borderRadius: 9999,
+              border: 'none',
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontFamily: "'Space Grotesk', sans-serif",
+              background: store.config.useFlexTier ? 'linear-gradient(135deg,#1466ff,#2d9bff,#00c2ff)' : 'rgba(60,40,70,0.6)',
+              color: store.config.useFlexTier ? '#fff' : 'rgba(180,150,170,0.6)'
+            }}
+          >
+            {store.config.useFlexTier ? 'Flex: ON' : 'Flex: OFF'}
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 200px' }} data-help="Which Nano Banana model draws the cover art. Lite is fastest and cheapest; the default balances quality and speed; Pro gives the highest fidelity but takes longer.">
+            <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+              Cover Art Model
+            </label>
+            <select
+              value={store.config.geminiImageModel}
+              onChange={(e) => handleUpdate('geminiImageModel', e.target.value)}
+              style={{
+                width: '100%',
+                background: 'rgba(13,8,28,0.7)',
+                border: '1px solid rgba(34,211,238,0.25)',
+                borderRadius: 8,
+                padding: '8px 11px',
+                fontSize: '0.78rem',
+                color: '#e8e0ff',
+                outline: 'none',
+                fontFamily: "'Space Grotesk', sans-serif"
+              }}
+            >
+              <option value="gemini-3.1-flash-lite-image">Nano Banana 2 Lite — fastest, cheapest</option>
+              <option value="gemini-3.1-flash-image">Nano Banana 2 — balanced (default)</option>
+              <option value="gemini-3-pro-image">Nano Banana Pro — highest fidelity</option>
+            </select>
+          </div>
+
+          <div style={{ flex: '1 1 120px' }} data-help="Shape of the cover art canvas before it's framed into the circular medallion. 1:1 (square) works best for the medallion look.">
+            <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+              Aspect Ratio
+            </label>
+            <select
+              value={store.config.imageAspectRatio}
+              onChange={(e) => handleUpdate('imageAspectRatio', e.target.value)}
+              style={{
+                width: '100%',
+                background: 'rgba(13,8,28,0.7)',
+                border: '1px solid rgba(34,211,238,0.25)',
+                borderRadius: 8,
+                padding: '8px 11px',
+                fontSize: '0.78rem',
+                color: '#e8e0ff',
+                outline: 'none',
+                fontFamily: "'Space Grotesk', sans-serif"
+              }}
+            >
+              {['1:1', '4:5', '3:4', '5:4', '4:3', '16:9', '9:16'].map(r => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ flex: '1 1 120px' }} data-help="Resolution of the generated cover art. Higher looks sharper on big screens but costs a bit more and takes longer.">
+            <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+              Resolution
+            </label>
+            <select
+              value={store.config.imageSize}
+              onChange={(e) => handleUpdate('imageSize', e.target.value)}
+              style={{
+                width: '100%',
+                background: 'rgba(13,8,28,0.7)',
+                border: '1px solid rgba(34,211,238,0.25)',
+                borderRadius: 8,
+                padding: '8px 11px',
+                fontSize: '0.78rem',
+                color: '#e8e0ff',
+                outline: 'none',
+                fontFamily: "'Space Grotesk', sans-serif"
+              }}
+            >
+              {['1K', '2K', '4K'].map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div data-help="Song Forge's default look frames every cover in a circular medallion with a magenta-to-orange neon glow. Type your own art style here to override that default — leave it blank to keep the signature Lyricist look.">
+          <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+            Custom Cover Art Style (optional — overrides the default medallion look)
+          </label>
+          <textarea
+            value={store.config.customArtStyle}
+            onChange={(e) => handleUpdate('customArtStyle', e.target.value)}
+            placeholder="Leave blank to use Lyricist's signature circular medallion with magenta/orange neon glow..."
+            rows={2}
+            style={{
+              width: '100%',
+              background: 'rgba(13,8,28,0.7)',
+              border: '1px solid rgba(34,211,238,0.25)',
+              borderRadius: 8,
+              padding: '8px 11px',
+              fontSize: '0.76rem',
+              color: '#e8e0ff',
+              outline: 'none',
+              resize: 'vertical',
+              fontFamily: "'Space Grotesk', sans-serif"
+            }}
+          />
+        </div>
+      </div>
+
       {/* Temperature */}
       <div style={{ marginBottom: 18 }} data-help="How wild or safe the AI gets. Slide left for predictable, on-the-nose lyrics; slide right for surprising, out-there ideas. Around 0.7–1.0 is a good sweet spot for most songs. ('Temperature' is just the AI word for this.)">
         <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
@@ -502,7 +692,10 @@ export default function Settings() {
             ['API Key Status', store.config.openRouterApiKey ? '🔑 Configured' : '❌ Not Configured', store.config.openRouterApiKey ? '#34d399' : '#f87171'],
             ['Active Model', store.config.model, '#e8e0ff'],
             ['Assistant Temperature', store.config.temperature, '#c4b5fd'],
-            ['Token Cap', store.config.maxTokens, '#c4b5fd']
+            ['Token Cap', store.config.maxTokens, '#c4b5fd'],
+            ['Song Forge Key Status', store.config.googleApiKey ? '🔑 Configured' : '❌ Not Configured', store.config.googleApiKey ? '#34d399' : '#f87171'],
+            ['Song Forge Text Model', store.config.geminiTextModel, '#67e8f9'],
+            ['Song Forge Art Model', store.config.geminiImageModel, '#67e8f9']
           ].map(([k, v, c]) => (
             <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.75rem', color: 'rgba(196,181,253,0.7)' }}>{k}</span>

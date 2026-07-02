@@ -7,4 +7,7 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   // Save a Ghost Rider style report into the user's Documents folder.
   // Returns { ok: true, path } or { ok: false, error }.
   saveReport: (filename, content) => ipcRenderer.invoke('save-report', { filename, content }),
+  // Save a Song Forge result (lyrics .txt + cover art .png) into the user's Documents folder.
+  // Returns { ok: true, lyricsPath, imagePath } or { ok: false, error }.
+  saveSongForge: (payload) => ipcRenderer.invoke('save-song-forge', payload),
 });

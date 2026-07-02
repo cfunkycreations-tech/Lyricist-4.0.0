@@ -172,7 +172,16 @@ const DEFAULT_CONFIG = {
   temperature: 0.75,
   maxTokens: 2000,
   fusionEnabled: false,
-  fusionModels: []
+  fusionModels: [],
+
+  // Song Forge (Gemini Interactions API — text + Nano Banana cover art)
+  googleApiKey: '',
+  geminiTextModel: 'gemini-3.5-flash',
+  geminiImageModel: 'gemini-3.1-flash-image',
+  useFlexTier: true,
+  imageAspectRatio: '1:1',
+  imageSize: '2K',
+  customArtStyle: ''
 };
 
 export const LyricStoreProvider = ({ children }) => {

@@ -33,7 +33,7 @@ export async function callAI(messages, config, customTemp = null, customMax = nu
 }
 
 // Builds the global context block describing all active songwriting parameters
-function buildPromptContext(store) {
+export function buildPromptContext(store) {
   return `
 SONGWRITING CONFIGURATION:
 - Genre: ${store.genre}
@@ -371,7 +371,7 @@ function parseBridgeVariations(text) {
 }
 
 // Parses raw lyric text into structured section blocks
-function parseSectionsFromText(text, store) {
+export function parseSectionsFromText(text, store) {
   const lines = text.split("\n");
   const parsed = [];
   let currentSection = null;

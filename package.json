@@ -1,8 +1,8 @@
 {
   "name": "lyricist",
-  "version": "4.0.13",
+  "version": "4.1.3",
   "main": "main.js",
-  "description": "AI Songwriting Studio — Lyricist 4.0.13",
+  "description": "AI Songwriting Studio — Lyricist 4.1.3",
   "author": "CFunky Creations LLC",
   "license": "MIT",
   "scripts": {
@@ -38,6 +38,7 @@
     }
   },
   "dependencies": {
+    "@google/genai": "^2.10.0",
     "lucide-react": "^0.303.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

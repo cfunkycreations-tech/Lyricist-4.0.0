@@ -434,3 +434,115 @@ h2, h3, h4 {
     0 0 22px rgba(255, 45, 149, 0.4),
     0 0 45px rgba(255, 45, 149, 0.15);
 }
+
+/* ── Song Forge (4.1.3) — cross-platform layout: phone → laptop → TV ──
+   Mobile:  single stacked column, controls collapse above results.
+   Laptop:  sidebar + two-pane grid (lyrics | medallion art).
+   TV/4K:   grid caps at a readable max-width and centers, so lines of
+            lyrics don't stretch across a living-room screen. */
+.songforge-shell {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.songforge-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding: clamp(12px, 1.5vw, 20px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.songforge-main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: clamp(14px, 2vw, 32px);
+}
+
+.songforge-results {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(240px, 440px);
+  gap: clamp(16px, 2.5vw, 36px);
+  align-items: start;
+  width: 100%;
+}
+
+.songforge-medallion-wrap {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.songforge-medallion {
+  width: 100%;
+  max-width: clamp(200px, 26vw, 440px);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle, #1a0f28 0%, #07050f 100%);
+  box-shadow:
+    0 0 22px rgba(255, 45, 149, 0.55),
+    0 0 55px rgba(255, 158, 44, 0.3),
+    inset 0 0 0 3px rgba(255, 45, 149, 0.6);
+}
+
+.songforge-medallion img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.songforge-lyrics-text {
+  font-size: clamp(0.82rem, 0.95vw, 1.05rem);
+  line-height: 1.85;
+}
+
+/* Mobile / narrow: stack sidebar above results, single-column grid */
+@media (max-width: 900px) {
+  .songforge-shell {
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .songforge-sidebar {
+    width: 100%;
+    overflow-y: visible;
+  }
+  .songforge-results {
+    grid-template-columns: 1fr;
+  }
+  .songforge-medallion-wrap {
+    position: static;
+  }
+  .songforge-medallion {
+    max-width: min(70vw, 320px);
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .songforge-lyrics-text {
+    font-size: 0.86rem;
+  }
+}
+
+/* Large / TV screens: cap line length and center, scale type up gently */
+@media (min-width: 1800px) {
+  .songforge-main {
+    max-width: 1800px;
+    margin: 0 auto;
+  }
+  .songforge-lyrics-text {
+    font-size: clamp(1.05rem, 1.1vw, 1.5rem);
+  }
+}

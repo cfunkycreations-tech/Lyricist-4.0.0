@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LyricStoreProvider, useLyricStore } from './context/LyricStore.jsx';
 import SongwriterHub from './components/SongwriterHub/SongwriterHub.jsx';
 import ArtistAnalyzer from './components/ArtistAnalyzer/ArtistAnalyzer.jsx';
+import SongForge from './components/SongForge/SongForge.jsx';
 import RhymeHelper from './components/RhymeHelper/RhymeHelper.jsx';
 import Scratchpad from './components/Scratchpad/Scratchpad.jsx';
 import Thesaurus from './components/Thesaurus/Thesaurus.jsx';
@@ -21,6 +22,7 @@ import footerMedallionImg from './assets/footer-medallion.png'; // footer medall
 const tabs = [
   { id: 'songwriter', icon: '🎵', label: 'Songwriter', help: 'The main workspace. Set up the kind of song you want (style, mood, topic), then write and polish the lyrics line by line.' },
   { id: 'analyzer', icon: '👻', label: 'Ghost Rider', help: 'Studies any artist you name and breaks down how they write, then helps you write a NEW song in that same style. (It does not copy their actual lyrics.)' },
+  { id: 'songforge', icon: '🪄', label: 'Song Forge', help: 'Chains Google Gemini calls to auto-generate a song and its cover art. Go Song First (write lyrics, then paint matching art) or Art First (upload or generate an image, then write a song inspired by it). Needs a Google AI API key from Settings.' },
   { id: 'rhyme', icon: '📖', label: 'Rhyme Helper', help: 'A rhyming dictionary and rhyme finder. Look up words that rhyme, and check the rhymes inside lines you have already written.' },
   { id: 'thesaurus', icon: '📚', label: 'Thesaurus', help: 'A word finder: type a word to get other words that mean the same, words that mean the opposite, and related ideas. Free, no AI key needed.' },
   { id: 'dictionary', icon: '📕', label: 'Dictionary', help: 'Look up what a word means, how to say it, and example sentences — in English or Spanish. Free, no AI key needed.' },
@@ -100,7 +102,7 @@ function MainLayout() {
           {/* 1. Medallion logo — fills full header height top-to-bottom */}
           <img
             src={logo407Img}
-            alt="CFunky Creations Lyricist 4.0.13"
+            alt="CFunky Creations Lyricist 4.1.3"
             style={{ height: 160, width: 'auto', objectFit: 'contain', display: 'block', flexShrink: 0 }}
           />
 
@@ -127,7 +129,7 @@ function MainLayout() {
               style={{"fontSize":"clamp(2.5rem, 4.5vw, 6.5rem)","fontWeight":400,"letterSpacing":"0.04em","marginBottom":4,"whiteSpace":"nowrap"}}
               data-help="Lyricist is your songwriting studio. Pick a vibe, give it a topic, and it helps you write full songs, line by line — then polish them. Everything here is explained: just hover over anything you don't recognize."
             >
-              LYRICIST 4.0.13
+              LYRICIST 4.1.3
             </h1>
             <p style={{ fontSize: '0.7rem', color: '#ff2d95', letterSpacing: '0.18em', textTransform: 'uppercase', margin: 0, textShadow: '0 0 8px rgba(255,45,149,0.7), 0 0 20px rgba(255,45,149,0.35)' }}>
               AI-Powered Songwriting Studio · CFunkyCreations LLC
@@ -248,6 +250,9 @@ function MainLayout() {
           <div style={{ display: activeTab === 'analyzer' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
             <ArtistAnalyzer onGhostSend={handleGhostSend} />
           </div>
+          <div style={{ display: activeTab === 'songforge' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+            <SongForge onSongForged={() => setActiveTab('songwriter')} />
+          </div>
           <div style={{ display: activeTab === 'rhyme' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
             <RhymeHelper />
           </div>
@@ -313,7 +318,7 @@ function MainLayout() {
             style={{ fontSize: '0.6rem', color: '#ff9e2c', letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: "'JetBrains Mono', monospace", textAlign: 'center', lineHeight: 1.6, textShadow: '0 0 8px rgba(255,158,44,0.5)' }}
             data-help="CFunky's mission: powerful songwriting tools that stay free for everyone, no catch."
           >
-            Lyricist 4.0.13 · Free AI tools for the masses<br />
+            Lyricist 4.1.3 · Free AI tools for the masses<br />
             Always free, available for all · Keep Austin Wonky
           </div>
 
