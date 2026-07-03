@@ -1,4 +1,4 @@
-@import "https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Dancing+Script:wght@600;700&display=swap";
+@import "https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Dancing+Script:wght@600;700&family=Rubik+Glitch&display=swap";
 
 /* ── Bundled custom fonts ── */
 @font-face {
@@ -36,8 +36,10 @@ body, button, input, select, label {
 textarea, .lyric-line, .lyric-output, .lyric-text, [contenteditable] {
   font-family: 'Audiowide', 'Orbitron', 'JetBrains Mono', monospace;
 }
+/* 4.1.3 — LYRICIST header title wears Rubik Glitch (Google Fonts),
+   falling back to the bundled Audiowide/Orbitron when offline. */
 h1.gradient-title {
-  font-family: 'Audiowide', 'Orbitron', sans-serif !important;
+  font-family: 'Rubik Glitch', 'Audiowide', 'Orbitron', sans-serif !important;
 }
 
 /* ── Austin Sunset theme (4.0.6): warm magenta · sunset orange · electric blue ── */
@@ -545,4 +547,265 @@ h2, h3, h4 {
   .songforge-lyrics-text {
     font-size: clamp(1.05rem, 1.1vw, 1.5rem);
   }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   4.1.3 NEW FEATURES — additive styles only. Inherits the Austin Sunset
+   neon magenta (#ff2d95) / orange (#ff9e2c) system defined above.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Persistent Suno audio player ── */
+.suno-player {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 8px 46px 8px 14px;
+  flex-shrink: 0;
+  background: rgba(8, 4, 16, 0.97);
+  border-top: 1px solid rgba(255, 45, 149, 0.45);
+  box-shadow: 0 -1px 18px rgba(255, 45, 149, 0.18), 0 -1px 40px rgba(255, 158, 44, 0.08);
+  z-index: 50;
+}
+.suno-player--collapsed { padding: 3px 46px 3px 14px; min-height: 14px; }
+.suno-collapse {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(255, 45, 149, 0.12); color: #ff7eb6;
+  border: 1px solid rgba(255, 45, 149, 0.4); cursor: pointer;
+}
+.suno-track-info { display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1 1 180px; }
+.suno-track-name {
+  font-size: 0.74rem; font-weight: 700; color: #ff9e2c;
+  text-shadow: 0 0 8px rgba(255, 158, 44, 0.55);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-family: 'Audiowide', 'Orbitron', sans-serif;
+}
+.suno-eq { display: flex; align-items: flex-end; gap: 2px; height: 14px; flex-shrink: 0; }
+.suno-eq-bar { width: 3px; height: 4px; border-radius: 2px; background: linear-gradient(180deg, #ff9e2c, #ff2d95); opacity: 0.35; }
+.suno-eq-bar.on { animation: sunoEq 0.7s ease-in-out infinite alternate; opacity: 1; box-shadow: 0 0 6px rgba(255, 45, 149, 0.8); }
+.suno-eq-bar.on:nth-child(2) { animation-delay: 0.18s; }
+.suno-eq-bar.on:nth-child(3) { animation-delay: 0.36s; }
+@keyframes sunoEq { from { height: 4px; } to { height: 14px; } }
+.suno-transport { display: flex; align-items: center; gap: 6px; }
+.suno-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(255, 45, 149, 0.1); color: #ff7eb6;
+  border: 1px solid rgba(255, 45, 149, 0.35);
+  cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+}
+.suno-btn:hover:not(:disabled) { color: #fff; background: rgba(255, 45, 149, 0.3); box-shadow: 0 0 10px rgba(255, 45, 149, 0.6); }
+.suno-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.suno-btn--play {
+  width: 36px; height: 36px; color: #fff; border: none;
+  background: linear-gradient(135deg, #ff2d95, #ff5a1e, #ff9e2c);
+  box-shadow: 0 0 12px rgba(255, 45, 149, 0.55);
+}
+.suno-seek { display: flex; align-items: center; gap: 8px; flex: 3 1 220px; min-width: 140px; }
+.suno-time { font-size: 0.62rem; color: rgba(255, 158, 44, 0.85); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+.suno-range { -webkit-appearance: none; appearance: none; flex: 1; height: 4px; border-radius: 4px; background: rgba(255, 45, 149, 0.22); outline: none; cursor: pointer; }
+.suno-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 12px; height: 12px; border-radius: 50%;
+  background: linear-gradient(135deg, #ff2d95, #ff9e2c);
+  box-shadow: 0 0 8px rgba(255, 45, 149, 0.9);
+}
+.suno-volume { display: flex; align-items: center; gap: 6px; flex: 0 1 130px; min-width: 96px; }
+.suno-range--vol { max-width: 90px; }
+.suno-sources { display: flex; align-items: center; gap: 6px; }
+.suno-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 9999px; font-size: 0.66rem; font-weight: 700;
+  background: rgba(255, 158, 44, 0.1); color: #ff9e2c;
+  border: 1px solid rgba(255, 158, 44, 0.4); cursor: pointer; transition: all 0.15s;
+}
+.suno-chip:hover { color: #fff; box-shadow: 0 0 10px rgba(255, 158, 44, 0.5); }
+.suno-chip--go { background: linear-gradient(135deg, #ff2d95, #ff9e2c); color: #fff; border: none; }
+.suno-popover {
+  position: absolute; bottom: calc(100% + 6px); right: 12px; z-index: 60;
+  display: flex; gap: 8px; align-items: center;
+  width: min(420px, calc(100vw - 24px)); padding: 10px;
+  background: rgba(14, 7, 24, 0.98); border: 1px solid rgba(255, 45, 149, 0.5);
+  border-radius: 10px; box-shadow: 0 -6px 30px rgba(0, 0, 0, 0.6), 0 0 16px rgba(255, 45, 149, 0.25);
+}
+.suno-popover--list { flex-direction: column; align-items: stretch; gap: 4px; max-height: 260px; overflow-y: auto; }
+.suno-empty { font-size: 0.72rem; color: rgba(196, 181, 253, 0.6); text-align: center; padding: 8px; }
+.suno-row { display: flex; align-items: center; gap: 6px; }
+.suno-row--active .suno-row-name { color: #ff2d95; text-shadow: 0 0 8px rgba(255, 45, 149, 0.7); }
+.suno-row-name {
+  flex: 1; text-align: left; background: none; border: none; cursor: pointer;
+  font-size: 0.72rem; color: #e8e0ff; padding: 5px 6px; border-radius: 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.suno-row-name:hover { background: rgba(255, 45, 149, 0.12); }
+.suno-row-kind { margin-left: 8px; font-size: 0.56rem; color: rgba(255, 158, 44, 0.6); text-transform: uppercase; letter-spacing: 0.08em; }
+.suno-error { width: 100%; font-size: 0.66rem; color: #f87171; }
+@media (max-width: 700px) {
+  .suno-player { gap: 8px 10px; }
+  .suno-seek { order: 5; flex-basis: 100%; }
+}
+
+/* ── MIDI Studio (audio→MIDI, sequencer, Butterchurn) ── */
+.midi-shell { display: flex; flex: 1; min-height: 0; width: 100%; overflow: hidden; }
+.midi-sidebar {
+  width: 300px; flex-shrink: 0; overflow-y: auto;
+  padding: clamp(12px, 1.5vw, 20px);
+  display: flex; flex-direction: column; gap: 14px;
+  background: rgba(0, 0, 0, 0.55); border-right: 1px solid rgba(255, 45, 149, 0.2);
+}
+.midi-main { flex: 1; min-width: 0; overflow-y: auto; padding: clamp(12px, 1.6vw, 26px); display: flex; flex-direction: column; gap: 16px; }
+.midi-record-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #f87171; box-shadow: 0 0 10px #f87171; animation: pulseGlow 1s infinite; }
+.seq-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.seq-roll-wrap {
+  position: relative; overflow: auto; border-radius: 10px;
+  border: 1px solid rgba(255, 45, 149, 0.3);
+  background: #07040d;
+  box-shadow: inset 0 0 30px rgba(255, 45, 149, 0.06);
+  max-height: 340px;
+}
+.seq-note {
+  position: absolute; border-radius: 3px; cursor: pointer;
+  background: linear-gradient(90deg, #ff2d95, #ff7a18);
+  box-shadow: 0 0 6px rgba(255, 45, 149, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.seq-note--selected { outline: 2px solid #00c2ff; box-shadow: 0 0 12px rgba(0, 194, 255, 0.9); z-index: 3; }
+.seq-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #ff9e2c; box-shadow: 0 0 10px rgba(255, 158, 44, 0.9); pointer-events: none; z-index: 4; }
+.viz-canvas-wrap {
+  position: relative; width: 100%; aspect-ratio: 16 / 7; min-height: 180px;
+  border-radius: 12px; overflow: hidden;
+  border: 1px solid rgba(255, 45, 149, 0.35);
+  box-shadow: 0 0 22px rgba(255, 45, 149, 0.25), 0 0 55px rgba(255, 158, 44, 0.12);
+  background: #000;
+}
+.viz-canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.viz-overlay { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; z-index: 2; }
+@media (max-width: 900px) {
+  .midi-shell { flex-direction: column; overflow-y: auto; }
+  .midi-sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(255, 45, 149, 0.2); }
+}
+@media (min-width: 1800px) {
+  .midi-main { max-width: 1800px; margin: 0 auto; width: 100%; }
+}
+
+/* ── Community AI Tools Hub ── */
+.toolshub-main { flex: 1; min-height: 0; overflow-y: auto; padding: clamp(14px, 2vw, 32px); }
+.toolshub-grid {
+  display: grid; gap: clamp(12px, 1.4vw, 20px);
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  align-items: stretch;
+}
+.toolshub-card { border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.toolshub-vote {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6px 10px; border-radius: 10px; cursor: pointer;
+  background: rgba(255, 45, 149, 0.1); color: #ff7eb6;
+  border: 1px solid rgba(255, 45, 149, 0.4);
+  font-weight: 800; font-size: 0.8rem; transition: all 0.15s; flex-shrink: 0;
+}
+.toolshub-vote:hover { box-shadow: 0 0 12px rgba(255, 45, 149, 0.55); color: #fff; }
+.toolshub-vote--voted { background: linear-gradient(135deg, #ff2d95, #ff9e2c); color: #fff; border: none; box-shadow: 0 0 12px rgba(255, 45, 149, 0.55); }
+@media (min-width: 1800px) {
+  .toolshub-main { max-width: 1800px; margin: 0 auto; width: 100%; }
+}
+
+/* ── Recording Booth ── */
+.booth-shell { display: flex; flex: 1; min-height: 0; width: 100%; overflow: hidden; }
+.booth-sidebar {
+  width: 300px; flex-shrink: 0; overflow-y: auto;
+  padding: clamp(12px, 1.5vw, 20px);
+  display: flex; flex-direction: column; gap: 14px;
+  background: rgba(0, 0, 0, 0.55); border-right: 1px solid rgba(255, 45, 149, 0.2);
+}
+.booth-main { flex: 1; min-width: 0; overflow-y: auto; padding: clamp(12px, 1.8vw, 28px); }
+.booth-meter {
+  height: 12px; border-radius: 9999px; overflow: hidden;
+  background: rgba(255, 45, 149, 0.12);
+  border: 1px solid rgba(255, 45, 149, 0.35);
+}
+.booth-meter-fill {
+  height: 100%; border-radius: 9999px;
+  background: linear-gradient(90deg, #ff9e2c, #ff2d95);
+  box-shadow: 0 0 12px rgba(255, 45, 149, 0.8);
+  transition: width 0.06s linear;
+}
+.booth-row {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  border-radius: 10px; padding: 10px 14px; margin-bottom: 8px;
+}
+.booth-row-name {
+  font-size: 0.82rem; font-weight: 700; color: #ff9e2c;
+  text-shadow: 0 0 8px rgba(255, 158, 44, 0.5);
+  font-family: 'Audiowide', 'Orbitron', sans-serif;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: flex; align-items: center; gap: 6px;
+}
+.booth-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%; border: none;
+  background: rgba(255, 45, 149, 0.12); color: #ff7eb6; cursor: pointer; flex-shrink: 0;
+}
+.booth-row-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+@media (max-width: 900px) {
+  .booth-shell { flex-direction: column; overflow-y: auto; }
+  .booth-sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(255, 45, 149, 0.2); }
+}
+@media (min-width: 1800px) {
+  .booth-main { max-width: 1600px; margin: 0 auto; width: 100%; }
+}
+
+/* ── "The Universal Solvent" Album Architect ── */
+.album-shell { display: flex; flex: 1; min-height: 0; width: 100%; overflow: hidden; }
+.album-sidebar {
+  width: 300px; flex-shrink: 0; overflow-y: auto;
+  padding: clamp(12px, 1.5vw, 20px);
+  display: flex; flex-direction: column; gap: 14px;
+  background: rgba(0, 0, 0, 0.55); border-right: 1px solid rgba(255, 158, 44, 0.22);
+}
+.album-main { flex: 1; min-width: 0; overflow-y: auto; padding: clamp(12px, 1.8vw, 28px); }
+.album-track {
+  display: flex; align-items: center; gap: 12px;
+  border-radius: 10px; padding: 10px 14px; margin-bottom: 8px;
+  cursor: grab; transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+}
+.album-track:active { cursor: grabbing; }
+.album-track--dragging { opacity: 0.4; }
+.album-track--dragover { border-color: #ff9e2c !important; box-shadow: 0 0 14px rgba(255, 158, 44, 0.5) !important; transform: scale(1.01); }
+.album-track-num {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.78rem;
+  color: #fff; background: linear-gradient(135deg, #ff2d95, #ff9e2c);
+  box-shadow: 0 0 10px rgba(255, 45, 149, 0.55);
+}
+.album-input {
+  background: transparent; border: none; border-bottom: 1px dashed rgba(255, 45, 149, 0.25);
+  color: #e8e0ff; font-size: 0.8rem; outline: none; padding: 2px 0; min-width: 0;
+}
+.album-input:focus { border-bottom-color: #ff2d95; }
+@media (max-width: 900px) {
+  .album-shell { flex-direction: column; overflow-y: auto; }
+  .album-sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(255, 158, 44, 0.22); }
+}
+@media (min-width: 1800px) {
+  .album-main { max-width: 1600px; margin: 0 auto; width: 100%; }
+}
+
+/* Top tab bar — thin, visible scrollbar so it's obvious there are more
+   tabs off-screen once the bar is wider than the window (4.1.4). */
+.tab-nav-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,45,149,0.4) transparent;
+}
+.tab-nav-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.tab-nav-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255,45,149,0.4);
+  border-radius: 9999px;
+}
+.tab-nav-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }

@@ -7,9 +7,12 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "copy:model": "node scripts/copy-basic-pitch-model.mjs",
+    "postinstall": "node scripts/copy-basic-pitch-model.mjs",
+    "build": "npm run copy:model && vite build",
     "electron": "electron .",
-    "dist": "vite build && electron-builder"
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder"
   },
   "build": {
     "appId": "com.cfunkycreations.lyricist",
@@ -39,14 +42,17 @@
   },
   "dependencies": {
     "@google/genai": "^2.10.0",
+    "@spotify/basic-pitch": "^1.0.1",
+    "butterchurn": "^2.6.7",
+    "butterchurn-presets": "^2.4.7",
     "lucide-react": "^0.303.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
-    "electron": "^33.4.11",
-    "electron-builder": "^25.1.8",
-    "vite": "^5.0.10"
+    "electron": "^43.0.0",
+    "electron-builder": "^26.15.3",
+    "vite": "^8.1.3"
   }
 }

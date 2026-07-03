@@ -165,6 +165,70 @@ export async function generateImage(store, { prompt, aspectRatio, imageSize } = 
   };
 }
 
+// ── Image-to-image (4.1.3) ──────────────────────────────────────────────
+// The user's uploaded reference image is passed to Nano Banana as the primary
+// visual base layer. Whatever style notes ride along, the output constraints
+// below are NON-NEGOTIABLE and are always appended last so they win.
+export const MANDATORY_MEDALLION_FRAME =
+  'MANDATORY OUTPUT CONSTRAINTS (these override any conflicting instruction above): ' +
+  'The final image MUST be composed as a single seamless circular medallion frame, ' +
+  'perfectly centered, like a glowing engraved coin — never a square or rectangular composition. ' +
+  'The medallion border MUST glow intensely in neon magenta (#ff2d95) and neon orange (#ff9e2c), ' +
+  'with the glow bleeding softly into a deep black background outside the circle. ' +
+  'No text or lettering anywhere in the image.';
+
+// Low-level image-to-image call: reference image in, new image out.
+export async function generateImageToImage(store, { referenceBase64, referenceMimeType, prompt, aspectRatio, imageSize } = {}) {
+  if (!referenceBase64) {
+    throw new Error('No reference image provided. Upload one first.');
+  }
+  const { googleApiKey, geminiImageModel } = store.config;
+  const client = getClient(googleApiKey);
+
+  const interaction = await createInteraction(client, {
+    model: geminiImageModel || DEFAULT_IMAGE_MODEL,
+    // The reference image leads the input so the model treats it as the
+    // base layer; the text steers the transformation applied on top of it.
+    input: [
+      { type: 'image', data: referenceBase64, mime_type: referenceMimeType || 'image/png' },
+      { type: 'text', text: prompt }
+    ],
+    response_format: {
+      type: 'image',
+      mime_type: 'image/png',
+      aspect_ratio: aspectRatio || '1:1', // medallion frame is always square
+      image_size: imageSize || store.config.imageSize || '2K'
+    }
+  });
+
+  const imageData = interaction.output_image?.data;
+  if (!imageData) {
+    throw new Error('Gemini did not return image data for that reference. Try a different image or prompt.');
+  }
+
+  return {
+    interactionId: interaction.id,
+    dataUrl: `data:image/png;base64,${imageData}`,
+    base64: imageData,
+    mimeType: 'image/png',
+    prompt
+  };
+}
+
+// Brand-locked cover art from an uploaded reference image. The reference is
+// the primary visual seed; the medallion/neon frame constraints are enforced
+// regardless of any user style override.
+export async function generateCoverArtFromReference(store, { referenceBase64, referenceMimeType, title, topic, styleOverride } = {}) {
+  const subject =
+    `Using the attached image as the primary visual reference and base layer, create new album cover art ` +
+    `for a ${store.genre || 'genre-blending'} song titled "${title || 'Untitled'}"` +
+    `${topic ? `, about ${topic}` : ''}, evoking a ${store.mood || 'striking'} mood. ` +
+    `Preserve the reference image's key subject, composition and palette cues, reinterpreted as polished cover art.`;
+  const style = (styleOverride && styleOverride.trim()) ? `Style notes: ${styleOverride.trim()}` : `Style notes: ${BRAND_ART_STYLE}`;
+  const prompt = `${subject}\n\n${style}\n\n${MANDATORY_MEDALLION_FRAME}`;
+  return generateImageToImage(store, { referenceBase64, referenceMimeType, prompt });
+}
+
 // 2. Art generation — chained call to a Nano Banana image model, brand-styled
 export async function generateCoverArt(store, { title, topic, styleOverride } = {}) {
   const prompt = buildArtPrompt({

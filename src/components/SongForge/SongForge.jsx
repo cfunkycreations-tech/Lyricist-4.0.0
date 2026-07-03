@@ -3,10 +3,11 @@ import { useLyricStore, genres, moods } from '../../context/LyricStore.jsx';
 import {
   generateSongWithGemini,
   generateCoverArt,
+  generateCoverArtFromReference,
   generateImage,
   generateSongFromImage
 } from '../../services/GeminiService.js';
-import { Wand2, Download, Send, Copy, RefreshCw, Upload, Shuffle, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Wand2, Download, Send, Copy, RefreshCw, Upload, Shuffle, Sparkles, Image as ImageIcon, X } from 'lucide-react';
 
 const SURPRISE_TOPICS = [
   'a rainy drive at 2am with the radio off',
@@ -71,6 +72,11 @@ export default function SongForge({ onSongForged }) {
   const [seedLoading, setSeedLoading] = useState(false);
   const [imageNotes, setImageNotes] = useState('');
 
+  // Image-to-image reference (4.1.3): the user's uploaded image becomes the
+  // primary visual base layer for cover-art generation.
+  const refInputRef = useRef(null);
+  const [refImage, setRefImage] = useState(null); // { dataUrl, base64, mimeType }
+
   const ready = Boolean(store.config.googleApiKey);
 
   const autoSaveResult = async (song, art, title) => {
@@ -102,7 +108,14 @@ export default function SongForge({ onSongForged }) {
       const song = await generateSongWithGemini(store);
       const title = deriveTitle(song.sections) || store.topic || store.genre;
       setStage('art');
-      const art = await generateCoverArt(store, { title, topic: store.topic, styleOverride: artStyleOverride });
+      // Image-to-image when a reference is loaded; plain text-to-image otherwise.
+      const art = refImage
+        ? await generateCoverArtFromReference(store, {
+            referenceBase64: refImage.base64,
+            referenceMimeType: refImage.mimeType,
+            title, topic: store.topic, styleOverride: artStyleOverride
+          })
+        : await generateCoverArt(store, { title, topic: store.topic, styleOverride: artStyleOverride });
       setResult({ song, art, title });
       setTitleDraft(title);
       autoSaveResult(song, art, title);
@@ -128,6 +141,20 @@ export default function SongForge({ onSongForged }) {
     } finally {
       setSeedLoading(false);
     }
+  };
+
+  // Image-to-image reference upload (4.1.3)
+  const handleUploadReference = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const payload = await fileToImagePayload(file);
+      setRefImage(payload);
+      setErrorMsg('');
+    } catch (err) {
+      setErrorMsg('Could not read that reference image file.');
+    }
+    e.target.value = '';
   };
 
   const handleUploadImage = async (e) => {
@@ -175,11 +202,19 @@ export default function SongForge({ onSongForged }) {
     setRemixLoading(true);
     setErrorMsg('');
     try {
-      const art = await generateCoverArt(store, {
-        title: titleDraft || result.title,
-        topic: store.topic,
-        styleOverride: artStyleOverride
-      });
+      const art = refImage
+        ? await generateCoverArtFromReference(store, {
+            referenceBase64: refImage.base64,
+            referenceMimeType: refImage.mimeType,
+            title: titleDraft || result.title,
+            topic: store.topic,
+            styleOverride: artStyleOverride
+          })
+        : await generateCoverArt(store, {
+            title: titleDraft || result.title,
+            topic: store.topic,
+            styleOverride: artStyleOverride
+          });
       setResult(prev => ({ ...prev, art, title: titleDraft || prev.title }));
     } catch (e) {
       setErrorMsg(e.message);
@@ -309,6 +344,36 @@ export default function SongForge({ onSongForged }) {
                   rows={3}
                   style={{ width: '100%', background: 'rgba(13,8,28,0.7)', border: '1px solid rgba(34,211,238,0.22)', borderRadius: 8, padding: '7px 10px', fontSize: '0.78rem', color: '#e8e0ff', outline: 'none', resize: 'vertical' }}
                 />
+              </div>
+
+              {/* Image-to-image reference (4.1.3) */}
+              <div data-help="Upload a photo or artwork to use as the visual base layer for the cover. Nano Banana reinterprets YOUR image as the medallion art instead of inventing one from scratch. The neon magenta/orange circular frame is always enforced.">
+                <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(103,232,249,0.7)', marginBottom: 5, display: 'block' }}>
+                  Reference Image (image-to-image)
+                </label>
+                <input ref={refInputRef} type="file" accept="image/*" onChange={handleUploadReference} style={{ display: 'none' }} />
+                <button
+                  onClick={() => refInputRef.current?.click()}
+                  style={{ width: '100%', padding: '9px', borderRadius: 8, border: '1px solid rgba(255,45,149,0.35)', background: 'rgba(255,45,149,0.08)', color: '#ff7eb6', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                >
+                  <ImageIcon size={13} /> Upload Reference Image
+                </button>
+                {refImage && (
+                  <div style={{ position: 'relative', marginTop: 8, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,45,149,0.4)', boxShadow: '0 0 12px rgba(255,45,149,0.25)' }}>
+                    <img src={refImage.dataUrl} alt="Cover art reference" style={{ width: '100%', display: 'block' }} />
+                    <button
+                      onClick={() => setRefImage(null)}
+                      aria-label="Remove reference image"
+                      data-help="Remove the reference image and go back to pure text-to-image cover art."
+                      style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.7)', color: '#ff7eb6', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <X size={12} />
+                    </button>
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '3px 8px', fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#ff9e2c', background: 'rgba(0,0,0,0.65)', textShadow: '0 0 6px rgba(255,158,44,0.6)' }}>
+                      Base layer for cover art
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button

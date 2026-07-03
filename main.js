@@ -39,10 +39,47 @@ ipcMain.handle('save-song-forge', async (event, { title, lyricsContent, imageBas
   }
 });
 
+// Save a Recording Booth take (WAV bytes) into Documents\Lyricist Recordings.
+// Called from the UI via window.lyricistAPI.saveRecording (4.1.3).
+ipcMain.handle('save-recording', async (event, { filename, bytes }) => {
+  try {
+    const dir = path.join(app.getPath('documents'), 'Lyricist Recordings');
+    fs.mkdirSync(dir, { recursive: true });
+    const safe = String(filename).replace(/[\\/:*?"<>|]/g, '-').slice(0, 180);
+    const full = path.join(dir, safe);
+    fs.writeFileSync(full, Buffer.from(bytes));
+    return { ok: true, path: full };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+// Export a finished album from the Mastering Studio: mastered WAVs + cover +
+// tracklist into Documents\Lyricist Albums\<album name>\ (4.1.3).
+// Called via window.lyricistAPI.saveAlbum(albumName, files).
+ipcMain.handle('save-album', async (event, { albumName, files }) => {
+  try {
+    const safeAlbum = String(albumName || 'Untitled Album').replace(/[\\/:*?"<>|]/g, '-').slice(0, 120);
+    const dir = path.join(app.getPath('documents'), 'Lyricist Albums', safeAlbum);
+    fs.mkdirSync(dir, { recursive: true });
+    for (const f of files || []) {
+      const safe = String(f.filename).replace(/[\\/:*?"<>|]/g, '-').slice(0, 180);
+      fs.writeFileSync(path.join(dir, safe), Buffer.from(f.bytes));
+    }
+    return { ok: true, path: dir };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
+    // 4.1.3: the layout is responsive from phone-width up to TV — let the
+    // window shrink to the mobile breakpoint and grow without limit.
+    minWidth: 420,
+    minHeight: 640,
     backgroundColor: '#07050f',
     icon: path.join(__dirname, 'src/assets/icon.ico'),
     title: 'Lyricist 4.1.3',
@@ -63,16 +100,26 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  // Allow Google Fonts and OpenRouter in packaged app
+  // Allow Google Fonts and OpenRouter in packaged app.
+  // 4.1.3: media-src added so the persistent Suno player can stream tracks
+  // from any https audio host (e.g. cdn*.suno.ai) and play local uploads
+  // (blob:) — plus mediastream: for voice-memo recording in MIDI Studio.
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://fonts.gstatic.com https://openrouter.ai https://api.datamuse.com https://api.dictionaryapi.dev https://img.buymeacoffee.com https://generativelanguage.googleapis.com data: blob:;"
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://fonts.gstatic.com https://openrouter.ai https://api.datamuse.com https://api.dictionaryapi.dev https://img.buymeacoffee.com https://generativelanguage.googleapis.com data: blob:; " +
+          "media-src 'self' https: blob: data: mediastream:;"
         ],
       },
     });
+  });
+
+  // 4.1.3: MIDI Studio records voice memos via getUserMedia — grant the mic
+  // (and only the mic/media class of permissions) inside the packaged app.
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    callback(permission === 'media');
   });
 
   createWindow();

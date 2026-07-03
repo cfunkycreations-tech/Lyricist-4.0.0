@@ -10,6 +10,12 @@ import Dictionary from './components/Dictionary/Dictionary.jsx';
 import Settings from './components/Settings/Settings.jsx';
 import HelpLayer from './components/common/HelpLayer.jsx';
 import OnboardingWizard from './components/Onboarding/OnboardingWizard.jsx';
+import MidiStudio from './components/MidiStudio/MidiStudio.jsx';
+import ToolsHub from './components/ToolsHub/ToolsHub.jsx';
+import AlbumArchitect from './components/AlbumArchitect/AlbumArchitect.jsx';
+import SunoPlayer from './components/AudioPlayer/SunoPlayer.jsx';
+import RecordingBooth from './components/Recordings/RecordingBooth.jsx';
+import MasteringStudio from './components/MasteringStudio/MasteringStudio.jsx';
 
 import bgImg from './assets/cfunky-bg-new.jpg';   // new Austin street-scene background (4.0.2)
 import profileImg from './assets/profile.jpg';     // new founder selfie
@@ -23,9 +29,14 @@ const tabs = [
   { id: 'songwriter', icon: '🎵', label: 'Songwriter', help: 'The main workspace. Set up the kind of song you want (style, mood, topic), then write and polish the lyrics line by line.' },
   { id: 'analyzer', icon: '👻', label: 'Ghost Rider', help: 'Studies any artist you name and breaks down how they write, then helps you write a NEW song in that same style. (It does not copy their actual lyrics.)' },
   { id: 'songforge', icon: '🪄', label: 'Song Forge', help: 'Chains Google Gemini calls to auto-generate a song and its cover art. Go Song First (write lyrics, then paint matching art) or Art First (upload or generate an image, then write a song inspired by it). Needs a Google AI API key from Settings.' },
+  { id: 'booth', icon: '🎤', label: 'Recording Booth', help: 'Record harmonica, guitar, or vocals straight into the app (or upload takes) and keep them in a saved library. Play them in the persistent player while you write, convert them to MIDI, or export them as WAV.' },
+  { id: 'midistudio', icon: '🎹', label: 'MIDI Studio', help: 'Turn any audio — a Suno track or a hummed voice memo — into editable MIDI notes, tweak them in a piano-roll sequencer, and watch a Milkdrop visualizer dance to the playback. Runs fully offline, no key needed.' },
+  { id: 'album', icon: '💿', label: 'Album Architect', help: 'Group up to 12 tracks into a cohesive concept album. Drag tracks to reorder, and set album-wide metadata like genre and master tempo.' },
+  { id: 'mastering', icon: '💽', label: 'Mastering Studio', help: 'The finish line: pull your songs together into an album, master each track with a real EQ/compression/limiter chain (all offline), add cover art (upload or AI-generated), and export the finished album — WAVs, cover, and tracklist.' },
   { id: 'rhyme', icon: '📖', label: 'Rhyme Helper', help: 'A rhyming dictionary and rhyme finder. Look up words that rhyme, and check the rhymes inside lines you have already written.' },
   { id: 'thesaurus', icon: '📚', label: 'Thesaurus', help: 'A word finder: type a word to get other words that mean the same, words that mean the opposite, and related ideas. Free, no AI key needed.' },
   { id: 'dictionary', icon: '📕', label: 'Dictionary', help: 'Look up what a word means, how to say it, and example sentences — in English or Spanish. Free, no AI key needed.' },
+  { id: 'toolshub', icon: '🧰', label: 'AI Tools Hub', help: 'A community shelf of free AI tools — browse them, upvote your favorites, and share the ones you use. Free tools for the masses.' },
   { id: 'scratchpad', icon: '📝', label: 'Scratchpad', help: 'A free, blank notepad for jotting ideas, hooks, or lines. It saves automatically on your computer so nothing gets lost.' },
   { id: 'settings', icon: '⚙️', label: 'Settings', help: 'Where you connect your AI key and choose which AI model writes your lyrics. Set this up first so the rest of the app works.' }
 ];
@@ -203,8 +214,10 @@ function MainLayout() {
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div style={{ display: 'flex', borderBottom: '1px solid rgba(139,92,246,0.2)', background: '#080512', flexShrink: 0 }}>
+        {/* Tab Navigation — scrolls horizontally once tabs outgrow the window
+            width, so tabs at the end (e.g. Settings) never get clipped by
+            the outer overflow:hidden layout (4.1.4). */}
+        <div className="tab-nav-scroll" style={{ display: 'flex', borderBottom: '1px solid rgba(139,92,246,0.2)', background: '#080512', flexShrink: 0, overflowX: 'auto', overflowY: 'hidden' }}>
           {tabs.map(t => {
             const isActive = activeTab === t.id;
             return (
@@ -217,6 +230,8 @@ function MainLayout() {
                 data-help={t.help}
                 style={{
                   position: 'relative',
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap',
                   padding: '10px 22px',
                   fontSize: '0.82rem',
                   fontWeight: 700,
@@ -253,6 +268,21 @@ function MainLayout() {
           <div style={{ display: activeTab === 'songforge' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
             <SongForge onSongForged={() => setActiveTab('songwriter')} />
           </div>
+          <div style={{ display: activeTab === 'booth' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+            <RecordingBooth onNavigate={setActiveTab} />
+          </div>
+          <div style={{ display: activeTab === 'midistudio' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+            <MidiStudio />
+          </div>
+          <div style={{ display: activeTab === 'album' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+            <AlbumArchitect />
+          </div>
+          <div style={{ display: activeTab === 'mastering' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+            <MasteringStudio onNavigate={setActiveTab} />
+          </div>
+          <div style={{ display: activeTab === 'toolshub' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+            <ToolsHub />
+          </div>
           <div style={{ display: activeTab === 'rhyme' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
             <RhymeHelper />
           </div>
@@ -269,6 +299,13 @@ function MainLayout() {
             <Settings />
           </div>
         </div>
+
+        {/* Persistent Suno player (4.1.3) — mounted here at the layout root,
+            OUTSIDE the tab workspace above, so playback never interrupts while
+            switching between Rhyme Helper, Song Forge, MIDI Studio, etc.
+            (Tabs hide via display:none and never unmount, and this player
+            isn't inside them anyway — double insurance.) */}
+        <SunoPlayer />
 
         {/* Footer */}
         <div
