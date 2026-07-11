@@ -3,11 +3,36 @@ import { useLyricStore } from '../../context/LyricStore.jsx';
 import { Save, RefreshCw, Key, Shield, HelpCircle } from 'lucide-react';
 import settingsBg from '../../assets/settings.mp4';
 
-async function fetchOpenRouterModels() {
-  const res = await fetch("https://openrouter.ai/api/v1/models");
-  if (!res.ok) throw new Error("Failed to load models from OpenRouter");
-  const data = await res.json();
-  return data.data || [];
+const MODELS_CACHE_KEY = 'openrouter-models-cache';
+const MODELS_CACHE_TTL = 60 * 60 * 1000; // refresh from OpenRouter at most hourly
+
+function readModelsCache() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(MODELS_CACHE_KEY));
+    if (cached && Array.isArray(cached.models) && cached.models.length) return cached;
+  } catch { /* corrupt cache — ignore */ }
+  return null;
+}
+
+async function fetchOpenRouterModels(forceRefresh = false) {
+  const cached = readModelsCache();
+  if (!forceRefresh && cached && Date.now() - cached.fetchedAt < MODELS_CACHE_TTL) {
+    return cached.models;
+  }
+  try {
+    const res = await fetch("https://openrouter.ai/api/v1/models");
+    if (!res.ok) throw new Error(`OpenRouter answered HTTP ${res.status}`);
+    const data = await res.json();
+    const models = data.data || [];
+    try {
+      localStorage.setItem(MODELS_CACHE_KEY, JSON.stringify({ fetchedAt: Date.now(), models }));
+    } catch { /* storage full — cache is best-effort */ }
+    return models;
+  } catch (e) {
+    // Offline or OpenRouter hiccup: serve the last good list instead of an empty picker.
+    if (cached) return cached.models;
+    throw e;
+  }
 }
 
 function ModelSelector({ value, onChange }) {
@@ -19,9 +44,10 @@ function ModelSelector({ value, onChange }) {
   const [filterType, setFilterType] = useState('all'); // all | free | paid
   const containerRef = useRef(null);
 
-  useEffect(() => {
+  const loadModels = (forceRefresh = false) => {
     setLoading(true);
-    fetchOpenRouterModels()
+    setErrorMsg('');
+    fetchOpenRouterModels(forceRefresh)
       .then(res => {
         // Sort models: free first, then alphabetical
         const sorted = [...res].sort((a, b) => {
@@ -33,8 +59,12 @@ function ModelSelector({ value, onChange }) {
         });
         setModels(sorted);
       })
-      .catch(e => setErrorMsg(e.message))
+      .catch(e => setErrorMsg(`Couldn't load the model list (${e.message}). Check your connection, then hit refresh.`))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadModels();
   }, []);
 
   useEffect(() => {
@@ -107,22 +137,43 @@ function ModelSelector({ value, onChange }) {
         >
           {/* Filter Bar */}
           <div style={{ padding: 8, borderBottom: '1px solid rgba(139,92,246,0.2)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <input
-              autoFocus
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={loading ? "Loading models..." : `Search ${models.length} models...`}
-              style={{
-                width: '100%',
-                background: 'rgba(13,8,28,0.7)',
-                border: '1px solid rgba(139,92,246,0.22)',
-                borderRadius: 8,
-                padding: '6px 10px',
-                fontSize: '0.78rem',
-                color: '#e8e0ff',
-                outline: 'none'
-              }}
-            />
+            <div style={{ display: 'flex', gap: 4 }}>
+              <input
+                autoFocus
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={loading ? "Loading models..." : `Search ${models.length} models...`}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  background: 'rgba(13,8,28,0.7)',
+                  border: '1px solid rgba(139,92,246,0.22)',
+                  borderRadius: 8,
+                  padding: '6px 10px',
+                  fontSize: '0.78rem',
+                  color: '#e8e0ff',
+                  outline: 'none'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => loadModels(true)}
+                disabled={loading}
+                title="Re-download the latest model list from OpenRouter"
+                style={{
+                  background: 'rgba(13,8,28,0.7)',
+                  border: '1px solid rgba(139,92,246,0.22)',
+                  borderRadius: 8,
+                  padding: '6px 9px',
+                  color: 'rgba(167,139,250,0.8)',
+                  cursor: loading ? 'wait' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                <RefreshCw size={13} style={loading ? { animation: 'spin 1s linear infinite' } : undefined} />
+              </button>
+            </div>
             <div style={{ display: 'flex', gap: 4 }}>
               {[['all', `All (${models.length})`], ['free', `🆓 Free (${freeCount})`], ['paid', `Paid (${models.length - freeCount})`]].map(([type, txt]) => (
                 <button
@@ -152,7 +203,24 @@ function ModelSelector({ value, onChange }) {
           {/* Model Options list */}
           <div style={{ overflowY: 'auto', flex: 1 }}>
             {errorMsg && (
-              <div style={{ padding: 10, color: '#f87171', fontSize: '0.78rem' }}>{errorMsg}</div>
+              <div style={{ padding: 10, color: '#f87171', fontSize: '0.78rem' }}>
+                {errorMsg}{' '}
+                <button
+                  type="button"
+                  onClick={() => loadModels(true)}
+                  style={{
+                    background: 'rgba(124,58,237,0.3)',
+                    border: '1px solid rgba(139,92,246,0.4)',
+                    borderRadius: 6,
+                    padding: '2px 10px',
+                    color: '#e8e0ff',
+                    fontSize: '0.72rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Retry
+                </button>
+              </div>
             )}
             {!loading && filtered.length === 0 && (
               <div style={{ padding: 10, color: 'rgba(148,130,200,0.4)', fontSize: '0.78rem', textAlign: 'center' }}>
