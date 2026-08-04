@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FolderPlus, Upload, Trash2, Play, Package, Music2, X } from 'lucide-react';
+import { FolderPlus, Upload, Trash2, Play, Square, Repeat, Package, Music2, X, Search, Save, FolderDown } from 'lucide-react';
 import { getAudioContext, getMasterBus, resumeAudio } from '../../services/audioEngine.js';
 import { midiToName } from '../../services/MidiService.js';
 import {
   listPacks, createPack, deletePack, renamePack,
   listSamples, deleteSample, updateSample,
   getSampleBuffer, importFiles, librarySize, formatBytes,
+  exportLibrary, importLibrary,
   AUDIO_EXTS,
 } from '../../services/sampleLibrary.js';
 
@@ -22,8 +23,12 @@ export default function SampleLibrary({ onUseSample }) {
   const [busy, setBusy] = useState(null);      // { done, total }
   const [dragOver, setDragOver] = useState(false);
   const [note, setNote] = useState('');
+  const [playing, setPlaying] = useState(new Set());   // sample ids currently sounding
+  const [query, setQuery] = useState('');
   const fileRef = useRef(null);
   const folderRef = useRef(null);
+  const backupRef = useRef(null);
+  const playingRef = useRef(new Map());                // id -> { src, gain }
 
   const refreshPacks = useCallback(async () => {
     const rows = await listPacks();
@@ -41,6 +46,9 @@ export default function SampleLibrary({ onUseSample }) {
   useEffect(() => { refreshSamples(activePackId); }, [activePackId, refreshSamples]);
 
   const activePack = packs.find((p) => p.id === activePackId) || null;
+  const visibleSamples = query.trim()
+    ? samples.filter((s) => s.name.toLowerCase().includes(query.trim().toLowerCase()))
+    : samples;
 
   const ensurePack = async () => {
     if (activePackId) return activePackId;
@@ -66,17 +74,51 @@ export default function SampleLibrary({ onUseSample }) {
     await refreshSamples(packId);
   };
 
+  /** Stop one sample, or everything currently sounding. */
+  const stopSample = useCallback((id) => {
+    const entry = playingRef.current.get(id);
+    if (!entry) return;
+    try { entry.src.stop(); } catch { /* already ended */ }
+    playingRef.current.delete(id);
+    setPlaying(new Set(playingRef.current.keys()));
+  }, []);
+
+  const stopAll = useCallback(() => {
+    for (const [, entry] of playingRef.current) {
+      try { entry.src.stop(); } catch { /* already ended */ }
+    }
+    playingRef.current.clear();
+    setPlaying(new Set());
+  }, []);
+
+  // Never leave audio running when the tab goes away.
+  useEffect(() => stopAll, [stopAll]);
+
+  /** Play/stop toggle. Loops when the sample is flagged as a loop. */
   const preview = async (sample) => {
+    if (playingRef.current.has(sample.id)) {
+      stopSample(sample.id);
+      return;
+    }
     await resumeAudio();
     const ctx = getAudioContext();
     try {
       const buf = await getSampleBuffer(ctx, sample.id);
       const src = ctx.createBufferSource();
       src.buffer = buf;
+      src.loop = Boolean(sample.loop);
       const g = ctx.createGain();
       g.gain.value = 0.9;
       src.connect(g).connect(getMasterBus());
+      src.onended = () => {
+        if (playingRef.current.get(sample.id)?.src === src) {
+          playingRef.current.delete(sample.id);
+          setPlaying(new Set(playingRef.current.keys()));
+        }
+      };
       src.start();
+      playingRef.current.set(sample.id, { src, gain: g });
+      setPlaying(new Set(playingRef.current.keys()));
     } catch (err) {
       setNote(`Could not play ${sample.name}: ${err.message}`);
     }
@@ -129,6 +171,49 @@ export default function SampleLibrary({ onUseSample }) {
           >
             <Upload size={12} /> Add Folder
           </button>
+
+          <button
+            className="suno-chip"
+            onClick={async () => {
+              setBusy({ done: 0, total: 1 });
+              try {
+                const blob = await exportLibrary((d, t) => setBusy({ done: d, total: t }));
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const stamp = new Date().toISOString().slice(0, 10);
+                a.href = url;
+                a.download = `Lyricist Sample Library ${stamp}.zip`;
+                a.click();
+                URL.revokeObjectURL(url);
+                setNote('Library backed up. Keep that .zip somewhere safe — it survives uninstalls.');
+              } catch (err) {
+                setNote(`Backup failed: ${err.message}`);
+              }
+              setBusy(null);
+            }}
+            data-help="Save your whole library — every pack, every sample, root notes and loop flags — to a single .zip. Your samples live inside the app's data folder, which uninstallers delete, so keep a backup."
+          >
+            <Save size={12} /> Back Up
+          </button>
+
+          <button
+            className="suno-chip"
+            onClick={() => backupRef.current?.click()}
+            data-help="Restore a library backup .zip. Packs come back with their names, root notes and loop settings intact."
+          >
+            <FolderDown size={12} /> Restore
+          </button>
+
+          {playing.size > 0 && (
+            <button
+              className="suno-chip"
+              onClick={stopAll}
+              style={{ borderColor: '#f87171', color: '#f87171', background: 'rgba(248,113,113,0.1)' }}
+              data-help="Stop every sample that's currently playing."
+            >
+              <Square size={12} /> Stop All ({playing.size})
+            </button>
+          )}
         </div>
       </div>
 
@@ -148,6 +233,27 @@ export default function SampleLibrary({ onUseSample }) {
         directory=""
         style={{ display: 'none' }}
         onChange={(e) => { handleFiles(e.target.files); e.target.value = ''; }}
+      />
+      <input
+        ref={backupRef}
+        type="file"
+        accept=".zip"
+        style={{ display: 'none' }}
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          e.target.value = '';
+          if (!file) return;
+          setBusy({ done: 0, total: 1 });
+          try {
+            const res = await importLibrary(file, (d, t) => setBusy({ done: d, total: t }));
+            setNote(`Restored ${res.added} sample${res.added === 1 ? '' : 's'}` +
+              (res.errors?.length ? ` · ${res.errors.length} failed` : ''));
+          } catch (err) {
+            setNote(`Restore failed: ${err.message}`);
+          }
+          setBusy(null);
+          await refreshPacks();
+        }}
       />
 
       {/* Drop zone */}
@@ -218,13 +324,35 @@ export default function SampleLibrary({ onUseSample }) {
             </button>
           </div>
 
+          {samples.length > 8 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 2px 4px' }}>
+              <Search size={11} style={{ color: 'rgba(0,229,255,0.7)', flexShrink: 0 }} />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Filter samples…"
+                data-help="Narrow the list down by name. Handy once a pack has hundreds of sounds in it."
+                style={{
+                  flex: 1, background: 'rgba(0,0,0,0.3)',
+                  border: '1px solid rgba(139,92,246,0.25)', borderRadius: 6,
+                  color: '#e8e0ff', fontSize: '0.66rem', padding: '4px 7px', outline: 'none',
+                }}
+              />
+              {query && (
+                <button onClick={() => setQuery('')} className="suno-chip" style={{ padding: '3px 7px' }}>
+                  <X size={10} />
+                </button>
+              )}
+            </div>
+          )}
+
           {samples.length === 0 && (
             <div style={{ fontSize: '0.68rem', color: 'rgba(196,181,253,0.5)', padding: '8px 2px' }}>
               Nothing in this pack yet — drop some samples above.
             </div>
           )}
 
-          {samples.map((s) => (
+          {visibleSamples.map((s) => (
             <div
               key={s.id}
               style={{
@@ -263,8 +391,31 @@ export default function SampleLibrary({ onUseSample }) {
                 <span style={{ minWidth: 24 }}>{midiToName(s.rootMidi)}</span>
               </label>
 
-              <button onClick={() => preview(s)} className="suno-chip" style={{ padding: '3px 7px', flexShrink: 0 }} data-help="Hear this sample.">
-                <Play size={10} />
+              <button
+                onClick={() => preview(s)}
+                className="suno-chip"
+                style={{
+                  padding: '3px 7px', flexShrink: 0,
+                  borderColor: playing.has(s.id) ? '#f87171' : undefined,
+                  color: playing.has(s.id) ? '#f87171' : undefined,
+                }}
+                data-help="Play this sample. Click again to stop it."
+              >
+                {playing.has(s.id) ? <Square size={10} /> : <Play size={10} />}
+              </button>
+
+              <button
+                onClick={async () => { await updateSample(s.id, { loop: !s.loop }); refreshSamples(activePackId); }}
+                className="suno-chip"
+                style={{
+                  padding: '3px 7px', flexShrink: 0,
+                  borderColor: s.loop ? '#10f0a0' : undefined,
+                  color: s.loop ? '#10f0a0' : undefined,
+                  background: s.loop ? 'rgba(16,240,160,0.1)' : undefined,
+                }}
+                data-help="Mark this sample as a loop so it repeats until you stop it. Leave it off for one-shots and drum hits."
+              >
+                <Repeat size={10} />
               </button>
 
               {onUseSample && (

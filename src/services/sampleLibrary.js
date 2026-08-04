@@ -218,6 +218,122 @@ export async function importFiles(packId, files, onProgress = () => {}) {
   return result;
 }
 
+/* ── Backup / restore ──────────────────────────────────────────────
+   IndexedDB lives inside Electron's userData folder, which uninstallers —
+   Revo especially — delete along with the app. Without a file on disk, one
+   uninstall takes the whole library with it, paid packs included. So the
+   library can be written out as an ordinary .zip and read back in.        */
+
+/**
+ * Export the whole library to a .zip: a manifest plus the original audio
+ * files, filed under a folder per pack. Root notes and pack names survive.
+ */
+export async function exportLibrary(onProgress = () => {}) {
+  const { default: JSZip } = await import('jszip');
+  const zip = new JSZip();
+
+  const packs = await listPacks();
+  const all = await tx(SAMPLES, 'readonly', (s) => s.getAll());
+  const rows = all || [];
+
+  const manifest = {
+    format: 'lyricist-sample-library',
+    version: 1,
+    exported: new Date().toISOString(),
+    packs: packs.map((p) => ({ id: p.id, name: p.name, note: p.note || '', created: p.created })),
+    samples: [],
+  };
+
+  const usedNames = new Set();
+  let done = 0;
+
+  for (const row of rows) {
+    const pack = packs.find((p) => p.id === row.packId);
+    const packFolder = safeName(pack?.name || 'Loose Samples');
+    // Keep the original extension so the files are usable outside the app too.
+    const ext = (row.fileName && row.fileName.match(/\.[^.]+$/)?.[0]) || '.wav';
+    let entry = `${packFolder}/${safeName(row.name)}${ext}`;
+    let n = 2;
+    while (usedNames.has(entry)) entry = `${packFolder}/${safeName(row.name)} (${n++})${ext}`;
+    usedNames.add(entry);
+
+    zip.file(entry, row.bytes);
+    manifest.samples.push({
+      entry,
+      packId: row.packId,
+      name: row.name,
+      fileName: row.fileName,
+      type: row.type,
+      rootMidi: row.rootMidi,
+      created: row.created,
+    });
+
+    done++;
+    onProgress(done, rows.length);
+  }
+
+  zip.file('library.json', JSON.stringify(manifest, null, 2));
+  return zip.generateAsync({ type: 'blob', compression: 'STORE' });
+}
+
+/**
+ * Restore from an exported .zip. Packs are recreated by name; a zip without a
+ * manifest still works — it just imports as a normal sample pack.
+ */
+export async function importLibrary(file, onProgress = () => {}) {
+  const { default: JSZip } = await import('jszip');
+  const zip = await JSZip.loadAsync(file);
+  const manifestFile = zip.file('library.json');
+
+  if (!manifestFile) {
+    const pack = await createPack(file.name.replace(/\.zip$/i, ''));
+    return importFiles(pack.id, [file], onProgress);
+  }
+
+  const manifest = JSON.parse(await manifestFile.async('string'));
+  const result = { added: 0, skipped: 0, errors: [] };
+
+  const idMap = new Map();
+  for (const p of manifest.packs || []) {
+    const created = await createPack(p.name, p.note);
+    idMap.set(p.id, created.id);
+  }
+
+  const samples = manifest.samples || [];
+  let done = 0;
+  for (const meta of samples) {
+    try {
+      const entry = zip.file(meta.entry);
+      if (!entry) { result.skipped++; continue; }
+      const bytes = await entry.async('arraybuffer');
+      const row = {
+        id: newId(),
+        packId: idMap.get(meta.packId) || (await createPack('Restored')).id,
+        name: meta.name,
+        fileName: meta.fileName || meta.entry.split('/').pop(),
+        type: meta.type || '',
+        size: bytes.byteLength,
+        rootMidi: meta.rootMidi ?? 60,
+        created: meta.created || Date.now(),
+        bytes,
+      };
+      await tx(SAMPLES, 'readwrite', (s) => s.put(row));
+      result.added++;
+    } catch (err) {
+      result.errors.push(`${meta.name}: ${err.message}`);
+    }
+    done++;
+    onProgress(done, samples.length);
+  }
+  return result;
+}
+
+// Strip only what a filesystem actually rejects — spaces and dashes stay, so
+// the extracted folders still read like the pack names you gave them.
+function safeName(s) {
+  return String(s).replace(/[<>:"/\|?*]/g, "_").trim() || "untitled";
+}
+
 export function formatBytes(n) {
   if (!n) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB'];

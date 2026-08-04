@@ -3,6 +3,7 @@ import AudioToMidi from './AudioToMidi.jsx';
 import Sequencer from './Sequencer.jsx';
 import Visualizer from './Visualizer.jsx';
 import SampleLibrary from './SampleLibrary.jsx';
+import DrumMachine from './DrumMachine.jsx';
 
 // MIDI Studio tab — Lyricist 4.1.3
 // Audio → MIDI (basic-pitch, fully offline) feeding an offline piano-roll
@@ -55,6 +56,7 @@ export default function MidiStudio() {
 
         <div className="midi-main">
           <Sequencer midi={midi} setMidi={setMidi} userSample={userSample} />
+          <DrumMachine />
           <SampleLibrary onUseSample={setUserSample} />
           <Visualizer />
         </div>
