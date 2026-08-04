@@ -303,7 +303,13 @@ export default function LoopStation() {
   );
 
   return (
-    <div className="rc-funk-root" style={{ flex: 1, minHeight: 0, width: '100%', overflow: 'auto', background: '#050208', padding: '20px 24px', color: '#f3ecff' }}>
+    <div className="rc-funk-root" style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', overflow: 'auto', background: '#050208', padding: '20px 24px', color: '#f3ecff' }}>
+      {/* The app-wide street-scene backdrop is position:fixed, so it stays put
+          while this tab scrolls — you end up watching the old background slide
+          around behind the decks. Lay an opaque sheet over it for this tab so
+          nothing from behind is ever visible, at any scroll position. */}
+      <div style={{ position: 'fixed', inset: 0, background: '#050208', zIndex: 0, pointerEvents: 'none' }} />
+      <div style={{ position: 'relative', zIndex: 1 }}>
       <style>{`
         .rc-round-btn {
           width: 88px;
@@ -528,6 +534,7 @@ export default function LoopStation() {
         <li>Play All, then stack Tracks 2–4 while it loops.</li>
         <li>Flip <b>Delay</b>, <b>Reverb</b>, or <b>Dub FX</b> on the master bus and ride the amounts.</li>
       </ol>
+      </div>
     </div>
   );
 }
