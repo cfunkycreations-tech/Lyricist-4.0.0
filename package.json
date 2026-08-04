@@ -1,8 +1,8 @@
 {
   "name": "lyricist",
-  "version": "4.1.3",
+  "version": "4.2.0",
   "main": "main.js",
-  "description": "AI Songwriting Studio — Lyricist 4.1.3",
+  "description": "AI Songwriting Studio — Lyricist 4.2.0 Goes Quantum",
   "author": "CFunky Creations LLC",
   "license": "MIT",
   "scripts": {
@@ -12,7 +12,10 @@
     "build": "npm run copy:model && vite build",
     "electron": "electron .",
     "pack": "npm run build && electron-builder --dir",
-    "dist": "npm run build && electron-builder"
+    "dist": "npm run build && electron-builder",
+    "release": "node scripts/release.mjs",
+    "release:same": "node scripts/release.mjs --no-bump",
+    "release:dir": "node scripts/release.mjs --dir"
   },
   "build": {
     "appId": "com.cfunkycreations.lyricist",
@@ -35,10 +38,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "installerSidebar": "build/installer-sidebar.bmp",
-      "uninstallerSidebar": "build/installer-sidebar.bmp",
-      "installerHeaderIcon": "src/assets/icon.ico"
-    }
+      "installerHeaderIcon": "src/assets/icon.ico",
+      "shortcutName": "Lyricist"
+    },
+    "artifactName": "Lyricist ${version} Setup.${ext}"
   },
   "dependencies": {
     "@google/genai": "^2.10.0",
