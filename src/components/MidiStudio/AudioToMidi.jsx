@@ -144,12 +144,12 @@ export default function AudioToMidi({ onNotes }) {
 
       {converting && (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.68rem', color: '#ff9e2c', marginBottom: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.68rem', color: '#00e5ff', marginBottom: 4 }}>
             <RefreshCw size={12} className="pulse-glow" />
             <Wand2 size={12} /> Extracting notes from “{sourceName}” — {Math.round(progress * 100)}%
           </div>
           <div style={{ height: 5, borderRadius: 4, background: 'rgba(255,45,149,0.15)', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${progress * 100}%`, background: 'linear-gradient(90deg,#ff2d95,#ff9e2c)', boxShadow: '0 0 8px rgba(255,45,149,0.8)', transition: 'width 0.2s' }} />
+            <div style={{ height: '100%', width: `${progress * 100}%`, background: 'linear-gradient(90deg,#ff2d95,#00e5ff)', boxShadow: '0 0 8px rgba(255,45,149,0.8)', transition: 'width 0.2s' }} />
           </div>
         </div>
       )}

@@ -54,7 +54,10 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange }) {
     clearInterval(schedRef.current);
     cancelAnimationFrame(rafRef.current);
     const st = stateRef.current;
-    (st.voices || []).forEach(v => { try { v.osc.stop(); } catch { /* already stopped */ } });
+    (st.voices || []).forEach((v) => {
+      try { v.osc?.stop(); } catch { /* already stopped */ }
+      try { v.osc2?.stop(); } catch { /* */ }
+    });
     stateRef.current = {};
     setPlaying(false);
     setPlayheadX(0);
@@ -63,20 +66,45 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange }) {
 
   useEffect(() => stop, [stop]); // kill audio if the tab component ever unmounts
 
+  // Multi-voice synth (stronger than plain triangle) — saw + triangle detuned, light filter
   const scheduleVoice = (ctx, note, when, dur) => {
     const bus = getMasterBus();
-    const osc = ctx.createOscillator();
+    const freq = midiToFreq(note.midi);
+    const peak = 0.22 * (note.velocity ?? 0.8);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(Math.min(12000, 800 + (note.midi - 40) * 80), when);
+    filter.Q.value = 0.7;
     const gain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.value = midiToFreq(note.midi);
-    const peak = 0.28 * (note.velocity ?? 0.8);
     gain.gain.setValueAtTime(0, when);
-    gain.gain.linearRampToValueAtTime(peak, when + 0.012);
-    gain.gain.setTargetAtTime(0, when + Math.max(0.03, dur - 0.03), 0.03);
-    osc.connect(gain).connect(bus);
-    osc.start(when);
-    osc.stop(when + dur + 0.25);
-    return { osc, gain };
+    gain.gain.linearRampToValueAtTime(peak, when + 0.008);
+    gain.gain.setTargetAtTime(peak * 0.65, when + 0.04, 0.08);
+    gain.gain.setTargetAtTime(0, when + Math.max(0.05, dur - 0.05), 0.04);
+
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    osc1.type = 'sawtooth';
+    osc2.type = 'triangle';
+    osc1.frequency.value = freq;
+    osc2.frequency.value = freq * 1.003; // slight detune = thicker
+    osc1.detune.value = -4;
+    osc2.detune.value = 6;
+    const mix1 = ctx.createGain();
+    const mix2 = ctx.createGain();
+    mix1.gain.value = 0.55;
+    mix2.gain.value = 0.45;
+    osc1.connect(mix1);
+    osc2.connect(mix2);
+    mix1.connect(filter);
+    mix2.connect(filter);
+    filter.connect(gain);
+    gain.connect(bus);
+    osc1.start(when);
+    osc2.start(when);
+    const stopAt = when + dur + 0.35;
+    osc1.stop(stopAt);
+    osc2.stop(stopAt);
+    return { osc: osc1, osc2, gain, filter };
   };
 
   const play = async () => {
@@ -219,8 +247,8 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange }) {
             const isC = m % 12 === 0;
             const black = [1, 3, 6, 8, 10].includes(m % 12);
             return (
-              <div key={m} style={{ position: 'absolute', top: r * ROW_H, left: 0, right: 0, height: ROW_H, background: black ? 'rgba(255,45,149,0.045)' : 'transparent', borderTop: isC ? '1px solid rgba(255,158,44,0.25)' : '1px solid rgba(255,255,255,0.03)' }}>
-                {isC && <span style={{ position: 'absolute', left: 4, top: -1, fontSize: 8, color: 'rgba(255,158,44,0.75)', fontFamily: "'JetBrains Mono', monospace" }}>{midiToName(m)}</span>}
+              <div key={m} style={{ position: 'absolute', top: r * ROW_H, left: 0, right: 0, height: ROW_H, background: black ? 'rgba(255,45,149,0.045)' : 'transparent', borderTop: isC ? '1px solid rgba(0,229,255,0.25)' : '1px solid rgba(255,255,255,0.03)' }}>
+                {isC && <span style={{ position: 'absolute', left: 4, top: -1, fontSize: 8, color: 'rgba(0,229,255,0.75)', fontFamily: "'JetBrains Mono', monospace" }}>{midiToName(m)}</span>}
               </div>
             );
           })}
