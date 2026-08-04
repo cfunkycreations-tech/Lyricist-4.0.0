@@ -1,0 +1,264 @@
+/* Ghost Demo overlay — translucent operator + speech bubbles */
+
+/* Hide real OS cursor so only the remote ghost pointer is visible */
+body.ghost-demo-active,
+body.ghost-demo-active * {
+  cursor: none !important;
+}
+body.ghost-demo-active .ghost-demo-bar,
+body.ghost-demo-active .ghost-demo-bar * {
+  cursor: pointer !important;
+}
+
+.ghost-demo-root {
+  position: fixed;
+  inset: 0;
+  z-index: 120000;
+  pointer-events: none; /* UI underneath stays live for real clicks */
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.ghost-demo-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 2, 12, 0.12);
+  pointer-events: none; /* never block the app — ghost fires real events */
+}
+
+.ghost-demo-ring {
+  position: fixed;
+  border: 2px solid rgba(167, 139, 250, 0.95);
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 9999px rgba(4, 2, 12, 0.45),
+    0 0 24px rgba(168, 85, 247, 0.65),
+    inset 0 0 20px rgba(103, 232, 249, 0.15);
+  pointer-events: none;
+  z-index: 120001;
+  transition: left 0.25s, top 0.25s, width 0.25s, height 0.25s;
+  animation: ghost-ring-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes ghost-ring-pulse {
+  0%, 100% { box-shadow: 0 0 0 9999px rgba(4, 2, 12, 0.42), 0 0 18px rgba(168, 85, 247, 0.5); }
+  50% { box-shadow: 0 0 0 9999px rgba(4, 2, 12, 0.5), 0 0 32px rgba(103, 232, 249, 0.55); }
+}
+
+.ghost-demo-operator {
+  position: fixed;
+  z-index: 120010;
+  pointer-events: none;
+  transform: translate(-4px, -2px);
+  transition: filter 0.1s;
+}
+
+.ghost-demo-operator.is-click .ghost-demo-cursor {
+  transform: scale(0.85);
+}
+
+/* Full ghost art — NO circle crop, NO bubble. Transparency + drop-shadow only. ~2× size. */
+.ghost-demo-figure {
+  position: absolute;
+  left: -96px;
+  top: -118px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 1;
+  filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.75)) drop-shadow(0 0 32px rgba(0, 229, 255, 0.4));
+  animation: ghost-float 2.4s ease-in-out infinite;
+  pointer-events: none;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.ghost-demo-sprite-wrap {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible;
+  animation: ghost-wobble 3.2s ease-in-out infinite;
+}
+
+.ghost-demo-sprite {
+  width: 112px;
+  height: 112px;
+  object-fit: contain;
+  object-position: center bottom;
+  /* square / free silhouette — not a circle mask */
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: block;
+  position: relative;
+  z-index: 1;
+  /* soft neon edge only — does not fill a bubble behind him */
+  filter:
+    drop-shadow(0 0 10px rgba(0, 229, 255, 0.55))
+    drop-shadow(0 0 20px rgba(168, 85, 247, 0.5));
+  animation: ghost-glow-pulse 1.8s ease-in-out infinite;
+  /* Real PNG transparency — no blend hacks, no bubble */
+  mix-blend-mode: normal;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* Old circular aura killed — transparency only, no Bubble Boy */
+.ghost-demo-glow {
+  display: none !important;
+}
+
+.ghost-demo-ghost-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #e9d5ff;
+  margin-top: 4px;
+  text-shadow: 0 0 8px rgba(168, 85, 247, 0.8), 0 0 14px rgba(0, 229, 255, 0.5);
+  background: transparent;
+}
+
+/* Toolbar mini — same free silhouette, no circle crop */
+.ghost-demo-bar-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 0 !important;
+  object-fit: contain;
+  background: transparent !important;
+  border: none !important;
+  vertical-align: middle;
+  margin-right: 8px;
+  box-shadow: none !important;
+  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.65));
+  animation: ghost-glow-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes ghost-float {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.96; }
+  50% { transform: translateY(-10px) scale(1.03); opacity: 1; }
+}
+
+@keyframes ghost-wobble {
+  0%, 100% { transform: rotate(-2deg) translateX(0); }
+  50% { transform: rotate(2deg) translateX(3px); }
+}
+
+@keyframes ghost-glow-pulse {
+  0%, 100% {
+    filter:
+      drop-shadow(0 0 8px rgba(0, 229, 255, 0.45))
+      drop-shadow(0 0 16px rgba(168, 85, 247, 0.4));
+  }
+  50% {
+    filter:
+      drop-shadow(0 0 16px rgba(0, 229, 255, 0.85))
+      drop-shadow(0 0 28px rgba(168, 85, 247, 0.75))
+      drop-shadow(0 0 18px rgba(16, 240, 160, 0.4));
+  }
+}
+
+.ghost-demo-cursor {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  filter: drop-shadow(0 0 8px rgba(224, 242, 254, 0.8));
+  transition: transform 0.08s;
+}
+
+.ghost-demo-bubble {
+  position: fixed;
+  z-index: 120020;
+  width: min(300px, calc(100vw - 32px));
+  padding: 12px 14px 10px;
+  border-radius: 14px;
+  background: rgba(16, 10, 32, 0.96);
+  border: 1.5px solid rgba(167, 139, 250, 0.65);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 0 20px rgba(124, 58, 237, 0.35);
+  pointer-events: none;
+  animation: ghost-bubble-in 0.28s ease-out;
+}
+
+@keyframes ghost-bubble-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.ghost-demo-bubble-name {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #c4b5fd;
+  margin-bottom: 6px;
+}
+
+.ghost-demo-bubble-text {
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #f3e8ff;
+}
+
+.ghost-demo-bubble-meta {
+  margin-top: 8px;
+  font-size: 0.62rem;
+  color: rgba(180, 170, 210, 0.55);
+  letter-spacing: 0.04em;
+}
+
+.ghost-demo-bar {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 120030;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(12, 8, 24, 0.94);
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+}
+
+.ghost-demo-bar-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #e9d5ff;
+  white-space: nowrap;
+}
+
+.ghost-demo-bar-btn {
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  background: rgba(40, 25, 70, 0.8);
+  color: #e8e0ff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.ghost-demo-bar-btn:hover {
+  border-color: rgba(192, 132, 252, 0.7);
+  color: #fff;
+}
+
+.ghost-demo-bar-skip {
+  border-color: rgba(255, 45, 149, 0.4);
+  color: #ffb4d4;
+}
+
+/* Brief flash when ghost "clicks" a control */
+.ghost-demo-click {
+  filter: brightness(1.35) saturate(1.2) !important;
+  transition: filter 0.15s !important;
+}
