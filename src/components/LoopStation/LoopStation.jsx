@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { getAudioContext, getMasterBus, resumeAudio, decodeBlob } from '../../services/audioEngine.js';
+import { audioBufferToWav } from '../../utils/wavEncoder.js';
 
 // ============================================================
 // RC-Funk 5000 — Live Loop Station (Lyricist 4.2.0)
@@ -46,6 +47,65 @@ export default function LoopStation() {
   const [delayAmt, setDelayAmt] = useState(0.35);
   const [reverbAmt, setReverbAmt] = useState(0.4);
   const [dubAmt, setDubAmt] = useState(0.45);
+
+  const [saving, setSaving] = useState(false);
+
+  /**
+   * Save the loops to disk as WAVs.
+   *
+   * Loops only ever existed in memory, so closing the tab threw the take away.
+   * Every track is written out, plus a bounced mix of all of them lined up at
+   * the start, so the whole idea survives as one file too.
+   */
+  const saveLoops = useCallback(async () => {
+    const withClips = tracks.filter((t) => t.buffer);
+    if (!withClips.length) {
+      setStatus('Nothing to save yet — record a track first.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+      const ctx = getAudioContext();
+
+      // Bounce a mix: longest loop sets the length, everything starts together.
+      const longest = Math.max(...withClips.map((t) => t.buffer.duration));
+      const off = new OfflineAudioContext(2, Math.ceil(longest * ctx.sampleRate), ctx.sampleRate);
+      for (const t of withClips) {
+        if (t.muted) continue;
+        const src = off.createBufferSource();
+        src.buffer = t.buffer;
+        const g = off.createGain();
+        g.gain.value = t.volume ?? 1;
+        src.connect(g).connect(off.destination);
+        src.start(0);
+      }
+      const mix = await off.startRendering();
+
+      const files = [
+        { name: `RC-Funk ${stamp} MIX.wav`, buffer: mix },
+        ...withClips.map((t) => ({ name: `RC-Funk ${stamp} Track ${t.id + 1}.wav`, buffer: t.buffer })),
+      ];
+
+      for (const f of files) {
+        const wav = audioBufferToWav(f.buffer);
+        const bytes = new Uint8Array(wav);
+        if (window.lyricistAPI?.saveRecording) {
+          await window.lyricistAPI.saveRecording(f.name, Array.from(bytes));
+        } else {
+          // Browser fallback so this still works outside Electron.
+          const url = URL.createObjectURL(new Blob([wav], { type: 'audio/wav' }));
+          const a = document.createElement('a');
+          a.href = url; a.download = f.name; a.click();
+          URL.revokeObjectURL(url);
+        }
+      }
+      setStatus(`Saved ${files.length} file${files.length === 1 ? '' : 's'} to Documents\\Lyricist Recordings — mix plus each track.`);
+    } catch (err) {
+      setError(`Could not save: ${err.message}`);
+    }
+    setSaving(false);
+  }, [tracks]);
 
   const mediaRecRef = useRef(null);
   const chunksRef = useRef([]);
@@ -350,6 +410,9 @@ export default function LoopStation() {
         /* 3 — RED (Quantum / third) */
         .rc-round-red {
           background: radial-gradient(circle at 35% 30%, #fca5a5 0%, #ef4444 45%, #b91c1c 100%);
+        }
+        .rc-round-cyan {
+          background: radial-gradient(circle at 35% 30%, #a5f3fc 0%, #22d3ee 45%, #0e7490 100%);
           border-color: #f87171;
           color: #fff;
           box-shadow: 0 0 0 2px rgba(239,68,68,0.4), 0 0 28px rgba(239,68,68,0.5), inset 0 2px 0 rgba(255,255,255,0.25);
@@ -440,6 +503,16 @@ export default function LoopStation() {
         >
           <span className="rc-round-icon">⚛</span>
           <span className="rc-round-label">Quantum</span>
+        </button>
+        <button
+          onClick={saveLoops}
+          disabled={saving || !tracks.some((t) => t.buffer)}
+          className="rc-round-btn rc-round-cyan"
+          data-help="Save your loops to Documents\Lyricist Recordings as WAVs — a bounced mix of everything plus each track on its own. Loops otherwise only live in memory and vanish when you leave the tab."
+          style={{ opacity: tracks.some((t) => t.buffer) ? 1 : 0.4, cursor: tracks.some((t) => t.buffer) ? 'pointer' : 'not-allowed' }}
+        >
+          <span className="rc-round-icon">💾</span>
+          <span className="rc-round-label">{saving ? 'Saving…' : 'Save'}</span>
         </button>
         <label style={{ fontSize: '0.8rem', color: 'rgba(200,190,220,0.75)', marginLeft: 8 }} data-help="Reference BPM for you — loops are free-time recordings. Also used for Quantum Lab groove handshake.">
           BPM ref{' '}

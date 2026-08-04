@@ -25,6 +25,8 @@ export default function SampleLibrary({ onUseSample }) {
   const [note, setNote] = useState('');
   const [playing, setPlaying] = useState(new Set());   // sample ids currently sounding
   const [query, setQuery] = useState('');
+  const [searchAll, setSearchAll] = useState(false);
+  const [allSamples, setAllSamples] = useState([]);
   const fileRef = useRef(null);
   const folderRef = useRef(null);
   const backupRef = useRef(null);
@@ -39,6 +41,7 @@ export default function SampleLibrary({ onUseSample }) {
 
   const refreshSamples = useCallback(async (packId) => {
     setSamples(packId ? await listSamples(packId) : []);
+    setAllSamples(await listSamples());     // pool for the All Packs search
     setSize(await librarySize());
   }, []);
 
@@ -46,9 +49,13 @@ export default function SampleLibrary({ onUseSample }) {
   useEffect(() => { refreshSamples(activePackId); }, [activePackId, refreshSamples]);
 
   const activePack = packs.find((p) => p.id === activePackId) || null;
-  const visibleSamples = query.trim()
-    ? samples.filter((s) => s.name.toLowerCase().includes(query.trim().toLowerCase()))
-    : samples;
+  // "All Packs" searches the whole library; otherwise you stay inside one pack
+  // instead of wading through every sample you own.
+  const pool = searchAll ? allSamples : samples;
+  const needle = query.trim().toLowerCase();
+  const visibleSamples = needle
+    ? pool.filter((s) => s.name.toLowerCase().includes(needle))
+    : pool;
 
   const ensurePack = async () => {
     if (activePackId) return activePackId;
@@ -324,29 +331,71 @@ export default function SampleLibrary({ onUseSample }) {
             </button>
           </div>
 
-          {samples.length > 8 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 2px 4px' }}>
-              <Search size={11} style={{ color: 'rgba(0,229,255,0.7)', flexShrink: 0 }} />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Filter samples…"
-                data-help="Narrow the list down by name. Handy once a pack has hundreds of sounds in it."
-                style={{
-                  flex: 1, background: 'rgba(0,0,0,0.3)',
-                  border: '1px solid rgba(139,92,246,0.25)', borderRadius: 6,
-                  color: '#e8e0ff', fontSize: '0.66rem', padding: '4px 7px', outline: 'none',
-                }}
-              />
-              {query && (
-                <button onClick={() => setQuery('')} className="suno-chip" style={{ padding: '3px 7px' }}>
-                  <X size={10} />
-                </button>
-              )}
-            </div>
-          )}
+          {/* Sticky control bar — search, pack picker and Stop All ride the top
+              of the list so you never scroll back up hunting for them. */}
+          <div style={{
+            position: 'sticky', top: 0, zIndex: 3,
+            display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
+            padding: '6px 4px', marginBottom: 2,
+            background: 'rgba(10,6,20,0.97)',
+            borderBottom: '1px solid rgba(139,92,246,0.25)',
+            backdropFilter: 'blur(6px)',
+          }}>
+            <Search size={11} style={{ color: 'rgba(0,229,255,0.8)', flexShrink: 0 }} />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={searchAll ? 'Search every pack…' : `Search “${activePack.name}”…`}
+              data-help="Type to narrow the list. By default it searches the pack you're in; flip to All Packs to search your whole library at once."
+              style={{
+                flex: '1 1 130px', minWidth: 110, background: 'rgba(0,0,0,0.35)',
+                border: '1px solid rgba(139,92,246,0.3)', borderRadius: 6,
+                color: '#e8e0ff', fontSize: '0.68rem', padding: '5px 8px', outline: 'none',
+              }}
+            />
+            {query && (
+              <button onClick={() => setQuery('')} className="suno-chip" style={{ padding: '3px 6px' }} data-help="Clear the search.">
+                <X size={10} />
+              </button>
+            )}
 
-          {samples.length === 0 && (
+            <select
+              value={searchAll ? '__all' : activePackId || ''}
+              onChange={(e) => {
+                if (e.target.value === '__all') setSearchAll(true);
+                else { setSearchAll(false); setActivePackId(e.target.value); }
+              }}
+              className="suno-chip"
+              style={{ fontSize: '0.66rem', padding: '4px 6px', maxWidth: 160, cursor: 'pointer', flexShrink: 0 }}
+              data-help="Jump straight to a pack instead of scrolling, or pick All Packs to look across your whole library."
+            >
+              {packs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              <option value="__all">— All Packs —</option>
+            </select>
+
+            <button
+              onClick={stopAll}
+              disabled={playing.size === 0}
+              className="suno-chip"
+              style={{
+                padding: '4px 9px', flexShrink: 0,
+                borderColor: playing.size ? '#f87171' : undefined,
+                color: playing.size ? '#f87171' : undefined,
+                background: playing.size ? 'rgba(248,113,113,0.12)' : undefined,
+                opacity: playing.size ? 1 : 0.4,
+                cursor: playing.size ? 'pointer' : 'not-allowed',
+              }}
+              data-help="Stop everything that's currently playing, without scrolling to find it."
+            >
+              <Square size={10} /> Stop{playing.size ? ` (${playing.size})` : ''}
+            </button>
+
+            <span style={{ fontSize: '0.6rem', color: 'rgba(196,181,253,0.5)', flexShrink: 0 }}>
+              {visibleSamples.length}/{searchAll ? allSamples.length : samples.length}
+            </span>
+          </div>
+
+          {samples.length === 0 && !searchAll && (
             <div style={{ fontSize: '0.68rem', color: 'rgba(196,181,253,0.5)', padding: '8px 2px' }}>
               Nothing in this pack yet — drop some samples above.
             </div>
