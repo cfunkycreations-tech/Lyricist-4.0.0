@@ -159,9 +159,17 @@ anything else that needs it. Widen its reach as more white text turns up.
 - **Footer art is wrong.** The current square medallion got squished into a 200×100 rectangle without
   his approval and he hates it. He is supplying replacement art. Keep the same box size; do not
   redesign around it.
-- **Collaboration tab — HIGH PRIORITY.** Chris's own words: "the collab button is really important to
-  me." Collaborate with other artists; the exact shape is open, so this needs a design conversation
-  before building. Ties straight back to the busking origin — two people on a corner.
+- **Collaboration tab — HIGH PRIORITY.** Chris's own words: *"the collab button is really important
+  to me"* and *"I don't know how I wanna do that. I just want people to be able to write music
+  together."* So the goal is settled and the mechanism is not — real-time co-editing, passing
+  sessions back and forth, or a room people join. Bring him options rather than guessing. Whatever it
+  becomes, it has to stay free and must not require an account he'd have to pay to run. Ties straight
+  back to the busking origin — two people on a corner.
+- **Paintbrush tool for the piano roll.** Click-and-drag to paint MIDI notes straight onto the grid
+  instead of placing them one at a time. Pairs with the FL-grade roll work below.
+- **Drum machine with 808s.** A step-sequencer drum machine, 808 kit front and center. The sample
+  library already handles user kits, so this can lean on `sampleLibrary.js` for custom sounds while
+  shipping a stock 808 kit of its own.
 - **MIDI background video is missing**, along with several other tab videos. The old ones were
   deleted; they belonged to a previous version and he doesn't want them reused.
 - **Visualizer quality.** 395 presets load, but Chris thinks the stock Butterchurn ones are mediocre.
