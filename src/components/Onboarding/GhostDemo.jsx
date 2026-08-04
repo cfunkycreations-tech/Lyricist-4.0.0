@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { getGhostDemo } from './ghostDemoScripts.js';
+import { captureAll, restoreAll } from '../../services/demoSafety.js';
 // User art (true alpha): V:\assets\upscaled\ghost.demo.png
 import ghostGuideImg from '../../assets/ghost.demo.png';
 import './GhostDemo.css';
@@ -57,6 +58,19 @@ export default function GhostDemo({ tabId, onClose }) {
   const [paused, setPaused] = useState(false);
   const [statusLine, setStatusLine] = useState('Remote operator connecting…');
   const cancelRef = useRef(false);
+  const snapshotRef = useRef(null);
+
+  /**
+   * Put the user's work back. Safe to call more than once — the snapshot is
+   * cleared after the first restore, so the finish path and the unmount
+   * cleanup can both call it without fighting each other.
+   */
+  const restoreWork = useCallback(() => {
+    if (!snapshotRef.current) return;
+    const snap = snapshotRef.current;
+    snapshotRef.current = null;
+    restoreAll(snap);
+  }, []);
   const pauseRef = useRef(false);
   const cursorRef = useRef({ x: window.innerWidth * 0.5, y: window.innerHeight * 0.4 });
 
@@ -179,6 +193,11 @@ export default function GhostDemo({ tabId, onClose }) {
       return;
     }
 
+    // Snapshot before touching anything. The demo really types and really
+    // clicks, so without this it overwrites work in progress — it once wiped a
+    // Quantum Lab lattice the user had filled in. Restored in finishDemo().
+    snapshotRef.current = captureAll();
+
     setStatusLine(`Remote operator running: ${demo.title}`);
     cursorRef.current = { x: window.innerWidth * 0.62, y: window.innerHeight * 0.28 };
     setCursor(cursorRef.current);
@@ -251,25 +270,31 @@ export default function GhostDemo({ tabId, onClose }) {
 
     if (!cancelRef.current) {
       setHighlight(null);
+      restoreWork();
       setBubble({
-        text: `Remote demo finished for ${demo.title}. You just watched the feature get operated for real. Play Demo again anytime while Ghost Demo is On.`,
+        text: `Remote demo finished for ${demo.title}. Your own work has been put back exactly as you left it — the demo never keeps anything. Play Demo again anytime while Ghost Demo is On.`,
         x: Math.max(16, window.innerWidth / 2 - 170),
         y: Math.max(70, window.innerHeight / 2 - 40),
         visible: true,
       });
-      setStatusLine('Session complete');
+      setStatusLine('Session complete — your work restored');
       await wait(3500);
       onClose?.();
     }
-  }, [demo, onClose]);
+  }, [demo, onClose, restoreWork]);
 
   useEffect(() => {
     runDemo();
-    return () => { cancelRef.current = true; };
-  }, [runDemo]);
+    // Restore on any teardown — skipped, closed, tab switched, unmounted.
+    return () => {
+      cancelRef.current = true;
+      restoreWork();
+    };
+  }, [runDemo, restoreWork]);
 
   const skip = () => {
     cancelRef.current = true;
+    restoreWork();
     onClose?.();
   };
 

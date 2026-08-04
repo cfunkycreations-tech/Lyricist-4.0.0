@@ -15,6 +15,7 @@ import {
   readStylePressure,
   QUANTUM_SECTIONS,
 } from './quantumFeatures.js';
+import { registerDemoSnapshot } from '../../services/demoSafety.js';
 import './QuantumLab.css';
 import logo407Img from '../../assets/logo407.png';
 
@@ -102,6 +103,42 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const [stylePressure, setStylePressure] = useState(() => readStylePressure());
   const [phoneticsOn, setPhoneticsOn] = useState(false);
   const [truthReport, setTruthReport] = useState(null);
+
+  // ── Ghost Demo safety net ──────────────────────────────────────────
+  // The demo drives this tab for real: it types seed words into the keyword
+  // box and clicks "Load into lattice", which replaces the whole grid. That
+  // once wiped a lattice the user had filled with their own words. Snapshot
+  // everything the demo can reach so it can all be put back afterwards.
+  const liveRef = useRef({});
+  liveRef.current = {
+    section, manualLinks, selectedId, gen, spotlightMode, crystallized,
+    neuralA, neuralB, neuralPick, keywordDraft, contracts, dnaUsed, status,
+  };
+
+  useEffect(() => registerDemoSnapshot('quantum-lab', {
+    snapshot: () => ({ ...liveRef.current }),
+    restore: (s) => {
+      if (!s) return;
+      setSection(s.section);
+      setManualLinks(s.manualLinks);
+      setSelectedId(s.selectedId);
+      setGen(s.gen);
+      setSpotlightMode(s.spotlightMode);
+      setCrystallized(s.crystallized);
+      setNeuralA(s.neuralA);
+      setNeuralB(s.neuralB);
+      setNeuralPick(s.neuralPick);
+      setKeywordDraft(s.keywordDraft);
+      setContracts(s.contracts);
+      setDnaUsed(s.dnaUsed);
+      setStatus(s.status);
+    },
+    // "Work in progress" = they typed keywords, edited the grid, or ran a gen.
+    hasWork: () => {
+      const l = liveRef.current;
+      return Boolean(l.keywordDraft?.trim()) || l.gen > 0 || (l.manualLinks?.length > 0);
+    },
+  }), []);
   const [activeSectionId, setActiveSectionId] = useState('verse1');
   const [songMap, setSongMap] = useState({});
 
