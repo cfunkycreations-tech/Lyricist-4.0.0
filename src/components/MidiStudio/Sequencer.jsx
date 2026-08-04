@@ -3,6 +3,13 @@ import { Play, Square, Download, Trash2, FileJson, ChevronUp, ChevronDown, Chevr
 import { getAudioContext, getMasterBus, resumeAudio } from '../../services/audioEngine.js';
 import { midiToName, midiToFreq } from '../../services/MidiService.js';
 import { downloadMidi } from '../../utils/midiFile.js';
+import {
+  INSTRUMENT_GROUPS,
+  ALL_INSTRUMENTS,
+  DEFAULT_INSTRUMENT,
+  loadInstrument,
+  playNote,
+} from '../../services/soundfontEngine.js';
 
 // Offline MIDI sequencer — Lyricist 4.1.3
 // Lightweight piano-roll playback + editing for the MIDI JSON produced by the
@@ -28,6 +35,10 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange }) {
   const schedRef = useRef(null);   // setInterval id
   const rafRef = useRef(null);
   const stateRef = useRef({});     // { startCtxTime, nextIdx, scaledNotes, endTime, voices }
+
+  const [instrumentId, setInstrumentId] = useState(DEFAULT_INSTRUMENT);
+  const [instrumentState, setInstrumentState] = useState('loading'); // loading | ready | error
+  const instrumentRef = useRef(null);
 
   const notes = midi?.notes || [];
   const originalTempo = midi?.tempo || 120;
@@ -55,8 +66,7 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange }) {
     cancelAnimationFrame(rafRef.current);
     const st = stateRef.current;
     (st.voices || []).forEach((v) => {
-      try { v.osc?.stop(); } catch { /* already stopped */ }
-      try { v.osc2?.stop(); } catch { /* */ }
+      try { v?.stop?.(); } catch { /* already stopped */ }
     });
     stateRef.current = {};
     setPlaying(false);
@@ -66,51 +76,60 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange }) {
 
   useEffect(() => stop, [stop]); // kill audio if the tab component ever unmounts
 
-  // Multi-voice synth (stronger than plain triangle) — saw + triangle detuned, light filter
-  const scheduleVoice = (ctx, note, when, dur) => {
-    const bus = getMasterBus();
-    const freq = midiToFreq(note.midi);
-    const peak = 0.22 * (note.velocity ?? 0.8);
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(Math.min(12000, 800 + (note.midi - 40) * 80), when);
-    filter.Q.value = 0.7;
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0, when);
-    gain.gain.linearRampToValueAtTime(peak, when + 0.008);
-    gain.gain.setTargetAtTime(peak * 0.65, when + 0.04, 0.08);
-    gain.gain.setTargetAtTime(0, when + Math.max(0.05, dur - 0.05), 0.04);
+  // Load the selected instrument's samples. Cached in the engine, so flipping
+  // back to something you already used is instant.
+  useEffect(() => {
+    let cancelled = false;
+    setInstrumentState('loading');
+    instrumentRef.current = null;
+    loadInstrument(getAudioContext(), instrumentId)
+      .then((inst) => {
+        if (cancelled) return;
+        instrumentRef.current = inst;
+        setInstrumentState('ready');
+      })
+      .catch(() => {
+        if (!cancelled) setInstrumentState('error');
+      });
+    return () => { cancelled = true; };
+  }, [instrumentId]);
 
-    const osc1 = ctx.createOscillator();
-    const osc2 = ctx.createOscillator();
-    osc1.type = 'sawtooth';
-    osc2.type = 'triangle';
-    osc1.frequency.value = freq;
-    osc2.frequency.value = freq * 1.003; // slight detune = thicker
-    osc1.detune.value = -4;
-    osc2.detune.value = 6;
-    const mix1 = ctx.createGain();
-    const mix2 = ctx.createGain();
-    mix1.gain.value = 0.55;
-    mix2.gain.value = 0.45;
-    osc1.connect(mix1);
-    osc2.connect(mix2);
-    mix1.connect(filter);
-    mix2.connect(filter);
-    filter.connect(gain);
-    gain.connect(bus);
-    osc1.start(when);
-    osc2.start(when);
-    const stopAt = when + dur + 0.35;
-    osc1.stop(stopAt);
-    osc2.stop(stopAt);
-    return { osc: osc1, osc2, gain, filter };
+  // Real sampled instrument, not an oscillator. Falls back to silence rather
+  // than a buzz if the pack has not finished decoding yet.
+  const scheduleVoice = (ctx, note, when, dur) => {
+    const inst = instrumentRef.current;
+    if (!inst) return null;
+    const stopFn = playNote(ctx, getMasterBus(), inst, note.midi, {
+      when,
+      duration: dur,
+      velocity: 0.85 * (note.velocity ?? 0.8),
+    });
+    return { stop: stopFn };
   };
+
+  /** Audition a single note when you click the keybed or a note block. */
+  const auditionNote = useCallback(async (midiNote) => {
+    await resumeAudio();
+    const ctx = getAudioContext();
+    const inst = instrumentRef.current;
+    if (!inst) return;
+    playNote(ctx, getMasterBus(), inst, midiNote, { duration: 0.45, velocity: 0.85 });
+  }, []);
 
   const play = async () => {
     if (!notes.length) return;
     await resumeAudio();
     const ctx = getAudioContext();
+    // Don't start against a half-loaded instrument — that's how you get silence.
+    if (!instrumentRef.current) {
+      try {
+        instrumentRef.current = await loadInstrument(ctx, instrumentId);
+        setInstrumentState('ready');
+      } catch {
+        setInstrumentState('error');
+        return;
+      }
+    }
     stop();
 
     const scaled = notes
@@ -130,7 +149,8 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange }) {
         const n = st.scaledNotes[st.nextIdx];
         const when = st.startCtxTime + n.t;
         if (when > now + LOOKAHEAD) break;
-        st.voices.push(scheduleVoice(ctx, n, when, n.d));
+        const voice = scheduleVoice(ctx, n, when, n.d);
+        if (voice) st.voices.push(voice);
         st.nextIdx++;
       }
       if (now > st.startCtxTime + st.endTime + 0.3) stop();
@@ -189,16 +209,9 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange }) {
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   };
 
-  if (!notes.length) {
-    return (
-      <div className="card-cosmic" style={{ borderRadius: 12, padding: 24, textAlign: 'center' }}>
-        <Music size={28} style={{ color: '#ff2d95', filter: 'drop-shadow(0 0 8px rgba(255,45,149,0.7))' }} />
-        <p style={{ fontSize: '0.78rem', color: 'rgba(196,181,253,0.7)', margin: '8px 0 0' }}>
-          No MIDI loaded yet — convert some audio above, and the notes appear here as an editable piano roll.
-        </p>
-      </div>
-    );
-  }
+  // The roll is always on screen, even with nothing loaded — play the keybed,
+  // double-click to draw notes, and build a part from scratch. Hiding it behind
+  // an "import audio first" placeholder made the tab useless as an instrument.
 
   return (
     <div className="card-cosmic" style={{ borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -212,6 +225,34 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange }) {
         >
           {playing ? <><Square size={13} /> Stop</> : <><Play size={13} /> Play</>}
         </button>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: '0.68rem' }}
+          data-help="The instrument the sequence plays through. These are real recorded instruments — grand piano, guitars, harp, strings, horns, mallets — not synth tones. Everything is bundled with the app, so it works with no internet.">
+          <Music size={13} style={{ opacity: 0.75 }} />
+          <select
+            value={instrumentId}
+            onChange={(e) => setInstrumentId(e.target.value)}
+            className="suno-chip"
+            style={{ fontSize: '0.72rem', padding: '5px 8px', borderRadius: 7, maxWidth: 190, cursor: 'pointer' }}
+          >
+            {INSTRUMENT_GROUPS.map((g) => (
+              <optgroup key={g.group} label={g.group}>
+                {g.items.map((it) => (
+                  <option key={it.id} value={it.id}>{it.name}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          <span style={{
+            fontSize: '0.6rem',
+            minWidth: 52,
+            color: instrumentState === 'ready' ? 'rgba(52,211,153,0.9)'
+              : instrumentState === 'error' ? '#f87171' : 'rgba(196,181,253,0.7)',
+          }}>
+            {instrumentState === 'ready' ? 'loaded'
+              : instrumentState === 'error' ? 'failed' : 'loading…'}
+          </span>
+        </label>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.68rem' }}
           data-help="Master tempo. Slowing it down stretches the whole sequence; speeding it up compresses it — the notes themselves don't change.">
@@ -248,7 +289,19 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange }) {
             const black = [1, 3, 6, 8, 10].includes(m % 12);
             return (
               <div key={m} style={{ position: 'absolute', top: r * ROW_H, left: 0, right: 0, height: ROW_H, background: black ? 'rgba(255,45,149,0.045)' : 'transparent', borderTop: isC ? '1px solid rgba(0,229,255,0.25)' : '1px solid rgba(255,255,255,0.03)' }}>
-                {isC && <span style={{ position: 'absolute', left: 4, top: -1, fontSize: 8, color: 'rgba(0,229,255,0.75)', fontFamily: "'JetBrains Mono', monospace" }}>{midiToName(m)}</span>}
+                {/* Playable key: click it to hear the note on the current instrument. */}
+                <div
+                  onMouseDown={(e) => { e.stopPropagation(); auditionNote(m); }}
+                  title={`${midiToName(m)} — click to hear it`}
+                  style={{
+                    position: 'absolute', left: 0, top: 0, height: ROW_H, width: KEYBED_W,
+                    background: black ? 'linear-gradient(90deg,#0d0a18,#191330)' : 'linear-gradient(90deg,#2a2440,#3a3358)',
+                    borderBottom: '1px solid rgba(0,0,0,0.55)',
+                    borderRight: '1px solid rgba(0,229,255,0.18)',
+                    cursor: 'pointer', zIndex: 3,
+                  }}
+                />
+                {isC && <span style={{ position: 'absolute', left: 4, top: -1, fontSize: 8, color: 'rgba(0,229,255,0.95)', fontFamily: "'JetBrains Mono', monospace", zIndex: 4, pointerEvents: 'none' }}>{midiToName(m)}</span>}
               </div>
             );
           })}
