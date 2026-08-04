@@ -123,10 +123,23 @@ function base64ToArrayBuffer(b64) {
  * Parsed as JSON — the file is never executed.
  */
 function parsePack(text) {
-  const start = text.indexOf('{');
+  // The file opens with `var MIDI = {};` guards, so the first `{` is the wrong
+  // brace — anchor on the `MIDI.Soundfont.<name> =` assignment instead.
+  const marker = text.indexOf('MIDI.Soundfont.');
+  let start = -1;
+  if (marker !== -1) {
+    const eq = text.indexOf('=', marker);
+    if (eq !== -1) start = text.indexOf('{', eq);
+  }
+  if (start === -1) start = text.indexOf('{');
   const end = text.lastIndexOf('}');
   if (start === -1 || end === -1) throw new Error('Unrecognized soundfont file');
-  return JSON.parse(text.slice(start, end + 1));
+
+  // These packs end with a trailing comma before the closing brace, which is
+  // legal JS but not legal JSON. Base64 payloads contain no `}`, so anchoring
+  // the match to the final brace cannot touch sample data.
+  const json = text.slice(start, end + 1).replace(/,\s*(?=}\s*$)/, '');
+  return JSON.parse(json);
 }
 
 const cache = new Map();   // instrumentId -> Promise<{ buffers: Map<midi, AudioBuffer>, sorted: number[] }>
