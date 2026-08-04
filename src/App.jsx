@@ -10,12 +10,17 @@ import Dictionary from './components/Dictionary/Dictionary.jsx';
 import Settings from './components/Settings/Settings.jsx';
 import HelpLayer from './components/common/HelpLayer.jsx';
 import OnboardingWizard from './components/Onboarding/OnboardingWizard.jsx';
+import GhostDemo from './components/Onboarding/GhostDemo.jsx';
 import MidiStudio from './components/MidiStudio/MidiStudio.jsx';
 import ToolsHub from './components/ToolsHub/ToolsHub.jsx';
 import AlbumArchitect from './components/AlbumArchitect/AlbumArchitect.jsx';
 import SunoPlayer from './components/AudioPlayer/SunoPlayer.jsx';
 import RecordingBooth from './components/Recordings/RecordingBooth.jsx';
 import MasteringStudio from './components/MasteringStudio/MasteringStudio.jsx';
+import QuantumLab from './components/QuantumLab/QuantumLab.jsx';
+import LoopStation from './components/LoopStation/LoopStation.jsx';
+import Stemmer from './components/Stemmer/Stemmer.jsx';
+import { APP_VERSION } from './buildInfo.js';
 
 import bgImg from './assets/cfunky-bg-new.jpg';   // new Austin street-scene background (4.0.2)
 import profileImg from './assets/profile.jpg';     // new founder selfie
@@ -23,14 +28,18 @@ import logoImg from './assets/logo.jpg';           // new neon medallion logo
 import funksignImg from './assets/funksign.jpg';   // CFunky signature on black (4.0.9)
 import funk003Img from './assets/funk003.png';     // Christopher Funk profile photo (4.0.9)
 import logo407Img from './assets/logo407.png';     // new transparent medallion logo (4.0.9)
-import footerMedallionImg from './assets/footer-medallion.png'; // footer medallion (4.0.9)
+import footerMedallionImg from './assets/quantum-lab-medallion.png'; // Quantum Lab banner art (4.2.0)
 
 const tabs = [
+  // Write / story tools first, then Quantum Lab
   { id: 'songwriter', icon: '🎵', label: 'Songwriter', help: 'The main workspace. Set up the kind of song you want (style, mood, topic), then write and polish the lyrics line by line.' },
   { id: 'analyzer', icon: '👻', label: 'Ghost Rider', help: 'Studies any artist you name and breaks down how they write, then helps you write a NEW song in that same style. (It does not copy their actual lyrics.)' },
-  { id: 'songforge', icon: '🪄', label: 'Song Forge', help: 'Chains Google Gemini calls to auto-generate a song and its cover art. Go Song First (write lyrics, then paint matching art) or Art First (upload or generate an image, then write a song inspired by it). Needs a Google AI API key from Settings.' },
+  { id: 'songforge', icon: '🪄', label: 'Song Forge', help: 'Auto-generate a full song and cover art using your single OpenRouter key (lyrics + Nano Banana image models on OpenRouter). Song First or Art First. No Google AI Studio key.' },
+  { id: 'quantum', icon: '⚛️', label: 'Quantum Lab', help: 'Build a verse by playing with a grid of word tiles (the lattice). Heat words up, let energy spread, lock rhymes with Crystallize, then Generate Neural Lyrics for a real 4-line verse. Send to Songwriter or Song Forge in one click. Needs your OpenRouter key for generate.' },
+  { id: 'loopstation', icon: '🔁', label: 'RC-Funk 5000', help: 'Live multi-track loop station (Boss RC-style). Record loops on up to 4 tracks, stack layers, control volume, undo a track. Fully offline. Great for riffs and vocal hooks while you write.' },
+  { id: 'stemmer', icon: '🎛️', label: 'Stemmer', help: 'Split a full mix into Vocals, Drums, Bass, Guitar, Keys, and Other. Offline mode (default) is free, light CPU, no key, no GPU. Optional Cloud mode uses a Replicate API key for pro Demucs stems on their servers.' },
   { id: 'booth', icon: '🎤', label: 'Recording Booth', help: 'Record harmonica, guitar, or vocals straight into the app (or upload takes) and keep them in a saved library. Play them in the persistent player while you write, convert them to MIDI, or export them as WAV.' },
-  { id: 'midistudio', icon: '🎹', label: 'MIDI Studio', help: 'Turn any audio — a Suno track or a hummed voice memo — into editable MIDI notes, tweak them in a piano-roll sequencer, and watch a Milkdrop visualizer dance to the playback. Runs fully offline, no key needed.' },
+  { id: 'midistudio', icon: '🎹', label: 'MIDI Studio', help: 'Turn any audio into editable MIDI, tweak it on a piano-roll with a stronger multi-voice synth, and pick from dozens of Milkdrop-class visualizer presets. Runs fully offline.' },
   { id: 'album', icon: '💿', label: 'Album Architect', help: 'Group up to 12 tracks into a cohesive concept album. Drag tracks to reorder, and set album-wide metadata like genre and master tempo.' },
   { id: 'mastering', icon: '💽', label: 'Mastering Studio', help: 'The finish line: pull your songs together into an album, master each track with a real EQ/compression/limiter chain (all offline), add cover art (upload or AI-generated), and export the finished album — WAVs, cover, and tracklist.' },
   { id: 'rhyme', icon: '📖', label: 'Rhyme Helper', help: 'A rhyming dictionary and rhyme finder. Look up words that rhyme, and check the rhymes inside lines you have already written.' },
@@ -45,11 +54,30 @@ function MainLayout() {
   const store = useLyricStore();
   const [activeTab, setActiveTab] = useState('songwriter');
   const [ghostRiderData, setGhostRiderData] = useState(null);
+  const [quantumForgeSeed, setQuantumForgeSeed] = useState(null);
   const [showWizard, setShowWizard] = useState(false);
+  const [showGhostDemo, setShowGhostDemo] = useState(false);
 
   const handleGhostSend = (data) => {
     setGhostRiderData(data);
     setActiveTab('songwriter');
+  };
+
+  /** Quantum Lab → Songwriter (one-click). Same shape as Ghost Rider. */
+  const handleQuantumToSongwriter = (data) => {
+    setGhostRiderData({
+      lyrics: data.lyrics,
+      artist: data.artist || 'Quantum Lab',
+      sunoTags: data.sunoTags || '',
+      source: 'quantum',
+    });
+    setActiveTab('songwriter');
+  };
+
+  /** Quantum Lab → Song Forge (structure / palette seed for full song). */
+  const handleQuantumToForge = (seed) => {
+    setQuantumForgeSeed(seed);
+    setActiveTab('songforge');
   };
 
   // Reflect the global Tips switch on <body> so [data-help] elements get the
@@ -80,6 +108,14 @@ function MainLayout() {
         <OnboardingWizard onClose={closeWizard} onNavigate={setActiveTab} />
       )}
 
+      {showGhostDemo && store.ghostDemoEnabled && (
+        <GhostDemo
+          tabId={activeTab}
+          onClose={() => setShowGhostDemo(false)}
+          onRequestTab={setActiveTab}
+        />
+      )}
+
       {/* Background — new Austin street-scene art (4.0.2). */}
       <div
         style={{
@@ -101,7 +137,7 @@ function MainLayout() {
           inset: 0,
           zIndex: 1,
           pointerEvents: 'none',
-          background: 'linear-gradient(180deg, rgba(6,3,16,0.50) 0%, rgba(9,5,22,0.58) 45%, rgba(5,2,14,0.74) 100%)'
+          background: 'linear-gradient(180deg, rgba(4,8,20,0.52) 0%, rgba(6,10,24,0.58) 45%, rgba(2,4,12,0.78) 100%)'
         }}
       />
 
@@ -129,20 +165,35 @@ function MainLayout() {
             <img
               src={funk003Img}
               alt="Christopher Funk"
-              style={{ height: 220, width: 'auto', display: 'block', filter: 'drop-shadow(0 0 14px #ff2d95) drop-shadow(0 0 32px rgba(255,45,149,0.55)) drop-shadow(0 0 60px rgba(255,45,149,0.25))' }}
+              style={{ height: 220, width: 'auto', display: 'block', filter: 'drop-shadow(0 0 14px #00e5ff) drop-shadow(0 0 28px rgba(168,85,247,0.55)) drop-shadow(0 0 50px rgba(16,240,160,0.25))' }}
             />
           </div>
 
           {/* 4. LYRICIST title — fills remaining space */}
           <div style={{"flex":1,"display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center","textAlign":"center","paddingRight":260,"paddingLeft":20,"paddingBottom":28,"overflow":"hidden","minWidth":0}}>
             <h1
-              className="gradient-title leading-none"
-              style={{"fontSize":"clamp(2.5rem, 4.5vw, 6.5rem)","fontWeight":400,"letterSpacing":"0.04em","marginBottom":4,"whiteSpace":"nowrap"}}
+              className="gradient-title chrome-title leading-none"
+              style={{"fontSize":"clamp(2.2rem, 4.2vw, 6rem)","fontWeight":700,"letterSpacing":"0.04em","marginBottom":2,"whiteSpace":"nowrap","fontFamily":"'Audiowide', 'Orbitron', sans-serif"}}
               data-help="Lyricist is your songwriting studio. Pick a vibe, give it a topic, and it helps you write full songs, line by line — then polish them. Everything here is explained: just hover over anything you don't recognize."
             >
-              LYRICIST 4.1.3
+              LYRICIST {APP_VERSION}
             </h1>
-            <p style={{ fontSize: '0.7rem', color: '#ff2d95', letterSpacing: '0.18em', textTransform: 'uppercase', margin: 0, textShadow: '0 0 8px rgba(255,45,149,0.7), 0 0 20px rgba(255,45,149,0.35)' }}>
+            {/* Subtitle — same Audiowide + same neon blue→purple→emerald chrome, smaller */}
+            <p
+              className="gradient-title chrome-title leading-none"
+              style={{
+                fontSize: 'clamp(0.95rem, 1.6vw, 1.45rem)',
+                fontWeight: 700,
+                letterSpacing: '0.22em',
+                textTransform: 'uppercase',
+                margin: '0 0 10px',
+                fontFamily: "'Audiowide', 'Orbitron', sans-serif",
+                whiteSpace: 'nowrap',
+              }}
+            >
+              GOES QUANTUM
+            </p>
+            <p className="tagline-gold" style={{ fontSize: '0.68rem', letterSpacing: '0.16em', textTransform: 'uppercase', margin: 0, fontFamily: "'Audiowide', sans-serif" }}>
               AI-Powered Songwriting Studio · CFunkyCreations LLC
             </p>
           </div>
@@ -162,9 +213,10 @@ function MainLayout() {
                 padding: '4px 12px',
                 borderRadius: 9999,
                 cursor: 'pointer',
-                background: 'rgba(34,211,238,0.14)',
+                background: 'rgba(0,229,255,0.14)',
                 color: '#67e8f9',
-                border: '1px solid rgba(34,211,238,0.4)',
+                border: '1px solid rgba(0,229,255,0.45)',
+                boxShadow: '0 0 12px rgba(0,229,255,0.2)',
                 transition: 'all 0.15s'
               }}
             >
@@ -172,10 +224,14 @@ function MainLayout() {
               Take the Tour
             </button>
 
-            {/* Global Tips switch — turns every help bubble in the app on or off */}
+            {/* Ghost Demo master switch — optional; remembered between sessions */}
             <button
-              onClick={() => store.setTipsEnabled(!store.tipsEnabled)}
-              data-help="Turns the pop-up help bubbles on or off for the whole app. Leave it ON while you're learning — hover over anything and it'll explain what it does in plain English."
+              onClick={() => {
+                const next = !store.ghostDemoEnabled;
+                store.setGhostDemoEnabled(next);
+                if (!next) setShowGhostDemo(false);
+              }}
+              data-help="Optional. When Ghost Demo is ON, a Play button appears so you can run a ghost-guided walkthrough of the current tab (moving mouse + word bubbles). Turn OFF if you don’t want that feature at all."
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -185,9 +241,65 @@ function MainLayout() {
                 padding: '4px 12px',
                 borderRadius: 9999,
                 cursor: 'pointer',
-                background: store.tipsEnabled ? 'rgba(255,45,149,0.18)' : 'rgba(80,70,90,0.15)',
-                color: store.tipsEnabled ? '#ffc8e0' : 'rgba(170,150,160,0.7)',
-                border: `1px solid ${store.tipsEnabled ? 'rgba(255,45,149,0.5)' : 'rgba(140,120,130,0.35)'}`,
+                background: store.ghostDemoEnabled ? 'rgba(168,85,247,0.18)' : 'rgba(80,70,90,0.15)',
+                color: store.ghostDemoEnabled ? '#e9d5ff' : 'rgba(170,150,160,0.7)',
+                border: `1px solid ${store.ghostDemoEnabled ? 'rgba(168,85,247,0.5)' : 'rgba(140,120,130,0.35)'}`,
+                transition: 'all 0.15s'
+              }}
+            >
+              <span>👻</span>
+              Ghost Demo: {store.ghostDemoEnabled ? 'On' : 'Off'}
+            </button>
+
+            {/* Only shown when Ghost Demo is enabled — play walkthrough for THIS tab */}
+            {store.ghostDemoEnabled && (
+              <button
+                onClick={() => setShowGhostDemo(true)}
+                data-help="Plays a Ghost Demo for harder tabs (Quantum, Ghost Rider, Song Forge, RC-Funk 5000, MIDI, Mastering, etc.). Simple tabs like Dictionary use Tips hover instead. Pause or skip anytime. Turn Ghost Demo Off if you never want this."
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  padding: '4px 12px',
+                  borderRadius: 9999,
+                  cursor: 'pointer',
+                  background: 'rgba(103,232,249,0.12)',
+                  color: '#a5f3fc',
+                  border: '1px solid rgba(103,232,249,0.45)',
+                  transition: 'all 0.15s'
+                }}
+              >
+                <span>▶</span>
+                Play Demo
+              </button>
+            )}
+
+            {/* Global Tips switch — turns every help bubble in the app on or off */}
+            <button
+              onClick={() => store.setTipsEnabled(!store.tipsEnabled)}
+              data-help="Turns hover help ON or OFF for the whole app. When ON, hover any button, tab, word tile, or panel and a bubble explains it in plain English — including every control in Quantum Lab (the lattice). Leave Tips ON while you learn. This is separate from Take the Tour."
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                padding: '4px 12px',
+                borderRadius: 9999,
+                cursor: 'pointer',
+                background: store.tipsEnabled
+                  ? 'linear-gradient(135deg, rgba(255,255,255,0.12), rgba(148,163,184,0.18))'
+                  : 'rgba(80,70,90,0.15)',
+                color: store.tipsEnabled ? '#e8eef8' : 'rgba(170,150,160,0.7)',
+                border: `1px solid ${store.tipsEnabled ? 'rgba(226,232,240,0.55)' : 'rgba(140,120,130,0.35)'}`,
+                boxShadow: store.tipsEnabled
+                  ? '0 0 12px rgba(200,210,230,0.35), inset 0 1px 0 rgba(255,255,255,0.35)'
+                  : 'none',
+                textShadow: store.tipsEnabled
+                  ? '0 1px 0 rgba(255,255,255,0.7), 0 2px 0 rgba(0,0,0,0.45)'
+                  : 'none',
                 transition: 'all 0.15s'
               }}
             >
@@ -214,44 +326,23 @@ function MainLayout() {
           </div>
         </div>
 
-        {/* Tab Navigation — scrolls horizontally once tabs outgrow the window
-            width, so tabs at the end (e.g. Settings) never get clipped by
-            the outer overflow:hidden layout (4.1.4). */}
-        <div className="tab-nav-scroll" style={{ display: 'flex', borderBottom: '1px solid rgba(139,92,246,0.2)', background: '#080512', flexShrink: 0, overflowX: 'auto', overflowY: 'hidden' }}>
-          {tabs.map(t => {
+        {/* Browser-style curved tabs (4.2.0) — no dashed outlines */}
+        <div className="tab-nav-scroll">
+          {tabs.map((t) => {
             const isActive = activeTab === t.id;
             return (
               <button
                 key={t.id}
+                type="button"
+                className={`tab-browser ${isActive ? 'is-active' : ''}`}
                 onClick={() => {
                   setActiveTab(t.id);
                   if (t.id !== 'songwriter') setGhostRiderData(null);
                 }}
                 data-help={t.help}
-                style={{
-                  position: 'relative',
-                  flexShrink: 0,
-                  whiteSpace: 'nowrap',
-                  padding: '10px 22px',
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
-                  fontFamily: "'Metamorphous', sans-serif",
-                  border: 'none',
-                  background: isActive ? 'rgba(255,45,149,0.18)' : 'transparent',
-                  color: isActive ? '#ff2d95' : 'rgba(255,45,149,0.6)',
-                  textShadow: isActive ? '0 0 10px rgba(255,45,149,0.8), 0 0 24px rgba(255,45,149,0.4)' : 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                  letterSpacing: '0.06em'
-                }}
-                onMouseEnter={(e) => { if (!isActive) { e.target.style.color = '#ff2d95'; e.target.style.textShadow = '0 0 8px rgba(255,45,149,0.6)'; } }}
-                onMouseLeave={(e) => { if (!isActive) { e.target.style.color = 'rgba(255,45,149,0.6)'; e.target.style.textShadow = 'none'; } }}
               >
                 <span style={{ marginRight: 6 }}>{t.icon}</span>
                 {t.label}
-                {isActive && (
-                  <span className="tab-glow-line" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, borderRadius: '2px 2px 0 0' }} />
-                )}
               </button>
             );
           })}
@@ -262,11 +353,27 @@ function MainLayout() {
           <div style={{ display: activeTab === 'songwriter' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
             <SongwriterHub ghostRiderData={ghostRiderData} />
           </div>
+          <div style={{ display: activeTab === 'quantum' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+            <QuantumLab
+              onSendToSongwriter={handleQuantumToSongwriter}
+              onSendToForge={handleQuantumToForge}
+            />
+          </div>
           <div style={{ display: activeTab === 'analyzer' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
             <ArtistAnalyzer onGhostSend={handleGhostSend} />
           </div>
           <div style={{ display: activeTab === 'songforge' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
-            <SongForge onSongForged={() => setActiveTab('songwriter')} />
+            <SongForge
+              onSongForged={() => setActiveTab('songwriter')}
+              quantumSeed={quantumForgeSeed}
+              onQuantumSeedConsumed={() => setQuantumForgeSeed(null)}
+            />
+          </div>
+          <div style={{ display: activeTab === 'loopstation' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+            <LoopStation />
+          </div>
+          <div style={{ display: activeTab === 'stemmer' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+            <Stemmer />
           </div>
           <div style={{ display: activeTab === 'booth' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
             <RecordingBooth onNavigate={setActiveTab} />
@@ -314,31 +421,33 @@ function MainLayout() {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '8px 16px',
-            background: 'rgba(8,5,18,0.95)',
-            borderTop: '1px solid rgba(139,92,246,0.25)',
-            boxShadow: '0 -1px 20px rgba(88,28,135,0.15)',
+            background: 'rgba(4,8,18,0.96)',
+            borderTop: '1px solid rgba(0,229,255,0.22)',
+            boxShadow: '0 -1px 20px rgba(168,85,247,0.15)',
             flexShrink: 0
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            {/* Footer medallion with magenta glow */}
+            {/* Footer — Quantum Lab banner art */}
             <img
               src={footerMedallionImg}
-              alt="CFunky Creations Lyricist medallion"
+              alt="Lyricist Goes Quantum — Quantum Lab"
               data-help="Christopher Funk — the founder of CFunky Creations LLC, the one-man shop that builds Lyricist and other free AI tools out of Austin, Texas."
               style={{
-                width: 100,
+                width: 200,
                 height: 100,
-                objectFit: 'contain',
+                objectFit: 'cover',
+                objectPosition: 'center',
+                borderRadius: 10,
                 flexShrink: 0,
-                filter: 'drop-shadow(0 0 10px #ff2d95) drop-shadow(0 0 22px rgba(255,45,149,0.55)) drop-shadow(0 0 40px rgba(255,45,149,0.25))'
+                filter: 'drop-shadow(0 0 10px #00f0ff) drop-shadow(0 0 22px rgba(192,38,255,0.5)) drop-shadow(0 0 36px rgba(0,255,156,0.25))'
               }}
             />
             <div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ff2d95', textShadow: '0 0 8px rgba(255,45,149,0.6)' }}>
+              <div className="chrome-silver" style={{ fontSize: '0.72rem', fontWeight: 700 }}>
                 CFunkyCreations LLC
               </div>
-              <div style={{ fontSize: '0.6rem', color: 'rgba(255,100,149,0.75)' }}>
+              <div style={{ fontSize: '0.6rem', color: 'rgba(180,195,220,0.8)', textShadow: '0 1px 0 rgba(255,255,255,0.25)' }}>
                 Austin, Texas ·{' '}
                 <a href="mailto:cfunkycreations@gmail.com" style={{ color: 'inherit' }} data-help="Email Christopher directly with questions, bugs, or feature ideas.">
                   cfunkycreations@gmail.com
@@ -352,11 +461,12 @@ function MainLayout() {
           </div>
 
           <div
-            style={{ fontSize: '0.6rem', color: '#ff9e2c', letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: "'JetBrains Mono', monospace", textAlign: 'center', lineHeight: 1.6, textShadow: '0 0 8px rgba(255,158,44,0.5)' }}
+            className="chrome-silver"
+            style={{ fontSize: '0.6rem', letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: "'Audiowide', 'JetBrains Mono', monospace", textAlign: 'center', lineHeight: 1.6 }}
             data-help="CFunky's mission: powerful songwriting tools that stay free for everyone, no catch."
           >
-            Lyricist 4.1.3 · Free AI tools for the masses<br />
-            Always free, available for all · Keep Austin Wonky
+            Lyricist {APP_VERSION} · Free AI tools for the masses<br />
+            Always free, available for all · Keep Austin, Austin, Bruh
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 6, maxWidth: 360 }}>

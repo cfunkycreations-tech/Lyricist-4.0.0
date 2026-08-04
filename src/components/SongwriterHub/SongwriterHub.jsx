@@ -17,34 +17,38 @@ export default function SongwriterHub({ ghostRiderData }) {
   const [bridgeVars, setBridgeVars] = useState(null);
   const [showBridgeModal, setShowBridgeModal] = useState(false);
 
-  // Sync ghost rider data if it came in
+  // Sync Ghost Rider OR Quantum Lab handoff if it came in
   React.useEffect(() => {
-    if (ghostRiderData) {
-      if (ghostRiderData.lyrics) {
-        // Parse the lyrics from ghost rider
-        const lines = ghostRiderData.lyrics.split('\n').filter(l => l.trim());
-        const sectioned = [
-          {
-            id: `sec-${Date.now()}`,
-            name: `Ghost Rider Verse (${ghostRiderData.artist})`,
-            type: 'verse',
-            lines: lines.map(line => ({
-              text: line,
-              locked: false,
-              lockedWord: '',
-              targetSyllables: 0,
-              activeVariation: 'draft',
-              variations: { draft: line, A: '', B: '', C: '' }
-            })),
-            adLibs: '',
-            showAdLibs: false
-          }
-        ];
-        store.setFullLyrics(sectioned);
-      }
-      if (ghostRiderData.artist) {
-        store.setArtistRef(ghostRiderData.artist);
-      }
+    if (!ghostRiderData) return;
+    if (ghostRiderData.lyrics) {
+      const lines = ghostRiderData.lyrics.split('\n').filter((l) => l.trim());
+      const fromQuantum = ghostRiderData.source === 'quantum';
+      const label = fromQuantum
+        ? 'Quantum Lab Verse'
+        : `Ghost Rider Verse (${ghostRiderData.artist || 'style'})`;
+      store.setFullLyrics([
+        {
+          id: `sec-${Date.now()}`,
+          name: label,
+          type: 'verse',
+          lines: lines.map((line) => ({
+            text: line,
+            locked: false,
+            lockedWord: '',
+            targetSyllables: 0,
+            activeVariation: 'draft',
+            variations: { draft: line, A: '', B: '', C: '' },
+          })),
+          adLibs: '',
+          showAdLibs: false,
+        },
+      ]);
+    }
+    if (ghostRiderData.artist && ghostRiderData.source !== 'quantum') {
+      store.setArtistRef(ghostRiderData.artist);
+    }
+    if (ghostRiderData.source === 'quantum' && ghostRiderData.notes && store.setNotes) {
+      store.setNotes(ghostRiderData.notes);
     }
   }, [ghostRiderData]);
 
@@ -96,7 +100,8 @@ export default function SongwriterHub({ ghostRiderData }) {
           return {
             ...l,
             text: textVal,
-            variations: { ...l.variations, draft: textVal }
+            activeVariation: 'draft',
+            variations: { draft: textVal, A: '', B: '', C: '' },
           };
         });
         return { ...s, lines };
@@ -167,15 +172,8 @@ export default function SongwriterHub({ ghostRiderData }) {
   const missingKeywords = getMissingKeywords();
 
   return (
-    <div style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#000' }}>
-      <video
-        src={songwriterBg}
-        autoPlay
-        loop
-        muted
-        playsInline
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, opacity: 0.75 }}
-      />
+    <div style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'radial-gradient(70% 50% at 20% 0%, rgba(0,229,255,0.08) 0%, transparent 55%), radial-gradient(60% 45% at 85% 100%, rgba(168,85,247,0.08) 0%, transparent 50%), #04060f' }}>
+      <video src={songwriterBg} autoPlay loop muted playsInline onCanPlay={(e) => { e.target.playbackRate = 0.67; }} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, opacity: 0.75 }} />
       <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
 
@@ -486,6 +484,7 @@ export default function SongwriterHub({ ghostRiderData }) {
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
+            data-demo="sw-generate"
             className="btn-neon-purple pulse-glow"
             data-help="The big one. Click this and the AI writes a complete set of lyrics using all your choices above. You can edit, regenerate, or refine everything afterward. (Needs your AI key set up in Settings.)"
             style={{
@@ -594,33 +593,53 @@ export default function SongwriterHub({ ghostRiderData }) {
           </div>
 
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            {/* Undo/Redo */}
+            {/* Undo / Redo — clear labeled buttons after refine/edit */}
             <button
+              type="button"
               onClick={store.undo}
               disabled={!store.canUndo}
-              data-help="Undo — takes back your last change and steps backward, like the back button. Safe to use anytime."
+              data-help="Undo — takes back your last change (including a Refine or regenerate). Safe anytime."
               style={{
-                background: 'transparent',
-                border: 'none',
-                color: store.canUndo ? '#c4b5fd' : 'rgba(167,139,250,0.25)',
-                cursor: store.canUndo ? 'pointer' : 'not-allowed'
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 12px',
+                borderRadius: 8,
+                border: `1px solid ${store.canUndo ? 'rgba(0,229,255,0.45)' : 'rgba(100,100,120,0.25)'}`,
+                background: store.canUndo ? 'rgba(0,229,255,0.12)' : 'rgba(20,20,30,0.4)',
+                color: store.canUndo ? '#e8eef8' : 'rgba(140,140,160,0.4)',
+                cursor: store.canUndo ? 'pointer' : 'not-allowed',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
               }}
             >
-              <Undo size={16} />
+              <Undo size={14} />
+              Undo
             </button>
 
             <button
+              type="button"
               onClick={store.redo}
               disabled={!store.canRedo}
-              data-help="Redo — puts back a change you just undid. Use it if you went back one step too far."
+              data-help="Redo — puts back a change you just undid."
               style={{
-                background: 'transparent',
-                border: 'none',
-                color: store.canRedo ? '#c4b5fd' : 'rgba(167,139,250,0.25)',
-                cursor: store.canRedo ? 'pointer' : 'not-allowed'
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 12px',
+                borderRadius: 8,
+                border: `1px solid ${store.canRedo ? 'rgba(168,85,247,0.5)' : 'rgba(100,100,120,0.25)'}`,
+                background: store.canRedo ? 'rgba(168,85,247,0.14)' : 'rgba(20,20,30,0.4)',
+                color: store.canRedo ? '#e8eef8' : 'rgba(140,140,160,0.4)',
+                cursor: store.canRedo ? 'pointer' : 'not-allowed',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
               }}
             >
-              <Redo size={16} />
+              <Redo size={14} />
+              Redo
             </button>
 
             {store.lyrics.length > 0 && (

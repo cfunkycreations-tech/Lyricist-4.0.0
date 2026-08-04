@@ -1,6 +1,8 @@
 // AI integration service for Lyricist 4.0.7
 // Enforces: Law of Subtext, Law of Human Paradox, Conversational Cadence
 
+import { cleanRefineOutput } from '../utils/refineClean.js';
+
 async function singleCall(messages, config, modelId, customTemp, customMax) {
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
@@ -189,10 +191,11 @@ Line to vary:
 
 Alternative line:`;
 
-  return (await callAI([
+  const raw = (await callAI([
     { role: "system", content: systemPrompt },
     { role: "user", content: userPrompt }
   ], store.config, 0.9, 100)).trim().replace(/^"|"$/g, "");
+  return cleanRefineOutput(raw, lineText);
 }
 
 // Fills in "[blank]" tokens in lyrics
@@ -262,15 +265,24 @@ export async function refineLyrics(targetText, mode, store) {
     instructions = "Elevate the vocabulary and imagery. Introduce striking metaphors, literary themes, or double meanings while keeping it performable.";
   }
 
+  const lineCount = String(targetText || '').split('\n').filter((l) => l.trim()).length || 1;
   const systemPrompt = `${HUMAN_LYRICIST_RULES}
-You are refining this specific text.
+You are REWRITING this text in place. Replace it completely.
 INSTRUCTION: ${instructions}
-Return ONLY the refined text. No commentary.`;
 
-  return (await callAI([
+CRITICAL OUTPUT RULES:
+- Return ONLY the rewritten lyric text.
+- Do NOT include the original text.
+- Do NOT show before/after, options A/B, or commentary.
+- Keep the same number of lines as the input (${lineCount} line${lineCount === 1 ? '' : 's'}).
+- If input is one line, output exactly one line.`;
+
+  const raw = await callAI([
     { role: "system", content: systemPrompt },
-    { role: "user", content: `Text to refine:\n${targetText}` }
-  ], store.config, 0.8, 500)).trim();
+    { role: "user", content: `Rewrite this completely (same line count, refined only — no original):\n${targetText}` }
+  ], store.config, 0.8, 500);
+
+  return cleanRefineOutput(raw, targetText);
 }
 
 // Originality and cliché analysis

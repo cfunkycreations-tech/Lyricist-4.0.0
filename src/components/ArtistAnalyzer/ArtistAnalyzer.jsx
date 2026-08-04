@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { callAI, refineLyrics, analyzeClichés, checkSimilarity, checkThemeConsistency } from '../../services/AIService.js';
 import { Search, Sparkles, BookOpen, AlertTriangle, ShieldCheck, Check, Copy, Save, Heart, Send } from 'lucide-react';
-import ghostRiderVideo from '../../assets/ghost_rider.mp4';
+import ghostRiderVideo from '../../assets/quantum_reaper.mp4'; // 4.2.0 reaper (old 4.0.7 kept at ghost_rider.mp4)
 
 const analysisTabs = [
   { id: 'style', label: 'Lyrical Style' },
@@ -28,6 +28,9 @@ export default function ArtistAnalyzer({ onGhostSend }) {
   const [analysis, setAnalysis] = useState('');
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  // Style DNA (4.2.0) — structured fingerprint from the freeform analysis
+  const [styleDNA, setStyleDNA] = useState(null);
+  const [loadingDNA, setLoadingDNA] = useState(false);
 
   // Ghost Rider
   const [ghostTopic, setGhostTopic] = useState('');
@@ -117,11 +120,48 @@ export default function ArtistAnalyzer({ onGhostSend }) {
         { role: 'user', content: finalPrompt }
       ], store.config);
       setAnalysis(result);
+      setStyleDNA(null);
       if (autoSaveReports) saveReportToDisk(result);
+      // Kick Style DNA extract in the background (does not block the report)
+      extractStyleDNA(result, artist.trim());
     } catch (e) {
       setErrorMsg(e.message);
     } finally {
       setLoadingAnalysis(false);
+    }
+  };
+
+  /** Deeper Style DNA: rhythm, rhyme density, image clusters — JSON from the analysis */
+  const extractStyleDNA = async (reportText, artistName) => {
+    if (!reportText || !store.config.openRouterApiKey) return;
+    setLoadingDNA(true);
+    try {
+      const raw = await callAI([
+        {
+          role: 'system',
+          content: 'Extract a compact Style DNA fingerprint as pure JSON only (no markdown). Keys: rhythm (string: pocket/feel), rhymeDensity (sparse|balanced|dense), imageClusters (array of 4-8 short image/motif phrases), emotionalTemp (0-100 number), cadenceNotes (string). No artist name in values.',
+        },
+        {
+          role: 'user',
+          content: `Artist analyzed: ${artistName}\n\nReport:\n${reportText.slice(0, 6000)}\n\nReturn JSON only.`,
+        },
+      ], store.config, 0.3, 400);
+      const match = String(raw).match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        setStyleDNA(parsed);
+        // Persist for Quantum Lab pressure chamber (feature 8)
+        try {
+          localStorage.setItem(
+            'lyricistStyleDNAPressure',
+            JSON.stringify({ ...parsed, artist: artistName, savedAt: Date.now() })
+          );
+        } catch { /* */ }
+      }
+    } catch {
+      /* DNA is optional — analysis still stands */
+    } finally {
+      setLoadingDNA(false);
     }
   };
 
@@ -257,6 +297,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
             value={artist}
             onChange={(e) => setArtist(e.target.value)}
             placeholder="e.g. Kendrick Lamar, Taylor Swift..."
+            data-demo="gr-artist"
             style={{
               width: '100%',
               background: 'rgba(13,8,28,0.7)',
@@ -333,6 +374,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
             fontWeight: 700,
             cursor: loadingAnalysis || !artist.trim() ? 'not-allowed' : 'pointer'
           }}
+          data-demo="gr-analyze"
         >
           {loadingAnalysis ? '🔍 Analyzing style...' : '🔍 Analyze Artist'}
         </button>
@@ -459,6 +501,76 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
             </div>
           )}
 
+          {/* Style DNA — rhythm, rhyme density, image clusters (4.2.0) */}
+          {(styleDNA || loadingDNA) && (
+            <div
+              style={{ background: 'rgba(13,8,28,0.85)', border: '1px solid rgba(0,229,255,0.35)', borderRadius: 12, padding: 18 }}
+              data-help="Style DNA is a compact fingerprint pulled from the report: how they ride the beat (rhythm), how hard they rhyme (rhyme density), and recurring image clusters (metaphors/scenes). Used as a cheat sheet when you ghostwrite."
+            >
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#00e5ff', marginBottom: 10 }}>
+                🧬 Style DNA {loadingDNA ? '(building…)' : ''}
+              </h4>
+              {styleDNA && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, fontSize: '0.82rem' }}>
+                  <div>
+                    <div style={{ color: 'rgba(167,139,250,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Rhythm / pocket</div>
+                    <div style={{ color: '#e8e0ff', marginTop: 4 }}>{styleDNA.rhythm || '—'}</div>
+                  </div>
+                  <div>
+                    <div style={{ color: 'rgba(167,139,250,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Rhyme density</div>
+                    <div style={{ color: '#39ff14', marginTop: 4, fontWeight: 700 }}>{styleDNA.rhymeDensity || '—'}</div>
+                  </div>
+                  <div>
+                    <div style={{ color: 'rgba(167,139,250,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Emotional temp</div>
+                    <div style={{ color: '#ff2d95', marginTop: 4 }}>{styleDNA.emotionalTemp != null ? `${styleDNA.emotionalTemp}/100` : '—'}</div>
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <div style={{ color: 'rgba(167,139,250,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Cadence notes</div>
+                    <div style={{ color: '#e8e0ff', marginTop: 4 }}>{styleDNA.cadenceNotes || '—'}</div>
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <div style={{ color: 'rgba(167,139,250,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Image clusters</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {(Array.isArray(styleDNA.imageClusters) ? styleDNA.imageClusters : []).map((img, i) => (
+                        <span key={i} className="suno-chip" style={{ fontSize: '0.7rem' }}>{img}</span>
+                      ))}
+                      {!styleDNA.imageClusters?.length && <span style={{ color: 'rgba(180,170,200,0.5)' }}>—</span>}
+                    </div>
+                  </div>
+                  <div style={{ gridColumn: '1 / -1', marginTop: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        try {
+                          localStorage.setItem(
+                            'lyricistStyleDNAPressure',
+                            JSON.stringify({ ...styleDNA, artist: artist.trim(), savedAt: Date.now() })
+                          );
+                          alert('Style DNA sent to Quantum Lab pressure chamber.\nOpen Quantum Lab → panel 8 Style → Load Style DNA pressure.');
+                        } catch (e) {
+                          alert('Could not save Style DNA: ' + (e?.message || e));
+                        }
+                      }}
+                      data-help="Sends this Style DNA into Quantum Lab as a pressure field (rhythm, density, emotional temp, image motifs) — new lyrics under that physics, never plagiarized bars."
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: 8,
+                        border: '1px solid rgba(0,229,255,0.5)',
+                        background: 'rgba(0,40,60,0.5)',
+                        color: '#a5f3fc',
+                        fontWeight: 700,
+                        fontSize: '0.78rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ⚛️ Send Style DNA to Quantum
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Ghost Rider Mimic section */}
           {artist.trim() && (
             <div style={{ background: 'rgba(13,8,28,0.85)', border: '1px solid rgba(34,211,238,0.22)', borderRadius: 12, padding: 18 }}>
@@ -491,6 +603,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                   onClick={handleGhostWrite}
                   disabled={loadingGhost}
                   className="btn-neon-cyan"
+                  data-demo="gr-write"
                   data-help="Writes brand-new, original lyrics that FEEL like the artist's style — their flow and word choices — but are 100% your own words. It never copies their real lyrics or uses their name."
                   style={{
                     padding: '7px 18px',
@@ -588,6 +701,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                     <button
                       onClick={handleSendToSongwriter}
                       className="btn-neon-purple"
+                      data-demo="gr-send"
                       data-help="Sends these lyrics over to the main Songwriter tab, broken into sections, so you can edit and polish them line by line with all the writing tools."
                       style={{
                         flex: 1,
@@ -688,7 +802,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                       {/* Theme check */}
                       {themeCheck && (
                         <div>
-                          <span style={{ fontSize: '0.7rem', color: themeCheck.length > 0 ? '#f59e0b' : '#34d399' }}>
+                          <span style={{ fontSize: '0.7rem', color: themeCheck.length > 0 ? '#a855f7' : '#34d399' }}>
                             {themeCheck.length > 0
                               ? `⚠️ Found ${themeCheck.length} off-topic lines: "${themeCheck.join(', ')}"`
                               : '✓ Theme consistency check passed.'}

@@ -181,7 +181,11 @@ const DEFAULT_CONFIG = {
   useFlexTier: true,
   imageAspectRatio: '1:1',
   imageSize: '2K',
-  customArtStyle: ''
+  customArtStyle: '',
+
+  // Stemmer — offline (default, light CPU) or cloud Demucs (needs Replicate key)
+  stemmerMode: 'offline', // 'offline' | 'cloud'
+  replicateApiKey: '',
 };
 
 export const LyricStoreProvider = ({ children }) => {
@@ -213,6 +217,13 @@ export const LyricStoreProvider = ({ children }) => {
   // Defaults ON for first-time songwriters; remembered between sessions.
   const [tipsEnabled, setTipsEnabled] = useState(() => {
     const saved = localStorage.getItem('lyricistTipsEnabled');
+    return saved === null ? true : saved === 'true';
+  });
+
+  // Ghost Demo optional — when OFF, hide Play Demo (feature fully opted out).
+  // Defaults ON so people can discover it; flip Off anytime. Remembered.
+  const [ghostDemoEnabled, setGhostDemoEnabled] = useState(() => {
+    const saved = localStorage.getItem('lyricistGhostDemoEnabled');
     return saved === null ? true : saved === 'true';
   });
 
@@ -254,6 +265,10 @@ export const LyricStoreProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('lyricistTipsEnabled', String(tipsEnabled));
   }, [tipsEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('lyricistGhostDemoEnabled', String(ghostDemoEnabled));
+  }, [ghostDemoEnabled]);
 
   const setConfig = (newConfig) => {
     setConfigState(newConfig);
@@ -326,16 +341,18 @@ export const LyricStoreProvider = ({ children }) => {
     const updated = lyrics.map(s => {
       if (s.id !== sectionId) return s;
       
+      // Replace lines cleanly — no leftover A/B/C ghost variants
       const textLines = text.split('\n');
       const lines = textLines.map((txt, index) => {
         const existing = s.lines[index] || {};
+        const cleaned = String(txt || '');
         return {
-          text: txt,
+          text: cleaned,
           locked: existing.locked || false,
           lockedWord: existing.lockedWord || '',
           targetSyllables: existing.targetSyllables || 0,
-          activeVariation: existing.activeVariation || 'draft',
-          variations: existing.variations || { draft: txt, A: '', B: '', C: '' }
+          activeVariation: 'draft',
+          variations: { draft: cleaned, A: '', B: '', C: '' }
         };
       });
 
@@ -348,7 +365,16 @@ export const LyricStoreProvider = ({ children }) => {
     const updated = lyrics.map(s => {
       if (s.id !== sectionId) return s;
       const lines = [...s.lines];
-      lines[lineIndex] = { ...lines[lineIndex], ...lineData };
+      const prev = lines[lineIndex] || {};
+      const merged = { ...prev, ...lineData };
+      // If text is being set, force a clean single-draft line (kill A/B/C ghosts)
+      if (Object.prototype.hasOwnProperty.call(lineData, 'text')) {
+        const text = String(lineData.text ?? '').split('\n')[0] ?? '';
+        merged.text = text;
+        merged.activeVariation = 'draft';
+        merged.variations = { draft: text, A: '', B: '', C: '' };
+      }
+      lines[lineIndex] = merged;
       return { ...s, lines };
     });
     pushState(updated);
@@ -368,10 +394,7 @@ export const LyricStoreProvider = ({ children }) => {
 
   const getFullText = () => {
     return lyrics.map(s => {
-      const secLines = s.lines.map(l => {
-        if (l.activeVariation === 'draft') return l.text;
-        return l.variations[l.activeVariation] || l.text;
-      }).join('\n');
+      const secLines = s.lines.map(l => l.text || '').join('\n');
       return `[${s.name.toUpperCase()}]\n${secLines}`;
     }).join('\n\n');
   };
@@ -416,7 +439,8 @@ export const LyricStoreProvider = ({ children }) => {
       sectionLineCounts, setSectionLineCounts,
 
       // Global Tips / hover-help toggle
-      tipsEnabled, setTipsEnabled
+      tipsEnabled, setTipsEnabled,
+      ghostDemoEnabled, setGhostDemoEnabled
     }}>
       {children}
     </LyricStoreContext.Provider>

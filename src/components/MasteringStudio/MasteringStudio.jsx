@@ -181,7 +181,7 @@ export default function MasteringStudio({ onNavigate }) {
   };
 
   const generateCover = async () => {
-    if (!store.config.googleApiKey) { setError('Add your Google AI API key in Settings to generate cover art.'); return; }
+    if (!store.config.openRouterApiKey) { setError('Add your OpenRouter API key in Settings to generate cover art (same key as the rest of Lyricist).'); return; }
     setCoverLoading(true);
     setError('');
     try {
@@ -329,7 +329,7 @@ export default function MasteringStudio({ onNavigate }) {
             </div>
             {[['bass', 'Bass'], ['mids', 'Mids'], ['treble', 'Treble'], ['compression', 'Compression'], ['loudness', 'Loudness']].map(([key, label]) => (
               <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.66rem', marginBottom: 4, fontWeight: 400 }}>
-                <span style={{ width: 78, color: '#ff9e2c' }}>{label}</span>
+                <span style={{ width: 78, color: '#00e5ff' }}>{label}</span>
                 <input type="range" min={0} max={1} step={0.05} value={settings[key]}
                   onChange={(e) => setSlider(key, Number(e.target.value))}
                   className="suno-range" style={{ flex: 1 }} />
@@ -381,7 +381,7 @@ export default function MasteringStudio({ onNavigate }) {
           {libraryOpen && (
             <div className="card-cosmic" style={{ borderRadius: 12, padding: 14, marginBottom: 14 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#ff9e2c' }}>Your Booth takes — click to add</span>
+                <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#00e5ff' }}>Your Booth takes — click to add</span>
                 <button onClick={() => setLibraryOpen(false)} className="suno-btn"><X size={12} /></button>
               </div>
               {!library.length && <div style={{ fontSize: '0.72rem', color: 'rgba(196,181,253,0.6)' }}>No takes in the library yet — record some in the Recording Booth first.</div>}
@@ -417,7 +417,7 @@ export default function MasteringStudio({ onNavigate }) {
               <span className="album-track-num">{i + 1}</span>
               <input
                 className="album-input"
-                style={{ flex: 2, fontWeight: 700, fontFamily: "'Audiowide', sans-serif", color: '#ff9e2c' }}
+                style={{ flex: 2, fontWeight: 700, fontFamily: "'Audiowide', sans-serif", color: '#00e5ff' }}
                 value={t.title}
                 onChange={(e) => setTracks(prev => prev.map(x => x.id === t.id ? { ...x, title: e.target.value } : x))}
                 onMouseDown={(e) => e.stopPropagation()}
@@ -436,7 +436,7 @@ export default function MasteringStudio({ onNavigate }) {
               </button>
 
               {t.busy ? (
-                <span style={{ fontSize: '0.64rem', color: '#ff9e2c', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ fontSize: '0.64rem', color: '#00e5ff', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                   <RefreshCw size={11} className="pulse-glow" /> Mastering...
                 </span>
               ) : t.mastered ? (

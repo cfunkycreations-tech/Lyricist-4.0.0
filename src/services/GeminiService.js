@@ -1,78 +1,38 @@
-// Gemini "Song Forge" integration — Lyricist 4.1.3
-// Uses Google's Interactions API (@google/genai) to:
-//   1. Compose song lyrics + structure with gemini-3.5-flash (service_tier: 'flex')
-//   2. Chain a second call to a Nano Banana image model for matching cover art
-//
-// Same BYOK-in-renderer model as AIService.js/OpenRouter: the user supplies
-// their own Google AI Studio key (Settings), it lives in localStorage, and
-// calls go straight from the Electron renderer to Google's API. That means
-// the key is readable via devtools on this machine — acceptable for a
-// single-user desktop BYOK app, but do NOT reuse this pattern in a hosted/
-// multi-user context; proxy through a server there instead.
-import { GoogleGenAI } from '@google/genai';
-import { buildPromptContext, parseSectionsFromText } from './AIService.js';
+// Song Forge — OpenRouter ONLY (Lyricist 4.2.0)
+// One key: the user's OpenRouter API key from Settings.
+// Lyrics: OpenRouter chat models (whatever model they picked).
+// Cover art: OpenRouter image models (Nano Banana / Gemini image via OpenRouter).
+// NO Google AI Studio key. NO @google/genai client.
 
-export const DEFAULT_TEXT_MODEL = 'gemini-3.5-flash';
+import { callAI, buildPromptContext, parseSectionsFromText } from './AIService.js';
 
-// Nano Banana family — pick by speed/cost vs. quality.
+// OpenRouter image-model slugs (Nano Banana family exposed through OpenRouter).
+// User can change these in Settings; defaults target Nano Banana 2 Lite/class.
 export const IMAGE_MODELS = [
-  { id: 'gemini-3.1-flash-lite-image', label: 'Nano Banana 2 Lite — fastest, cheapest (1K only)' },
-  { id: 'gemini-3.1-flash-image', label: 'Nano Banana 2 — balanced quality & speed (default)' },
-  { id: 'gemini-3-pro-image', label: 'Nano Banana Pro — highest fidelity, slower' }
+  { id: 'google/gemini-2.5-flash-image-preview', label: 'Nano Banana 2 Lite — fast (via OpenRouter)' },
+  { id: 'google/gemini-2.5-flash-image', label: 'Nano Banana 2 — balanced (via OpenRouter)' },
+  { id: 'black-forest-labs/flux.2-flex', label: 'Flux 2 Flex — alt quality (via OpenRouter)' },
 ];
-export const DEFAULT_IMAGE_MODEL = 'gemini-3.1-flash-image';
+export const DEFAULT_IMAGE_MODEL = 'google/gemini-2.5-flash-image-preview';
 
-// Lyricist's signature cover-art frame. Used unless the user overrides it
-// in Settings/Song Forge with their own style prompt.
+// Kept for Settings UI that still labels a "text model" — Song Forge lyrics use
+// the same OpenRouter model as the rest of Lyricist (store.config.model).
+export const DEFAULT_TEXT_MODEL = 'openrouter/auto';
+
 export const BRAND_ART_STYLE =
   'Framed inside a perfectly circular medallion emblem, like a glowing engraved coin or badge — ' +
   'not a square or rectangular canvas. Deep black background outside the medallion. ' +
-  'The medallion rim glows with a vivid neon magenta-to-orange gradient (#ff2d95 to #ff9e2c), ' +
+  'The medallion rim glows with a vivid neon electric blue-to-purple-to-emerald gradient (#00e5ff to #a855f7 to #10f0a0), ' +
   'with a soft cyan highlight accent. Sharp, high-contrast, professional album-cover quality, ' +
   'centered composition, no text or lettering anywhere in the image.';
 
-let cachedClient = null;
-let cachedKey = null;
-
-function getClient(apiKey) {
-  if (!apiKey) {
-    throw new Error('No Google AI API key configured. Add one in Settings under "Google Gemini API Key".');
-  }
-  if (!cachedClient || cachedKey !== apiKey) {
-    cachedClient = new GoogleGenAI({ apiKey });
-    cachedKey = apiKey;
-  }
-  return cachedClient;
-}
-
-// Flex tier is ~50% cheaper but Google will NOT silently upgrade a full
-// flex queue to standard — a 429/503 there just means "try later". We
-// retry with backoff, then fall back to the standard tier once rather
-// than fail the user's generation outright.
-async function createInteraction(client, params, { retries = 2 } = {}) {
-  const isFlex = params.service_tier === 'flex';
-  let lastErr;
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      return await client.interactions.create(params);
-    } catch (err) {
-      lastErr = err;
-      const status = err?.status ?? err?.code;
-      const capacityIssue = status === 429 || status === 503;
-      if (capacityIssue && attempt < retries) {
-        await new Promise(r => setTimeout(r, 1000 * 2 ** attempt));
-        continue;
-      }
-      if (capacityIssue && isFlex) {
-        // Final fallback: same request, standard tier, no further retries.
-        const { service_tier, ...standardParams } = params;
-        return client.interactions.create(standardParams);
-      }
-      throw new Error(err?.message || `Gemini API error calling ${params.model}`);
-    }
-  }
-  throw new Error(lastErr?.message || `Gemini API error calling ${params.model}`);
-}
+export const MANDATORY_MEDALLION_FRAME =
+  'MANDATORY OUTPUT CONSTRAINTS (these override any conflicting instruction above): ' +
+  'The final image MUST be composed as a single seamless circular medallion frame, ' +
+  'perfectly centered, like a glowing engraved coin — never a square or rectangular composition. ' +
+  'The medallion border MUST glow intensely in electric blue (#00e5ff), electric purple (#a855f7), and emerald (#10f0a0), ' +
+  'with the glow bleeding softly into a deep black background outside the circle. ' +
+  'No text or lettering anywhere in the image.';
 
 const WRITING_LAWS = `You are the AI Writing Assistant inside Lyricist.
 You despise standard, cheesy AI-generated lyrics. You write like a seasoned human songwriter who focuses on subtext, friction, and conversational truth.
@@ -85,13 +45,95 @@ STRICT WRITING LAWS:
 5. HUMAN PARADOX & DEPTH: Raw human conflict and contradiction. Avoid clean, preachy endings.
 6. SECTION COMPOSITION: Label each section clearly (e.g. [Intro], [Verse 1], [Chorus], [Bridge], [Outro]). Output only the raw lyrics — no commentary.`;
 
-// 1. Text generation — gemini-3.5-flash on the flex tier
-export async function generateSongWithGemini(store) {
-  const { googleApiKey, geminiTextModel, useFlexTier, temperature } = store.config;
-  const client = getClient(googleApiKey);
+function requireOpenRouter(store) {
+  const key = store?.config?.openRouterApiKey;
+  if (!key) {
+    throw new Error('No OpenRouter API key configured. Add it once in Settings — that single key runs Song Forge lyrics and Nano Banana cover art.');
+  }
+  return key;
+}
 
+async function openRouterChat({ apiKey, model, messages, temperature = 0.75, max_tokens = 4000, modalities }) {
+  const body = {
+    model,
+    temperature,
+    max_tokens,
+    messages,
+  };
+  // Some image models want modalities: ["image","text"]
+  if (modalities) body.modalities = modalities;
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+      'HTTP-Referer': 'https://lyricist.app',
+      'X-Title': 'Lyricist Song Forge',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    throw new Error(errData?.error?.message || `OpenRouter error (${model}): status ${response.status}`);
+  }
+  return response.json();
+}
+
+/** Pull base64 / data-URL image from various OpenRouter response shapes. */
+function extractImageFromOR(result) {
+  const msg = result?.choices?.[0]?.message;
+  if (!msg) return null;
+
+  // Newer: message.images[]
+  if (Array.isArray(msg.images) && msg.images.length) {
+    const url = msg.images[0]?.image_url?.url || msg.images[0]?.url;
+    if (url) return url;
+  }
+
+  // Content parts
+  if (Array.isArray(msg.content)) {
+    for (const part of msg.content) {
+      if (part?.type === 'image_url' && part.image_url?.url) return part.image_url.url;
+      if (part?.type === 'image' && part.image_url?.url) return part.image_url.url;
+      if (part?.image_url?.url) return part.image_url.url;
+    }
+  }
+
+  // String content that is a data URL
+  if (typeof msg.content === 'string' && msg.content.startsWith('data:image')) {
+    return msg.content;
+  }
+
+  // Sometimes markdown image
+  if (typeof msg.content === 'string') {
+    const m = msg.content.match(/data:image\/[a-zA-Z+]+;base64,[A-Za-z0-9+/=]+/);
+    if (m) return m[0];
+    const urlM = msg.content.match(/https?:\/\/\S+\.(png|jpg|jpeg|webp)/i);
+    if (urlM) return urlM[0];
+  }
+
+  return null;
+}
+
+function dataUrlParts(dataUrlOrBase64) {
+  if (!dataUrlOrBase64) return { dataUrl: null, base64: null };
+  if (dataUrlOrBase64.startsWith('data:')) {
+    const base64 = dataUrlOrBase64.split(',')[1] || '';
+    return { dataUrl: dataUrlOrBase64, base64 };
+  }
+  return {
+    dataUrl: `data:image/png;base64,${dataUrlOrBase64}`,
+    base64: dataUrlOrBase64,
+  };
+}
+
+// ── Lyrics via OpenRouter (same key as the rest of Lyricist) ─────────────
+export async function generateSongWithGemini(store) {
+  requireOpenRouter(store);
   const context = buildPromptContext(store);
-  const structureSequence = store.customStructure.map(s => s.toUpperCase()).join(' -> ');
+  const structureSequence = (store.customStructure || []).map((s) => s.toUpperCase()).join(' -> ');
 
   const userPrompt = `Write the complete song lyrics based on this context:
 ${context}
@@ -101,159 +143,184 @@ ${structureSequence}
 
 Ensure every section is clearly labeled, and that the lyrics are highly authentic, performable, and deeply human.`;
 
-  const interaction = await createInteraction(client, {
-    model: geminiTextModel || DEFAULT_TEXT_MODEL,
-    input: userPrompt,
-    system_instruction: WRITING_LAWS,
-    service_tier: useFlexTier === false ? undefined : 'flex',
-    generation_config: {
-      temperature: temperature ?? 0.75
-    }
-  });
+  const rawText = await callAI(
+    [
+      { role: 'system', content: WRITING_LAWS },
+      { role: 'user', content: userPrompt },
+    ],
+    store.config,
+    store.config.temperature ?? 0.75,
+    store.config.maxTokens ?? 4000
+  );
 
-  const rawText = interaction.output_text || '';
-  if (!rawText.trim()) {
-    throw new Error('Gemini returned an empty response. Try again, or check your Google AI API key / quota.');
+  if (!rawText?.trim()) {
+    throw new Error('OpenRouter returned empty lyrics. Check your key, model, and credits.');
   }
 
   return {
-    interactionId: interaction.id,
     rawText,
-    sections: parseSectionsFromText(rawText, store)
+    sections: parseSectionsFromText(rawText, store),
   };
 }
 
 function buildArtPrompt({ title, genre, mood, topic, styleOverride }) {
-  const subject = `Album cover art for a ${genre || 'genre-blending'} song titled "${title || 'Untitled'}"` +
+  const subject =
+    `Album cover art for a ${genre || 'genre-blending'} song titled "${title || 'Untitled'}"` +
     `${topic ? `, about ${topic}` : ''}, evoking a ${mood || 'striking'} mood.`;
-  const style = (styleOverride && styleOverride.trim()) ? styleOverride.trim() : BRAND_ART_STYLE;
-  return `${subject}\n\nStyle: ${style}`;
+  const style = styleOverride && styleOverride.trim() ? styleOverride.trim() : BRAND_ART_STYLE;
+  return `${subject}\n\nStyle: ${style}\n\nGenerate a single polished image. No text or lettering.`;
 }
 
-// Low-level image call — any free-form prompt, no brand styling applied.
-// generateCoverArt() below wraps this with the medallion/neon brand prompt;
-// the "create an image, then write a song from it" flow uses this directly.
+// Low-level image gen via OpenRouter (Nano Banana / image models on one key)
 export async function generateImage(store, { prompt, aspectRatio, imageSize } = {}) {
   if (!prompt || !prompt.trim()) {
     throw new Error('Enter a description of the image you want to create.');
   }
-  const { googleApiKey, geminiImageModel } = store.config;
-  const client = getClient(googleApiKey);
+  const apiKey = requireOpenRouter(store);
+  const model = store.config.geminiImageModel || store.config.openRouterImageModel || DEFAULT_IMAGE_MODEL;
 
-  const interaction = await createInteraction(client, {
-    model: geminiImageModel || DEFAULT_IMAGE_MODEL,
-    input: prompt,
-    response_format: {
-      type: 'image',
-      mime_type: 'image/png',
-      aspect_ratio: aspectRatio || store.config.imageAspectRatio || '1:1',
-      image_size: imageSize || store.config.imageSize || '2K'
-    }
+  const result = await openRouterChat({
+    apiKey,
+    model,
+    temperature: 0.7,
+    max_tokens: 2048,
+    modalities: ['image', 'text'],
+    messages: [
+      {
+        role: 'user',
+        content: `${prompt.trim()}\n\nAspect: ${aspectRatio || store.config.imageAspectRatio || '1:1'}. High quality. Output an image.`,
+      },
+    ],
   });
 
-  const imageData = interaction.output_image?.data;
-  if (!imageData) {
-    throw new Error('Gemini did not return image data. Try again, or adjust the prompt.');
+  const url = extractImageFromOR(result);
+  if (!url) {
+    throw new Error(
+      'OpenRouter did not return image data. In Settings, pick a Nano Banana / image model available on your OpenRouter account (and ensure the model supports image output).'
+    );
   }
 
+  // If it's a remote URL, fetch and convert to data URL for save/export
+  let dataUrl = url;
+  if (url.startsWith('http')) {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      dataUrl = url;
+    }
+  }
+
+  const parts = dataUrlParts(dataUrl);
   return {
-    interactionId: interaction.id,
-    dataUrl: `data:image/png;base64,${imageData}`,
-    base64: imageData,
+    dataUrl: parts.dataUrl,
+    base64: parts.base64,
     mimeType: 'image/png',
-    prompt
+    prompt,
   };
 }
 
-// ── Image-to-image (4.1.3) ──────────────────────────────────────────────
-// The user's uploaded reference image is passed to Nano Banana as the primary
-// visual base layer. Whatever style notes ride along, the output constraints
-// below are NON-NEGOTIABLE and are always appended last so they win.
-export const MANDATORY_MEDALLION_FRAME =
-  'MANDATORY OUTPUT CONSTRAINTS (these override any conflicting instruction above): ' +
-  'The final image MUST be composed as a single seamless circular medallion frame, ' +
-  'perfectly centered, like a glowing engraved coin — never a square or rectangular composition. ' +
-  'The medallion border MUST glow intensely in neon magenta (#ff2d95) and neon orange (#ff9e2c), ' +
-  'with the glow bleeding softly into a deep black background outside the circle. ' +
-  'No text or lettering anywhere in the image.';
-
-// Low-level image-to-image call: reference image in, new image out.
-export async function generateImageToImage(store, { referenceBase64, referenceMimeType, prompt, aspectRatio, imageSize } = {}) {
+export async function generateImageToImage(store, { referenceBase64, referenceMimeType, prompt } = {}) {
   if (!referenceBase64) {
     throw new Error('No reference image provided. Upload one first.');
   }
-  const { googleApiKey, geminiImageModel } = store.config;
-  const client = getClient(googleApiKey);
+  const apiKey = requireOpenRouter(store);
+  const model = store.config.geminiImageModel || store.config.openRouterImageModel || DEFAULT_IMAGE_MODEL;
+  const mime = referenceMimeType || 'image/png';
+  const dataUrl = `data:${mime};base64,${referenceBase64}`;
 
-  const interaction = await createInteraction(client, {
-    model: geminiImageModel || DEFAULT_IMAGE_MODEL,
-    // The reference image leads the input so the model treats it as the
-    // base layer; the text steers the transformation applied on top of it.
-    input: [
-      { type: 'image', data: referenceBase64, mime_type: referenceMimeType || 'image/png' },
-      { type: 'text', text: prompt }
+  const result = await openRouterChat({
+    apiKey,
+    model,
+    temperature: 0.7,
+    max_tokens: 2048,
+    modalities: ['image', 'text'],
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: prompt || 'Transform this into polished album cover art. No text.' },
+          { type: 'image_url', image_url: { url: dataUrl } },
+        ],
+      },
     ],
-    response_format: {
-      type: 'image',
-      mime_type: 'image/png',
-      aspect_ratio: aspectRatio || '1:1', // medallion frame is always square
-      image_size: imageSize || store.config.imageSize || '2K'
-    }
   });
 
-  const imageData = interaction.output_image?.data;
-  if (!imageData) {
-    throw new Error('Gemini did not return image data for that reference. Try a different image or prompt.');
+  const url = extractImageFromOR(result);
+  if (!url) {
+    throw new Error('OpenRouter did not return image data for that reference. Try another image model on OpenRouter.');
   }
 
+  let finalUrl = url;
+  if (url.startsWith('http')) {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      finalUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      finalUrl = url;
+    }
+  }
+
+  const parts = dataUrlParts(finalUrl);
   return {
-    interactionId: interaction.id,
-    dataUrl: `data:image/png;base64,${imageData}`,
-    base64: imageData,
+    dataUrl: parts.dataUrl,
+    base64: parts.base64,
     mimeType: 'image/png',
-    prompt
+    prompt,
   };
 }
 
-// Brand-locked cover art from an uploaded reference image. The reference is
-// the primary visual seed; the medallion/neon frame constraints are enforced
-// regardless of any user style override.
 export async function generateCoverArtFromReference(store, { referenceBase64, referenceMimeType, title, topic, styleOverride } = {}) {
   const subject =
     `Using the attached image as the primary visual reference and base layer, create new album cover art ` +
     `for a ${store.genre || 'genre-blending'} song titled "${title || 'Untitled'}"` +
     `${topic ? `, about ${topic}` : ''}, evoking a ${store.mood || 'striking'} mood. ` +
     `Preserve the reference image's key subject, composition and palette cues, reinterpreted as polished cover art.`;
-  const style = (styleOverride && styleOverride.trim()) ? `Style notes: ${styleOverride.trim()}` : `Style notes: ${BRAND_ART_STYLE}`;
+  const style = styleOverride && styleOverride.trim() ? `Style notes: ${styleOverride.trim()}` : `Style notes: ${BRAND_ART_STYLE}`;
   const prompt = `${subject}\n\n${style}\n\n${MANDATORY_MEDALLION_FRAME}`;
   return generateImageToImage(store, { referenceBase64, referenceMimeType, prompt });
 }
 
-// 2. Art generation — chained call to a Nano Banana image model, brand-styled
 export async function generateCoverArt(store, { title, topic, styleOverride } = {}) {
   const prompt = buildArtPrompt({
     title,
     genre: store.genre,
     mood: store.mood,
     topic: topic || store.topic,
-    styleOverride: styleOverride ?? store.config.customArtStyle
+    styleOverride: styleOverride ?? store.config.customArtStyle,
   });
-  return generateImage(store, { prompt });
+  // Append brand frame for cover art
+  return generateImage(store, {
+    prompt: `${prompt}\n\n${MANDATORY_MEDALLION_FRAME}`,
+  });
 }
 
-// Reverse flow: an image (uploaded or Gemini-generated) becomes the creative
-// seed for the lyrics. imageBase64 must be raw base64 (no "data:...;base64," prefix).
 export async function generateSongFromImage(store, { imageBase64, mimeType, notes } = {}) {
   if (!imageBase64) {
     throw new Error('No image provided. Upload one or generate one first.');
   }
-  const { googleApiKey, geminiTextModel, useFlexTier, temperature } = store.config;
-  const client = getClient(googleApiKey);
-
+  requireOpenRouter(store);
   const context = buildPromptContext(store);
-  const structureSequence = store.customStructure.map(s => s.toUpperCase()).join(' -> ');
+  const structureSequence = (store.customStructure || []).map((s) => s.toUpperCase()).join(' -> ');
+  const dataUrl = `data:${mimeType || 'image/png'};base64,${imageBase64}`;
 
-  const userPrompt = `Study the attached image closely — its subject, colors, lighting, mood, and any story it seems to tell. Use it as the creative seed for a song; the lyrics should feel clearly inspired by what's in the image.
+  // Multimodal lyric write via OpenRouter (vision-capable chat model)
+  const apiKey = store.config.openRouterApiKey;
+  const model = store.config.model || 'openai/gpt-4o-mini';
+
+  const userText = `Study the attached image closely — its subject, colors, lighting, mood, and any story it seems to tell. Use it as the creative seed for a song; the lyrics should feel clearly inspired by what's in the image.
 ${notes && notes.trim() ? `Additional direction from the songwriter: ${notes.trim()}\n` : ''}
 SONGWRITING CONFIGURATION:
 ${context}
@@ -261,41 +328,46 @@ ${context}
 STRUCTURE:
 ${structureSequence}
 
-Write the complete song lyrics. Ensure every section is clearly labeled, and that the lyrics are highly authentic, performable, and deeply human.`;
+Write the complete song lyrics. Ensure every section is clearly labeled. Output only the lyrics.`;
 
-  const interaction = await createInteraction(client, {
-    model: geminiTextModel || DEFAULT_TEXT_MODEL,
-    input: [
-      { type: 'text', text: userPrompt },
-      { type: 'image', data: imageBase64, mime_type: mimeType || 'image/png' }
+  const result = await openRouterChat({
+    apiKey,
+    model,
+    temperature: store.config.temperature ?? 0.75,
+    max_tokens: store.config.maxTokens ?? 4000,
+    messages: [
+      { role: 'system', content: WRITING_LAWS },
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: userText },
+          { type: 'image_url', image_url: { url: dataUrl } },
+        ],
+      },
     ],
-    system_instruction: WRITING_LAWS,
-    service_tier: useFlexTier === false ? undefined : 'flex',
-    generation_config: {
-      temperature: temperature ?? 0.75
-    }
   });
 
-  const rawText = interaction.output_text || '';
-  if (!rawText.trim()) {
-    throw new Error('Gemini returned an empty response for that image. Try again, or add a few notes for direction.');
+  const rawText = result?.choices?.[0]?.message?.content;
+  const text = typeof rawText === 'string' ? rawText : Array.isArray(rawText)
+    ? rawText.map((p) => p?.text || '').join('\n')
+    : '';
+
+  if (!text.trim()) {
+    throw new Error('OpenRouter returned empty lyrics for that image. Try again or add notes.');
   }
 
   return {
-    interactionId: interaction.id,
-    rawText,
-    sections: parseSectionsFromText(rawText, store)
+    rawText: text,
+    sections: parseSectionsFromText(text, store),
   };
 }
 
-// Best-effort title guess from generated sections, used only to seed the art prompt.
 function deriveTitle(sections) {
-  const chorus = sections.find(s => s.type === 'chorus') || sections[0];
+  const chorus = sections.find((s) => s.type === 'chorus') || sections[0];
   const line = chorus?.lines?.[0]?.text || '';
   return line.replace(/[.,!?]+$/, '').trim();
 }
 
-// Orchestrates both calls: write the song, then generate matching cover art.
 export async function generateSongAndArt(store, { artStyleOverride } = {}) {
   const song = await generateSongWithGemini(store);
   const title = deriveTitle(song.sections) || store.topic || store.genre;

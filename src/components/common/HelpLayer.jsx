@@ -2,25 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 
 /**
- * HelpLayer — the app-wide "explain anything on hover" engine (4.0.x).
+ * HelpLayer — the app-wide "explain anything on hover" engine.
  *
- * Mount this ONCE near the top of the app. Then, on ANY element anywhere,
- * add a `data-help="plain-English explanation"` attribute:
+ * Mount once near the top of the app. On ANY element, add:
+ *   data-help="Plain English explanation for a first-time user."
  *
- *   <label data-help="A bridge is a short section that breaks the pattern...">Bridge</label>
- *   <button data-help="Writes the chorus first, then builds verses around it.">Hook-first mode</button>
+ * The header 💡 Tips switch (tipsEnabled) turns this on/off.
+ * When Tips are ON, hover any control with data-help and a bubble appears.
  *
- * Hovering that element (or anything inside it) pops a bubble explaining it,
- * written for someone who has never written a song. The global 💡 Tips switch
- * (tipsEnabled) turns the whole thing on or off — when off, nothing shows.
- *
- * This is attribute-driven on purpose: adding help to a control is a one-line
- * `data-help="..."` edit, so every label, stat, and option in the UI can be
- * explained without restructuring the components.
+ * Designed so Quantum Lab, Songwriter, and every other tab can teach
+ * themselves without reading a manual or replaying the welcome wizard.
  */
 export default function HelpLayer() {
   const { tipsEnabled } = useLyricStore();
-  const [tip, setTip] = useState(null); // { text, x, y }
+  const [tip, setTip] = useState(null); // { text, x, y, below }
 
   useEffect(() => {
     if (!tipsEnabled) {
@@ -28,34 +23,57 @@ export default function HelpLayer() {
       return;
     }
 
-    const show = (el) => {
+    const place = (el) => {
       const text = el.getAttribute('data-help');
-      if (!text) return;
+      if (!text || !String(text).trim()) return;
       const r = el.getBoundingClientRect();
-      setTip({ text, x: r.left + r.width / 2, y: r.top });
+      // Prefer above the control; flip below if near the top of the window.
+      const below = r.top < 110;
+      setTip({
+        text: String(text).trim(),
+        x: r.left + r.width / 2,
+        y: below ? r.bottom : r.top,
+        below,
+      });
+    };
+
+    // Always resolve to the innermost [data-help] under the pointer.
+    // This is what makes button tips win over a parent panel tip.
+    const resolve = (node) => {
+      if (!node || node.nodeType !== 1) return null;
+      return node.closest ? node.closest('[data-help]') : null;
     };
 
     const onOver = (e) => {
-      const el = e.target.closest && e.target.closest('[data-help]');
-      if (el) show(el);
+      const el = resolve(e.target);
+      if (el) place(el);
     };
 
+    // Do NOT clear when moving into another helped element (or into the bubble).
+    // That was a common "tips flicker / vanish" bug between nested controls.
     const onOut = (e) => {
-      const el = e.target.closest && e.target.closest('[data-help]');
-      // Only hide when the cursor truly leaves the helped element.
-      if (el && !el.contains(e.relatedTarget)) setTip(null);
+      const leaving = resolve(e.target);
+      if (!leaving) return;
+      const entering = resolve(e.relatedTarget);
+      if (entering) {
+        place(entering);
+        return;
+      }
+      // relatedTarget can be null (into OS chrome / iframe) — clear only then
+      if (!e.relatedTarget || !leaving.contains(e.relatedTarget)) {
+        setTip(null);
+      }
     };
 
-    // Hide if the user scrolls or the window changes under the bubble.
     const hide = () => setTip(null);
 
-    document.addEventListener('mouseover', onOver);
-    document.addEventListener('mouseout', onOut);
+    document.addEventListener('mouseover', onOver, true);
+    document.addEventListener('mouseout', onOut, true);
     window.addEventListener('scroll', hide, true);
     window.addEventListener('resize', hide);
     return () => {
-      document.removeEventListener('mouseover', onOver);
-      document.removeEventListener('mouseout', onOut);
+      document.removeEventListener('mouseover', onOver, true);
+      document.removeEventListener('mouseout', onOut, true);
       window.removeEventListener('scroll', hide, true);
       window.removeEventListener('resize', hide);
     };
@@ -63,12 +81,11 @@ export default function HelpLayer() {
 
   if (!tip) return null;
 
-  // Position the bubble centered above the element, clamped to the viewport.
-  const MAX_W = 300;
+  // Wider bubbles so Quantum Lab plain-English tips are readable, not chopped.
+  const MAX_W = 360;
   const half = MAX_W / 2;
-  const left = Math.min(Math.max(tip.x, half + 8), window.innerWidth - half - 8);
-  const showBelow = tip.y < 90; // not enough room above → drop below
-  const top = showBelow ? tip.y + 28 : tip.y - 12;
+  const left = Math.min(Math.max(tip.x, half + 10), window.innerWidth - half - 10);
+  const top = tip.below ? tip.y + 10 : tip.y - 10;
 
   return (
     <div
@@ -78,11 +95,11 @@ export default function HelpLayer() {
         left,
         top,
         maxWidth: MAX_W,
-        transform: showBelow ? 'translate(-50%, 0)' : 'translate(-50%, -100%)'
+        transform: tip.below ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
       }}
     >
       {tip.text}
-      <span className={showBelow ? 'help-layer-arrow up' : 'help-layer-arrow down'} />
+      <span className={tip.below ? 'help-layer-arrow up' : 'help-layer-arrow down'} />
     </div>
   );
 }

@@ -15,7 +15,7 @@ const SEED_TOOLS = [
   { id: 'suno', name: 'Suno', url: 'https://suno.com', category: 'Music', votes: 10, seeded: true, description: 'Generate full songs — vocals, instruments, mix — from a text prompt. Free tier available.' },
   { id: 'basic-pitch', name: 'Basic Pitch (Spotify)', url: 'https://basicpitch.spotify.com', category: 'Music', votes: 8, seeded: true, description: 'Open-source audio-to-MIDI converter — the same model powering Lyricist\'s MIDI Studio.' },
   { id: 'butterchurn', name: 'Butterchurn', url: 'https://butterchurnviz.com', category: 'Music', votes: 6, seeded: true, description: 'Open-source WebGL port of Winamp\'s Milkdrop 2 visualizer — powering the MIDI Studio visuals.' },
-  { id: 'google-ai-studio', name: 'Google AI Studio', url: 'https://aistudio.google.com', category: 'Dev', votes: 9, seeded: true, description: 'Free playground + API keys for Gemini and Nano Banana image models — the key Lyricist\'s Song Forge uses.' },
+  { id: 'openrouter', name: 'OpenRouter', url: 'https://openrouter.ai', category: 'Dev', votes: 12, seeded: true, description: 'One API key for Lyricist — writing models and Nano Banana / image models for Song Forge cover art. No Google AI Studio key required.' },
   { id: 'openrouter', name: 'OpenRouter', url: 'https://openrouter.ai', category: 'Dev', votes: 7, seeded: true, description: 'One API key for dozens of AI models, including free-tier models — Lyricist\'s other BYOK option.' },
   { id: 'huggingface', name: 'Hugging Face Spaces', url: 'https://huggingface.co/spaces', category: 'Dev', votes: 7, seeded: true, description: 'Thousands of free community AI demos and models you can run in the browser.' },
   { id: 'audacity', name: 'Audacity', url: 'https://www.audacityteam.org', category: 'Audio', votes: 5, seeded: true, description: 'Free, open-source multi-track audio editor — clean up recordings before feeding them to MIDI Studio.' },
@@ -103,7 +103,7 @@ export default function ToolsHub() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
-            <Search size={13} style={{ position: 'absolute', left: 9, color: 'rgba(255,158,44,0.6)' }} />
+            <Search size={13} style={{ position: 'absolute', left: 9, color: 'rgba(0,229,255,0.6)' }} />
             <input
               className="input-cosmic"
               style={{ borderRadius: 9999, padding: '6px 12px 6px 28px', fontSize: '0.74rem', width: 180 }}
@@ -175,7 +175,7 @@ export default function ToolsHub() {
                 </button>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.86rem', color: '#ff9e2c', textShadow: '0 0 8px rgba(255,158,44,0.5)' }}>{t.name}</span>
+                    <span style={{ fontWeight: 800, fontSize: '0.86rem', color: '#00e5ff', textShadow: '0 0 8px rgba(0,229,255,0.5)' }}>{t.name}</span>
                     <span className="pill-cyan" style={{ padding: '1px 8px', borderRadius: 9999, fontSize: '0.58rem', fontWeight: 700 }}>{t.category}</span>
                   </div>
                   <p style={{ fontSize: '0.7rem', color: 'rgba(232,224,255,0.75)', margin: '6px 0 0', lineHeight: 1.5 }}>

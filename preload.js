@@ -16,4 +16,11 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   // Export a Mastering Studio album (mastered WAVs + cover.png + tracklist.txt)
   // into Documents\Lyricist Albums\<album name>. Returns { ok: true, path } or { ok: false, error }.
   saveAlbum: (albumName, files) => ipcRenderer.invoke('save-album', { albumName, files }),
+  // Fetch a Suno playlist's tracks from the main process (no browser CORS wall).
+  // Returns { ok: true, tracks: [{ name, url }] } or { ok: false, error }.
+  sunoPlaylist: (id) => ipcRenderer.invoke('suno-playlist', { id }),
+  // Stemmer Cloud — Demucs on Replicate (optional; no local GPU).
+  // payload: { apiKey, audioBase64, mimeType, fileName }
+  // Returns { ok, stems: { vocals|drums|bass|other: base64 }, error }.
+  stemmerCloud: (payload) => ipcRenderer.invoke('stemmer-cloud', payload),
 });

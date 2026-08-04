@@ -209,7 +209,7 @@ export default function AlbumArchitect() {
               <span className="album-track-num">{i + 1}</span>
               <input
                 className="album-input"
-                style={{ flex: 2, fontWeight: 700, fontFamily: "'Audiowide', sans-serif", color: '#ff9e2c' }}
+                style={{ flex: 2, fontWeight: 700, fontFamily: "'Audiowide', sans-serif", color: '#00e5ff' }}
                 value={t.title}
                 onChange={(e) => updateTrack(t.id, { title: e.target.value })}
                 onMouseDown={(e) => e.stopPropagation()}

@@ -271,7 +271,7 @@ export default function RecordingBooth({ onNavigate }) {
           <button
             onClick={() => fileRef.current?.click()}
             data-help="Add takes you've already recorded elsewhere (.mp3/.wav/.ogg/.webm). Pick several at once."
-            style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid rgba(255,158,44,0.4)', background: 'rgba(255,158,44,0.08)', color: '#ff9e2c', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid rgba(0,229,255,0.4)', background: 'rgba(0,229,255,0.08)', color: '#00e5ff', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
           >
             <Upload size={14} /> Upload Takes
           </button>
@@ -324,7 +324,7 @@ export default function RecordingBooth({ onNavigate }) {
                     <button className="booth-icon-btn" onClick={() => startRename(rec)} aria-label={`Rename ${rec.name}`}><Pencil size={11} /></button>
                   </div>
                 )}
-                <div style={{ fontSize: '0.62rem', color: 'rgba(255,158,44,0.7)', fontFamily: "'JetBrains Mono', monospace" }}>
+                <div style={{ fontSize: '0.62rem', color: 'rgba(0,229,255,0.7)', fontFamily: "'JetBrains Mono', monospace" }}>
                   {fmtTime(rec.duration)} · {fmtSize(rec.size)} · {new Date(rec.createdAt).toLocaleDateString()}
                 </div>
               </div>

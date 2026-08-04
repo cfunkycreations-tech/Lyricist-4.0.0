@@ -41,12 +41,32 @@ function fileToImagePayload(file) {
   });
 }
 
-export default function SongForge({ onSongForged }) {
+export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedConsumed }) {
   const store = useLyricStore();
   const fileInputRef = useRef(null);
 
   const [mode, setMode] = useState('songFirst'); // 'songFirst' | 'artFirst'
   const [artStyleOverride, setArtStyleOverride] = useState('');
+  const [quantumBanner, setQuantumBanner] = useState(null);
+
+  // Quantum Lab → Song Forge seed (palette + optional verse + end-words)
+  useEffect(() => {
+    if (!quantumSeed) return;
+    const parts = [];
+    if (quantumSeed.palette?.length) parts.push(`Lattice words: ${quantumSeed.palette.join(', ')}`);
+    if (quantumSeed.endWords?.length) parts.push(`End rhymes: ${quantumSeed.endWords.join(', ')}`);
+    if (quantumSeed.rhymeScheme) parts.push(`Scheme: ${quantumSeed.rhymeScheme}`);
+    if (quantumSeed.verse) parts.push(`Seed verse:\n${quantumSeed.verse}`);
+    const note = parts.join('\n');
+    if (note) {
+      store.setNotes((store.notes ? store.notes + '\n\n' : '') + `[From Quantum Lab]\n${note}`);
+      if (!store.topic && quantumSeed.palette?.[0]) {
+        store.setTopic(quantumSeed.palette.slice(0, 4).join(' / '));
+      }
+      setQuantumBanner('Quantum Lab lattice loaded into Song Forge notes/topic. Hit Song First to expand into a full song + cover.');
+    }
+    if (onQuantumSeedConsumed) onQuantumSeedConsumed();
+  }, [quantumSeed]);
 
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState(''); // 'lyrics' | 'art' | ''
@@ -77,7 +97,8 @@ export default function SongForge({ onSongForged }) {
   const refInputRef = useRef(null);
   const [refImage, setRefImage] = useState(null); // { dataUrl, base64, mimeType }
 
-  const ready = Boolean(store.config.googleApiKey);
+  // One key: OpenRouter (lyrics + Nano Banana cover art via OpenRouter)
+  const ready = Boolean(store.config.openRouterApiKey);
 
   const autoSaveResult = async (song, art, title) => {
     if (!autoSave || !window.lyricistAPI?.saveSongForge) return;
@@ -98,7 +119,7 @@ export default function SongForge({ onSongForged }) {
 
   // Song-first: write the lyrics, then paint matching cover art
   const handleForgeSongFirst = async () => {
-    if (!ready) { setErrorMsg('Add your Google AI API key in Settings first.'); return; }
+    if (!ready) { setErrorMsg('Add your OpenRouter API key in Settings first — one key runs Song Forge lyrics and cover art.'); return; }
     setLoading(true);
     setErrorMsg('');
     setResult(null);
@@ -129,7 +150,7 @@ export default function SongForge({ onSongForged }) {
 
   // Art-first: generate (or accept an uploaded) image, then write lyrics inspired by it
   const handleGenerateSeedImage = async () => {
-    if (!ready) { setErrorMsg('Add your Google AI API key in Settings first.'); return; }
+    if (!ready) { setErrorMsg('Add your OpenRouter API key in Settings first — one key runs Song Forge lyrics and cover art.'); return; }
     setSeedLoading(true);
     setErrorMsg('');
     try {
@@ -172,7 +193,7 @@ export default function SongForge({ onSongForged }) {
   };
 
   const handleWriteLyricsFromImage = async () => {
-    if (!ready) { setErrorMsg('Add your Google AI API key in Settings first.'); return; }
+    if (!ready) { setErrorMsg('Add your OpenRouter API key in Settings first — one key runs Song Forge lyrics and cover art.'); return; }
     if (!seedImage) { setErrorMsg('Upload or generate an image first.'); return; }
     setLoading(true);
     setStage('lyrics');
@@ -270,7 +291,14 @@ export default function SongForge({ onSongForged }) {
 
           {!ready && (
             <div className="pill-red" style={{ padding: '8px 10px', borderRadius: 8, fontSize: '0.72rem' }}>
-              Add a Google AI API key in Settings to use Song Forge.
+              Add your OpenRouter API key in Settings — one key for Song Forge lyrics and cover art.
+            </div>
+          )}
+
+          {quantumBanner && (
+            <div className="pill-green" style={{ padding: '8px 10px', borderRadius: 8, fontSize: '0.72rem', lineHeight: 1.45 }} data-help="Structure arrived from Quantum Lab — notes and topic were pre-filled.">
+              ⚛️ {quantumBanner}
+              <button type="button" onClick={() => setQuantumBanner(null)} style={{ display: 'block', marginTop: 6, background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '0.65rem' }}>Dismiss</button>
             </div>
           )}
 
@@ -285,7 +313,7 @@ export default function SongForge({ onSongForged }) {
                   padding: '8px 4px',
                   borderRadius: 8,
                   border: mode === id ? 'none' : '1px solid rgba(139,92,246,0.25)',
-                  background: mode === id ? 'linear-gradient(135deg,#ff2d95,#ff5a1e,#ff9e2c)' : 'rgba(13,8,28,0.7)',
+                  background: mode === id ? 'linear-gradient(135deg,#ff2d95,#a855f7,#00e5ff)' : 'rgba(13,8,28,0.7)',
                   color: mode === id ? '#fff' : 'rgba(196,181,253,0.6)',
                   fontSize: '0.72rem',
                   fontWeight: 700,
@@ -369,7 +397,7 @@ export default function SongForge({ onSongForged }) {
                     >
                       <X size={12} />
                     </button>
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '3px 8px', fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#ff9e2c', background: 'rgba(0,0,0,0.65)', textShadow: '0 0 6px rgba(255,158,44,0.6)' }}>
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '3px 8px', fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#00e5ff', background: 'rgba(0,0,0,0.65)', textShadow: '0 0 6px rgba(0,229,255,0.6)' }}>
                       Base layer for cover art
                     </div>
                   </div>

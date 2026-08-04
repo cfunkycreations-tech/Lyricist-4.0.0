@@ -23,39 +23,24 @@ export default function SectionEditor({ section, index }) {
 
   const style = sectionStyles[section.type] || sectionStyles.verse;
 
-  // Calculate readability and vocab live
-  const sectionText = section.lines.map(l => {
-    if (l.activeVariation === 'draft') return l.text;
-    return l.variations[l.activeVariation] || l.text;
-  }).join('\n');
+  // Calculate readability and vocab live — always the real line text only
+  const sectionText = section.lines.map((l) => l.text || '').join('\n');
   const readability = calculateReadability(sectionText);
   const vocabRichness = calculateVocabRichness(sectionText);
 
   const handleLineTextChange = (lineIndex, newText) => {
-    const lines = [...section.lines];
-    const existing = lines[lineIndex];
-    
-    // Update target variation
-    const activeVar = existing.activeVariation || 'draft';
-    const variations = { ...(existing.variations || { draft: '' }) };
-    variations[activeVar] = newText;
-    
-    // If updating draft, update base text
-    let text = existing.text;
-    if (activeVar === 'draft') {
-      text = newText;
-    }
-
+    // Always edit the real line — no ghost variants underneath
     store.updateLine(section.id, lineIndex, {
-      text,
-      variations
+      text: newText,
+      activeVariation: 'draft',
+      variations: { draft: newText, A: '', B: '', C: '' },
     });
   };
 
   const handleLockToggle = (lineIndex) => {
     const line = section.lines[lineIndex];
     const locked = !line.locked;
-    const lockedWord = locked ? getLastWord(line.activeVariation === 'draft' ? line.text : line.variations[line.activeVariation]) : '';
+    const lockedWord = locked ? getLastWord(line.text || '') : '';
     
     store.updateLine(section.id, lineIndex, {
       locked,
@@ -69,6 +54,34 @@ export default function SectionEditor({ section, index }) {
     });
   };
 
+  /** Replace a line in place — ONE string only. Never keep old text as a variant. */
+  const replaceLine = (lineIndex, newText) => {
+    // Force single physical line (AI sometimes returns 2 lines: old + new)
+    let cleaned = String(newText || '').replace(/\r/g, '').trim();
+    const parts = cleaned.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (parts.length > 1) {
+      const orig = String(section.lines[lineIndex]?.text || '').trim().toLowerCase();
+      const different = parts.filter((l) => l.toLowerCase() !== orig);
+      cleaned = (different[different.length - 1] || parts[parts.length - 1] || '').trim();
+    }
+    // Nuclear replace via full section write so no stale variation fields linger
+    const allLines = section.lines.map((l, i) => {
+      const text = i === lineIndex ? cleaned : String(l.text || '');
+      return {
+        text,
+        locked: l.locked || false,
+        lockedWord: l.lockedWord || '',
+        targetSyllables: l.targetSyllables || 0,
+        activeVariation: 'draft',
+        variations: { draft: text, A: '', B: '', C: '' },
+      };
+    });
+    const updated = store.lyrics.map((s) =>
+      s.id === section.id ? { ...s, lines: allLines } : s
+    );
+    store.setFullLyrics(updated);
+  };
+
   const handleRegenerateLine = async (lineIndex) => {
     if (!store.config.openRouterApiKey) {
       alert('Set your API key in Settings.');
@@ -77,26 +90,17 @@ export default function SectionEditor({ section, index }) {
     setLineGeneratingIndex(lineIndex);
     try {
       const line = section.lines[lineIndex];
-      const surroundingContext = section.lines.map((l, idx) => {
-        if (idx === lineIndex) return `[TARGET: ${l.text}]`;
-        return l.text;
-      }).join('\n');
+      const current = line.text || '';
+      const surroundingContext = section.lines
+        .map((l, idx) => {
+          const t = l.text || '';
+          if (idx === lineIndex) return `[TARGET: ${t}]`;
+          return t;
+        })
+        .join('\n');
 
-      const val = await generateLineVariation(line.text, surroundingContext, store);
-      
-      // Update line variations
-      const variations = { ...(line.variations || { draft: line.text }) };
-      // Check which variation slot to fill
-      let nextSlot = 'A';
-      if (variations.A && variations.B) nextSlot = 'C';
-      else if (variations.A) nextSlot = 'B';
-      
-      variations[nextSlot] = val;
-
-      store.updateLine(section.id, lineIndex, {
-        activeVariation: nextSlot,
-        variations
-      });
+      const val = await generateLineVariation(current, surroundingContext, store);
+      replaceLine(lineIndex, val);
     } catch (e) {
       alert(`Regeneration failed: ${e.message}`);
     } finally {
@@ -112,17 +116,9 @@ export default function SectionEditor({ section, index }) {
     setLineGeneratingIndex(lineIndex);
     try {
       const line = section.lines[lineIndex];
-      const currentText = line.activeVariation === 'draft' ? line.text : line.variations[line.activeVariation];
+      const currentText = line.text || '';
       const val = await refineLyrics(currentText, mode, store);
-      
-      const variations = { ...(line.variations || { draft: line.text }) };
-      const nextSlot = line.activeVariation === 'draft' ? 'A' : line.activeVariation;
-      variations[nextSlot] = val;
-
-      store.updateLine(section.id, lineIndex, {
-        activeVariation: nextSlot,
-        variations
-      });
+      replaceLine(lineIndex, val);
     } catch (e) {
       alert(e.message);
     } finally {
@@ -158,7 +154,29 @@ export default function SectionEditor({ section, index }) {
     setIsGenerating(true);
     try {
       const refinedText = await refineLyrics(sectionText, mode, store);
-      store.updateSectionLyrics(section.id, refinedText);
+      // Full section replace — same line count as before, no stacked old+new
+      const origCount = section.lines.length;
+      let lines = String(refinedText || '')
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
+      if (lines.length > origCount) lines = lines.slice(0, origCount);
+      while (lines.length < origCount) lines.push('');
+      const newLines = lines.map((text, i) => {
+        const existing = section.lines[i] || {};
+        return {
+          text,
+          locked: existing.locked || false,
+          lockedWord: existing.lockedWord || '',
+          targetSyllables: existing.targetSyllables || 0,
+          activeVariation: 'draft',
+          variations: { draft: text, A: '', B: '', C: '' },
+        };
+      });
+      const updated = store.lyrics.map((s) =>
+        s.id === section.id ? { ...s, lines: newLines, showAdLibs: false, adLibs: '' } : s
+      );
+      store.setFullLyrics(updated);
     } catch (e) {
       alert(e.message);
     } finally {
@@ -189,20 +207,6 @@ export default function SectionEditor({ section, index }) {
     navigator.clipboard.writeText(sectionText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const highlightKeywords = (text) => {
-    if (!store.topic || !text) return text;
-    const words = store.topic.split(/[,.\-\s]+/).map(w => w.trim()).filter(w => w.length > 2);
-    if (words.length === 0) return text;
-
-    let highlighted = text;
-    words.forEach(keyword => {
-      const regex = new RegExp(`\\b(${keyword})\\b`, 'gi');
-      highlighted = highlighted.replace(regex, '<span style="color: #22d3ee; font-weight: 600; text-shadow: 0 0 8px rgba(34,211,238,0.4)">$1</span>');
-    });
-
-    return <span dangerouslySetInnerHTML={{ __html: highlighted }} />;
   };
 
   return (
@@ -275,7 +279,7 @@ export default function SectionEditor({ section, index }) {
                 e.target.value = '';
               }
             }}
-            data-help="Have the AI rewrite this whole section a certain way. Punch Up = bolder and catchier. Make it simpler = easier, plainer words. Fancier words = richer vocabulary. Add ad-libs = background shouts like 'yeah!' or 'uh!' between lines."
+            data-help="Rewrite this whole section in place. Punch Up = bolder. Simpler = plainer. Elevate = richer words. Ad-libs = background shouts. Lines are replaced — use Undo at the top of the workspace if you want the old section back."
             style={{
               padding: '4px 8px',
               fontSize: '0.72rem',
@@ -350,7 +354,7 @@ export default function SectionEditor({ section, index }) {
             <span style={{ color: 'rgba(167,139,250,0.5)' }}>Average Syllables:</span>{' '}
             <strong style={{ color: '#22d3ee' }}>
               {(
-                section.lines.reduce((acc, l) => acc + countLineSyllables(l.activeVariation === 'draft' ? l.text : l.variations[l.activeVariation]), 0) /
+                section.lines.reduce((acc, l) => acc + countLineSyllables(l.text || ''), 0) /
                 (section.lines.length || 1)
               ).toFixed(1)}
             </strong>
@@ -358,28 +362,30 @@ export default function SectionEditor({ section, index }) {
         </div>
       )}
 
-      {/* Section Lines */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Section Lines — one row, one string, no underlay, no A/B ghost */}
+      <div className="songwriter-lines" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {section.lines.map((line, lIdx) => {
-          const activeText = line.activeVariation === 'draft' ? line.text : line.variations[line.activeVariation];
+          const activeText = String(line?.text ?? '').split('\n')[0] ?? '';
           const sylCount = countLineSyllables(activeText);
 
           return (
             <div
-              key={lIdx}
+              key={`${section.id}-line-${lIdx}`}
               className="lyric-line-row"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '4px 6px',
+                padding: '6px 8px',
                 borderRadius: 6,
-                background: 'transparent',
-                minHeight: 34
+                background: 'rgba(0,0,0,0.2)',
+                minHeight: 36,
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
               {/* Syllable target & Count */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '90px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '90px', flexShrink: 0 }}>
                 <span
                   style={{
                     fontSize: '0.62rem',
@@ -410,67 +416,42 @@ export default function SectionEditor({ section, index }) {
                     fontSize: '0.65rem',
                     textAlign: 'center',
                     outline: 'none',
-                    fontFamily: "'JetBrains Mono', monospace"
+                    fontFamily: "'JetBrains Mono', monospace",
+                    textShadow: 'none',
                   }}
                 />
               </div>
 
-              {/* Line Input box */}
-              <div style={{ flex: 1, padding: '0 10px', display: 'flex', alignItems: 'center', position: 'relative' }}>
+              {/* Single line field — solid text only, zero shadow / zero underlay */}
+              <div style={{ flex: 1, padding: '0 10px', display: 'flex', alignItems: 'center', minWidth: 0, position: 'relative', isolation: 'isolate' }}>
                 <input
+                  type="text"
+                  className="lyric-line-input"
                   value={activeText}
                   onChange={(e) => handleLineTextChange(lIdx, e.target.value)}
-                  data-help="This is one line of your song. Click in and type to edit it by hand anytime — backspace, retype, whatever you want. The tools on the right can also rewrite it for you."
+                  autoComplete="off"
+                  spellCheck={false}
+                  data-help="This is one line of your song. Click in and type to edit. Refine / regenerate replaces this line in place — use Undo at the top of the workspace if you want the old wording back."
                   style={{
                     width: '100%',
                     background: 'transparent',
                     border: 'none',
                     outline: 'none',
                     fontSize: '0.85rem',
-                    color: '#e8e0ff',
-                    fontFamily: "'Audiowide', 'Space Grotesk', sans-serif"
+                    color: '#e8eef8',
+                    WebkitTextFillColor: '#e8eef8',
+                    fontFamily: "'Audiowide', 'Orbitron', sans-serif",
+                    textShadow: 'none',
+                    filter: 'none',
+                    WebkitTextStroke: '0',
+                    boxShadow: 'none',
+                    caretColor: '#00e5ff',
                   }}
                 />
-                
-                {/* Underlay keywords if not focused (optional highlight) */}
-                <div style={{ position: 'absolute', pointerEvents: 'none', opacity: 0.25, fontSize: '0.85rem', fontFamily: "'Space Grotesk', sans-serif" }}>
-                  {highlightKeywords(activeText)}
-                </div>
               </div>
 
               {/* Hover actions */}
               <div className="hover-line-actions" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                {/* Variation selectors */}
-                {line.variations && Object.keys(line.variations).filter(k => line.variations[k]).length > 1 && (
-                  <div
-                    style={{ display: 'flex', gap: 2, background: 'rgba(13,8,28,0.8)', borderRadius: 4, padding: '1px 2px' }}
-                    data-help="Different wordings of this line. 'D' is your original draft; A, B, C are alternate versions the AI made. Click a letter to instantly swap which one is used — nothing gets lost."
-                  >
-                    {Object.keys(line.variations).map(vKey => {
-                      if (!line.variations[vKey] && vKey !== 'draft') return null;
-                      const isActive = line.activeVariation === vKey;
-                      return (
-                        <button
-                          key={vKey}
-                          onClick={() => store.updateLine(section.id, lIdx, { activeVariation: vKey })}
-                          style={{
-                            fontSize: '0.58rem',
-                            fontWeight: 700,
-                            padding: '1px 4px',
-                            border: 'none',
-                            borderRadius: 3,
-                            cursor: 'pointer',
-                            background: isActive ? 'rgba(124, 58, 237, 0.6)' : 'transparent',
-                            color: isActive ? '#fff' : 'rgba(167, 139, 250, 0.5)'
-                          }}
-                        >
-                          {vKey === 'draft' ? 'D' : vKey}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
                 {/* Lock Word */}
                 <button
                   onClick={() => handleLockToggle(lIdx)}
@@ -485,7 +466,7 @@ export default function SectionEditor({ section, index }) {
                   {line.locked ? <Lock size={12} /> : <Unlock size={12} />}
                 </button>
 
-                {/* Line Refiners */}
+                {/* Line Refiners — replaces the line; Undo at top of workspace */}
                 <select
                   onChange={(e) => {
                     if (e.target.value) {
@@ -493,7 +474,8 @@ export default function SectionEditor({ section, index }) {
                       e.target.value = '';
                     }
                   }}
-                  data-help="Rewrite just THIS one line a certain way. Harder = bolder, more hard-hitting. Simpler = plainer, easier words. Elevate = richer, more impressive words. Your other lines stay untouched."
+                  disabled={lineGeneratingIndex === lIdx}
+                  data-help="Rewrite THIS line in place (Harder / Simpler / Elevate). The old line is replaced — no ghost copy underneath. Hit Undo at the top of the workspace if you want it back."
                   style={{
                     background: 'rgba(13,8,28,0.9)',
                     border: '1px solid rgba(139,92,246,0.3)',
@@ -504,22 +486,22 @@ export default function SectionEditor({ section, index }) {
                     padding: '2px 4px'
                   }}
                 >
-                  <option value="">Refine...</option>
+                  <option value="">{lineGeneratingIndex === lIdx ? 'Working…' : 'Refine…'}</option>
                   <option value="punch-up">⚡ Harder</option>
                   <option value="simplify">📉 Simpler</option>
                   <option value="elevate">📈 Elevate</option>
                 </select>
 
-                {/* Regenerate single line */}
+                {/* Regenerate single line — also replaces in place */}
                 <button
                   onClick={() => handleRegenerateLine(lIdx)}
                   disabled={lineGeneratingIndex === lIdx}
-                  data-help="Asks the AI for a fresh take on this one line. It saves the new version as an option (A, B, C…) so you can flip between wordings without losing your original — switch using the little letter buttons that appear."
+                  data-help="Fresh take on this one line. Replaces the line completely. Use Undo at the top if you don't like it."
                   style={{
                     background: 'transparent',
                     border: 'none',
                     color: '#22d3ee',
-                    cursor: 'pointer',
+                    cursor: lineGeneratingIndex === lIdx ? 'wait' : 'pointer',
                     display: 'flex',
                     alignItems: 'center'
                   }}
