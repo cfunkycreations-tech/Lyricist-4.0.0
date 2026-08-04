@@ -48,6 +48,7 @@
     "@spotify/basic-pitch": "^1.0.1",
     "butterchurn": "^2.6.7",
     "butterchurn-presets": "^2.4.7",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.303.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

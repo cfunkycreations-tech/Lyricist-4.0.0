@@ -8,8 +8,10 @@ import {
   ALL_INSTRUMENTS,
   DEFAULT_INSTRUMENT,
   loadInstrument,
+  instrumentFromBuffer,
   playNote,
 } from '../../services/soundfontEngine.js';
+import { getSampleBuffer } from '../../services/sampleLibrary.js';
 
 // Offline MIDI sequencer — Lyricist 4.1.3
 // Lightweight piano-roll playback + editing for the MIDI JSON produced by the
@@ -25,7 +27,7 @@ const KEYBED_W = 44;      // px for the note-name gutter
 const LOOKAHEAD = 0.12;   // s of scheduling lookahead
 const TICK_MS = 30;
 
-export default function Sequencer({ midi, setMidi, onPlayStateChange }) {
+export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample }) {
   const [playing, setPlaying] = useState(false);
   const [tempo, setTempo] = useState(midi?.tempo || 120);
   const [selectedId, setSelectedId] = useState(null);
@@ -76,13 +78,23 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange }) {
 
   useEffect(() => stop, [stop]); // kill audio if the tab component ever unmounts
 
-  // Load the selected instrument's samples. Cached in the engine, so flipping
-  // back to something you already used is instant.
+  // Load the selected instrument. Either a bundled GM pack or, when the id is
+  // "user:<sampleId>", one of Chris's own samples out of the sample library.
   useEffect(() => {
     let cancelled = false;
     setInstrumentState('loading');
     instrumentRef.current = null;
-    loadInstrument(getAudioContext(), instrumentId)
+    const ctx = getAudioContext();
+
+    const load = instrumentId.startsWith('user:')
+      ? (async () => {
+          const [, sampleId, root] = instrumentId.split(':');
+          const buf = await getSampleBuffer(ctx, sampleId);
+          return instrumentFromBuffer(buf, Number(root) || 60);
+        })()
+      : loadInstrument(ctx, instrumentId);
+
+    load
       .then((inst) => {
         if (cancelled) return;
         instrumentRef.current = inst;
@@ -93,6 +105,12 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange }) {
       });
     return () => { cancelled = true; };
   }, [instrumentId]);
+
+  // Let the sample library hand a sample straight to the roll.
+  useEffect(() => {
+    if (!userSample) return;
+    setInstrumentId(`user:${userSample.id}:${userSample.rootMidi ?? 60}`);
+  }, [userSample]);
 
   // Real sampled instrument, not an oscillator. Falls back to silence rather
   // than a buzz if the pack has not finished decoding yet.
@@ -235,6 +253,13 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange }) {
             className="suno-chip"
             style={{ fontSize: '0.72rem', padding: '5px 8px', borderRadius: 7, maxWidth: 190, cursor: 'pointer' }}
           >
+            {instrumentId.startsWith('user:') && (
+              <optgroup label="My Library">
+                <option value={instrumentId}>
+                  {userSample?.name || 'Loaded sample'}
+                </option>
+              </optgroup>
+            )}
             {INSTRUMENT_GROUPS.map((g) => (
               <optgroup key={g.group} label={g.group}>
                 {g.items.map((it) => (

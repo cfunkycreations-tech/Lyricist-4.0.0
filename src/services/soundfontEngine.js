@@ -165,6 +165,15 @@ export function loadInstrument(ctx, instrumentId) {
   return promise;
 }
 
+/**
+ * Wrap a single user sample as a playable instrument. Every key plays that one
+ * clip, pitch-shifted from the root note it was recorded at — which is exactly
+ * how a sampler treats a one-shot.
+ */
+export function instrumentFromBuffer(buffer, rootMidi = 60) {
+  return { buffers: new Map([[rootMidi, buffer]]), sorted: [rootMidi] };
+}
+
 /** Nearest recorded sample, so notes between samples still play. */
 function nearestSample(sorted, midi) {
   let best = sorted[0];

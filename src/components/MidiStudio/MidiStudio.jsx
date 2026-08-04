@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AudioToMidi from './AudioToMidi.jsx';
 import Sequencer from './Sequencer.jsx';
 import Visualizer from './Visualizer.jsx';
+import SampleLibrary from './SampleLibrary.jsx';
 
 // MIDI Studio tab — Lyricist 4.1.3
 // Audio → MIDI (basic-pitch, fully offline) feeding an offline piano-roll
@@ -19,6 +20,7 @@ export default function MidiStudio() {
     return { tempo: 120, notes: [] };
   });
   const [sourceName, setSourceName] = useState('');
+  const [userSample, setUserSample] = useState(null);   // sample sent from the library to the roll
 
   useEffect(() => {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(midi)); } catch { /* storage full */ }
@@ -52,7 +54,8 @@ export default function MidiStudio() {
         </div>
 
         <div className="midi-main">
-          <Sequencer midi={midi} setMidi={setMidi} />
+          <Sequencer midi={midi} setMidi={setMidi} userSample={userSample} />
+          <SampleLibrary onUseSample={setUserSample} />
           <Visualizer />
         </div>
       </div>
