@@ -43,6 +43,7 @@ textarea, .lyric-line, .lyric-output, .lyric-text, [contenteditable] {
   --neon-blue: #00f0ff;
   --neon-purple: #c026ff;
   --neon-emerald: #00ff9c;
+  --emerald-edge: #00ff9c;   /* laser-thin outline on white titles */
   --gold-hi: #e0f2fe;
   --gold-mid: #00e5ff;
   --gold-deep: #9a6b0a;
@@ -578,15 +579,34 @@ body.tips-on [data-help] {
   box-shadow: 0 0 12px rgba(0, 240, 255, 0.7);
 }
 
-/* ── Headings + labels: SILVER raised mirror metal (no yellow) ── */
+/* ── Headings + labels: white fill, laser-thin electric emerald edge ──
+   The letterform stays white; only the outline is emerald, drawn hairline
+   thin and lit from behind so it reads as a glowing edge rather than a
+   coloured word. paint-order keeps the stroke behind the fill so the white
+   interior never gets eaten by the outline. */
 h1:not(.gradient-title):not(.chrome-title),
 h2, h3, h4 {
-  color: #e8eef8;
+  color: #ffffff;
+  -webkit-text-stroke: 0.6px var(--emerald-edge);
+  text-stroke: 0.6px var(--emerald-edge);
+  paint-order: stroke fill;
   text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.7),
-    0 2px 0 rgba(0, 0, 0, 0.55),
-    0 3px 0 rgba(0, 0, 0, 0.3),
-    0 0 12px rgba(180, 195, 220, 0.25);
+    0 0 3px rgba(0, 255, 156, 0.75),
+    0 0 9px rgba(0, 255, 156, 0.45),
+    0 0 20px rgba(0, 255, 156, 0.22),
+    0 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Reusable: put the same emerald edge on any white text. */
+.emerald-edge {
+  color: #ffffff;
+  -webkit-text-stroke: 0.6px var(--emerald-edge);
+  text-stroke: 0.6px var(--emerald-edge);
+  paint-order: stroke fill;
+  text-shadow:
+    0 0 3px rgba(0, 255, 156, 0.75),
+    0 0 9px rgba(0, 255, 156, 0.45),
+    0 0 20px rgba(0, 255, 156, 0.22);
 }
 
 .text-glow {

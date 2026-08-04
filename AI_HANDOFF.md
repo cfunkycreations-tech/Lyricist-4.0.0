@@ -125,8 +125,31 @@ Then move `Lyricist 4.2.0.0NN Setup.exe`, its `.blockmap`, and the unpacked fold
 - Scratchpad rebuilt as a full-height yellow legal pad (ruled lines, red margin, Caveat handwriting,
   binding strip, autosave)
 - MIDI Studio visualizer fixed — 0 → 395 presets, all browsable
+- MIDI Studio now has 38 real sampled instruments (MusyngKite GM, bundled offline) replacing the
+  two-oscillator synth, a playable keybed, and an always-visible piano roll
+- User sample library: packs, drag-and-drop import, .zip pack expansion, per-sample root note, and
+  "Play on roll" — all stored locally in IndexedDB, nothing uploaded
+- White text now carries the emerald laser edge
 - Footer tagline corrected to "Keep Austin, Austin, Bruh"
 - All 4.2.0 releases (001–012) consolidated onto the dev drive
+
+### The 420 thing — read this before designing anything
+
+The app is **4.2.0** on purpose. **420.** Weed, bud, flower, cannabis, sour diesel, purple urkle,
+skunk — you get it. That is the aesthetic backbone, and it should inform art direction, copy, easter
+eggs and naming. Don't be coy about it and don't make it tacky; it's the joke underneath the whole
+release.
+
+### Type treatment — white fill, emerald laser edge
+
+Any white text — titles, headings, labels — gets a **laser-thin electric emerald outline** with a
+glow, and the **inside of the letter stays white**. Not emerald letters. Just the edge, hairline
+thin, glowing.
+
+Implemented in `index.css` as `--emerald-edge: #00ff9c` with `-webkit-text-stroke: 0.6px`,
+`paint-order: stroke fill`, and a three-layer emerald `text-shadow`. Applied to
+`h1:not(.gradient-title):not(.chrome-title), h2, h3, h4`, plus a reusable `.emerald-edge` class for
+anything else that needs it. Widen its reach as more white text turns up.
 
 ### Open
 - **Quantum Lab top banner is REJECTED.** Chris is supplying his own artwork. Spec: a new medallion
@@ -136,9 +159,15 @@ Then move `Lyricist 4.2.0.0NN Setup.exe`, its `.blockmap`, and the unpacked fold
 - **Footer art is wrong.** The current square medallion got squished into a 200×100 rectangle without
   his approval and he hates it. He is supplying replacement art. Keep the same box size; do not
   redesign around it.
-- **MIDI tab is still incomplete** — piano roll and background video are missing.
+- **Collaboration tab — HIGH PRIORITY.** Chris's own words: "the collab button is really important to
+  me." Collaborate with other artists; the exact shape is open, so this needs a design conversation
+  before building. Ties straight back to the busking origin — two people on a corner.
+- **MIDI background video is missing**, along with several other tab videos. The old ones were
+  deleted; they belonged to a previous version and he doesn't want them reused.
 - **Visualizer quality.** 395 presets load, but Chris thinks the stock Butterchurn ones are mediocre.
   Wanted: a better library, or hand-built visualizers. Make them good.
+- **Piano roll is not FL-grade yet.** Instruments and the sample library are done; still missing
+  proper note drawing and dragging, a velocity lane, and snap-to-grid.
 - **Icon overhaul.** He wants every flat icon gone — 3D, "5D", multidimensional. It's Quantum Lab.
 - 8 tab background videos still missing; Kling AI prompts are written, Chris is generating them.
 - Splash screen not built. Art is `V:\assets\Crystal_Geode_Cavern_QUANTUM_LAB_202608011431.jpeg`;
