@@ -1,4 +1,4 @@
-const { app, BrowserWindow, session, ipcMain } = require('electron');
+const { app, BrowserWindow, session, ipcMain, Menu, MenuItem, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -238,6 +238,79 @@ ipcMain.handle('stemmer-cloud', async (event, { apiKey, audioBase64, mimeType, f
   }
 });
 
+/**
+ * Clipboard support.
+ *
+ * With no application menu, Electron registers no Cut/Copy/Paste accelerators,
+ * so Ctrl+V does nothing in any input — which made it impossible to paste an
+ * API key into Settings. A menu with the standard edit roles restores the
+ * shortcuts; autoHideMenuBar keeps the bar itself out of the way.
+ */
+function installEditMenu() {
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'pasteAndMatchStyle' },
+        { role: 'delete' },
+        { role: 'selectAll' },
+      ],
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' },
+      ],
+    },
+  ]));
+}
+
+/** Right-click menu: paste into any field, copy out of any selection. */
+function attachContextMenu(win) {
+  win.webContents.on('context-menu', (_event, props) => {
+    const menu = new Menu();
+    const { isEditable, selectionText, editFlags } = props;
+    const hasSelection = Boolean(selectionText && selectionText.trim());
+
+    if (isEditable) {
+      menu.append(new MenuItem({ role: 'undo', enabled: editFlags.canUndo }));
+      menu.append(new MenuItem({ role: 'redo', enabled: editFlags.canRedo }));
+      menu.append(new MenuItem({ type: 'separator' }));
+      menu.append(new MenuItem({ role: 'cut', enabled: editFlags.canCut }));
+      menu.append(new MenuItem({ role: 'copy', enabled: editFlags.canCopy }));
+      menu.append(new MenuItem({
+        // Use the role when Electron reports paste is available; fall back to
+        // writing the clipboard in directly so paste still works if it doesn't.
+        label: 'Paste',
+        enabled: editFlags.canPaste || Boolean(clipboard.readText()),
+        click: () => win.webContents.paste(),
+      }));
+      menu.append(new MenuItem({ role: 'selectAll' }));
+    } else if (hasSelection) {
+      menu.append(new MenuItem({ role: 'copy' }));
+      menu.append(new MenuItem({ role: 'selectAll' }));
+    } else {
+      return; // nothing useful to offer
+    }
+
+    menu.popup({ window: win });
+  });
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1400,
@@ -257,6 +330,9 @@ function createWindow() {
     },
     autoHideMenuBar: true,
   });
+
+  installEditMenu();
+  attachContextMenu(win);
 
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
   if (isDev) {
