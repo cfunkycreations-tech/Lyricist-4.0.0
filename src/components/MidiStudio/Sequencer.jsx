@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Play, Square, Download, Trash2, FileJson, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Music } from 'lucide-react';
+import {
+  Play, Square, Download, Trash2, FileJson, ChevronUp, ChevronDown,
+  ChevronLeft, ChevronRight, Music, MousePointer2, Pencil, Paintbrush, Eraser, Magnet,
+} from 'lucide-react';
 import { getAudioContext, getMasterBus, resumeAudio } from '../../services/audioEngine.js';
-import { midiToName, midiToFreq } from '../../services/MidiService.js';
+import { midiToName } from '../../services/MidiService.js';
 import { downloadMidi } from '../../utils/midiFile.js';
 import {
   INSTRUMENT_GROUPS,
-  ALL_INSTRUMENTS,
   DEFAULT_INSTRUMENT,
   loadInstrument,
   instrumentFromBuffer,
@@ -13,19 +15,41 @@ import {
 } from '../../services/soundfontEngine.js';
 import { getSampleBuffer } from '../../services/sampleLibrary.js';
 
-// Offline MIDI sequencer — Lyricist 4.1.3
-// Lightweight piano-roll playback + editing for the MIDI JSON produced by the
-// audio→MIDI pipeline. Synthesis is a simple triangle-wave voice per note
-// through the shared master bus (audioEngine), which is exactly the node the
-// Butterchurn visualizer listens to — so the visuals dance to the sequence.
-//
-// Editing: click a note to select it, then nudge pitch/time/length, adjust
-// velocity, or delete. Double-click an empty spot on the roll to add a note.
+// Offline MIDI sequencer — Lyricist 4.2.0
+// FL-grade piano roll: four tools (select / draw / paint / erase), drag-to-move,
+// edge-drag to resize, snap-to-grid, and a velocity lane under the roll.
+// Synthesis runs through the shared master bus (audioEngine) — the same node the
+// Butterchurn visualizer listens to, so the visuals dance to the sequence.
 
-const ROW_H = 10;         // px per semitone
+const ROW_H = 12;         // px per semitone
 const KEYBED_W = 44;      // px for the note-name gutter
 const LOOKAHEAD = 0.12;   // s of scheduling lookahead
 const TICK_MS = 30;
+const VEL_H = 66;         // px height of the velocity lane
+const PITCH_LO = 36;      // C2 — roll always covers at least this range
+const PITCH_HI = 84;      // C6
+const MIN_BARS = 8;       // roll is always at least this long, so you can draw into empty space
+
+const TOOLS = [
+  { id: 'select', label: 'Select', Icon: MousePointer2, help: 'Click a note to select it. Drag its body to move it, drag its right edge to resize. Double-click empty space to add a note.' },
+  { id: 'draw', label: 'Draw', Icon: Pencil, help: 'Pencil. Click empty grid to place a note, then drag right to set its length or up/down to change its pitch.' },
+  { id: 'paint', label: 'Paint', Icon: Paintbrush, help: 'Paintbrush. Hold and drag across the grid to lay down a run of notes, one per grid step.' },
+  { id: 'erase', label: 'Erase', Icon: Eraser, help: 'Drag across notes to wipe them out. Right-click deletes a note with any tool active.' },
+];
+
+const GRID_OPTIONS = [
+  { id: 'off', label: 'Off', beats: 0 },
+  { id: '1', label: '1 bar', beats: 4 },
+  { id: '1/2', label: '1/2', beats: 2 },
+  { id: '1/4', label: '1/4', beats: 1 },
+  { id: '1/8', label: '1/8', beats: 0.5 },
+  { id: '1/8t', label: '1/8T', beats: 1 / 3 },
+  { id: '1/16', label: '1/16', beats: 0.25 },
+  { id: '1/32', label: '1/32', beats: 0.125 },
+];
+
+let idSeed = 0;
+const newNoteId = () => `n${Date.now().toString(36)}${(idSeed++).toString(36)}`;
 
 export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample }) {
   const [playing, setPlaying] = useState(false);
@@ -33,29 +57,58 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
   const [selectedId, setSelectedId] = useState(null);
   const [pxPerSec, setPxPerSec] = useState(90);
   const [playheadX, setPlayheadX] = useState(0);
+  const [tool, setTool] = useState('draw');
+  const [gridId, setGridId] = useState('1/8');
+  const [ghost, setGhost] = useState(null);   // live preview while drawing
 
   const schedRef = useRef(null);   // setInterval id
   const rafRef = useRef(null);
   const stateRef = useRef({});     // { startCtxTime, nextIdx, scaledNotes, endTime, voices }
+  const gridRef = useRef(null);    // the absolutely-positioned roll surface
+  const rollWrapRef = useRef(null);
+  const velWrapRef = useRef(null);
+  const syncingRef = useRef(false);
+  const centeredRef = useRef(false);
 
   const [instrumentId, setInstrumentId] = useState(DEFAULT_INSTRUMENT);
   const [instrumentState, setInstrumentState] = useState('loading'); // loading | ready | error
   const instrumentRef = useRef(null);
 
   const notes = midi?.notes || [];
+  // Drag handlers live for the whole gesture — read notes through the ref so an
+  // erase or paint stroke never hit-tests against a stale array.
+  const notesRef = useRef(notes);
+  notesRef.current = notes;
   const originalTempo = midi?.tempo || 120;
   // Changing tempo time-stretches the sequence relative to its detected tempo.
   const timeScale = originalTempo / tempo;
 
+  const secPerBeat = 60 / tempo;
+  const snapSec = (GRID_OPTIONS.find(g => g.id === gridId)?.beats || 0) * secPerBeat;
+  const defaultLen = snapSec || 0.3;
+
+  /** Snap a time to the grid. floor=true for note starts while painting cells. */
+  const snap = useCallback((t, floor = false) => {
+    if (!snapSec) return Math.max(0, t);
+    const q = floor ? Math.floor(t / snapSec) : Math.round(t / snapSec);
+    return Math.max(0, q * snapSec);
+  }, [snapSec]);
+
+  // The visible pitch range only ever grows — a roll whose rows shift under you
+  // every time you add a note is unusable.
   const { minMidi, maxMidi, totalSec } = useMemo(() => {
-    if (!notes.length) return { minMidi: 48, maxMidi: 72, totalSec: 8 };
-    let lo = 127, hi = 0, end = 0;
+    let lo = PITCH_LO, hi = PITCH_HI, end = 0;
     for (const n of notes) {
-      lo = Math.min(lo, n.midi); hi = Math.max(hi, n.midi);
+      lo = Math.min(lo, n.midi - 2); hi = Math.max(hi, n.midi + 2);
       end = Math.max(end, n.start + n.duration);
     }
-    return { minMidi: Math.max(0, lo - 2), maxMidi: Math.min(127, hi + 2), totalSec: end + 0.5 };
-  }, [notes]);
+    const minLen = MIN_BARS * 4 * secPerBeat;
+    return {
+      minMidi: Math.max(0, lo),
+      maxMidi: Math.min(127, hi),
+      totalSec: Math.max(minLen, end + 4 * secPerBeat),
+    };
+  }, [notes, secPerBeat]);
 
   const rows = maxMidi - minMidi + 1;
   const rollW = Math.max(600, totalSec * pxPerSec);
@@ -112,6 +165,17 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
     setInstrumentId(`user:${userSample.id}:${userSample.rootMidi ?? 60}`);
   }, [userSample]);
 
+  // Open on the middle of the keyboard instead of the bottom of the scroll box.
+  useEffect(() => {
+    if (centeredRef.current || !rollWrapRef.current) return;
+    const focusNote = notes.length
+      ? notes.reduce((s, n) => s + n.midi, 0) / notes.length
+      : 60;
+    const y = (maxMidi - focusNote) * ROW_H - rollWrapRef.current.clientHeight / 2;
+    rollWrapRef.current.scrollTop = Math.max(0, y);
+    centeredRef.current = true;
+  }, [notes, maxMidi]);
+
   // Real sampled instrument, not an oscillator. Falls back to silence rather
   // than a buzz if the pack has not finished decoding yet.
   const scheduleVoice = (ctx, note, when, dur) => {
@@ -125,13 +189,13 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
     return { stop: stopFn };
   };
 
-  /** Audition a single note when you click the keybed or a note block. */
-  const auditionNote = useCallback(async (midiNote) => {
+  /** Audition a single note when you click the keybed or draw one in. */
+  const auditionNote = useCallback(async (midiNote, velocity = 0.85) => {
     await resumeAudio();
     const ctx = getAudioContext();
     const inst = instrumentRef.current;
     if (!inst) return;
-    playNote(ctx, getMasterBus(), inst, midiNote, { duration: 0.45, velocity: 0.85 });
+    playNote(ctx, getMasterBus(), inst, midiNote, { duration: 0.45, velocity });
   }, []);
 
   const play = async () => {
@@ -184,12 +248,19 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
     rafRef.current = requestAnimationFrame(animate);
   };
 
-  const updateNote = (id, patch) => {
+  /* ── editing primitives ─────────────────────────────────────────────── */
+
+  const updateNote = useCallback((id, patch) => {
     setMidi(prev => ({
       ...prev,
-      notes: prev.notes.map(n => n.id === id ? { ...n, ...patch } : n)
+      notes: (prev.notes || []).map(n => n.id === id ? { ...n, ...patch } : n),
     }));
-  };
+  }, [setMidi]);
+
+  const removeNotes = useCallback((ids) => {
+    const kill = new Set(ids);
+    setMidi(prev => ({ ...prev, notes: (prev.notes || []).filter(n => !kill.has(n.id)) }));
+  }, [setMidi]);
 
   const nudge = (field, delta) => {
     if (!selected) return;
@@ -200,23 +271,181 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
 
   const deleteSelected = () => {
     if (!selected) return;
-    setMidi(prev => ({ ...prev, notes: prev.notes.filter(n => n.id !== selected.id) }));
+    removeNotes([selected.id]);
     setSelectedId(null);
   };
 
-  const addNoteAt = (e) => {
+  /** Pointer position → {time, pitch} on the roll surface. */
+  const pointerToCell = useCallback((e) => {
+    const rect = gridRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left - KEYBED_W;
+    const y = e.clientY - rect.top;
+    return {
+      x,
+      time: Math.max(0, x / pxPerSec),
+      pitch: Math.min(127, Math.max(0, maxMidi - Math.floor(y / ROW_H))),
+    };
+  }, [pxPerSec, maxMidi]);
+
+  /** Register a drag: handlers close over the values live at grab time. */
+  const startDrag = useCallback((onMove, onUp) => {
+    const move = (e) => onMove(e);
+    const up = (e) => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      if (onUp) onUp(e);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }, []);
+
+  /* ── roll interaction ───────────────────────────────────────────────── */
+
+  const onRollPointerDown = (e) => {
+    if (e.button === 2) return;              // right-click is handled as delete
+    e.preventDefault();
+    const { time, pitch } = pointerToCell(e);
+    if (time < 0) return;
+
+    if (tool === 'erase') {
+      const painted = new Set();
+      const eraseAt = (ev) => {
+        const c = pointerToCell(ev);
+        const hit = notesRef.current.find(n =>
+          n.midi === c.pitch && c.time >= n.start && c.time <= n.start + n.duration && !painted.has(n.id));
+        if (hit) { painted.add(hit.id); removeNotes([hit.id]); }
+      };
+      eraseAt(e);
+      startDrag(eraseAt);
+      return;
+    }
+
+    if (tool === 'paint') {
+      const stamped = new Set();
+      const stamp = (ev) => {
+        const c = pointerToCell(ev);
+        const start = snap(c.time, true);
+        const key = `${c.pitch}:${start.toFixed(4)}`;
+        if (stamped.has(key)) return;
+        stamped.add(key);
+        // Don't stack a second note on a cell that already holds one.
+        if (notesRef.current.some(n => n.midi === c.pitch && Math.abs(n.start - start) < 1e-4)) return;
+        const id = newNoteId();
+        setMidi(prev => ({
+          ...prev,
+          notes: [...(prev.notes || []), { id, midi: c.pitch, start, duration: defaultLen, velocity: 0.8 }],
+        }));
+        auditionNote(c.pitch, 0.7);
+      };
+      stamp(e);
+      startDrag(stamp);
+      return;
+    }
+
+    // draw: lay a note down and let the drag decide its pitch and length
+    if (tool === 'draw') {
+      const start = snap(time, true);
+      const id = newNoteId();
+      const note = { id, midi: pitch, start, duration: defaultLen, velocity: 0.8 };
+      setMidi(prev => ({ ...prev, notes: [...(prev.notes || []), note] }));
+      setSelectedId(id);
+      auditionNote(pitch, 0.75);
+      let last = note;
+      startDrag(
+        (ev) => {
+          const c = pointerToCell(ev);
+          const end = snapSec ? Math.max(start + snapSec, snap(c.time + snapSec / 2)) : Math.max(start + 0.05, c.time);
+          last = { ...last, midi: c.pitch, duration: Math.max(0.05, end - start) };
+          setGhost(last);
+        },
+        () => {
+          setGhost(null);
+          updateNote(id, { midi: last.midi, duration: last.duration });
+        },
+      );
+      return;
+    }
+
+    // select: empty-space click clears the selection
+    setSelectedId(null);
+  };
+
+  /** Grab on an existing note — move it, or resize from its right edge. */
+  const onNotePointerDown = (e, note) => {
+    if (e.button === 2) return;
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (tool === 'erase') { removeNotes([note.id]); return; }
+    if (tool === 'paint') { return; }        // painting over a note is a no-op
+
+    setSelectedId(note.id);
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left + e.currentTarget.scrollLeft - KEYBED_W;
-    const y = e.clientY - rect.top + e.currentTarget.scrollTop;
-    if (x < 0) return;
-    const start = x / pxPerSec;
-    const midiPitch = maxMidi - Math.floor(y / ROW_H);
-    const id = Date.now();
-    setMidi(prev => ({
-      ...prev,
-      notes: [...prev.notes, { id, midi: midiPitch, start, duration: 0.3, velocity: 0.8 }]
-    }));
-    setSelectedId(id);
+    const fromRight = rect.right - e.clientX;
+    const grab = pointerToCell(e);
+    const resizing = fromRight <= 7 && rect.width > 14;
+
+    if (resizing) {
+      let dur = note.duration;
+      startDrag(
+        (ev) => {
+          const c = pointerToCell(ev);
+          const end = snapSec ? Math.max(note.start + snapSec, snap(c.time)) : Math.max(note.start + 0.05, c.time);
+          dur = Math.max(0.05, end - note.start);
+          setGhost({ ...note, duration: dur });
+        },
+        () => { setGhost(null); updateNote(note.id, { duration: dur }); },
+      );
+      return;
+    }
+
+    const offset = grab.time - note.start;
+    let moved = { ...note };
+    startDrag(
+      (ev) => {
+        const c = pointerToCell(ev);
+        const start = snap(Math.max(0, c.time - offset));
+        moved = { ...note, start, midi: c.pitch };
+        setGhost(moved);
+      },
+      () => {
+        setGhost(null);
+        if (moved.start !== note.start || moved.midi !== note.midi) {
+          if (moved.midi !== note.midi) auditionNote(moved.midi, 0.7);
+          updateNote(note.id, { start: moved.start, midi: moved.midi });
+        }
+      },
+    );
+  };
+
+  /* ── velocity lane ──────────────────────────────────────────────────── */
+
+  const onVelPointerDown = (e, note) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setSelectedId(note.id);
+    const rect = e.currentTarget.parentElement.getBoundingClientRect();
+    const apply = (ev) => {
+      const v = 1 - (ev.clientY - rect.top) / rect.height;
+      updateNote(note.id, { velocity: Math.min(1, Math.max(0.05, Number(v.toFixed(3)))) });
+    };
+    apply(e);
+    startDrag(apply);
+  };
+
+  const syncScroll = (from, to) => {
+    if (syncingRef.current || !from || !to) return;
+    syncingRef.current = true;
+    to.scrollLeft = from.scrollLeft;
+    requestAnimationFrame(() => { syncingRef.current = false; });
+  };
+
+  // Delete/Backspace kills the selected note while the roll has focus.
+  const onRollKeyDown = (e) => {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selected) {
+      e.preventDefault();
+      deleteSelected();
+    }
   };
 
   const exportJSON = () => {
@@ -227,9 +456,11 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   };
 
+  const rollCursor = tool === 'erase' ? 'not-allowed' : tool === 'select' ? 'default' : 'crosshair';
+  const beatCount = Math.ceil(totalSec / secPerBeat) + 1;
+
   // The roll is always on screen, even with nothing loaded — play the keybed,
-  // double-click to draw notes, and build a part from scratch. Hiding it behind
-  // an "import audio first" placeholder made the tab useless as an instrument.
+  // draw notes in, and build a part from scratch.
 
   return (
     <div className="card-cosmic" style={{ borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -303,10 +534,61 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
         </button>
       </div>
 
+      {/* Tools + grid */}
+      <div className="seq-toolbar" style={{ gap: 8 }}>
+        <div className="seq-tools">
+          {TOOLS.map(({ id, label, Icon, help }) => (
+            <button
+              key={id}
+              onClick={() => setTool(id)}
+              data-help={help}
+              className={`seq-tool ${tool === id ? 'seq-tool--on' : ''}`}
+            >
+              <Icon size={13} /> {label}
+            </button>
+          ))}
+        </div>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.68rem' }}
+          data-help="Snap. Every note you draw, move or resize lands on this division of the beat. Set it to Off for free placement.">
+          <Magnet size={13} style={{ opacity: 0.75 }} />
+          Snap
+          <select value={gridId} onChange={(e) => setGridId(e.target.value)} className="suno-chip"
+            style={{ fontSize: '0.72rem', padding: '4px 7px', borderRadius: 7, cursor: 'pointer' }}>
+            {GRID_OPTIONS.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}
+          </select>
+        </label>
+
+        <span style={{ fontSize: '0.62rem', color: 'rgba(196,181,253,0.55)' }}>
+          right-click a note to delete · Del removes the selected note
+        </span>
+      </div>
+
       {/* Piano roll */}
-      <div className="seq-roll-wrap" onDoubleClick={addNoteAt}
-        data-help="The piano roll. Click a note to select and tweak it; double-click empty space to add a new note.">
-        <div style={{ position: 'relative', width: rollW + KEYBED_W, height: rollH }}>
+      <div
+        className="seq-roll-wrap"
+        ref={rollWrapRef}
+        tabIndex={0}
+        onKeyDown={onRollKeyDown}
+        onScroll={() => syncScroll(rollWrapRef.current, velWrapRef.current)}
+        onContextMenu={(e) => e.preventDefault()}
+        onDoubleClick={(e) => {
+          if (tool !== 'select') return;
+          const { time, pitch } = pointerToCell(e);
+          if (time < 0) return;
+          const id = newNoteId();
+          setMidi(prev => ({
+            ...prev,
+            notes: [...(prev.notes || []), { id, midi: pitch, start: snap(time, true), duration: defaultLen, velocity: 0.8 }],
+          }));
+          setSelectedId(id);
+        }}
+        data-help="The piano roll. Pick a tool above: Select moves and resizes, Draw places single notes, Paint lays down runs, Erase wipes them. Click the keys on the left to hear the instrument.">
+        <div
+          ref={gridRef}
+          onPointerDown={onRollPointerDown}
+          style={{ position: 'relative', width: rollW + KEYBED_W, height: rollH, cursor: rollCursor, touchAction: 'none' }}
+        >
           {/* Row stripes + note-name gutter */}
           {Array.from({ length: rows }, (_, r) => {
             const m = maxMidi - r;
@@ -316,7 +598,7 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
               <div key={m} style={{ position: 'absolute', top: r * ROW_H, left: 0, right: 0, height: ROW_H, background: black ? 'rgba(255,45,149,0.045)' : 'transparent', borderTop: isC ? '1px solid rgba(0,229,255,0.25)' : '1px solid rgba(255,255,255,0.03)' }}>
                 {/* Playable key: click it to hear the note on the current instrument. */}
                 <div
-                  onMouseDown={(e) => { e.stopPropagation(); auditionNote(m); }}
+                  onPointerDown={(e) => { e.stopPropagation(); auditionNote(m); }}
                   title={`${midiToName(m)} — click to hear it`}
                   style={{
                     position: 'absolute', left: 0, top: 0, height: ROW_H, width: KEYBED_W,
@@ -330,29 +612,71 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
               </div>
             );
           })}
-          {/* Beat grid */}
-          {Array.from({ length: Math.ceil(totalSec / (60 / tempo)) + 1 }, (_, b) => (
-            <div key={b} style={{ position: 'absolute', top: 0, bottom: 0, left: KEYBED_W + b * (60 / tempo) * pxPerSec, width: 1, background: b % 4 === 0 ? 'rgba(255,45,149,0.22)' : 'rgba(255,255,255,0.05)' }} />
+          {/* Beat + snap grid */}
+          {Array.from({ length: beatCount }, (_, b) => (
+            <div key={`b${b}`} style={{ position: 'absolute', top: 0, bottom: 0, left: KEYBED_W + b * secPerBeat * pxPerSec, width: 1, background: b % 4 === 0 ? 'rgba(255,45,149,0.22)' : 'rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
+          ))}
+          {snapSec > 0 && snapSec * pxPerSec > 7 && Array.from({ length: Math.ceil(totalSec / snapSec) + 1 }, (_, s) => (
+            <div key={`s${s}`} style={{ position: 'absolute', top: 0, bottom: 0, left: KEYBED_W + s * snapSec * pxPerSec, width: 1, background: 'rgba(0,229,255,0.055)', pointerEvents: 'none' }} />
           ))}
           {/* Notes */}
-          {notes.map(n => (
-            <div
-              key={n.id}
-              className={`seq-note ${n.id === selectedId ? 'seq-note--selected' : ''}`}
-              onClick={(e) => { e.stopPropagation(); setSelectedId(n.id); }}
-              onDoubleClick={(e) => e.stopPropagation()}
-              title={`${midiToName(n.midi)} · ${n.start.toFixed(2)}s · vel ${(n.velocity * 100) | 0}%`}
-              style={{
-                left: KEYBED_W + n.start * pxPerSec,
-                top: (maxMidi - n.midi) * ROW_H + 1,
-                width: Math.max(4, n.duration * pxPerSec),
-                height: ROW_H - 2,
-                opacity: 0.45 + 0.55 * (n.velocity ?? 0.8)
-              }}
-            />
-          ))}
+          {notes.map(n => {
+            const live = ghost && ghost.id === n.id ? ghost : n;
+            return (
+              <div
+                key={n.id}
+                className={`seq-note ${n.id === selectedId ? 'seq-note--selected' : ''} ${tool === 'select' ? 'seq-note--grab' : ''}`}
+                onPointerDown={(e) => onNotePointerDown(e, n)}
+                onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); removeNotes([n.id]); }}
+                onDoubleClick={(e) => e.stopPropagation()}
+                title={`${midiToName(live.midi)} · ${live.start.toFixed(2)}s · vel ${(live.velocity * 100) | 0}%`}
+                style={{
+                  left: KEYBED_W + live.start * pxPerSec,
+                  top: (maxMidi - live.midi) * ROW_H + 1,
+                  width: Math.max(4, live.duration * pxPerSec),
+                  height: ROW_H - 2,
+                  opacity: 0.45 + 0.55 * (live.velocity ?? 0.8),
+                }}
+              >
+                <span className="seq-note-grip" />
+              </div>
+            );
+          })}
           {/* Playhead */}
           {playing && <div className="seq-playhead" style={{ left: KEYBED_W + playheadX }} />}
+        </div>
+      </div>
+
+      {/* Velocity lane — one bar per note, drag a bar to set how hard it hits */}
+      <div
+        className="seq-vel-wrap"
+        ref={velWrapRef}
+        onScroll={() => syncScroll(velWrapRef.current, rollWrapRef.current)}
+        data-help="Velocity lane. Every note gets a bar; drag a bar up or down to change how hard that note hits. Taller and brighter means louder.">
+        <div style={{ position: 'relative', width: rollW + KEYBED_W, height: VEL_H }}>
+          <div className="seq-vel-gutter" style={{ width: KEYBED_W }}>VEL</div>
+          <div style={{ position: 'absolute', left: KEYBED_W, right: 0, top: 0, height: VEL_H }}>
+            {[0.25, 0.5, 0.75].map(f => (
+              <div key={f} style={{ position: 'absolute', left: 0, right: 0, top: VEL_H * f, height: 1, background: 'rgba(255,255,255,0.05)' }} />
+            ))}
+            {notes.map(n => {
+              const v = n.velocity ?? 0.8;
+              return (
+                <div
+                  key={n.id}
+                  className={`seq-vel-bar ${n.id === selectedId ? 'seq-vel-bar--selected' : ''}`}
+                  onPointerDown={(e) => onVelPointerDown(e, n)}
+                  title={`${midiToName(n.midi)} · vel ${(v * 100) | 0}%`}
+                  style={{
+                    left: n.start * pxPerSec,
+                    width: Math.max(3, Math.min(n.duration * pxPerSec, 14)),
+                    height: Math.max(2, v * VEL_H),
+                    opacity: 0.35 + 0.65 * v,
+                  }}
+                />
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -366,14 +690,14 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
             <button className="suno-btn" onClick={() => nudge('midi', 1)}><ChevronUp size={13} /></button>
             <button className="suno-btn" onClick={() => nudge('midi', -1)}><ChevronDown size={13} /></button>
           </span>
-          <span style={{ display: 'inline-flex', gap: 3 }} data-help="Slide the selected note earlier/later by 50ms.">
-            <button className="suno-btn" onClick={() => nudge('start', -0.05)}><ChevronLeft size={13} /></button>
-            <button className="suno-btn" onClick={() => nudge('start', 0.05)}><ChevronRight size={13} /></button>
+          <span style={{ display: 'inline-flex', gap: 3 }} data-help="Slide the selected note earlier/later by one grid step.">
+            <button className="suno-btn" onClick={() => nudge('start', -(snapSec || 0.05))}><ChevronLeft size={13} /></button>
+            <button className="suno-btn" onClick={() => nudge('start', snapSec || 0.05)}><ChevronRight size={13} /></button>
           </span>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }} data-help="Lengthen or shorten the selected note.">
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }} data-help="Lengthen or shorten the selected note by one grid step.">
             Len
-            <button className="suno-btn" onClick={() => nudge('duration', -0.05)}>−</button>
-            <button className="suno-btn" onClick={() => nudge('duration', 0.05)}>+</button>
+            <button className="suno-btn" onClick={() => nudge('duration', -(snapSec || 0.05))}>−</button>
+            <button className="suno-btn" onClick={() => nudge('duration', snapSec || 0.05)}>+</button>
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6 }} data-help="How hard the selected note hits (its velocity/loudness).">
             Vel
@@ -388,7 +712,7 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
       )}
 
       <div style={{ fontSize: '0.62rem', color: 'rgba(196,181,253,0.55)' }}>
-        {notes.length} notes · {totalSec.toFixed(1)}s at source tempo · double-click the roll to add a note
+        {notes.length} notes · {totalSec.toFixed(1)}s at source tempo · {TOOLS.find(t => t.id === tool)?.label} tool
       </div>
     </div>
   );
