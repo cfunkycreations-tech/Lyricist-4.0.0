@@ -81,7 +81,12 @@ function TabPane({ id, active, opened, children }) {
 
 function MainLayout() {
   const store = useLyricStore();
-  const [activeTab, setActiveTab] = useState('songwriter');
+  // Open straight onto a tab with #tab=<id>. Used to reproduce a crash on the
+  // exact tab it happened on instead of clicking there by hand every time.
+  const [activeTab, setActiveTab] = useState(() => {
+    const wanted = new URLSearchParams(window.location.hash.replace(/^#/, '')).get('tab');
+    return tabs.some((t) => t.id === wanted) ? wanted : 'songwriter';
+  });
   // Every tab you've opened this session. Boot only pays for the first one.
   // Tracked in a ref and grown during render on purpose: the pane has to exist
   // in the SAME render that switches to it, or the Ghost Demo would go looking

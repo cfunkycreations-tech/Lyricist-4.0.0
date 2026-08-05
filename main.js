@@ -470,22 +470,35 @@ function createWindow() {
   // Memory watch. An OOM with 36 GB free means one specific thing in the page
   // is allocating hard, so sample the renderer every 10s alongside whichever
   // tab is open. When it dies, the log says what it was doing on the way down.
-  let lastTab = null;
   let peakMB = 0;
   const memTimer = setInterval(async () => {
     if (win.isDestroyed()) return;
+    let tab = '?';
     try {
-      const tab = await win.webContents.executeJavaScript('window.__lyricistActiveTab || "?"', true);
-      const info = await win.webContents.getProcessMemoryInfo();
-      const mb = Math.round((info.private || info.residentSet || 0) / 1024);
-      const jumped = mb > peakMB + 250;          // a real step up, not noise
-      if (tab !== lastTab || jumped || mb > 1500) {
-        bootLog(`mem ${mb} MB  tab=${tab}${tab !== lastTab ? ' (switched)' : ''}${jumped ? ' JUMP' : ''}`);
-      }
+      tab = await win.webContents.executeJavaScript('window.__lyricistActiveTab || "?"', true);
+    } catch { /* renderer busy — still worth logging the memory */ }
+    try {
+      // app.getAppMetrics() is the API that exists in this Electron.
+      // webContents.getProcessMemoryInfo() was removed, and the version of this
+      // watch that used it threw on every sample and logged nothing at all.
+      const pid = win.webContents.getOSProcessId();
+      const me = app.getAppMetrics().find((m) => m.pid === pid);
+      const mb = Math.round((me?.memory?.workingSetSize || 0) / 1024);
+      if (!mb) return;
+      const jumped = mb > peakMB + 200;
+      bootLog(`mem ${mb} MB  tab=${tab}${jumped ? '  JUMP' : ''}`);
       if (mb > peakMB) peakMB = mb;
-      lastTab = tab;
-    } catch { /* renderer busy or gone — the crash handler covers it */ }
-  }, 10_000);
+    } catch (e) {
+      bootLog(`mem sample failed: ${e?.message || e}`);
+    }
+  }, 5_000);
+
+  // Renderer errors and warnings land in the log too — an allocation that fails
+  // usually says so in the console a moment before the process dies.
+  win.webContents.on('console-message', (_e, level, message) => {
+    if (level < 2) return;                       // 2 = warning, 3 = error
+    bootLog(`renderer ${level === 3 ? 'error' : 'warn'}: ${String(message).slice(0, 400)}`);
+  });
   win.on('closed', () => {
     clearInterval(memTimer);
     bootLog(`window closed — peak renderer memory ${peakMB} MB`);
@@ -503,7 +516,10 @@ function createWindow() {
       reveal('missing index.html');
       return;
     }
-    win.loadFile(index);
+    // LYRICIST_START_TAB=loopstation opens straight onto that tab, so a crash
+    // can be reproduced where it actually happens.
+    const startTab = process.env.LYRICIST_START_TAB;
+    win.loadFile(index, startTab ? { hash: `tab=${startTab}` } : undefined);
   }
 }
 
