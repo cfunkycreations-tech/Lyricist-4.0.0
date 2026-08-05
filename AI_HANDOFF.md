@@ -121,6 +121,13 @@ Then move `Lyricist 4.2.0.0NN Setup.exe`, its `.blockmap`, and the unpacked fold
 
 ## Status
 
+### Done (as of build 4.2.0.021)
+- **FL-grade piano roll** — Select / Draw / Paint / Erase, drag-to-move, right-edge resize, snap
+  from 1 bar to 1/32 with triplets, and a velocity lane under the grid
+- **Ghost Demo safety extended** to the song store, MIDI Studio, Song Forge, Album Architect and
+  Loop Station (see below)
+- Tools Hub no longer ships — or keeps — a duplicate OpenRouter row
+
 ### Done (as of build 4.2.0.019)
 - Scratchpad rebuilt as a full-height yellow legal pad (ruled lines, red margin, Caveat handwriting,
   binding strip, autosave). `minHeight: 1100` is what makes it a page instead of a band.
@@ -144,8 +151,14 @@ Then move `Lyricist 4.2.0.0NN Setup.exe`, its `.blockmap`, and the unpacked fold
 closed, or unmounts. Tabs opt in with `registerDemoSnapshot(id, { snapshot, restore, hasWork })`;
 plain form fields are captured automatically.
 
-Quantum Lab and the drum machine are registered. **The other demo tabs — Song Forge, Ghost Rider,
-RC-Funk, MIDI, Mastering — still only get field-level restore.** Register their deeper state.
+Registered: `lyric-store` (the song itself — covers Songwriter, Ghost Rider and Song Forge, plus
+every writing knob), `quantum-lab`, `midi-studio`, `drum-machine`, `song-forge` (results and art),
+`album-architect`, `loop-station`. Still field-level only: Stemmer, Recording Booth, Mastering,
+Artist Analyzer — all result/file tabs, so the exposure is lower, but register them when you touch
+those files.
+
+Register at the level where the state actually lives. Putting it in `LyricStore` covered three tabs
+at once and is far harder to get wrong than three separate copies.
 
 ### Gotchas the hard way
 
@@ -191,8 +204,12 @@ anything else that needs it. Widen its reach as more white text turns up.
   sessions back and forth, or a room people join. Bring him options rather than guessing. Whatever it
   becomes, it has to stay free and must not require an account he'd have to pay to run. Ties straight
   back to the busking origin — two people on a corner.
-- **Paintbrush tool for the piano roll.** Click-and-drag to paint MIDI notes straight onto the grid
-  instead of placing them one at a time. Pairs with the FL-grade roll work below.
+- ~~**Paintbrush tool for the piano roll.**~~ **Done in 4.2.0.021.** The roll has four tools —
+  Select (drag to move, drag the right edge to resize), Draw, Paint, Erase — snap from 1 bar down to
+  1/32 with triplets, and a velocity lane under the grid. Right-click deletes a note; Delete removes
+  the selection. Everything lives in `src/components/MidiStudio/Sequencer.jsx` with its CSS in
+  `index.css` (`.seq-tool`, `.seq-vel-*`). Note the roll now holds a fixed C2–C6 / eight-bar minimum
+  so the rows stop shifting under you as you write.
 - **Drum machine with 808s.** A step-sequencer drum machine, 808 kit front and center. The sample
   library already handles user kits, so this can lean on `sampleLibrary.js` for custom sounds while
   shipping a stock 808 kit of its own.
@@ -200,8 +217,9 @@ anything else that needs it. Widen its reach as more white text turns up.
   deleted; they belonged to a previous version and he doesn't want them reused.
 - **Visualizer quality.** 395 presets load, but Chris thinks the stock Butterchurn ones are mediocre.
   Wanted: a better library, or hand-built visualizers. Make them good.
-- **Piano roll is not FL-grade yet.** Instruments and the sample library are done; still missing
-  proper note drawing and dragging, a velocity lane, and snap-to-grid.
+- **Piano roll — what's still missing.** Drawing, dragging, snap and velocity all landed in
+  4.2.0.021. Still not there: undo/redo on the roll, marquee multi-select, copy/paste of a run of
+  notes, and a loop/playback region.
 - **Drum machine needs per-key kit mapping** — one sample per key across a pad grid, not just one
   sample per track.
 - **Footer art is wrong.** The square medallion got squished into a 200×100 rectangle without his
