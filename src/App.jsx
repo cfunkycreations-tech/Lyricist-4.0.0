@@ -56,9 +56,24 @@ const tabs = [
  * survives switching tabs.
  */
 function TabPane({ id, active, opened, children }) {
+  const ref = useRef(null);
+  const isActive = active === id;
+
+  // display:none does not stop a <video> decoding. A background video you
+  // cannot see still burns memory and CPU for as long as the app is open, so
+  // park it while the tab is hidden and start it again when you come back.
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    for (const v of root.querySelectorAll('video')) {
+      if (isActive) { const p = v.play(); if (p?.catch) p.catch(() => {}); }
+      else v.pause();
+    }
+  }, [isActive]);
+
   if (!opened.has(id)) return null;
   return (
-    <div style={{ display: active === id ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+    <div ref={ref} style={{ display: isActive ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
       {children}
     </div>
   );
@@ -74,6 +89,10 @@ function MainLayout() {
   const openedTabsRef = useRef(new Set(['songwriter']));
   openedTabsRef.current.add(activeTab);
   const openedTabs = openedTabsRef.current;
+
+  // main.js reads this when it samples memory, so boot.log records which tab
+  // was open while the renderer was growing.
+  useEffect(() => { window.__lyricistActiveTab = activeTab; }, [activeTab]);
   const [ghostRiderData, setGhostRiderData] = useState(null);
   const [quantumForgeSeed, setQuantumForgeSeed] = useState(null);
   const [showWizard, setShowWizard] = useState(false);

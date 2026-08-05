@@ -467,6 +467,30 @@ function createWindow() {
 
   win.webContents.on('unresponsive', () => bootLog('renderer unresponsive'));
 
+  // Memory watch. An OOM with 36 GB free means one specific thing in the page
+  // is allocating hard, so sample the renderer every 10s alongside whichever
+  // tab is open. When it dies, the log says what it was doing on the way down.
+  let lastTab = null;
+  let peakMB = 0;
+  const memTimer = setInterval(async () => {
+    if (win.isDestroyed()) return;
+    try {
+      const tab = await win.webContents.executeJavaScript('window.__lyricistActiveTab || "?"', true);
+      const info = await win.webContents.getProcessMemoryInfo();
+      const mb = Math.round((info.private || info.residentSet || 0) / 1024);
+      const jumped = mb > peakMB + 250;          // a real step up, not noise
+      if (tab !== lastTab || jumped || mb > 1500) {
+        bootLog(`mem ${mb} MB  tab=${tab}${tab !== lastTab ? ' (switched)' : ''}${jumped ? ' JUMP' : ''}`);
+      }
+      if (mb > peakMB) peakMB = mb;
+      lastTab = tab;
+    } catch { /* renderer busy or gone — the crash handler covers it */ }
+  }, 10_000);
+  win.on('closed', () => {
+    clearInterval(memTimer);
+    bootLog(`window closed — peak renderer memory ${peakMB} MB`);
+  });
+
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
   bootLog(`createWindow packaged=${app.isPackaged} dev=${isDev} v=${app.getVersion()}`);
   if (isDev) {
