@@ -121,15 +121,41 @@ Then move `Lyricist 4.2.0.0NN Setup.exe`, its `.blockmap`, and the unpacked fold
 
 ## Status
 
-### Done
+### Done (as of build 4.2.0.019)
 - Scratchpad rebuilt as a full-height yellow legal pad (ruled lines, red margin, Caveat handwriting,
-  binding strip, autosave)
+  binding strip, autosave). `minHeight: 1100` is what makes it a page instead of a band.
 - MIDI Studio visualizer fixed — 0 → 395 presets, all browsable
-- MIDI Studio now has 38 real sampled instruments (MusyngKite GM, bundled offline) replacing the
-  two-oscillator synth, a playable keybed, and an always-visible piano roll
-- User sample library: packs, drag-and-drop import, .zip pack expansion, per-sample root note, and
-  "Play on roll" — all stored locally in IndexedDB, nothing uploaded
+- 38 real sampled instruments (MusyngKite GM, bundled offline) replacing the two-oscillator synth
+- User sample library: packs, drag-and-drop, .zip expansion, per-sample root note and loop flag,
+  play/stop with Stop All, search scoped per-pack or across everything, a sticky control bar, and
+  **backup/restore to .zip** — it lived only in IndexedDB, which uninstallers delete
+- **808 drum machine**: synthesized kit, 16 steps, swing, mute/solo, per-track and master effects
+  racks, per-track sample override, presets with JSON export/import
+- **Loop Station Save** — WAV mix plus each track to `Documents\Lyricist Recordings`. It had no save
+  at all; loops died with the tab. Also stopped the fixed app background bleeding through on scroll.
+- **Clipboard fixed** — no Edit menu meant Electron never bound Ctrl+V, so the API key couldn't be
+  pasted. Added Edit/View menus and a right-click context menu.
+- **Ghost Demo can no longer destroy work** — see `demoSafety.js` below
 - White text now carries the emerald laser edge
+
+### Never let a demo eat someone's work
+
+`src/services/demoSafety.js` snapshots before a demo runs and restores when it ends, is skipped, is
+closed, or unmounts. Tabs opt in with `registerDemoSnapshot(id, { snapshot, restore, hasWork })`;
+plain form fields are captured automatically.
+
+Quantum Lab and the drum machine are registered. **The other demo tabs — Song Forge, Ghost Rider,
+RC-Funk, MIDI, Mastering — still only get field-level restore.** Register their deeper state.
+
+### Gotchas the hard way
+
+- **Butterchurn and its preset packs are UMD.** `import()` does not reliably give `.default` —
+  unwrap through the namespace, `.default`, then `.default.default`.
+- **MusyngKite soundfont packs are not valid JSON.** They open with `var MIDI = {};` guards (so the
+  first `{` is the wrong brace — anchor on `MIDI.Soundfont.<name>`) and end with a trailing comma
+  before the closing brace. Both must be handled or every instrument silently fails.
+- I shipped build 013 with every instrument broken because I checked that *presets loaded* rather
+  than that *each instrument loaded*. Verify the actual thing, one by one.
 - Footer tagline corrected to "Keep Austin, Austin, Bruh"
 - All 4.2.0 releases (001–012) consolidated onto the dev drive
 
@@ -176,6 +202,12 @@ anything else that needs it. Widen its reach as more white text turns up.
   Wanted: a better library, or hand-built visualizers. Make them good.
 - **Piano roll is not FL-grade yet.** Instruments and the sample library are done; still missing
   proper note drawing and dragging, a velocity lane, and snap-to-grid.
+- **Drum machine needs per-key kit mapping** — one sample per key across a pad grid, not just one
+  sample per track.
+- **Footer art is wrong.** The square medallion got squished into a 200×100 rectangle without his
+  approval and he hates it. He's supplying replacement art; keep the same box size.
+- **Ask him what "upload pixels" meant** for the drum machine. It was read as pattern presets and
+  those were built — he may have meant artwork on the pads.
 - **Icon overhaul.** He wants every flat icon gone — 3D, "5D", multidimensional. It's Quantum Lab.
 - 8 tab background videos still missing; Kling AI prompts are written, Chris is generating them.
 - Splash screen not built. Art is `V:\assets\Crystal_Geode_Cavern_QUANTUM_LAB_202608011431.jpeg`;
