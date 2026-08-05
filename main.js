@@ -452,7 +452,15 @@ function createWindow() {
       return;
     }
     if (!win.isDestroyed()) {
-      win.loadURL(failurePage('Lyricist stopped responding', `Renderer process gone: ${details.reason}`));
+      const oom = details.reason === 'oom';
+      win.loadURL(failurePage(
+        oom ? 'Lyricist ran out of memory' : 'Lyricist stopped responding',
+        oom
+          ? 'The page was killed for using too much memory, twice in a row.\n\n'
+            + 'Closing a few browser tabs or other heavy apps and reopening Lyricist\n'
+            + 'usually clears it. Send over %APPDATA%\\Lyricist\\boot.log either way.'
+          : `Renderer process gone: ${details.reason}`,
+      ));
       reveal('renderer crash');
     }
   });

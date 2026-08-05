@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LyricStoreProvider, useLyricStore } from './context/LyricStore.jsx';
 import SongwriterHub from './components/SongwriterHub/SongwriterHub.jsx';
 import ArtistAnalyzer from './components/ArtistAnalyzer/ArtistAnalyzer.jsx';
@@ -50,9 +50,30 @@ const tabs = [
   { id: 'settings', icon: '⚙️', label: 'Settings', help: 'Where you connect your AI key and choose which AI model writes your lyrics. Set this up first so the rest of the app works.' }
 ];
 
+/**
+ * One tab's workspace. It renders nothing at all until the tab has been opened
+ * once; after that it stays mounted and just hides, so work in progress
+ * survives switching tabs.
+ */
+function TabPane({ id, active, opened, children }) {
+  if (!opened.has(id)) return null;
+  return (
+    <div style={{ display: active === id ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+      {children}
+    </div>
+  );
+}
+
 function MainLayout() {
   const store = useLyricStore();
   const [activeTab, setActiveTab] = useState('songwriter');
+  // Every tab you've opened this session. Boot only pays for the first one.
+  // Tracked in a ref and grown during render on purpose: the pane has to exist
+  // in the SAME render that switches to it, or the Ghost Demo would go looking
+  // for controls a frame before they mount.
+  const openedTabsRef = useRef(new Set(['songwriter']));
+  openedTabsRef.current.add(activeTab);
+  const openedTabs = openedTabsRef.current;
   const [ghostRiderData, setGhostRiderData] = useState(null);
   const [quantumForgeSeed, setQuantumForgeSeed] = useState(null);
   const [showWizard, setShowWizard] = useState(false);
@@ -348,63 +369,71 @@ function MainLayout() {
           })}
         </div>
 
-        {/* Tab Workspace content */}
+        {/* Tab Workspace content.
+
+            Tabs mount the first time you open one and stay mounted after that,
+            so nothing you have going in a tab is ever thrown away by switching
+            away from it. What changed in 4.2.0.025 is that they no longer ALL
+            mount at boot: sixteen tabs' worth of background videos, visualizers
+            and artwork loaded at once was enough to run the renderer out of
+            memory and leave a black window. Now you pay for a tab when you
+            actually open it. */}
         <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: activeTab === 'songwriter' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+          <TabPane id="songwriter" active={activeTab} opened={openedTabs}>
             <SongwriterHub ghostRiderData={ghostRiderData} />
-          </div>
-          <div style={{ display: activeTab === 'quantum' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+          </TabPane>
+          <TabPane id="quantum" active={activeTab} opened={openedTabs}>
             <QuantumLab
               onSendToSongwriter={handleQuantumToSongwriter}
               onSendToForge={handleQuantumToForge}
             />
-          </div>
-          <div style={{ display: activeTab === 'analyzer' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+          </TabPane>
+          <TabPane id="analyzer" active={activeTab} opened={openedTabs}>
             <ArtistAnalyzer onGhostSend={handleGhostSend} />
-          </div>
-          <div style={{ display: activeTab === 'songforge' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+          </TabPane>
+          <TabPane id="songforge" active={activeTab} opened={openedTabs}>
             <SongForge
               onSongForged={() => setActiveTab('songwriter')}
               quantumSeed={quantumForgeSeed}
               onQuantumSeedConsumed={() => setQuantumForgeSeed(null)}
             />
-          </div>
-          <div style={{ display: activeTab === 'loopstation' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+          </TabPane>
+          <TabPane id="loopstation" active={activeTab} opened={openedTabs}>
             <LoopStation />
-          </div>
-          <div style={{ display: activeTab === 'stemmer' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+          </TabPane>
+          <TabPane id="stemmer" active={activeTab} opened={openedTabs}>
             <Stemmer />
-          </div>
-          <div style={{ display: activeTab === 'booth' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+          </TabPane>
+          <TabPane id="booth" active={activeTab} opened={openedTabs}>
             <RecordingBooth onNavigate={setActiveTab} />
-          </div>
-          <div style={{ display: activeTab === 'midistudio' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+          </TabPane>
+          <TabPane id="midistudio" active={activeTab} opened={openedTabs}>
             <MidiStudio />
-          </div>
-          <div style={{ display: activeTab === 'album' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+          </TabPane>
+          <TabPane id="album" active={activeTab} opened={openedTabs}>
             <AlbumArchitect />
-          </div>
-          <div style={{ display: activeTab === 'mastering' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+          </TabPane>
+          <TabPane id="mastering" active={activeTab} opened={openedTabs}>
             <MasteringStudio onNavigate={setActiveTab} />
-          </div>
-          <div style={{ display: activeTab === 'toolshub' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+          </TabPane>
+          <TabPane id="toolshub" active={activeTab} opened={openedTabs}>
             <ToolsHub />
-          </div>
-          <div style={{ display: activeTab === 'rhyme' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+          </TabPane>
+          <TabPane id="rhyme" active={activeTab} opened={openedTabs}>
             <RhymeHelper />
-          </div>
-          <div style={{ display: activeTab === 'thesaurus' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+          </TabPane>
+          <TabPane id="thesaurus" active={activeTab} opened={openedTabs}>
             <Thesaurus />
-          </div>
-          <div style={{ display: activeTab === 'dictionary' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+          </TabPane>
+          <TabPane id="dictionary" active={activeTab} opened={openedTabs}>
             <Dictionary />
-          </div>
-          <div style={{ display: activeTab === 'scratchpad' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+          </TabPane>
+          <TabPane id="scratchpad" active={activeTab} opened={openedTabs}>
             <Scratchpad />
-          </div>
-          <div style={{ display: activeTab === 'settings' ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+          </TabPane>
+          <TabPane id="settings" active={activeTab} opened={openedTabs}>
             <Settings />
-          </div>
+          </TabPane>
         </div>
 
         {/* Persistent Suno player (4.1.3) — mounted here at the layout root,
