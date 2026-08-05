@@ -1,4 +1,5 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
+import { registerDemoSnapshot } from '../services/demoSafety.js';
 
 const LyricStoreContext = createContext();
 
@@ -269,6 +270,44 @@ export const LyricStoreProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('lyricistGhostDemoEnabled', String(ghostDemoEnabled));
   }, [ghostDemoEnabled]);
+
+  // The song itself lives here, so this one registration covers every tab that
+  // writes lyrics — Songwriter, Ghost Rider, Song Forge. The demo really does
+  // generate a song and drop it in; without this it would land on top of yours.
+  const demoRef = useRef(null);
+  demoRef.current = {
+    lyrics, undoStack, redoStack,
+    genre, subgenre, mood, structureTemplate, customStructure,
+    topic, artistRef, notes,
+    rhymeScheme, rhymeDensity, flowPattern, cadenceNotes, hookFirstMode,
+    sectionLineCounts,
+  };
+  useEffect(() => registerDemoSnapshot('lyric-store', {
+    snapshot: () => ({ ...demoRef.current }),
+    restore: (s) => {
+      if (!s) return;
+      setLyricsState(s.lyrics);
+      setUndoStack(s.undoStack);
+      setRedoStack(s.redoStack);
+      setGenre(s.genre);
+      // Genre drives a subgenre reset on the next tick, so put subgenre back after it.
+      setTimeout(() => setSubgenre(s.subgenre), 0);
+      setMood(s.mood);
+      setStructureTemplate(s.structureTemplate);
+      setCustomStructure(s.customStructure);
+      setTopic(s.topic);
+      setArtistRef(s.artistRef);
+      setNotes(s.notes);
+      setRhymeScheme(s.rhymeScheme);
+      setRhymeDensity(s.rhymeDensity);
+      setFlowPattern(s.flowPattern);
+      setCadenceNotes(s.cadenceNotes);
+      setHookFirstMode(s.hookFirstMode);
+      setSectionLineCounts(s.sectionLineCounts);
+    },
+    hasWork: () => (demoRef.current.lyrics || []).some(
+      (sec) => (sec.lines || []).some((l) => (l.text || '').trim())),
+  }), []);
 
   const setConfig = (newConfig) => {
     setConfigState(newConfig);

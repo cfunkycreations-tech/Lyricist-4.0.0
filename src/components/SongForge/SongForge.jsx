@@ -8,6 +8,7 @@ import {
   generateSongFromImage
 } from '../../services/GeminiService.js';
 import { Wand2, Download, Send, Copy, RefreshCw, Upload, Shuffle, Sparkles, Image as ImageIcon, X } from 'lucide-react';
+import { registerDemoSnapshot } from '../../services/demoSafety.js';
 
 const SURPRISE_TOPICS = [
   'a rainy drive at 2am with the radio off',
@@ -96,6 +97,26 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
   // primary visual base layer for cover-art generation.
   const refInputRef = useRef(null);
   const [refImage, setRefImage] = useState(null); // { dataUrl, base64, mimeType }
+
+  // The demo forges a whole song and cover of its own. Anything you forged
+  // before it ran comes straight back when it's over.
+  const demoRef = useRef(null);
+  demoRef.current = { mode, artStyleOverride, result, titleDraft, seedImage, seedPrompt, imageNotes, refImage };
+  useEffect(() => registerDemoSnapshot('song-forge', {
+    snapshot: () => ({ ...demoRef.current }),
+    restore: (s) => {
+      if (!s) return;
+      setMode(s.mode);
+      setArtStyleOverride(s.artStyleOverride);
+      setResult(s.result);
+      setTitleDraft(s.titleDraft);
+      setSeedImage(s.seedImage);
+      setSeedPrompt(s.seedPrompt);
+      setImageNotes(s.imageNotes);
+      setRefImage(s.refImage);
+    },
+    hasWork: () => Boolean(demoRef.current.result || demoRef.current.seedImage || demoRef.current.refImage),
+  }), []);
 
   // One key: OpenRouter (lyrics + Nano Banana cover art via OpenRouter)
   const ready = Boolean(store.config.openRouterApiKey);

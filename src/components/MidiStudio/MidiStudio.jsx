@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AudioToMidi from './AudioToMidi.jsx';
 import Sequencer from './Sequencer.jsx';
 import Visualizer from './Visualizer.jsx';
 import SampleLibrary from './SampleLibrary.jsx';
 import DrumMachine from './DrumMachine.jsx';
+import { registerDemoSnapshot } from '../../services/demoSafety.js';
 
 // MIDI Studio tab — Lyricist 4.1.3
 // Audio → MIDI (basic-pitch, fully offline) feeding an offline piano-roll
@@ -26,6 +27,20 @@ export default function MidiStudio() {
   useEffect(() => {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(midi)); } catch { /* storage full */ }
   }, [midi]);
+
+  // The demo converts audio and loads its own notes into the roll, which would
+  // otherwise overwrite a part you were writing. Snapshot the whole sequence.
+  const liveRef = useRef({ midi, sourceName });
+  liveRef.current = { midi, sourceName };
+  useEffect(() => registerDemoSnapshot('midi-studio', {
+    snapshot: () => ({ midi: liveRef.current.midi, sourceName: liveRef.current.sourceName }),
+    restore: (s) => {
+      if (!s) return;
+      setMidi(s.midi);
+      setSourceName(s.sourceName);
+    },
+    hasWork: () => (liveRef.current.midi?.notes || []).length > 0,
+  }), []);
 
   const handleNotes = (midiJSON, name) => {
     setMidi(midiJSON);

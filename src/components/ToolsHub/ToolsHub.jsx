@@ -23,10 +23,17 @@ const SEED_TOOLS = [
 
 const CATEGORIES = ['All', 'Music', 'Audio', 'Dev', 'Art', 'Writing', 'Other'];
 
+/** Two seeded rows once shipped with the same id, and that copy is saved in
+ *  people's browsers. Drop repeats on the way in so React keeps unique keys. */
+function dedupeById(tools) {
+  const seen = new Set();
+  return tools.filter((t) => (seen.has(t.id) ? false : seen.add(t.id)));
+}
+
 function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
-    if (saved?.tools) return saved;
+    if (saved?.tools) return { ...saved, tools: dedupeById(saved.tools) };
   } catch { /* fresh start */ }
   return { tools: SEED_TOOLS, voted: [] };
 }

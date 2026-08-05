@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { getAudioContext, getMasterBus, resumeAudio, decodeBlob } from '../../services/audioEngine.js';
 import { audioBufferToWav } from '../../utils/wavEncoder.js';
+import { registerDemoSnapshot } from '../../services/demoSafety.js';
 
 // ============================================================
 // RC-Funk 5000 — Live Loop Station (Lyricist 4.2.0)
@@ -49,6 +50,22 @@ export default function LoopStation() {
   const [dubAmt, setDubAmt] = useState(0.45);
 
   const [saving, setSaving] = useState(false);
+
+  // Loops live in memory only — a demo take recorded over yours would be gone
+  // for good. Snapshot the track array (the buffers themselves are untouched).
+  const demoRef = useRef(null);
+  demoRef.current = { tracks, bpm, fxDelay, fxReverb, fxDub, delayAmt, reverbAmt, dubAmt };
+  useEffect(() => registerDemoSnapshot('loop-station', {
+    snapshot: () => ({ ...demoRef.current, tracks: demoRef.current.tracks.map((t) => ({ ...t })) }),
+    restore: (s) => {
+      if (!s) return;
+      setTracks(s.tracks);
+      setBpm(s.bpm);
+      setFxDelay(s.fxDelay); setFxReverb(s.fxReverb); setFxDub(s.fxDub);
+      setDelayAmt(s.delayAmt); setReverbAmt(s.reverbAmt); setDubAmt(s.dubAmt);
+    },
+    hasWork: () => demoRef.current.tracks.some((t) => t.buffer),
+  }), []);
 
   /**
    * Save the loops to disk as WAVs.

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, GripVertical, Download, Disc3 } from 'lucide-react';
+import { registerDemoSnapshot } from '../../services/demoSafety.js';
 
 // "The Universal Solvent" Album Architect — Lyricist 4.1.3
 // Project-management view for shaping up to 12 tracks into a cohesive concept
@@ -37,6 +38,16 @@ export default function AlbumArchitect() {
   useEffect(() => {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(album)); } catch { /* storage full */ }
   }, [album]);
+
+  // The demo adds its own tracks and rewrites the album metadata. Put the real
+  // record back when it's done.
+  const demoRef = useRef(album);
+  demoRef.current = album;
+  useEffect(() => registerDemoSnapshot('album-architect', {
+    snapshot: () => JSON.parse(JSON.stringify(demoRef.current)),
+    restore: (s) => { if (s) setAlbum(s); },
+    hasWork: () => (demoRef.current.tracks || []).length > 0,
+  }), []);
 
   const setMeta = (patch) => setAlbum(prev => ({ ...prev, ...patch }));
 
