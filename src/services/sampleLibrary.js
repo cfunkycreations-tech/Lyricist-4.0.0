@@ -101,25 +101,52 @@ export async function deletePack(id) {
 
 /* ── Samples ───────────────────────────────────────────────────────── */
 
+/**
+ * Names and metadata for the library, WITHOUT loading a single byte of audio.
+ *
+ * This used to be `getAll()` followed by dropping `bytes` from each row — which
+ * meant the entire library, audio and all, was pulled into memory first and
+ * thrown away a moment later. With a real library that is gigabytes, and the
+ * drum machine asked for it once per pack, so it happened over and over. It ran
+ * the renderer out of memory and took the whole app down with it.
+ *
+ * A cursor walks the store one record at a time, so only a single sample is
+ * ever held, and its audio is dropped before the next one is read.
+ */
 export async function listSamples(packId = null) {
-  const all = await tx(SAMPLES, 'readonly', (s) => s.getAll());
-  const rows = all || [];
-  const filtered = packId ? rows.filter((r) => r.packId === packId) : rows;
-  // Strip the bytes — callers that need audio ask for it explicitly.
-  return filtered
-    .map(({ bytes, ...meta }) => meta)
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const rows = await tx(SAMPLES, 'readonly', (s) => new Promise((resolve, reject) => {
+    const out = [];
+    const req = s.openCursor();
+    req.onsuccess = () => {
+      const cursor = req.result;
+      if (!cursor) { resolve(out); return; }
+      const { bytes, ...meta } = cursor.value;   // eslint-disable-line no-unused-vars
+      if (!packId || meta.packId === packId) out.push(meta);
+      cursor.continue();
+    };
+    req.onerror = () => reject(req.error);
+  }));
+  return rows.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function countSamples() {
-  const all = await tx(SAMPLES, 'readonly', (s) => s.getAll());
-  return (all || []).length;
+  // count() is answered from the index — it never touches the audio.
+  return (await tx(SAMPLES, 'readonly', (s) => s.count())) || 0;
 }
 
 /** Total bytes stored, for the "library size" readout. */
 export async function librarySize() {
-  const all = await tx(SAMPLES, 'readonly', (s) => s.getAll());
-  return (all || []).reduce((sum, r) => sum + (r.size || 0), 0);
+  return tx(SAMPLES, 'readonly', (s) => new Promise((resolve, reject) => {
+    let sum = 0;
+    const req = s.openCursor();
+    req.onsuccess = () => {
+      const cursor = req.result;
+      if (!cursor) { resolve(sum); return; }
+      sum += cursor.value.size || 0;
+      cursor.continue();
+    };
+    req.onerror = () => reject(req.error);
+  }));
 }
 
 /**
@@ -233,8 +260,11 @@ export async function exportLibrary(onProgress = () => {}) {
   const zip = new JSZip();
 
   const packs = await listPacks();
-  const all = await tx(SAMPLES, 'readonly', (s) => s.getAll());
-  const rows = all || [];
+  // Metadata first (no audio), then each file is fetched and handed to the zip
+  // one at a time. Reading the whole library into an array here would hold
+  // every byte in memory at once on top of the zip being built.
+  const rows = await listSamples();
+  const total = await countSamples();
 
   const manifest = {
     format: 'lyricist-sample-library',
@@ -257,7 +287,8 @@ export async function exportLibrary(onProgress = () => {}) {
     while (usedNames.has(entry)) entry = `${packFolder}/${safeName(row.name)} (${n++})${ext}`;
     usedNames.add(entry);
 
-    zip.file(entry, row.bytes);
+    const stored = await tx(SAMPLES, 'readonly', (s) => s.get(row.id));
+    if (stored?.bytes) zip.file(entry, stored.bytes);
     manifest.samples.push({
       entry,
       packId: row.packId,
@@ -269,7 +300,7 @@ export async function exportLibrary(onProgress = () => {}) {
     });
 
     done++;
-    onProgress(done, rows.length);
+    onProgress(done, total);
   }
 
   zip.file('library.json', JSON.stringify(manifest, null, 2));

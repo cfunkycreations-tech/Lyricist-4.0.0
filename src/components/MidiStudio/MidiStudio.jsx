@@ -13,6 +13,13 @@ import { registerDemoSnapshot } from '../../services/demoSafety.js';
 
 const STORE_KEY = 'lyricistMidiStudio';
 
+// Debug switch: #off=viz,drums,sampler,seq,a2m leaves those panels out, so a
+// runaway on this tab can be bisected without a rebuild per guess.
+const OFF = new Set(
+  (new URLSearchParams(window.location.hash.replace(/^#/, '')).get('off') || '')
+    .split(',').map((s) => s.trim()).filter(Boolean)
+);
+
 export default function MidiStudio() {
   const [midi, setMidi] = useState(() => {
     try {
@@ -60,7 +67,7 @@ export default function MidiStudio() {
             </p>
           </div>
 
-          <AudioToMidi onNotes={handleNotes} />
+          {!OFF.has('a2m') && <AudioToMidi onNotes={handleNotes} />}
 
           {sourceName && (
             <div className="pill-green" style={{ padding: '7px 10px', borderRadius: 8, fontSize: '0.68rem' }}>
@@ -70,10 +77,10 @@ export default function MidiStudio() {
         </div>
 
         <div className="midi-main">
-          <Sequencer midi={midi} setMidi={setMidi} userSample={userSample} />
-          <DrumMachine />
-          <SampleLibrary onUseSample={setUserSample} />
-          <Visualizer />
+          {!OFF.has('seq') && <Sequencer midi={midi} setMidi={setMidi} userSample={userSample} />}
+          {!OFF.has('drums') && <DrumMachine />}
+          {!OFF.has('sampler') && <SampleLibrary onUseSample={setUserSample} />}
+          {!OFF.has('viz') && <Visualizer />}
         </div>
       </div>
     </div>

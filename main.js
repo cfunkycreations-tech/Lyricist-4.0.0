@@ -506,8 +506,9 @@ function createWindow() {
 
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
   bootLog(`createWindow packaged=${app.isPackaged} dev=${isDev} v=${app.getVersion()}`);
+  const startTabDev = process.env.LYRICIST_START_TAB;
   if (isDev) {
-    win.loadURL('http://localhost:5173');
+    win.loadURL(`http://localhost:5173${startTabDev ? `#tab=${startTabDev}` : ''}`);
   } else {
     const index = path.join(__dirname, 'dist/index.html');
     if (!fs.existsSync(index)) {
@@ -519,7 +520,9 @@ function createWindow() {
     // LYRICIST_START_TAB=loopstation opens straight onto that tab, so a crash
     // can be reproduced where it actually happens.
     const startTab = process.env.LYRICIST_START_TAB;
-    win.loadFile(index, startTab ? { hash: `tab=${startTab}` } : undefined);
+    const off = process.env.LYRICIST_OFF;
+    const hash = [startTab && `tab=${startTab}`, off && `off=${off}`].filter(Boolean).join('&');
+    win.loadFile(index, hash ? { hash } : undefined);
   }
 }
 

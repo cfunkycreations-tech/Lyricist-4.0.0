@@ -72,13 +72,13 @@ export default function DrumMachine() {
   // Pull the user's samples so any track can play one instead of the synth.
   useEffect(() => {
     (async () => {
+      // One pass over the library, then label each sample with its pack. This
+      // used to call listSamples() once per pack, and every one of those calls
+      // read the whole store — the library came off disk once per pack.
       const packs = await listPacks();
-      const rows = [];
-      for (const p of packs) {
-        const s = await listSamples(p.id);
-        rows.push(...s.map((x) => ({ ...x, packName: p.name })));
-      }
-      setLibrarySamples(rows);
+      const names = new Map(packs.map((p) => [p.id, p.name]));
+      const all = await listSamples();
+      setLibrarySamples(all.map((x) => ({ ...x, packName: names.get(x.packId) || 'Pack' })));
     })();
   }, []);
 
