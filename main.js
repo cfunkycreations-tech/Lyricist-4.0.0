@@ -1,6 +1,36 @@
-const { app, BrowserWindow, session, ipcMain, Menu, MenuItem, clipboard } = require('electron');
+const { app, BrowserWindow, session, ipcMain, Menu, MenuItem, clipboard, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+
+// One copy at a time. A second instance can't take the profile lock the first
+// one holds, so its storage comes up broken and the window can land black —
+// bring the window you already have to the front instead.
+const gotInstanceLock = app.requestSingleInstanceLock();
+if (!gotInstanceLock) {
+  // quit() alone is not enough — 'ready' can still fire and build a window
+  // before the process is torn down, which is the very thing we're avoiding.
+  app.exit(0);
+} else {
+  app.on('second-instance', () => {
+    const [win] = BrowserWindow.getAllWindows();
+    if (!win) return;
+    if (win.isMinimized()) win.restore();
+    if (!win.isVisible()) win.show();
+    win.focus();
+  });
+}
+
+// If the GPU process died on the last run, come back up on software rendering
+// rather than showing another black window. Delete the marker each time so the
+// app goes straight back to the fast path once the driver behaves.
+// This has to happen before the app is ready, hence up here.
+try {
+  const marker = path.join(app.getPath('userData'), 'disable-gpu');
+  if (fs.existsSync(marker)) {
+    fs.unlinkSync(marker);
+    app.disableHardwareAcceleration();
+  }
+} catch { /* never block startup over this */ }
 
 // Save a Ghost Rider style report as a .txt file in the user's Documents folder.
 // Called from the UI via the preload bridge (window.lyricistAPI.saveReport).
@@ -274,6 +304,25 @@ function installEditMenu() {
         { role: 'zoomOut' },
         { type: 'separator' },
         { role: 'togglefullscreen' },
+        { type: 'separator' },
+        {
+          // Escape hatch for a black window. The app is running fine underneath
+          // — the graphics driver just isn't drawing it — so restart on
+          // software rendering, which always paints.
+          label: 'Fix a black screen (restart without GPU)',
+          click: () => {
+            try {
+              fs.writeFileSync(path.join(app.getPath('userData'), 'disable-gpu'), 'user requested', 'utf8');
+            } catch { /* still worth trying the relaunch */ }
+            bootLog('user asked for a software-rendering restart');
+            app.relaunch();
+            app.exit(0);
+          },
+        },
+        {
+          label: 'Open the boot log folder',
+          click: () => shell.showItemInFolder(path.join(app.getPath('userData'), 'boot.log')),
+        },
       ],
     },
   ]));
@@ -311,6 +360,37 @@ function attachContextMenu(win) {
   });
 }
 
+/**
+ * Boot log — a black window tells you nothing, so write down what actually
+ * happened. Lives next to the app's data at %APPDATA%\Lyricist\boot.log and
+ * keeps the last run plus the current one.
+ */
+function bootLog(message) {
+  try {
+    const file = path.join(app.getPath('userData'), 'boot.log');
+    const line = `[${new Date().toISOString()}] ${message}\n`;
+    // Don't let it grow forever.
+    if (fs.existsSync(file) && fs.statSync(file).size > 200_000) {
+      fs.writeFileSync(file, fs.readFileSync(file, 'utf8').slice(-50_000), 'utf8');
+    }
+    fs.appendFileSync(file, line, 'utf8');
+  } catch { /* logging must never break the app */ }
+}
+
+/** Last-resort page, so the user always sees words instead of a black rectangle. */
+function failurePage(title, detail) {
+  const html = `<!doctype html><html><body style="margin:0;background:#0a0614;color:#f3e8ff;
+    font-family:Segoe UI,system-ui,sans-serif;padding:40px">
+    <h1 style="color:#ff6b9d;margin:0 0 8px">${title}</h1>
+    <p style="color:#c4b5fd;margin:0 0 18px">Lyricist opened, but the page never loaded. Nothing you
+    saved is affected. Send this over and it gets fixed:</p>
+    <pre style="white-space:pre-wrap;background:#12081c;padding:16px;border-radius:12px;
+      border:1px solid #7c3aed;color:#e9d5ff;font-size:13px;line-height:1.45">${detail}</pre>
+    <p style="color:#7c6f9c;font-size:12px;margin-top:18px">A full log is at %APPDATA%\\Lyricist\\boot.log</p>
+    </body></html>`;
+  return 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1400,
@@ -329,20 +409,76 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
     },
     autoHideMenuBar: true,
+    // Don't put an empty frame on screen. A window painted before its content
+    // is exactly the black rectangle people report as "the app is black".
+    show: false,
   });
 
   installEditMenu();
   attachContextMenu(win);
 
+  let shown = false;
+  const reveal = (why) => {
+    if (shown || win.isDestroyed()) return;
+    shown = true;
+    bootLog(`window shown (${why})`);
+    win.show();
+  };
+
+  win.once('ready-to-show', () => reveal('ready-to-show'));
+  // If the content stalls, show the window anyway — never leave the user
+  // staring at a taskbar icon that opens nothing.
+  const revealTimer = setTimeout(() => reveal('timeout after 12s'), 12_000);
+  win.on('closed', () => clearTimeout(revealTimer));
+
+  win.webContents.on('did-finish-load', () => bootLog('did-finish-load'));
+
+  win.webContents.on('did-fail-load', (_e, code, desc, url, isMainFrame) => {
+    if (!isMainFrame) return;                   // a missing image is not a dead app
+    bootLog(`did-fail-load ${code} ${desc} ${url}`);
+    win.loadURL(failurePage('Lyricist could not load', `${desc} (${code})\n${url}`));
+    reveal('load failure');
+  });
+
+  // A dead renderer or GPU process is the other way this ends up black. Say so,
+  // and give the page one clean retry before showing the failure card.
+  let reloadedAfterCrash = false;
+  win.webContents.on('render-process-gone', (_e, details) => {
+    bootLog(`render-process-gone ${details.reason} exit=${details.exitCode}`);
+    if (!reloadedAfterCrash && !win.isDestroyed()) {
+      reloadedAfterCrash = true;
+      win.reload();
+      reveal('renderer crash retry');
+      return;
+    }
+    if (!win.isDestroyed()) {
+      win.loadURL(failurePage('Lyricist stopped responding', `Renderer process gone: ${details.reason}`));
+      reveal('renderer crash');
+    }
+  });
+
+  win.webContents.on('unresponsive', () => bootLog('renderer unresponsive'));
+
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+  bootLog(`createWindow packaged=${app.isPackaged} dev=${isDev} v=${app.getVersion()}`);
   if (isDev) {
     win.loadURL('http://localhost:5173');
   } else {
-    win.loadFile(path.join(__dirname, 'dist/index.html'));
+    const index = path.join(__dirname, 'dist/index.html');
+    if (!fs.existsSync(index)) {
+      bootLog(`MISSING ${index}`);
+      win.loadURL(failurePage('Lyricist is missing its app files', `Not found:\n${index}\n\nReinstall over the top of this copy.`));
+      reveal('missing index.html');
+      return;
+    }
+    win.loadFile(index);
   }
 }
 
 app.whenReady().then(() => {
+  // Belt and braces: a losing second instance never gets as far as a window.
+  if (!gotInstanceLock) return;
+
   // Allow Google Fonts and OpenRouter in packaged app.
   // 4.1.3: media-src added so the persistent Suno player can stream tracks
   // from any https audio host (e.g. cdn*.suno.ai) and play local uploads
@@ -370,6 +506,23 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+});
+
+// A GPU process that dies takes the picture with it and leaves a black window.
+// Log it, and fall back to software rendering for the next start so the app
+// comes up looking right even on a bad driver day.
+app.on('child-process-gone', (_e, details) => {
+  bootLog(`child-process-gone type=${details.type} reason=${details.reason} exit=${details.exitCode}`);
+  if (details.type === 'GPU' && details.reason !== 'clean-exit') {
+    try {
+      fs.writeFileSync(path.join(app.getPath('userData'), 'disable-gpu'), 'gpu process crashed', 'utf8');
+      bootLog('GPU crashed — software rendering armed for the next start');
+    } catch { /* not worth failing over */ }
+  }
+});
+
+process.on('uncaughtException', (err) => {
+  bootLog(`uncaughtException ${err?.stack || err}`);
 });
 
 app.on('window-all-closed', () => {
