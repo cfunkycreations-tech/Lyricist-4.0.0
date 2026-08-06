@@ -381,11 +381,11 @@ export default function LoopStation() {
 
   return (
     <div className="rc-funk-root" style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', overflow: 'auto', background: '#050208', padding: '20px 24px', color: '#f3ecff' }}>
-      {/* The app-wide street-scene backdrop is position:fixed, so it stays put
-          while this tab scrolls — you end up watching the old background slide
-          around behind the decks. Lay an opaque sheet over it for this tab so
-          nothing from behind is ever visible, at any scroll position. */}
-      <div style={{ position: 'fixed', inset: 0, background: '#050208', zIndex: 0, pointerEvents: 'none' }} />
+      {/* No backdrop sheet here. The root above is already opaque (#050208), so
+          the app-wide street scene never shows through at any scroll position.
+          There used to be a position:fixed sheet doing this job, and fixed means
+          the VIEWPORT — it painted a black rectangle over the header, the
+          medallion and the signature the whole time this tab was open. */}
       <div style={{ position: 'relative', zIndex: 1 }}>
       <style>{`
         .rc-round-btn {

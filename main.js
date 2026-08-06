@@ -32,6 +32,12 @@ try {
   }
 } catch { /* never block startup over this */ }
 
+// Let the UI write into boot.log. See preload.js for why.
+ipcMain.handle('app-log', async (event, { message }) => {
+  bootLog(`ui: ${String(message).slice(0, 500)}`);
+  return { ok: true };
+});
+
 // Save a Ghost Rider style report as a .txt file in the user's Documents folder.
 // Called from the UI via the preload bridge (window.lyricistAPI.saveReport).
 ipcMain.handle('save-report', async (event, { filename, content }) => {
@@ -495,9 +501,18 @@ function createWindow() {
 
   // Renderer errors and warnings land in the log too — an allocation that fails
   // usually says so in the console a moment before the process dies.
-  win.webContents.on('console-message', (_e, level, message) => {
-    if (level < 2) return;                       // 2 = warning, 3 = error
-    bootLog(`renderer ${level === 3 ? 'error' : 'warn'}: ${String(message).slice(0, 400)}`);
+  // Electron changed this event's shape: older builds pass
+  // (event, level:number, message), newer ones pass a single object with
+  // level as a string. Handle both, or the log silently stays empty.
+  win.webContents.on('console-message', (...args) => {
+    const first = args[0];
+    const isObject = first && typeof first === 'object' && 'message' in first;
+    const level = isObject ? first.level : args[1];
+    const message = isObject ? first.message : args[2];
+    const bad = level === 3 || level === 2 || level === 'error' || level === 'warning';
+    if (!bad) return;
+    const kind = level === 3 || level === 'error' ? 'error' : 'warn';
+    bootLog(`renderer ${kind}: ${String(message).slice(0, 400)}`);
   });
   win.on('closed', () => {
     clearInterval(memTimer);
@@ -521,7 +536,9 @@ function createWindow() {
     // can be reproduced where it actually happens.
     const startTab = process.env.LYRICIST_START_TAB;
     const off = process.env.LYRICIST_OFF;
-    const hash = [startTab && `tab=${startTab}`, off && `off=${off}`].filter(Boolean).join('&');
+    const wipe = process.env.LYRICIST_WIPE;
+    const hash = [startTab && `tab=${startTab}`, off && `off=${off}`, wipe && `wipe=${wipe}`]
+      .filter(Boolean).join('&');
     win.loadFile(index, hash ? { hash } : undefined);
   }
 }

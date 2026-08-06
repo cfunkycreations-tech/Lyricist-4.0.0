@@ -6,8 +6,8 @@ import {
   listPacks, createPack, deletePack, renamePack,
   listSamples, deleteSample, updateSample,
   getSampleBuffer, importFiles, librarySize, formatBytes,
-  exportLibrary, importLibrary,
-  AUDIO_EXTS,
+  exportLibrary, importLibrary, clearLibrary,
+  AUDIO_EXTS, MAX_LIBRARY_BYTES,
 } from '../../services/sampleLibrary.js';
 
 // User sample library — Lyricist 4.2.0
@@ -143,8 +143,8 @@ export default function SampleLibrary({ onUseSample }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Package size={15} style={{ color: '#ff2d95' }} />
           <strong style={{ fontSize: '0.82rem' }}>Sample Library</strong>
-          <span style={{ fontSize: '0.62rem', color: 'rgba(196,181,253,0.6)' }}>
-            {packs.length} pack{packs.length === 1 ? '' : 's'} · {formatBytes(size)} · stored on this machine
+          <span style={{ fontSize: '0.62rem', color: size > MAX_LIBRARY_BYTES * 0.8 ? '#fbbf24' : 'rgba(196,181,253,0.6)' }}>
+            {packs.length} pack{packs.length === 1 ? '' : 's'} · {formatBytes(size)} of {formatBytes(MAX_LIBRARY_BYTES)} · stored on this machine
           </span>
         </div>
 
@@ -169,6 +169,27 @@ export default function SampleLibrary({ onUseSample }) {
             data-help="Pick audio files, or a .zip sample pack — the zip is unpacked automatically and every sound inside is imported."
           >
             <Upload size={12} /> Add Files
+          </button>
+
+          <button
+            className="suno-chip"
+            style={{ color: '#f87171', borderColor: 'rgba(248,113,113,0.4)', background: 'rgba(248,113,113,0.08)' }}
+            onClick={async () => {
+              const ok = window.confirm(
+                `Remove every sample and pack from the library?\n\n`
+                + `${formatBytes(size)} will be freed. Your original files on disk are untouched, `
+                + `and your recordings are kept in a separate place and are not affected.\n\n`
+                + `This cannot be undone from inside the app.`);
+              if (!ok) return;
+              const freed = size;                 // the total before we empty it
+              const removed = await clearLibrary();
+              await refreshPacks();
+              await refreshSamples(null);
+              setNote(`Library emptied — ${removed.samples} sample${removed.samples === 1 ? '' : 's'}, ${formatBytes(freed)} freed.`);
+            }}
+            data-help="Empties the whole library — every pack and sample. The files on your own drive are untouched; this only clears what the app is holding. Your recordings are not affected."
+          >
+            <Trash2 size={12} /> Remove All Samples
           </button>
 
           <button

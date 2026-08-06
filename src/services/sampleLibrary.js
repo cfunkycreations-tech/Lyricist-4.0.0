@@ -15,12 +15,32 @@
  */
 
 const DB_NAME = 'lyricistSampleLibrary';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const PACKS = 'packs';
 const SAMPLES = 'samples';
+const META = 'meta';        // running totals, so nothing has to read the audio
 
 export const AUDIO_EXTS = ['.wav', '.mp3', '.ogg', '.flac', '.aif', '.aiff', '.m4a', '.webm', '.opus'];
 export const ARCHIVE_EXTS = ['.zip'];
+
+/**
+ * Limits, because there weren't any.
+ *
+ * A 12 GB library got built up one drag-and-drop at a time, and the app has to
+ * hold a sample's bytes to store or play it — so an unbounded library is an
+ * unbounded memory cost. The library is a shelf for the sounds you reach for,
+ * not a second copy of your hard drive: keep the originals in your own folders
+ * and load in the ones you actually use.
+ */
+export const MAX_FILE_BYTES = 60 * 1024 * 1024;         // 60 MB — a long stereo wav
+export const MAX_LIBRARY_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB total
+
+export class LibraryLimitError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'LibraryLimitError';
+  }
+}
 
 let dbPromise = null;
 
@@ -36,6 +56,9 @@ function openDB() {
       if (!db.objectStoreNames.contains(SAMPLES)) {
         const store = db.createObjectStore(SAMPLES, { keyPath: 'id' });
         store.createIndex('packId', 'packId', { unique: false });
+      }
+      if (!db.objectStoreNames.contains(META)) {
+        db.createObjectStore(META, { keyPath: 'key' });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -96,6 +119,7 @@ export async function deletePack(id) {
   const samples = await listSamples(id);
   await tx(SAMPLES, 'readwrite', (s) => { samples.forEach((smp) => s.delete(smp.id)); });
   await tx(PACKS, 'readwrite', (s) => s.delete(id));
+  await addToTotal(-samples.reduce((sum, smp) => sum + (smp.size || 0), 0));
   samples.forEach((smp) => bufferCache.delete(smp.id));
 }
 
@@ -134,19 +158,44 @@ export async function countSamples() {
   return (await tx(SAMPLES, 'readonly', (s) => s.count())) || 0;
 }
 
-/** Total bytes stored, for the "library size" readout. */
+/**
+ * Total bytes stored, for the "library size" readout.
+ *
+ * Kept as a running total. Adding it up on demand meant walking every record,
+ * and a record carries its audio — so simply asking "how big is my library"
+ * pulled the entire library through memory. On a 12 GB library that took long
+ * enough that callers waiting on it appeared to hang.
+ *
+ * The total is computed the slow way exactly once, if it has never been stored.
+ */
 export async function librarySize() {
-  return tx(SAMPLES, 'readonly', (s) => new Promise((resolve, reject) => {
-    let sum = 0;
+  const stored = await tx(META, 'readonly', (s) => s.get('totalBytes'));
+  if (stored && typeof stored.value === 'number') return stored.value;
+
+  const sum = await tx(SAMPLES, 'readonly', (s) => new Promise((resolve, reject) => {
+    let total = 0;
     const req = s.openCursor();
     req.onsuccess = () => {
       const cursor = req.result;
-      if (!cursor) { resolve(sum); return; }
-      sum += cursor.value.size || 0;
+      if (!cursor) { resolve(total); return; }
+      total += cursor.value.size || 0;
       cursor.continue();
     };
     req.onerror = () => reject(req.error);
   }));
+  await setTotalBytes(sum);
+  return sum;
+}
+
+async function setTotalBytes(value) {
+  await tx(META, 'readwrite', (s) => s.put({ key: 'totalBytes', value: Math.max(0, value) }));
+}
+
+/** Adjust the running total without ever reading a sample's audio. */
+async function addToTotal(delta) {
+  const stored = await tx(META, 'readonly', (s) => s.get('totalBytes'));
+  if (!stored || typeof stored.value !== 'number') return;   // recomputed on next read
+  await setTotalBytes(stored.value + delta);
 }
 
 /**
@@ -154,7 +203,19 @@ export async function librarySize() {
  * playing other keys pitch-shifts from there. 60 (C4) is a sane default for
  * one-shots and is what drum hits want anyway.
  */
-export async function addSample(packId, file, { rootMidi = 60 } = {}) {
+export async function addSample(packId, file, { rootMidi = 60, budget = null } = {}) {
+  if (file.size > MAX_FILE_BYTES) {
+    throw new LibraryLimitError(
+      `${formatBytes(file.size)} is over the ${formatBytes(MAX_FILE_BYTES)} limit for a single sample`);
+  }
+  // `budget` lets a batch import check the total once instead of per file.
+  const used = budget ? budget.used : await librarySize();
+  if (used + file.size > MAX_LIBRARY_BYTES) {
+    throw new LibraryLimitError(
+      `library is full — ${formatBytes(MAX_LIBRARY_BYTES)} max. Remove some samples first.`);
+  }
+  if (budget) budget.used += file.size;
+
   const bytes = await file.arrayBuffer();
   const row = {
     id: newId(),
@@ -168,6 +229,7 @@ export async function addSample(packId, file, { rootMidi = 60 } = {}) {
     bytes,
   };
   await tx(SAMPLES, 'readwrite', (s) => s.put(row));
+  await addToTotal(row.size);
   const { bytes: _omit, ...meta } = row;
   return meta;
 }
@@ -182,8 +244,27 @@ export async function updateSample(id, patch) {
   return meta;
 }
 
+/**
+ * Empty the whole library — every pack, every sample. Recordings live in a
+ * different database (lyricist-recordings) and are not touched.
+ * Returns what was removed so it can be reported honestly.
+ */
+export async function clearLibrary() {
+  // count() is answered from the index. Do NOT ask for the byte total here —
+  // computing it walks every record, audio and all, which is what made this
+  // hang on a large library instead of emptying it.
+  const samples = await countSamples();
+  await tx(SAMPLES, 'readwrite', (s) => s.clear());
+  await tx(PACKS, 'readwrite', (s) => s.clear());
+  await setTotalBytes(0);
+  bufferCache.clear();
+  return { samples };
+}
+
 export async function deleteSample(id) {
+  const row = await tx(SAMPLES, 'readonly', (s) => s.get(id));
   await tx(SAMPLES, 'readwrite', (s) => s.delete(id));
+  if (row?.size) await addToTotal(-row.size);
   bufferCache.delete(id);
 }
 
@@ -211,6 +292,8 @@ export async function importFiles(packId, files, onProgress = () => {}) {
   const result = { added: 0, skipped: 0, errors: [] };
   const queue = [...files];
   let done = 0;
+  // One size check for the whole batch, then track it as we go.
+  const budget = { used: await librarySize() };
 
   for (const file of queue) {
     try {
@@ -224,14 +307,14 @@ export async function importFiles(packId, files, onProgress = () => {}) {
           try {
             const blob = await entry.async('blob');
             const plain = entry.name.split('/').pop();
-            await addSample(packId, new File([blob], plain, { type: blob.type }));
+            await addSample(packId, new File([blob], plain, { type: blob.type }), { budget });
             result.added++;
           } catch (err) {
             result.errors.push(`${entry.name}: ${err.message}`);
           }
         }
       } else if (isAudioFile(file.name)) {
-        await addSample(packId, file);
+        await addSample(packId, file, { budget });
         result.added++;
       } else {
         result.skipped++;

@@ -5,6 +5,7 @@ import Visualizer from './Visualizer.jsx';
 import SampleLibrary from './SampleLibrary.jsx';
 import DrumMachine from './DrumMachine.jsx';
 import { registerDemoSnapshot } from '../../services/demoSafety.js';
+import { clearLibrary, countSamples } from '../../services/sampleLibrary.js';
 
 // MIDI Studio tab — Lyricist 4.1.3
 // Audio → MIDI (basic-pitch, fully offline) feeding an offline piano-roll
@@ -19,6 +20,11 @@ const OFF = new Set(
   (new URLSearchParams(window.location.hash.replace(/^#/, '')).get('off') || '')
     .split(',').map((s) => s.trim()).filter(Boolean)
 );
+
+// #wipe=samples empties the sample library once at startup. Recordings live in
+// their own database and are never touched by this.
+const WIPE_SAMPLES =
+  new URLSearchParams(window.location.hash.replace(/^#/, '')).get('wipe') === 'samples';
 
 export default function MidiStudio() {
   const [midi, setMidi] = useState(() => {
@@ -48,6 +54,21 @@ export default function MidiStudio() {
     },
     hasWork: () => (liveRef.current.midi?.notes || []).length > 0,
   }), []);
+
+  useEffect(() => {
+    if (!WIPE_SAMPLES) return;
+    (async () => {
+      const log = (m) => { console.warn(`[lyricist] ${m}`); window.lyricistAPI?.log?.(m); };
+      try {
+        log('wipe requested — emptying the sample library');
+        const removed = await clearLibrary();
+        const left = await countSamples();
+        log(`sample library emptied: ${removed.samples} samples removed; ${left} left`);
+      } catch (e) {
+        log(`sample wipe FAILED: ${e?.message || e}`);
+      }
+    })();
+  }, []);
 
   const handleNotes = (midiJSON, name) => {
     setMidi(midiJSON);

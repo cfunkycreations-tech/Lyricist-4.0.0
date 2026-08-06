@@ -16,6 +16,10 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   // Export a Mastering Studio album (mastered WAVs + cover.png + tracklist.txt)
   // into Documents\Lyricist Albums\<album name>. Returns { ok: true, path } or { ok: false, error }.
   saveAlbum: (albumName, files) => ipcRenderer.invoke('save-album', { albumName, files }),
+  // Write a line into %APPDATA%\Lyricist\boot.log. Used for things that must be
+  // provable after the fact — "did the library actually get emptied" — instead
+  // of relying on console events, whose shape changes between Electron versions.
+  log: (message) => ipcRenderer.invoke('app-log', { message: String(message) }),
   // Fetch a Suno playlist's tracks from the main process (no browser CORS wall).
   // Returns { ok: true, tracks: [{ name, url }] } or { ok: false, error }.
   sunoPlaylist: (id) => ipcRenderer.invoke('suno-playlist', { id }),
