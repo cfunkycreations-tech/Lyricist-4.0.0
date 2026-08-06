@@ -107,6 +107,64 @@ Then move `Lyricist 4.2.0.0NN Setup.exe`, its `.blockmap`, and the unpacked fold
 
 ---
 
+## The crash that ate a whole night — read before touching IndexedDB
+
+Symptom: the app opened black, or died a minute in, on the looper tab, the drum
+kit, MIDI Studio — seemingly at random. `boot.log` said `render-process-gone
+oom` with 36 GB of the machine's 48 GB free, so it was never system pressure.
+
+Cause, one bug: `listSamples()` used `getAll()`, which loads **every sample's
+audio** and only then strips the bytes to return names. The drum machine called
+it **once per pack**, so a 12 GB library was read end to end once per pack.
+MIDI Studio went past 13 GB and the renderer was killed.
+
+Measured on a 12.3 GB library, MIDI Studio opened and left alone:
+
+| | before | after |
+|---|---|---|
+| drum machine | 26,108 MB | 2,008 MB |
+| sample library | 14,706 MB (2 crashes) | 4,162 MB |
+| whole tab | 10,958 MB (1 crash) | 357 MB once the library was cleared |
+
+**The rule: never ask IndexedDB a question that makes it read the audio.**
+A record carries its bytes, so `getAll()` and any cursor over the full store
+pulls gigabytes through memory. Names come from a cursor that drops `bytes`
+per record; counts come from `store.count()`; the byte total is a running total
+kept in the `meta` store, computed the slow way exactly once. `clearLibrary()`
+must not ask for the size before clearing — that version hung, because
+measuring meant walking all 12 GB.
+
+Still to do: move `bytes` into its own object store so metadata never touches
+audio at all. Needs a migration.
+
+Limits now exist because there were none: 60 MB a sample, 2 GB a library
+(`MAX_FILE_BYTES` / `MAX_LIBRARY_BYTES`), plus a Remove All Samples button.
+
+### Debug switches that found it
+
+Set as env vars on the packaged exe; they become URL hash flags:
+
+- `LYRICIST_START_TAB=loopstation` — open straight onto a tab
+- `LYRICIST_OFF=viz,drums,sampler,seq,a2m` — leave MIDI Studio panels out, which
+  is how the culprit was isolated without a rebuild per guess
+- `LYRICIST_WIPE=samples` — empty the sample library once at startup
+
+`boot.log` (in `%APPDATA%\Lyricist`) records every start, load, crash, and a
+memory sample every 5s with the live tab. **Two diagnostics shipped broken
+before they worked** — `webContents.getProcessMemoryInfo()` is removed in this
+Electron (use `app.getAppMetrics()`), and `console-message` changed shape
+(newer Electron passes one object, older passes `(e, level, message)`). Both
+failed silently into a catch. If a diagnostic reports nothing, suspect the
+diagnostic. The UI can log directly via `window.lyricistAPI.log()`.
+
+## Never cover the app with position:fixed
+
+The looper painted a `position: fixed; inset: 0` sheet to stop the app backdrop
+sliding while the tab scrolls. Fixed means the **viewport**, so it covered the
+header, medallion and signature with a black rectangle the whole time that tab
+was open. Chris reported it repeatedly with screenshots. A tab that needs an
+opaque backdrop already has one — its own root background.
+
 ## Gotchas already paid for
 
 - **Butterchurn is a UMD bundle.** `import('butterchurn')` does **not** reliably give you `.default`.
@@ -120,6 +178,20 @@ Then move `Lyricist 4.2.0.0NN Setup.exe`, its `.blockmap`, and the unpacked fold
 ---
 
 ## Status
+
+### Done (as of build 4.2.0.035)
+- **The OOM crash is fixed** — see "The crash that ate a whole night" above.
+  MIDI Studio: 13,013 MB and dying → 357 MB, no crashes
+- **Boot memory**: 10,228 MB → 537 MB. Tabs mount when first opened instead of
+  all sixteen at boot, hidden tabs stop decoding their background videos, and
+  the oversized art was downscaled (the Quantum Lab medallion was 8256×4608 —
+  145 MB decoded — in a 200×100 footer box; originals kept in
+  `src/assets/originals/`)
+- **Looper header** no longer covered by a viewport-fixed black sheet
+- **Sample library limits** (60 MB / 2 GB) and a Remove All Samples button
+- **A black window can never be silent again**: one instance at a time, no
+  window shown before it has content, readable failure cards, GPU-crash
+  fallback to software rendering, and `boot.log`
 
 ### Done (as of build 4.2.0.021)
 - **FL-grade piano roll** — Select / Draw / Paint / Erase, drag-to-move, right-edge resize, snap
