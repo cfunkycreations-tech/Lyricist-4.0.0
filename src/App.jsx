@@ -27,7 +27,7 @@ import profileImg from './assets/profile.jpg';     // new founder selfie
 import logoImg from './assets/logo.jpg';           // new neon medallion logo
 import funksignImg from './assets/funksign.jpg';   // CFunky signature on black (4.0.9)
 import funk003Img from './assets/funk003.png';     // Christopher Funk profile photo (4.0.9)
-import logo407Img from './assets/logo407.png';     // new transparent medallion logo (4.0.9)
+import headerMedallionImg from './assets/header-medallion.png'; // Chris's peace-sign DNA medallion (4.2.0)
 import footerMedallionImg from './assets/quantum-lab-medallion.png'; // Quantum Lab banner art (4.2.0)
 
 const tabs = [
@@ -193,8 +193,8 @@ function MainLayout() {
 
           {/* 1. Medallion logo — fills full header height top-to-bottom */}
           <img
-            src={logo407Img}
-            alt="CFunky Creations Lyricist 4.1.3"
+            src={headerMedallionImg}
+            alt="CFunky Creations — Lyricist Goes Quantum"
             style={{ height: 160, width: 'auto', objectFit: 'contain', display: 'block', flexShrink: 0 }}
           />
 
