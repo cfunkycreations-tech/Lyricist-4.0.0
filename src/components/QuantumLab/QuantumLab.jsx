@@ -85,10 +85,17 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const [neuralB, setNeuralB] = useState(null);
   const [neuralPick, setNeuralPick] = useState('A'); // which state is active
   const [busy, setBusy] = useState(false);
-  const [cmd, setCmd] = useState('');
   const [isNarrow, setIsNarrow] = useState(false);
   const [vidFailed, setVidFailed] = useState(false);
-  const [howtoOpen, setHowtoOpen] = useState(true);
+  // Cheat sheet starts open for first-timers, but stays collapsed once you
+  // close it — nobody wants to re-close the manual every time they come back.
+  const [howtoOpen, setHowtoOpen] = useState(() => {
+    try { return localStorage.getItem('ql.howtoOpen') !== '0'; } catch { return true; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('ql.howtoOpen', howtoOpen ? '1' : '0'); } catch { /* private mode */ }
+  }, [howtoOpen]);
+  const howtoRef = useRef(null);
   // Freeform keywords Chris types — commas/newlines keep multi-word phrases together
   const [keywordDraft, setKeywordDraft] = useState('');
   // Inline edit for the selected tile
@@ -461,42 +468,20 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     }
   };
 
-  /** Lightweight command bar — /run /spotlight /crystallize /send /forge /help */
-  const runCommand = (raw) => {
-    const line = String(raw || '').trim().toLowerCase();
-    if (!line) return;
-    const [head] = line.replace(/^\//, '').split(/\s+/);
-    const map = {
-      run: doRun,
-      r: doRun,
-      gens: doRun,
-      spotlight: () => setSpotlightMode((v) => !v),
-      spot: () => setSpotlightMode((v) => !v),
-      crystallize: doCrystallize,
-      crystal: doCrystallize,
-      c: doCrystallize,
-      freeze: doFreeze,
-      mutate: doMutate,
-      inject: doInject,
-      lock: doLock,
-      gen: doNeural,
-      generate: doNeural,
-      neural: doNeural,
-      send: sendToSongwriter,
-      songwriter: sendToSongwriter,
-      forge: sendToForge,
-      help: () => setStatus({
-        lead: 'Commands.',
-        rest: ' /run  /spotlight  /crystallize  /freeze  /mutate  /inject  /lock  /generate  /send  /forge',
-      }),
-    };
-    const fn = map[head];
-    if (fn) {
-      fn();
-      setCmd('');
-    } else {
-      setStatus({ lead: 'Unknown command.', rest: ` “${head}” — type /help for the list.` });
-    }
+  /** Help button — opens the step guide and names every button in order. */
+  const doHelp = () => {
+    setHowtoOpen(true);
+    // Show them the guide — a status line they might not look at isn't help.
+    requestAnimationFrame(() => {
+      howtoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    setStatus({
+      lead: 'Here is the order.',
+      rest: ' Step 1 type your words up top. Step 2 Load into lattice. Step 3 Spotlight, then click tiles to heat them. '
+        + 'Step 4 Run 12 gens to spread the energy. Step 5 Crystallize to lock it in. Step 6 Generate Neural Lyrics writes the verse. '
+        + 'Then Send to Songwriter or Send to Song Forge. Freeze cell pins one tile; Entanglement View shows the links. '
+        + 'Every button is right here under the lattice — there is nothing to type.',
+    });
   };
 
   const stress01 = (s) => (s > 0 ? 'strong' : 'weak');
@@ -532,54 +517,8 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           </p>
         </div>
 
-        {/* Right: primary action buttons */}
-        <div className="ql-banner-btns">
-          <button
-            type="button"
-            className={`ql-banner-btn ${running ? 'ql-btn-busy' : ''}`}
-            onClick={doRun}
-            disabled={running}
-            data-demo="ql-run"
-            data-help="STEP 3. Moves energy across the lattice for 12 steps. Hotter tiles matter more when you Crystallize."
-          >
-            ▷ Run 12 gens
-          </button>
-          <button
-            type="button"
-            className={`ql-banner-btn ${spotlightMode ? 'on-org' : ''}`}
-            onClick={() => {
-              setSpotlightMode((v) => !v);
-              setStatus(
-                !spotlightMode
-                  ? { lead: 'Spotlight ON.', rest: ' Button is ORANGE while on. Click any lattice tile to pour heat. Click Spotlight again to turn off.' }
-                  : { lead: 'Spotlight OFF.', rest: ' Clicks select tiles again (purple) instead of heating them.' }
-              );
-            }}
-            data-demo="ql-spotlight"
-            data-help="STEP 2. Turn ON = stays ORANGE. Click a lattice tile to pour heat into it."
-          >
-            💡 Spotlight
-          </button>
-          <button
-            type="button"
-            className={`ql-banner-btn ${crystallized ? 'on-grn' : ''}`}
-            onClick={doCrystallize}
-            data-demo="ql-crystallize"
-            data-help="STEP 4a. Locks the lattice energy state. Your keywords stay. Turns green after success."
-          >
-            ❄ Crystallize
-          </button>
-          <button
-            type="button"
-            className={`ql-banner-btn accent-ylw ${busy ? 'ql-btn-busy' : ''}`}
-            onClick={doNeural}
-            disabled={busy}
-            data-demo="ql-generate"
-            data-help="STEP 4b. Writes a 4-line verse from your lattice (needs OpenRouter key in Settings)."
-          >
-            ✳ {busy ? 'Generating…' : 'Generate Neural Lyrics'}
-          </button>
-        </div>
+        {/* Every action button now lives in the action bar directly under the
+            lattice (.ql-actionbar) — nothing hides at the bottom of the page. */}
       </div>
 
       {/* YOUR KEYWORDS — primary entry point (user owns the lattice) */}
@@ -589,7 +528,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         data-help="This is how YOU control the lattice. Type any words or short phrases you want in the song — as many as you like. Comma or new line between items (so multi-word phrases stay together). Then hit Load into lattice. Spotlight, Run, and Crystallize run on YOUR words — the computer does not invent the seed list for you."
       >
         <label className="ql-keywords-label" htmlFor="ql-kw-input">
-          Your keywords / phrases
+          <span className="ql-step-tag">Step 1</span> Your keywords / phrases
         </label>
         <textarea
           id="ql-kw-input"
@@ -613,7 +552,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             data-demo="ql-load"
             data-help="Fills the lattice with the words you typed. Multi-word phrases are fine. If you give fewer than 20, they cycle to fill the grid. Your words stay yours — Crystallize will not replace them with demo dictionary picks."
           >
-            ⬇ Load into lattice
+            <span className="ql-step-tag">Step 2</span> ⬇ Load into lattice
           </button>
           <button
             type="button"
@@ -623,13 +562,14 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           >
             Reset demo grid
           </button>
-          <span className="ql-keywords-hint">Ctrl+Enter to load · then Spotlight → Run → Crystallize</span>
+          <span className="ql-keywords-hint">Ctrl+Enter to load · then use the buttons under the lattice</span>
         </div>
       </div>
 
       {/* Always-visible plain-English recipe (collapsible) */}
       <div
         className="ql-howto"
+        ref={howtoRef}
         data-help="This is your cheat sheet. Follow the steps once with Tips ON, then experiment. Collapse this box anytime."
       >
         <button
@@ -644,21 +584,26 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         {howtoOpen && (
           <ol className="ql-howto-steps">
             <li>
-              <b>Put YOUR words in</b> — type keywords/phrases above (many allowed), hit <i>Load into lattice</i>. Or click any tile and edit it. You pick the words — not the computer.
+              <b>Step 1 — put YOUR words in</b> — type keywords/phrases in the box above (as many as you want). Or click any tile in the grid and edit it. You pick the words — not the computer.
             </li>
             <li>
-              <b>Turn Tips ON</b> — 💡 in the header; hover any control for plain English.
+              <b>Step 2 — Load into lattice</b> — your words fill the grid and stay yours.
             </li>
             <li>
-              <b>Heat & spread</b> — <i>Spotlight</i> a tile you care about, then <i>Run 12 gens</i> so energy moves.
+              <b>Steps 3 &amp; 4 — heat &amp; spread</b> — <i>Spotlight</i>, click the tiles you care about, then <i>Run 12 gens</i> so the energy moves.
             </li>
             <li>
-              <b>Lock & write</b> — <i>Crystallize</i> (keeps your keywords), then <i>Generate Neural Lyrics</i> (OpenRouter key in Settings).
+              <b>Steps 5 &amp; 6 — lock &amp; write</b> — <i>Crystallize</i> (keeps your keywords), then <i>Generate Neural Lyrics</i> (needs a free OpenRouter key in Settings).
+            </li>
+            <li>
+              <b>Send it</b> — <i>Send to Songwriter</i> for the verse, or <i>Send to Song Forge</i> to build the whole song.
             </li>
           </ol>
         )}
         {howtoOpen && (
           <p className="ql-howto-note">
+            Every button sits in the <b>Lattice controls</b> bar right under the grid — nothing to type, no commands.
+            Turn <b>Tips ON</b> (💡 in the app header) and hover any control for plain English.
             The sample grid is only an example. Optional: <b>Freeze cell</b> pins one tile. <b>Measure</b> is for demo “open” tiles only — your typed words stay put.
           </p>
         )}
@@ -756,6 +701,134 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         </div>
       </div>
 
+      {/* ── ACTION BAR ── every command is a button, right under the lattice ──
+          Nobody should have to know a terminal to run this tab. The old
+          "/run /crystallize /send" text bar at the bottom of the page is gone. */}
+      <div
+        className="ql-actionbar"
+        data-demo="ql-actionbar"
+        data-help="Every Quantum Lab action, in order. Left to right: heat it, run it, lock it, write it, then send it."
+      >
+        <div className="ql-actionbar-caption">
+          <span className="ql-actionbar-title">Lattice controls</span>
+          <span className="ql-actionbar-sub">Press them left to right. Hover any button for plain English.</span>
+        </div>
+
+        <div className="ql-actionbar-row ql-actionbar-primary">
+          <button
+            type="button"
+            className={`ql-btn ${spotlightMode ? 'on-org' : ''}`}
+            onClick={() => {
+              setSpotlightMode((v) => !v);
+              setStatus(
+                !spotlightMode
+                  ? { lead: 'Spotlight ON.', rest: ' Button is ORANGE while on. Click any lattice tile to pour heat. Click Spotlight again to turn off.' }
+                  : { lead: 'Spotlight OFF.', rest: ' Clicks select tiles again (purple) instead of heating them.' }
+              );
+            }}
+            data-demo="ql-spotlight"
+            data-help="STEP 3. Turn ON = the button stays ORANGE. Then click any lattice tile to pour heat into it. Click Spotlight again to turn it off."
+          >
+            <span className="ql-step-tag">Step 3</span> 💡 Spotlight
+          </button>
+          <button
+            type="button"
+            className={`ql-btn ${running ? 'ql-btn-busy' : ''}`}
+            onClick={doRun}
+            disabled={running}
+            data-demo="ql-run"
+            data-help="STEP 4. Moves energy across the lattice for 12 steps. Hotter tiles matter more when you Crystallize."
+          >
+            <span className="ql-step-tag">Step 4</span> ▷ Run 12 gens
+          </button>
+          <button
+            type="button"
+            className={`ql-btn ${crystallized ? 'on-grn' : ''}`}
+            onClick={doCrystallize}
+            data-demo="ql-crystallize"
+            data-help="STEP 5. Locks the lattice energy state. Your keywords stay. Turns GREEN once it is locked."
+          >
+            <span className="ql-step-tag">Step 5</span> ❄ Crystallize
+          </button>
+          <button
+            type="button"
+            className={`ql-btn accent-ylw ${busy ? 'ql-btn-busy' : ''}`}
+            onClick={doNeural}
+            disabled={busy}
+            data-demo="ql-generate"
+            data-help="STEP 6. Writes a 4-line verse from your lattice — two versions, A and B (needs a free OpenRouter key in Settings)."
+          >
+            <span className="ql-step-tag">Step 6</span> ✳ {busy ? 'Generating…' : 'Generate Neural Lyrics'}
+          </button>
+        </div>
+
+        <div className="ql-actionbar-row ql-actionbar-secondary">
+          <button
+            type="button"
+            className={`ql-btn ${selected?.frozen ? 'on-grn' : ''}`}
+            onClick={doFreeze}
+            data-help="Optional. Select a lattice tile first, then Freeze to pin it (turns green). Click again to unpin."
+          >
+            🔒 Freeze cell
+          </button>
+          <button
+            type="button"
+            className={`ql-btn ${entView ? 'on-grn' : ''}`}
+            onClick={() => {
+              setEntView((v) => !v);
+              setStatus({
+                lead: entView ? 'Links hidden.' : 'Links shown.',
+                rest: entView ? ' Entanglement lines off.' : ' Glowing links between related tiles are visible.',
+              });
+            }}
+            data-help="Shows or hides entanglement lines between related lattice tiles. Green when links are visible."
+          >
+            ⋈ Entanglement View
+          </button>
+          <button
+            type="button"
+            className="ql-btn"
+            onClick={sendToSongwriter}
+            data-demo="ql-send-songwriter"
+            data-help="Sends the verse you picked (State A or B) straight into the Songwriter tab. Generate Neural Lyrics first."
+          >
+            → Send to Songwriter
+          </button>
+          <button
+            type="button"
+            className="ql-btn"
+            onClick={sendToForge}
+            data-demo="ql-send-forge"
+            data-help="Sends this lattice — palette, end-words, rhyme scheme and the picked verse — into Song Forge to build a full song."
+          >
+            → Send to Song Forge
+          </button>
+          <button
+            type="button"
+            className="ql-btn"
+            onClick={doHelp}
+            data-demo="ql-help"
+            data-help="Opens the step-by-step guide and reminds you what each button does."
+          >
+            ？ Help
+          </button>
+          <span
+            className="ql-genbadge ql-mono"
+            data-help="How many energy steps you have run so far. Each Run 12 gens adds 12."
+          >
+            gen {gen}
+          </span>
+        </div>
+      </div>
+
+      <p
+        className="ql-status"
+        data-help="Live feedback after each action — what just happened and what to try next."
+      >
+        <b>{status.lead}</b>{status.rest}
+        <span className="ql-caret" />
+      </p>
+
       {/* Features 1–9: DNA, contracts, measure, multi-section, truth, stress, loop, style, journal */}
       <QuantumFeaturesPanel
         section={section}
@@ -784,46 +857,6 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         onTruthReport={setTruthReport}
         truthReport={truthReport}
       />
-
-      {/* Toolbar — mode colors only (orange/green/yellow). Purple is lattice tiles only. */}
-      <div className="ql-btnrow">
-        <button
-          type="button"
-          className={`ql-btn ${selected?.frozen ? 'on-grn' : ''}`}
-          onClick={doFreeze}
-          data-help="Optional. Select a lattice tile first, then Freeze to pin it (turns green). Click again to unpin."
-        >
-          🔒 Freeze cell
-        </button>
-        <button
-          type="button"
-          className={`ql-btn ${entView ? 'on-grn' : ''}`}
-          onClick={() => {
-            setEntView((v) => !v);
-            setStatus({
-              lead: entView ? 'Links hidden.' : 'Links shown.',
-              rest: entView ? ' Entanglement lines off.' : ' Glowing links between related tiles are visible.',
-            });
-          }}
-          data-help="Shows or hides entanglement lines between related lattice tiles. Green when links are visible."
-        >
-          ⋈ Entanglement View
-        </button>
-        <span
-          className="ql-genbadge ql-mono"
-          data-help="How many energy steps you have run so far. Each Run 12 gens adds 12."
-        >
-          gen {gen}
-        </span>
-      </div>
-
-      <p
-        className="ql-status"
-        data-help="Live feedback after each action — what just happened and what to try next."
-      >
-        <b>{status.lead}</b>{status.rest}
-        <span className="ql-caret" />
-      </p>
 
       {/* Multi-state neural output A / B + one-click handoffs */}
       {(neuralA || neuralB) && (
@@ -995,26 +1028,6 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Command bar — optional power-user shortcuts */}
-      <div
-        className="ql-cmd"
-        data-help="Type /run /spotlight /crystallize /generate /send /forge /help then Enter. Optional — the big buttons still work."
-      >
-        <input
-          value={cmd}
-          onChange={(e) => setCmd(e.target.value)}
-          placeholder="/run  /crystallize  /generate  /send  /forge  /help"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              if (cmd.trim().startsWith('/') || cmd.trim()) runCommand(cmd);
-              else doRun();
-            }
-          }}
-        />
-        <span className="ent">↵</span>
       </div>
     </div>
   );

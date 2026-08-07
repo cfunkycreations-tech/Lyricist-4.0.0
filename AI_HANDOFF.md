@@ -179,6 +179,28 @@ opaque backdrop already has one — its own root background.
 
 ## Status
 
+### Done (as of build 4.2.0.050)
+- **Quantum Lab has no command line any more.** The tab used to hide `/run`, `/crystallize`,
+  `/generate`, `/send`, `/forge` and `/help` behind a slash-command text box parked at the very
+  bottom of the page. Chris's words: *"Most people are not gonna know how to use a terminal, let
+  alone know to look all the way down at the bottom of the page."* Every command is now a real
+  button in `.ql-actionbar`, docked **directly under the lattice**, and the text bar is deleted.
+  - Row 1 is the run of steps, numbered on the buttons themselves: **Step 3 Spotlight ·
+    Step 4 Run 12 gens · Step 5 Crystallize · Step 6 Generate Neural Lyrics.** Steps 1 and 2 are
+    the keyword box and Load into lattice, tagged the same way, so the whole tab reads 1→6.
+  - Row 2 is the helpers and handoffs: Freeze cell, Entanglement View, **Send to Songwriter**,
+    **Send to Song Forge**, **Help**, and the gen counter.
+  - The banner's own compact button cluster is gone — one set of controls, one place.
+  - `Help` reopens the step guide *and scrolls it into view*; a status line nobody looks at is not
+    help. The guide's open/closed state persists in `localStorage` (`ql.howtoOpen`).
+  - **Watch the cascade**: `.ql-actionbar-primary .ql-btn` sets a border tint at the same
+    specificity as `.ql-btn.on-org` / `.on-grn`, so it silently ate the ON states until
+    `.ql-actionbar .ql-btn.on-org|on-grn|accent-ylw` overrides were added. Spotlight must stay
+    ORANGE when armed and Crystallize GREEN when locked — that colour *is* the feedback.
+  - The Ghost Demo script for `quantum` was rewritten to match: it now narrates the numbered steps,
+    points at the whole controls bar, and walks Send to Songwriter / Send to Song Forge / Help.
+    New demo hooks: `ql-actionbar`, `ql-send-songwriter`, `ql-send-forge`, `ql-help`.
+
 ### Done (as of build 4.2.0.035)
 - **The OOM crash is fixed** — see "The crash that ate a whole night" above.
   MIDI Studio: 13,013 MB and dying → 357 MB, no crashes

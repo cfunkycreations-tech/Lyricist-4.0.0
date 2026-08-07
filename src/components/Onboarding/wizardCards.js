@@ -53,7 +53,7 @@ This is Lyricist going quantum. Type your own keywords — up to a full grid of 
 
 Then generate neural lyrics as multi-state options — State A and State B. Pick the one you like. One click sends it to Songwriter. Another click sends the lattice seed to Song Forge.
 
-There is a command bar if you want power shortcuts: run, crystallize, generate, send, forge. Or just use the big buttons. Hover with Tips on for every control.
+Every control is a numbered button in the Lattice controls bar, right under the grid — steps one through six, left to right. Nothing to type, no commands to remember. Hover any button with Tips on for plain English, or press Help.
 
 Play. Experiment. Collapse the state you love.`
   },
