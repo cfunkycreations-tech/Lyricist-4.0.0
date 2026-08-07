@@ -179,6 +179,30 @@ opaque backdrop already has one — its own root background.
 
 ## Status
 
+### Done (as of build 4.2.0.053)
+- **The sample library takes uploads again, and the audio finally lives in its own store.**
+  Chris: *"I can't upload either folders or files in my sample library."* The cause was mine —
+  the 60 MB / 2 GB caps I added during the OOM fix, on a machine holding 12.3 GB.
+  - **Those caps were the wrong fix.** The crash was never about how much was *stored*; it was
+    `listSamples()` pulling every sample's audio through memory to read names. Now 1 GB per
+    sample, 128 GB per library. **When you fix a root cause, go back and delete the guard you
+    put in front of it** — it will outlive its reason and come back as a bug report.
+  - **db v3 splits audio into a `blobs` store.** Sample rows are metadata only. A cursor over the
+    samples store used to deserialize each record whole, so listing the NAMES of a 12 GB library
+    read 12 GB off disk; listing 6 samples including a 200 MB one is now 1 ms. Old rows migrate
+    when touched (`readBytes`) plus a background sweep (`migrateLegacyBlobs`) when the tab opens.
+    Every read path handles both layouts, so a half-migrated library is fine. The upgrade
+    deliberately does **not** rewrite rows inside `onupgradeneeded` — that transaction blocks the
+    whole app and would freeze it on a big library.
+  - **Import failures now name their reason on screen, in red.** The reasons were being collected
+    into `res.errors` and thrown away, so a rejected import read "Added 0 samples · 412 failed".
+    An empty selection says so too — silence is indistinguishable from a dead button.
+  - **Add Files / Add Folder use Electron's own dialog now**, not `<input type="file">`. The
+    permission handler here denied everything except `media`, and a blocked picker fails
+    invisibly. Folder walking happens in main (subfolders, junk filtered) and files are read one
+    at a time. `'fileSystem'` added to the allow-list. The input remains the browser fallback.
+  - Restoring a backup never updated the running size total; it does now.
+
 ### Done (as of build 4.2.0.050)
 - **Header art is three pieces now, not one strip, and the header height scales.**
   `header-banner.png` was a single 1880×440 strip carrying **534px of flat #020516 filler**
