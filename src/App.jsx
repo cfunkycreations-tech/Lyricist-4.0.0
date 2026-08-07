@@ -25,9 +25,16 @@ import { APP_VERSION } from './buildInfo.js';
 import bgImg from './assets/cfunky-bg-new.jpg';   // new Austin street-scene background (4.0.2)
 import profileImg from './assets/profile.jpg';     // new founder selfie
 import logoImg from './assets/logo.jpg';           // new neon medallion logo
-import funksignImg from './assets/funksign.jpg';   // CFunky signature on black (4.0.9)
-import funk003Img from './assets/funk003.png';     // Christopher Funk profile photo (4.0.9)
 import headerMedallionImg from './assets/header-medallion.png'; // Chris's peace-sign DNA medallion (4.2.0)
+// The header art used to be ONE 1880x440 strip (header-banner.png). That strip
+// carried 534px of flat #020516 filler between its three elements, which forced
+// a 4.3:1 aspect — so fitting it to the leftover width collapsed its height and
+// Chris rendered barely a third as tall as the medallion beside him. The three
+// elements are now separate crops of that same file, laid out below, so Chris
+// can be locked to the full header height and the rest scaled off him.
+import headerSignatureImg from './assets/header-signature.png'; // Chris's signature
+import headerChrisImg from './assets/header-chris.png';         // Chris + guitar
+import headerWordmarkImg from './assets/header-wordmark.png';   // LYRICIST 4.2.0 GOES QUANTUM
 import footerMedallionImg from './assets/footer-medallion-new.png'; // Chris's bottom-left medallion (4.2.0)
 
 // Footer medallion sizing. The whole image has to be visible — no crop at the
@@ -193,59 +200,56 @@ function MainLayout() {
 
       {/* Main Layout Wrap */}
       <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100vh' }}>
-        {/* Header — medallion | signature | photo | title | controls (4.0.9) */}
-        <div className="header-cosmic" style={{ flexShrink: 0, position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center', background: '#020516', height: 220, overflow: 'hidden', width: '100%' }}>
+        {/* Header — medallion | signature · Chris · wordmark | controls (4.2.0) */}
+        {/* The height is NOT a fixed 300 any more. Everything in this bar is sized
+            off the header height, so a fixed height meant that on a window too
+            narrow for the row, the art had to letterbox down while the medallion
+            stayed full size — Chris ended up two thirds its height, which is what
+            made the header look broken. Now the header itself shrinks when the
+            window can't fit the row at full scale, so the medallion and Chris are
+            ALWAYS the same height and the whole bar stays to scale. It caps at 300.
+            The 4.7 divisor is the row's total width expressed in header-heights
+            (medallion 1 + signature 0.90 + Chris 0.55 + wordmark 1.75 + gaps), with
+            a little slack; 210px covers the left pad and the controls column. */}
+        <div className="header-cosmic" style={{ flexShrink: 0, position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center', background: '#020516', height: 'clamp(170px, calc((100vw - 210px) / 4.7), 300px)', overflow: 'hidden', width: '100%' }}>
 
-          {/* 1. Medallion logo — fills full header height top-to-bottom */}
+          {/* 1. Medallion logo — full header height, top edge to bottom edge.
+               Tied to the header's own height rather than a number, so it can't
+               fall out of step the next time the header is resized. */}
           <img
             src={headerMedallionImg}
             alt="CFunky Creations — Lyricist Goes Quantum"
-            style={{ height: 160, width: 'auto', objectFit: 'contain', display: 'block', flexShrink: 0 }}
+            style={{ height: '100%', width: 'auto', objectFit: 'contain', display: 'block', flexShrink: 0 }}
           />
 
-          {/* 2. Signature — 1/4 inch (24px) gap from medallion */}
-          <img
-            src={funksignImg}
-            alt="CFunky Signature"
-            style={{ height: 175, width: 'auto', objectFit: 'contain', display: 'block', flexShrink: 0, marginLeft: 24 }}
-          />
-
-          {/* 3. Profile photo — 1/4 inch (24px) gap from signature, feet touch bottom */}
-          <div style={{ flexShrink: 0, height: '100%', display: 'flex', alignItems: 'flex-end', marginLeft: 24 }}>
+          {/* 2. Hero row — signature · Chris · wordmark, sized off ONE reference:
+               Chris stands the full height of the header, exactly as tall as the
+               medallion on the left. The other two are set to the height they had
+               relative to him in the original artwork (signature 230/440 = 52%,
+               wordmark 403/440 = 92%), so the whole row stays to scale.
+               Chris never shrinks; on a cramped window the other two give way. */}
+          <div
+            style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(6px, 3.2vw, 60px)', paddingLeft: 16, paddingRight: 190, overflow: 'hidden' }}
+            data-help="Lyricist is your songwriting studio. Pick a vibe, give it a topic, and it helps you write full songs, line by line — then polish them. Everything here is explained: just hover over anything you don't recognize."
+          >
+            {/* No maxWidth caps — the header height already guarantees the row
+                fits, so every piece renders at its true size. Caps would letterbox
+                a piece and silently break the scale. */}
             <img
-              src={funk003Img}
-              alt="Christopher Funk"
-              style={{ height: 220, width: 'auto', display: 'block', filter: 'drop-shadow(0 0 14px #00e5ff) drop-shadow(0 0 28px rgba(168,85,247,0.55)) drop-shadow(0 0 50px rgba(16,240,160,0.25))' }}
+              src={headerSignatureImg}
+              alt="Chris Funk"
+              style={{ height: '52%', width: 'auto', objectFit: 'contain', display: 'block', flexShrink: 0 }}
             />
-          </div>
-
-          {/* 4. LYRICIST title — fills remaining space */}
-          <div style={{"flex":1,"display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center","textAlign":"center","paddingRight":260,"paddingLeft":20,"paddingBottom":28,"overflow":"hidden","minWidth":0}}>
-            <h1
-              className="gradient-title chrome-title leading-none"
-              style={{"fontSize":"clamp(2.2rem, 4.2vw, 6rem)","fontWeight":700,"letterSpacing":"0.04em","marginBottom":2,"whiteSpace":"nowrap","fontFamily":"'Audiowide', 'Orbitron', sans-serif"}}
-              data-help="Lyricist is your songwriting studio. Pick a vibe, give it a topic, and it helps you write full songs, line by line — then polish them. Everything here is explained: just hover over anything you don't recognize."
-            >
-              LYRICIST {APP_VERSION}
-            </h1>
-            {/* Subtitle — same Audiowide + same neon blue→purple→emerald chrome, smaller */}
-            <p
-              className="gradient-title chrome-title leading-none"
-              style={{
-                fontSize: 'clamp(0.95rem, 1.6vw, 1.45rem)',
-                fontWeight: 700,
-                letterSpacing: '0.22em',
-                textTransform: 'uppercase',
-                margin: '0 0 10px',
-                fontFamily: "'Audiowide', 'Orbitron', sans-serif",
-                whiteSpace: 'nowrap',
-              }}
-            >
-              GOES QUANTUM
-            </p>
-            <p className="tagline-gold" style={{ fontSize: '0.68rem', letterSpacing: '0.16em', textTransform: 'uppercase', margin: 0, fontFamily: "'Audiowide', sans-serif" }}>
-              AI-Powered Songwriting Studio · CFunkyCreations LLC
-            </p>
+            <img
+              src={headerChrisImg}
+              alt="Chris Funk with his guitar"
+              style={{ height: '100%', width: 'auto', objectFit: 'contain', display: 'block', flexShrink: 0 }}
+            />
+            <img
+              src={headerWordmarkImg}
+              alt={`Lyricist ${APP_VERSION} Goes Quantum — CFunky Creations`}
+              style={{ height: '92%', width: 'auto', objectFit: 'contain', display: 'block', flexShrink: 0 }}
+            />
           </div>
 
           {/* Controls — stacked vertically on the right */}
