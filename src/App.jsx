@@ -30,13 +30,10 @@ import funk003Img from './assets/funk003.png';     // Christopher Funk profile p
 import headerMedallionImg from './assets/header-medallion.png'; // Chris's peace-sign DNA medallion (4.2.0)
 import footerMedallionImg from './assets/footer-medallion-new.png'; // Chris's bottom-left medallion (4.2.0)
 
-// Footer medallion sizing. It is deliberately taller than the footer bar so it
-// runs top-to-bottom and hangs over the bottom edge; the mask fades the last
-// stretch out so the clip at the window edge is invisible rather than a cut.
-const FOOTER_MEDALLION_H = 132;
-const FOOTER_MEDALLION_OVERHANG = 26;
-const FOOTER_MEDALLION_MASK =
-  'linear-gradient(to bottom, #000 0%, #000 78%, rgba(0,0,0,0.55) 90%, rgba(0,0,0,0) 100%)';
+// Footer medallion sizing. The whole image has to be visible — no crop at the
+// top, no crop at the bottom. An earlier version hung it past the bar and
+// masked the overhang, and it just read as a chopped-off logo.
+const FOOTER_MEDALLION_H = 112;
 
 const tabs = [
   // Write / story tools first, then Quantum Lab
@@ -490,10 +487,7 @@ function MainLayout() {
             borderTop: '1px solid rgba(0,229,255,0.22)',
             boxShadow: '0 -1px 20px rgba(168,85,247,0.15)',
             flexShrink: 0,
-            // The medallion is taller than this bar and hangs past the bottom
-            // on purpose. Clip it here so it can't push the window taller.
             position: 'relative',
-            overflow: 'hidden',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -503,21 +497,13 @@ function MainLayout() {
               alt="Lyricist Goes Quantum — Quantum Lab"
               data-help="Christopher Funk — the founder of CFunky Creations LLC, the one-man shop that builds Lyricist and other free AI tools out of Austin, Texas."
               style={{
-                // Runs the full height of the footer and overhangs the bottom —
-                // never cropped ('cover' used to squash it into a letterbox
-                // strip) and never letterboxed inside a short box either. The
-                // negative margins let it bleed past the bar top and bottom;
-                // the mask fades the overhanging part out so the clip at the
-                // window edge doesn't read as a chopped-off image.
+                // Whole medallion, nothing clipped: it sits inside the bar and
+                // the bar grows to hold it. 'cover' cropped it to a letterbox
+                // strip, and the overhang version chopped the top and bottom.
                 height: FOOTER_MEDALLION_H,
                 width: 'auto',
                 objectFit: 'contain',
-                objectPosition: 'center top',
-                marginTop: -8,
-                marginBottom: -(FOOTER_MEDALLION_OVERHANG + 8),
                 flexShrink: 0,
-                WebkitMaskImage: FOOTER_MEDALLION_MASK,
-                maskImage: FOOTER_MEDALLION_MASK,
                 filter: 'drop-shadow(0 0 10px #00f0ff) drop-shadow(0 0 22px rgba(192,38,255,0.5)) drop-shadow(0 0 36px rgba(0,255,156,0.25))'
               }}
             />

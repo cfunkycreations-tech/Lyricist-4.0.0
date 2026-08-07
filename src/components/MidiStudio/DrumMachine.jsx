@@ -4,7 +4,7 @@ import { getAudioContext, getMasterBus, resumeAudio } from '../../services/audio
 import {
   KIT, STEPS, DEFAULT_VOICE, DEFAULT_FX,
   triggerVoice, triggerSample, createFxChain,
-  emptyPattern, starterPattern,
+  emptyPattern, starterPattern, migratePattern,
 } from '../../services/drumEngine.js';
 import { listPacks, listSamples, getSampleBuffer } from '../../services/sampleLibrary.js';
 import { registerDemoSnapshot } from '../../services/demoSafety.js';
@@ -15,6 +15,21 @@ import { registerDemoSnapshot } from '../../services/demoSafety.js';
 // synth voice. Everything is offline.
 
 const PRESET_KEY = 'lyricist808Presets';
+
+/**
+ * The knobs a TR-808 has on the front panel, per drum. Only the ones a given
+ * voice actually uses are shown — a rimshot has no decay control on the real
+ * machine either. Everything is 0..1 so the panel stays uniform; the engine
+ * turns these into the circuit's own units.
+ */
+const VOICE_CONTROLS = [
+  { key: 'level',  label: 'Level',   min: 0, max: 3, step: 0.01, help: 'Volume of this drum before its effects.' },
+  { key: 'tone',   label: 'Tone',    min: 0, max: 1, step: 0.01, help: 'Brightness. On the kick it opens the lowpass; on the snare it moves the noise filter; on the cymbal it tilts low against high.' },
+  { key: 'decay',  label: 'Decay',   min: 0, max: 1, step: 0.01, help: 'How long the hit rings out. A long kick decay is the 808 boom.' },
+  { key: 'tuning', label: 'Tuning',  min: 0, max: 1, step: 0.01, help: 'Pitch of the drum within its range.' },
+  { key: 'snap',   label: 'Snappy',  min: 0, max: 1, step: 0.01, help: 'Balance between the drum body and the snare wires.' },
+  { key: 'drive',  label: 'Punch',   min: 0, max: 1, step: 0.01, help: 'How hard the kick hits the soft clipper. This is where the push comes from.' },
+];
 const LOOKAHEAD = 0.12;
 const TICK_MS = 25;
 
@@ -82,23 +97,35 @@ export default function DrumMachine() {
     })();
   }, []);
 
-  const audible = useCallback((id) => (solo ? solo === id : !mutes[id]), [solo, mutes]);
+  // The scheduler runs off refs, not closures. Everything it reads — pattern,
+  // tempo, swing, mutes, the voice knobs — is kept here and updated on every
+  // render, so changing any of them takes effect on the very next step without
+  // the sequencer being torn down and rebuilt. Restarting it was resetting the
+  // bar to step 1 mid-play every time a knob moved.
+  const liveRef = useRef({});
+  liveRef.current = { pattern, tempo, swing, mutes, solo, voices };
+
+  const audible = useCallback((id) => {
+    const { solo: s, mutes: m } = liveRef.current;
+    return s ? s === id : !m[id];
+  }, []);
 
   const fire = useCallback((trackId, when, velocity) => {
     const ctx = getAudioContext();
     const chain = chainsRef.current[trackId];
     if (!chain) return;
+    const v = liveRef.current.voices[trackId];
     const buf = buffersRef.current[trackId];
     if (buf) {
       triggerSample(ctx, chain.input, buf, when, {
-        level: voices[trackId]?.level ?? 1,
-        pitch: voices[trackId]?.pitch ?? 0,
+        level: v?.level ?? 1,
+        pitch: v?.pitch ?? 0,
         velocity,
       });
     } else {
-      triggerVoice(ctx, chain.input, trackId, when, voices[trackId], velocity);
+      triggerVoice(ctx, chain.input, trackId, when, v, velocity);
     }
-  }, [voices]);
+  }, []);
 
   const stop = useCallback(() => {
     clearInterval(schedRef.current);
@@ -115,7 +142,7 @@ export default function DrumMachine() {
     const ctx = getAudioContext();
     clearInterval(schedRef.current);
 
-    const secPerStep = () => 60 / tempo / 4;   // 16ths
+    const secPerStep = () => 60 / liveRef.current.tempo / 4;   // 16ths
     stateRef.current = { next: ctx.currentTime + 0.1, idx: 0 };
     setPlaying(true);
 
@@ -123,13 +150,27 @@ export default function DrumMachine() {
       const st = stateRef.current;
       if (!st) return;
       const now = ctx.currentTime;
+
+      // If the clock got behind — a stutter, a garbage collection pause, the
+      // window being hidden — skip forward instead of firing every step that
+      // was missed. Web Audio plays anything scheduled in the past
+      // *immediately*, so catching up produces a burst of notes out of nowhere
+      // after the machine has been running a while. Jump to the next step on
+      // the grid and carry on in time.
+      if (st.next < now) {
+        const step = secPerStep();
+        const missed = Math.ceil((now - st.next) / step);
+        st.next += missed * step;
+        st.idx += missed;
+      }
+
       while (st.next < now + LOOKAHEAD) {
         const i = st.idx % STEPS;
         // Swing pushes every other 16th later, which is what gives it groove.
-        const swingOffset = i % 2 === 1 ? secPerStep() * swing * 0.5 : 0;
+        const swingOffset = i % 2 === 1 ? secPerStep() * liveRef.current.swing * 0.5 : 0;
         const when = st.next + swingOffset;
         for (const k of KIT) {
-          const v = pattern[k.id]?.[i];
+          const v = liveRef.current.pattern[k.id]?.[i];
           if (v && audible(k.id)) fire(k.id, when, v);
         }
         const at = i;
@@ -138,14 +179,11 @@ export default function DrumMachine() {
         st.idx++;
       }
     }, TICK_MS);
-  }, [tempo, swing, pattern, audible, fire]);
+  }, [audible, fire]);
 
-  // Restart the scheduler when tempo/pattern change mid-play.
-  useEffect(() => {
-    if (!playing) return;
-    play();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tempo, swing, pattern, mutes, solo, voices]);
+  // No restart effect here on purpose. The scheduler reads everything through
+  // liveRef, so tempo, pattern, swing, mutes and knob changes all land on the
+  // next step while the bar keeps its place.
 
   const toggleStep = (trackId, i, e) => {
     setPattern((prev) => {
@@ -182,10 +220,11 @@ export default function DrumMachine() {
 
   const applyState = async (s) => {
     if (!s) return;
-    setPattern(s.pattern || starterPattern());
+    setPattern(s.pattern ? migratePattern(s.pattern) : starterPattern());
     setTempo(s.tempo ?? 90);
     setSwing(s.swing ?? 0);
-    setVoices(s.voices || JSON.parse(JSON.stringify(DEFAULT_VOICE)));
+    // Merge over the defaults so voices added since the preset was saved exist.
+    setVoices({ ...JSON.parse(JSON.stringify(DEFAULT_VOICE)), ...(s.voices || {}) });
     setTrackFx(s.trackFx || Object.fromEntries(KIT.map((k) => [k.id, { ...DEFAULT_FX }])));
     setMasterFx(s.masterFx || { ...DEFAULT_FX });
     setMutes(s.mutes || {});
@@ -432,7 +471,15 @@ export default function DrumMachine() {
             <Knob label="Delay Mix" value={fxTarget.delayMix} min={0} max={1} step={0.01} onChange={(v) => setFxTarget({ delayMix: v })} help="How loud the echoes sit against the dry sound." />
             <Knob label="Reverb Mix" value={fxTarget.reverbMix} min={0} max={1} step={0.01} onChange={(v) => setFxTarget({ reverbMix: v })} help="Room amount." />
             <Knob label="Reverb Size" value={fxTarget.reverbSize} min={0.2} max={6} step={0.1} onChange={(v) => setFxTarget({ reverbSize: v })} help="How big the room is, in seconds of tail." />
-            <Knob label="Compress" value={fxTarget.compress} min={0} max={1} step={0.01} onChange={(v) => setFxTarget({ compress: v })} help="Glues and levels the hits. Push it for pump." />
+            <Knob label="Compress" value={fxTarget.compress} min={0} max={1} step={0.01} onChange={(v) => setFxTarget({ compress: v })} help="Glues and levels the hits. Push it for pump. Makes up its own gain, so it never just gets quieter." />
+            <Knob label="High-Pass" value={fxTarget.hpFreq} min={20} max={2000} step={5} onChange={(v) => setFxTarget({ hpFreq: v })} help="Cuts the low end away. Lift it on hats and claps to get them out of the kick's way." />
+            <Knob label="EQ Low" value={fxTarget.eqLow} min={-18} max={18} step={0.5} onChange={(v) => setFxTarget({ eqLow: v })} help="Shelf below 180Hz, in dB. Weight and body." />
+            <Knob label="EQ Mid" value={fxTarget.eqMid} min={-18} max={18} step={0.5} onChange={(v) => setFxTarget({ eqMid: v })} help="Peak at the mid frequency, in dB. Cut it to get out of the way of vocals." />
+            <Knob label="Mid Hz" value={fxTarget.eqMidFreq} min={150} max={8000} step={25} onChange={(v) => setFxTarget({ eqMidFreq: v })} help="Where the mid EQ sits." />
+            <Knob label="EQ High" value={fxTarget.eqHigh} min={-18} max={18} step={0.5} onChange={(v) => setFxTarget({ eqHigh: v })} help="Shelf above 6.5kHz, in dB. Air and snap." />
+            <Knob label="Delay Tone" value={fxTarget.delayDamp} min={400} max={16000} step={100} onChange={(v) => setFxTarget({ delayDamp: v })} help="How bright the echoes stay. Lower makes each repeat darker than the last, like tape." />
+            <Knob label="Reverb Pre" value={fxTarget.reverbPreDelay} min={0} max={0.12} step={0.002} onChange={(v) => setFxTarget({ reverbPreDelay: v })} help="Gap before the room answers. A little keeps the hit clear of its own reverb." />
+            <Knob label="Reverb Damp" value={fxTarget.reverbDamp} min={0.02} max={0.95} step={0.01} onChange={(v) => setFxTarget({ reverbDamp: v })} help="How fast the room's highs die away. Up is a soft room, down is tiled and bright." />
             <label style={{ fontSize: '0.62rem', display: 'flex', flexDirection: 'column', gap: 3 }}
               data-help="Filter shape. Lowpass keeps the lows, highpass keeps the tops, bandpass keeps a slice.">
               Filter Type
@@ -443,17 +490,37 @@ export default function DrumMachine() {
             </label>
           </div>
 
+          {fxOpen === 'master' && (
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+              <label style={{ fontSize: '0.66rem', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+                data-help="Catches anything that would clip the output. Leave it on — it only acts when the master is being pushed past full scale.">
+                <input type="checkbox" checked={!!fxTarget.limit} onChange={(e) => setFxTarget({ limit: e.target.checked ? 1 : 0 })} />
+                Limiter
+              </label>
+              <label style={{ fontSize: '0.66rem', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+                data-help="Echoes bounce left and right instead of repeating down the middle.">
+                <input type="checkbox" checked={!!fxTarget.delayPingPong} onChange={(e) => setFxTarget({ delayPingPong: e.target.checked ? 1 : 0 })} />
+                Ping-Pong Delay
+              </label>
+            </div>
+          )}
+
+          {/* The voice's own panel — the knobs a real 808 has on the front for
+              this drum, and only the ones this drum actually has. */}
           {fxOpen !== 'master' && (
             <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.08)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(168px, 1fr))', gap: 10 }}>
-              <Knob label="Tune" value={voices[fxOpen]?.tune ?? 100} min={20} max={12000} step={1}
-                onChange={(v) => setVoices((s) => ({ ...s, [fxOpen]: { ...s[fxOpen], tune: v } }))}
-                help="Pitch of the synthesized voice." />
-              <Knob label="Decay" value={voices[fxOpen]?.decay ?? 0.3} min={0.02} max={2} step={0.01}
-                onChange={(v) => setVoices((s) => ({ ...s, [fxOpen]: { ...s[fxOpen], decay: v } }))}
-                help="How long the hit rings out. Long decay on the kick is the 808 boom." />
-              <Knob label="Voice Level" value={voices[fxOpen]?.level ?? 0.8} min={0} max={1.5} step={0.01}
-                onChange={(v) => setVoices((s) => ({ ...s, [fxOpen]: { ...s[fxOpen], level: v } }))}
-                help="Volume of this drum before its effects." />
+              {VOICE_CONTROLS
+                .filter(({ key }) => voices[fxOpen] && key in voices[fxOpen])
+                .map(({ key, label, min, max, step, help }) => (
+                  <Knob
+                    key={key}
+                    label={label}
+                    value={voices[fxOpen]?.[key] ?? 0}
+                    min={min} max={max} step={step}
+                    onChange={(v) => setVoices((s) => ({ ...s, [fxOpen]: { ...s[fxOpen], [key]: v } }))}
+                    help={help}
+                  />
+                ))}
             </div>
           )}
         </div>

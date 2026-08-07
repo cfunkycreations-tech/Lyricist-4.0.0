@@ -11,186 +11,90 @@
  * offline Web Audio. No libraries, no licences, no network.
  */
 
+import * as TR from './tr808.js';
+
 /* ── Voices ───────────────────────────────────────────────────────── */
 
 export const KIT = [
-  { id: 'kick',   name: 'Kick',      color: '#ff2d95', key: 'B1' },
-  { id: 'snare',  name: 'Snare',     color: '#00e5ff', key: 'D2' },
-  { id: 'clap',   name: 'Clap',      color: '#c026ff', key: 'D#2' },
-  { id: 'hatC',   name: 'Closed Hat', color: '#10f0a0', key: 'F#2' },
-  { id: 'hatO',   name: 'Open Hat',  color: '#7dffb0', key: 'A#2' },
-  { id: 'tom',    name: 'Tom',       color: '#ff8c00', key: 'A2' },
-  { id: 'rim',    name: 'Rim',       color: '#f8eea6', key: 'C#2' },
-  { id: 'cowbell',name: 'Cowbell',   color: '#facc15', key: 'G#2' },
+  { id: 'kick',    name: 'Kick',       color: '#ff2d95', key: 'B1' },
+  { id: 'snare',   name: 'Snare',      color: '#00e5ff', key: 'D2' },
+  { id: 'clap',    name: 'Clap',       color: '#c026ff', key: 'D#2' },
+  { id: 'hatC',    name: 'Closed Hat', color: '#10f0a0', key: 'F#2' },
+  { id: 'hatO',    name: 'Open Hat',   color: '#7dffb0', key: 'A#2' },
+  { id: 'cymbal',  name: 'Cymbal',     color: '#67e8f9', key: 'C#3' },
+  { id: 'tomL',    name: 'Low Tom',    color: '#ff8c00', key: 'G1' },
+  { id: 'tomM',    name: 'Mid Tom',    color: '#fb923c', key: 'B1' },
+  { id: 'tomH',    name: 'High Tom',   color: '#fdba74', key: 'D2' },
+  { id: 'conga',   name: 'Conga',      color: '#f472b6', key: 'E2' },
+  { id: 'rim',     name: 'Rim',        color: '#f8eea6', key: 'C#2' },
+  { id: 'clave',   name: 'Clave',      color: '#fde68a', key: 'D#3' },
+  { id: 'cowbell', name: 'Cowbell',    color: '#facc15', key: 'G#2' },
+  { id: 'maracas', name: 'Maracas',    color: '#a3e635', key: 'A#3' },
 ];
 
-/** Per-voice defaults: tune, decay and level, all live-adjustable. */
-// Levels are balanced by ear against measured peaks, not set to round numbers.
-// Band-passed voices (clap, hats, rim) lose a lot of level to their filters, so
-// they need far more gain than the kick to sit right in the same kit.
+/**
+ * Per-voice defaults. These are the panel controls of a real 808 — level, tone,
+ * decay, tuning, snappy — normalised 0..1 so the UI can be uniform. Levels are
+ * balanced by ear against measured peaks: the band-passed voices lose a lot of
+ * signal to their filters and need more gain to sit in the same kit as a kick.
+ */
 export const DEFAULT_VOICE = {
-  kick:    { tune: 50,   decay: 0.55, level: 1.0, drive: 0.15 },
-  snare:   { tune: 190,  decay: 0.20, level: 0.72, snap: 0.5 },
-  clap:    { tune: 1100, decay: 0.22, level: 3.4 },
-  hatC:    { tune: 8000, decay: 0.05, level: 2.6 },
-  hatO:    { tune: 8000, decay: 0.38, level: 1.9 },
-  tom:     { tune: 110,  decay: 0.35, level: 1.1 },
-  rim:     { tune: 1700, decay: 0.06, level: 1.6 },
-  cowbell: { tune: 540,  decay: 0.30, level: 1.2 },
+  kick:    { level: 1.10, tone: 0.35, decay: 0.55, drive: 0.75 },
+  snare:   { level: 0.51, tone: 0.45, decay: 0.35, snap: 0.55 },
+  clap:    { level: 1.46, decay: 0.40 },
+  hatC:    { level: 2.00, decay: 0.35 },
+  hatO:    { level: 1.71, decay: 0.45 },
+  cymbal:  { level: 2.66, tone: 0.45, decay: 0.40 },
+  tomL:    { level: 0.69, tuning: 0.45, decay: 0.55 },
+  tomM:    { level: 0.70, tuning: 0.50, decay: 0.50 },
+  tomH:    { level: 0.61, tuning: 0.55, decay: 0.45 },
+  conga:   { level: 0.54, tuning: 0.55, decay: 0.40 },
+  rim:     { level: 0.84 },
+  clave:   { level: 1.25 },
+  cowbell: { level: 1.11, decay: 0.30 },
+  maracas: { level: 0.87, decay: 0.35 },
 };
 
-function env(param, ctx, when, peak, decay, floor = 0.0001) {
-  param.setValueAtTime(floor, when);
-  param.linearRampToValueAtTime(peak, when + 0.002);
-  param.exponentialRampToValueAtTime(floor, when + Math.max(0.02, decay));
-}
-
-/** Short burst of white noise, reused by snare/clap/hats. */
-function noiseBuffer(ctx) {
-  if (!ctx.__lyricistNoise) {
-    const len = Math.floor(ctx.sampleRate * 1.0);
-    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-    ctx.__lyricistNoise = buf;
-  }
-  return ctx.__lyricistNoise;
-}
-
 /**
- * Fire one synthesized 808 voice.
- * `dest` is the head of that track's effect chain.
+ * Fire one synthesized 808 voice. `dest` is the head of that track's effect
+ * chain. Every voice is a circuit model from tr808.js — see that file for why
+ * a hi-hat is six square waves and a handclap is four bursts.
  */
 export function triggerVoice(ctx, dest, voiceId, when, params = {}, velocity = 1) {
   const p = { ...DEFAULT_VOICE[voiceId], ...params };
-  const gain = ctx.createGain();
-  gain.gain.value = (p.level ?? 0.8) * velocity;
-  gain.connect(dest);
+  const level = (p.level ?? 1) * velocity;
 
   switch (voiceId) {
-    case 'kick': {
-      // Sine with a fast downward pitch sweep — the 808's whole identity.
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(p.tune * 3.5, when);
-      osc.frequency.exponentialRampToValueAtTime(Math.max(20, p.tune), when + 0.06);
-      env(g.gain, ctx, when, 1, p.decay);
-      // A touch of drive gives it the speaker-punch a pure sine lacks.
-      const shaper = ctx.createWaveShaper();
-      shaper.curve = driveCurve(p.drive ?? 0.15);
-      osc.connect(g).connect(shaper).connect(gain);
-      osc.start(when); osc.stop(when + p.decay + 0.1);
-      break;
-    }
-    case 'snare': {
-      const osc = ctx.createOscillator();
-      const og = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(p.tune, when);
-      env(og.gain, ctx, when, 0.7, p.decay * 0.7);
-      osc.connect(og).connect(gain);
-      osc.start(when); osc.stop(when + p.decay + 0.1);
-
-      const n = ctx.createBufferSource();
-      const nf = ctx.createBiquadFilter();
-      const ng = ctx.createGain();
-      n.buffer = noiseBuffer(ctx);
-      nf.type = 'highpass';
-      nf.frequency.value = 1200 + (p.snap ?? 0.5) * 1800;
-      env(ng.gain, ctx, when, 0.9, p.decay);
-      n.connect(nf).connect(ng).connect(gain);
-      n.start(when); n.stop(when + p.decay + 0.1);
-      break;
-    }
-    case 'clap': {
-      // Three quick noise bursts then a tail — that's what makes it a clap.
-      const offsets = [0, 0.011, 0.023];
-      for (const off of offsets) {
-        const n = ctx.createBufferSource();
-        const f = ctx.createBiquadFilter();
-        const g = ctx.createGain();
-        n.buffer = noiseBuffer(ctx);
-        f.type = 'bandpass';
-        f.frequency.value = p.tune;
-        f.Q.value = 1.6;
-        env(g.gain, ctx, when + off, 0.8, 0.035);
-        n.connect(f).connect(g).connect(gain);
-        n.start(when + off); n.stop(when + off + 0.06);
-      }
-      const tail = ctx.createBufferSource();
-      const tf = ctx.createBiquadFilter();
-      const tg = ctx.createGain();
-      tail.buffer = noiseBuffer(ctx);
-      tf.type = 'bandpass';
-      tf.frequency.value = p.tune;
-      tf.Q.value = 1.2;
-      env(tg.gain, ctx, when + 0.03, 0.5, p.decay);
-      tail.connect(tf).connect(tg).connect(gain);
-      tail.start(when + 0.03); tail.stop(when + p.decay + 0.1);
-      break;
-    }
+    case 'kick':
+      return TR.bassDrum(ctx, dest, when, { level, tone: p.tone, decay: p.decay, drive: p.drive });
+    case 'snare':
+      return TR.snareDrum(ctx, dest, when, { level, tone: p.tone, snappy: p.snap, decay: p.decay });
+    case 'clap':
+      return TR.handclap(ctx, dest, when, { level, decay: p.decay });
     case 'hatC':
-    case 'hatO': {
-      // Six detuned squares through a highpass — the classic metallic recipe.
-      const ratios = [2, 3, 4.16, 5.43, 6.79, 8.21];
-      const hp = ctx.createBiquadFilter();
-      const bp = ctx.createBiquadFilter();
-      const g = ctx.createGain();
-      hp.type = 'highpass'; hp.frequency.value = p.tune * 0.8;
-      bp.type = 'bandpass'; bp.frequency.value = p.tune; bp.Q.value = 0.9;
-      env(g.gain, ctx, when, 0.6, p.decay);
-      for (const r of ratios) {
-        const o = ctx.createOscillator();
-        o.type = 'square';
-        o.frequency.value = 40 * r;
-        o.connect(hp);
-        o.start(when); o.stop(when + p.decay + 0.1);
-      }
-      hp.connect(bp).connect(g).connect(gain);
-      break;
-    }
-    case 'tom': {
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(p.tune * 1.8, when);
-      osc.frequency.exponentialRampToValueAtTime(Math.max(30, p.tune), when + 0.12);
-      env(g.gain, ctx, when, 0.9, p.decay);
-      osc.connect(g).connect(gain);
-      osc.start(when); osc.stop(when + p.decay + 0.1);
-      break;
-    }
-    case 'rim': {
-      const osc = ctx.createOscillator();
-      const f = ctx.createBiquadFilter();
-      const g = ctx.createGain();
-      osc.type = 'square';
-      osc.frequency.value = p.tune;
-      f.type = 'bandpass'; f.frequency.value = p.tune; f.Q.value = 6;
-      env(g.gain, ctx, when, 0.7, p.decay);
-      osc.connect(f).connect(g).connect(gain);
-      osc.start(when); osc.stop(when + p.decay + 0.05);
-      break;
-    }
-    case 'cowbell': {
-      // Two squares a fifth-ish apart, band-passed. Pure 808.
-      const g = ctx.createGain();
-      const f = ctx.createBiquadFilter();
-      f.type = 'bandpass'; f.frequency.value = p.tune * 1.5; f.Q.value = 2;
-      env(g.gain, ctx, when, 0.6, p.decay);
-      for (const mult of [1, 1.4845]) {
-        const o = ctx.createOscillator();
-        o.type = 'square';
-        o.frequency.value = p.tune * mult;
-        o.connect(f);
-        o.start(when); o.stop(when + p.decay + 0.05);
-      }
-      f.connect(g).connect(gain);
-      break;
-    }
+      return TR.closedHat(ctx, dest, when, { level, decay: p.decay });
+    case 'hatO':
+      return TR.openHat(ctx, dest, when, { level, decay: p.decay });
+    case 'cymbal':
+      return TR.cymbal(ctx, dest, when, { level, tone: p.tone, decay: p.decay });
+    case 'tomL':
+      return TR.tomConga(ctx, dest, when, { level, tuning: p.tuning, pitchRange: [100, 80], decayMs: 120 + p.decay * 220, isTom: true });
+    case 'tomM':
+      return TR.tomConga(ctx, dest, when, { level, tuning: p.tuning, pitchRange: [160, 120], decayMs: 100 + p.decay * 180, isTom: true });
+    case 'tomH':
+      return TR.tomConga(ctx, dest, when, { level, tuning: p.tuning, pitchRange: [220, 165], decayMs: 90 + p.decay * 160, isTom: true });
+    case 'conga':
+      return TR.tomConga(ctx, dest, when, { level, tuning: p.tuning, pitchRange: [310, 250], decayMs: 70 + p.decay * 120, isTom: false });
+    case 'rim':
+      return TR.claveRimshot(ctx, dest, when, { level, isRimshot: true });
+    case 'clave':
+      return TR.claveRimshot(ctx, dest, when, { level, isRimshot: false });
+    case 'cowbell':
+      return TR.cowbell(ctx, dest, when, { level, decay: p.decay });
+    case 'maracas':
+      return TR.maracas(ctx, dest, when, { level, decay: p.decay });
     default:
-      break;
+      return null;
   }
 }
 
@@ -209,135 +113,13 @@ export function triggerSample(ctx, dest, buffer, when, { level = 1, pitch = 0, v
 
 /* ── Effects rack ─────────────────────────────────────────────────── */
 
-function driveCurve(amount = 0.3, samples = 1024) {
-  const k = Math.max(0.0001, amount) * 100;
-  const curve = new Float32Array(samples);
-  for (let i = 0; i < samples; i++) {
-    const x = (i * 2) / samples - 1;
-    curve[i] = ((1 + k) * x) / (1 + k * Math.abs(x));
-  }
-  return curve;
-}
+/* ── Effects ────────────────────────────────────── */
 
-/** Bitcrusher via ScriptProcessor-free waveshaping on quantized steps. */
-function crushCurve(bits = 8, samples = 2048) {
-  const levels = Math.pow(2, Math.max(1, Math.min(16, bits)));
-  const curve = new Float32Array(samples);
-  for (let i = 0; i < samples; i++) {
-    const x = (i * 2) / samples - 1;
-    curve[i] = Math.round(x * levels) / levels;
-  }
-  return curve;
-}
-
-/** Generated impulse response — a plate-ish reverb with no audio file needed. */
-function makeImpulse(ctx, seconds = 1.8, decay = 2.6) {
-  const rate = ctx.sampleRate;
-  const len = Math.max(1, Math.floor(rate * seconds));
-  const impulse = ctx.createBuffer(2, len, rate);
-  for (let ch = 0; ch < 2; ch++) {
-    const data = impulse.getChannelData(ch);
-    for (let i = 0; i < len; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
-    }
-  }
-  return impulse;
-}
-
-export const DEFAULT_FX = {
-  filterType: 'lowpass',
-  filterFreq: 20000,
-  filterQ: 0.7,
-  drive: 0,
-  crush: 0,          // 0 = off, else bit depth 1–16
-  delayTime: 0,      // seconds
-  delayFeedback: 0.3,
-  delayMix: 0,
-  reverbMix: 0,
-  reverbSize: 1.8,
-  compress: 0,       // 0 = off, 1 = full
-  pan: 0,
-  level: 1,
-};
-
-/**
- * Build an effect chain and return { input, output, set, dispose }.
- * Used for each track and again for the master bus.
- */
-export function createFxChain(ctx, initial = {}) {
-  const fx = { ...DEFAULT_FX, ...initial };
-
-  const input = ctx.createGain();
-  const filter = ctx.createBiquadFilter();
-  const shaper = ctx.createWaveShaper();
-  const crusher = ctx.createWaveShaper();
-  const comp = ctx.createDynamicsCompressor();
-  const panner = ctx.createStereoPanner();
-  const out = ctx.createGain();
-
-  // Delay send
-  const delay = ctx.createDelay(2.0);
-  const fb = ctx.createGain();
-  const delayMix = ctx.createGain();
-
-  // Reverb send
-  const convolver = ctx.createConvolver();
-  const reverbMix = ctx.createGain();
-
-  input.connect(filter);
-  filter.connect(shaper);
-  shaper.connect(crusher);
-  crusher.connect(comp);
-  comp.connect(panner);
-  panner.connect(out);
-
-  // Sends run in parallel off the dry signal, then rejoin at the output.
-  panner.connect(delay);
-  delay.connect(fb);
-  fb.connect(delay);
-  delay.connect(delayMix);
-  delayMix.connect(out);
-
-  panner.connect(convolver);
-  convolver.connect(reverbMix);
-  reverbMix.connect(out);
-
-  const set = (patch = {}) => {
-    Object.assign(fx, patch);
-    filter.type = fx.filterType;
-    filter.frequency.value = Math.max(20, Math.min(22050, fx.filterFreq));
-    filter.Q.value = fx.filterQ;
-    shaper.curve = fx.drive > 0 ? driveCurve(fx.drive) : null;
-    crusher.curve = fx.crush > 0 ? crushCurve(fx.crush) : null;
-    comp.threshold.value = fx.compress > 0 ? -18 - fx.compress * 18 : 0;
-    comp.ratio.value = fx.compress > 0 ? 2 + fx.compress * 10 : 1;
-    comp.attack.value = 0.003;
-    comp.release.value = 0.18;
-    panner.pan.value = Math.max(-1, Math.min(1, fx.pan));
-    out.gain.value = Math.max(0, fx.level);
-    delay.delayTime.value = Math.max(0, Math.min(2, fx.delayTime));
-    fb.gain.value = Math.max(0, Math.min(0.92, fx.delayFeedback));
-    delayMix.gain.value = Math.max(0, Math.min(1, fx.delayMix));
-    reverbMix.gain.value = Math.max(0, Math.min(1, fx.reverbMix));
-    if (fx.reverbMix > 0 && (!convolver.buffer || fx.__rebuildIR)) {
-      convolver.buffer = makeImpulse(ctx, fx.reverbSize);
-      fx.__rebuildIR = false;
-    }
-  };
-
-  set();
-
-  return {
-    input,
-    output: out,
-    set,
-    get state() { return { ...fx }; },
-    dispose() {
-      [input, filter, shaper, crusher, comp, panner, out, delay, fb, delayMix, convolver, reverbMix]
-        .forEach((n) => { try { n.disconnect(); } catch { /* already gone */ } });
-    },
-  };
-}
+// The rack lives in its own module now: filters, drive, crush, three-band EQ,
+// a compressor that makes up its own gain, a damped ping-pong delay, a reverb
+// with pre-delay and early reflections, and a master limiter. Re-exported here
+// so every existing import keeps working.
+export { DEFAULT_FX, createFxChain } from './fxRack.js';
 
 /* ── Patterns ─────────────────────────────────────────────────────── */
 
@@ -346,6 +128,24 @@ export const STEPS = 16;
 export function emptyPattern() {
   const p = {};
   for (const v of KIT) p[v.id] = new Array(STEPS).fill(0);
+  return p;
+}
+
+/**
+ * Bring a saved pattern up to the current kit. The kit grew from 8 voices to
+ * 14, and the single 'tom' became low/mid/high — a pattern saved before that
+ * would otherwise come back with holes, or crash a lookup. Old 'tom' rows move
+ * to the mid tom, anything unknown is dropped, anything missing starts empty.
+ */
+export function migratePattern(saved) {
+  const p = emptyPattern();
+  if (!saved || typeof saved !== 'object') return p;
+  const RENAMED = { tom: 'tomM' };
+  for (const [id, row] of Object.entries(saved)) {
+    const target = RENAMED[id] || id;
+    if (!Array.isArray(row) || !p[target]) continue;
+    for (let i = 0; i < STEPS; i++) p[target][i] = Number(row[i]) || 0;
+  }
   return p;
 }
 
