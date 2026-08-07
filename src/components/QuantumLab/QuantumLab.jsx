@@ -17,7 +17,7 @@ import {
 } from './quantumFeatures.js';
 import { registerDemoSnapshot } from '../../services/demoSafety.js';
 import './QuantumLab.css';
-import logo407Img from '../../assets/logo407.png';
+import quantumMedallionImg from '../../assets/header-medallion.png';
 
 // ============================================================
 // Quantum Lab — "Lyricist Goes Quantum" (Lyricist 4.2.0)
@@ -509,32 +509,17 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         className="ql-banner"
         data-help="Quantum Lab — heat the lattice, crystallize, generate neural lyrics. Medallion left, controls right."
       >
-        {/* Left: medallion */}
-        <img src={logo407Img} alt="Lyricist Quantum Lab" className="ql-banner-medallion" />
+        {/* Left: Chris's medallion — the same one the app header carries */}
+        <img src={quantumMedallionImg} alt="Lyricist Goes Quantum" className="ql-banner-medallion" />
 
         {/* Center: title + subtitle with dynamic DNA state */}
         <div className="ql-banner-center">
+          {/* Words only. The two lightning bolts and the hand-drawn "helix"
+              beside them were flat, static SVG scribble — nothing like a
+              rotating high-colour double helix — and Chris cut them. The
+              medallion to the left carries the real artwork. */}
           <div className="ql-banner-title-row">
-            <span className="ql-title-bolt" style={{ fontSize: '1.4rem' }} aria-hidden>⚡</span>
             <h1 className="ql-title ql-banner-title">QUANTUM LAB</h1>
-            <span className="ql-title-bolt" style={{ fontSize: '1.4rem' }} aria-hidden>⚡</span>
-            {/* DNA helix — kept as accent beside the title */}
-            <svg className="ql-title-helix" viewBox="0 0 48 48" style={{ width: 32, height: 32 }} aria-hidden>
-              <defs>
-                <linearGradient id="qlHelixGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#67e8f9" />
-                  <stop offset="50%" stopColor="#a78bfa" />
-                  <stop offset="100%" stopColor="#f5f3ff" />
-                </linearGradient>
-              </defs>
-              <path d="M14 4 C26 10,26 18,14 24 C2 30,2 38,14 44" fill="none" stroke="url(#qlHelixGrad)" strokeWidth="2.4" strokeLinecap="round" />
-              <path d="M34 4 C22 10,22 18,34 24 C46 30,46 38,34 44" fill="none" stroke="url(#qlHelixGrad)" strokeWidth="2.4" strokeLinecap="round" />
-              <line x1="15" y1="10" x2="33" y2="10" stroke="#c4b5fd" strokeWidth="1.5" opacity="0.9" />
-              <line x1="15" y1="18" x2="33" y2="18" stroke="#67e8f9" strokeWidth="1.5" opacity="0.85" />
-              <line x1="15" y1="26" x2="33" y2="26" stroke="#c4b5fd" strokeWidth="1.5" opacity="0.9" />
-              <line x1="15" y1="34" x2="33" y2="34" stroke="#67e8f9" strokeWidth="1.5" opacity="0.85" />
-              <line x1="15" y1="40" x2="33" y2="40" stroke="#e0f2fe" strokeWidth="1.4" opacity="0.8" />
-            </svg>
           </div>
           <p className="ql-banner-subtitle">
             Lyricist's Quantum{' '}
@@ -542,7 +527,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
               className="ql-dna-pill"
               data-help="DNA = this section's rhythm + rhyme plan (not biology). Unlocked = free to change. Locked = everything is pinned so nothing drifts."
             >
-              {section.frozen ? 'DNA Locked 🔒' : 'DNA Unlocked ⚡'}
+              {section.frozen ? 'DNA Locked 🔒' : 'DNA Unlocked 🔓'}
             </span>
           </p>
         </div>

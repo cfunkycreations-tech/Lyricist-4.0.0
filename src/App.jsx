@@ -28,7 +28,15 @@ import logoImg from './assets/logo.jpg';           // new neon medallion logo
 import funksignImg from './assets/funksign.jpg';   // CFunky signature on black (4.0.9)
 import funk003Img from './assets/funk003.png';     // Christopher Funk profile photo (4.0.9)
 import headerMedallionImg from './assets/header-medallion.png'; // Chris's peace-sign DNA medallion (4.2.0)
-import footerMedallionImg from './assets/quantum-lab-medallion.png'; // Quantum Lab banner art (4.2.0)
+import footerMedallionImg from './assets/footer-medallion-new.png'; // Chris's bottom-left medallion (4.2.0)
+
+// Footer medallion sizing. It is deliberately taller than the footer bar so it
+// runs top-to-bottom and hangs over the bottom edge; the mask fades the last
+// stretch out so the clip at the window edge is invisible rather than a cut.
+const FOOTER_MEDALLION_H = 132;
+const FOOTER_MEDALLION_OVERHANG = 26;
+const FOOTER_MEDALLION_MASK =
+  'linear-gradient(to bottom, #000 0%, #000 78%, rgba(0,0,0,0.55) 90%, rgba(0,0,0,0) 100%)';
 
 const tabs = [
   // Write / story tools first, then Quantum Lab
@@ -189,7 +197,7 @@ function MainLayout() {
       {/* Main Layout Wrap */}
       <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100vh' }}>
         {/* Header — medallion | signature | photo | title | controls (4.0.9) */}
-        <div className="header-cosmic" style={{ flexShrink: 0, position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center', background: '#000000', height: 220, overflow: 'hidden', width: '100%' }}>
+        <div className="header-cosmic" style={{ flexShrink: 0, position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center', background: '#020516', height: 220, overflow: 'hidden', width: '100%' }}>
 
           {/* 1. Medallion logo — fills full header height top-to-bottom */}
           <img
@@ -474,10 +482,18 @@ function MainLayout() {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '8px 16px',
-            background: 'rgba(4,8,18,0.96)',
+            // Sampled off the medallion's own corner (#020516) — near-black,
+            // but navy rather than pure black, so there is no seam where the
+            // artwork meets the bar. The plate colour further in is #17223A if
+            // this ever wants to be lighter.
+            background: '#020516',
             borderTop: '1px solid rgba(0,229,255,0.22)',
             boxShadow: '0 -1px 20px rgba(168,85,247,0.15)',
-            flexShrink: 0
+            flexShrink: 0,
+            // The medallion is taller than this bar and hangs past the bottom
+            // on purpose. Clip it here so it can't push the window taller.
+            position: 'relative',
+            overflow: 'hidden',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -487,12 +503,21 @@ function MainLayout() {
               alt="Lyricist Goes Quantum — Quantum Lab"
               data-help="Christopher Funk — the founder of CFunky Creations LLC, the one-man shop that builds Lyricist and other free AI tools out of Austin, Texas."
               style={{
-                width: 200,
-                height: 100,
-                objectFit: 'cover',
-                objectPosition: 'center',
-                borderRadius: 10,
+                // Runs the full height of the footer and overhangs the bottom —
+                // never cropped ('cover' used to squash it into a letterbox
+                // strip) and never letterboxed inside a short box either. The
+                // negative margins let it bleed past the bar top and bottom;
+                // the mask fades the overhanging part out so the clip at the
+                // window edge doesn't read as a chopped-off image.
+                height: FOOTER_MEDALLION_H,
+                width: 'auto',
+                objectFit: 'contain',
+                objectPosition: 'center top',
+                marginTop: -8,
+                marginBottom: -(FOOTER_MEDALLION_OVERHANG + 8),
                 flexShrink: 0,
+                WebkitMaskImage: FOOTER_MEDALLION_MASK,
+                maskImage: FOOTER_MEDALLION_MASK,
                 filter: 'drop-shadow(0 0 10px #00f0ff) drop-shadow(0 0 22px rgba(192,38,255,0.5)) drop-shadow(0 0 36px rgba(0,255,156,0.25))'
               }}
             />
