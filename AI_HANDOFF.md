@@ -179,6 +179,29 @@ opaque backdrop already has one — its own root background.
 
 ## Status
 
+### Done (as of build 4.2.0.054)
+- **COLLABORATION SHIPPED — peer to peer, joined with a code.** The thing he asked for twice.
+  `src/components/Collab/CollabTab.jsx` + `src/services/collabSession.js`, tab id `collab`. Yjs
+  CRDTs over y-webrtc (both MIT). Start a session → a 12-character code (no I/O/0/1, it gets read
+  down a phone) → they type it in → both writing in the same text, merging live.
+  - **No account, no server holding the song, nothing that can start charging.** A signalling
+    server only introduces the peers. It never sees the code (room id = SHA-256 of it) and never
+    sees the song (the code doubles as the room password, so signalling traffic is ciphertext).
+    Free Google STUN. **No TURN on purpose** — a relay means someone else's server carrying the
+    song, and a bill.
+  - **Test it with two SEPARATE pages.** y-webrtc allows one peer per page and throws from inside
+    an async key derivation, so a same-page test fails as an uncatchable unhandled rejection and
+    proves nothing. Verified across two pages: concurrent edits merged (one rewrote line 1 while
+    the other appended line 2, both survived), and a wrong code is fully isolated.
+  - **CSP:** `connect-src` falls back to `default-src`, which has no `wss:`. Without the explicit
+    `connect-src` added to `main.js`, collab works in the dev browser and silently dies in the
+    packaged app. **Check any new network feature against that CSP.**
+  - **The free signalling servers are dying** — of the three that used to be standard only
+    `y-webrtc.fly.dev` and `y-webrtc-eu.fly.dev` still answer; `signaling.yjs.dev` no longer
+    resolves. Both are probed on tab load, the UI says so plainly when unreachable (otherwise it
+    looks identical to "nobody joined yet"), and a user can paste their own server under Advanced
+    without a new build. If collab "doesn't connect", test those URLs first.
+
 ### Done (as of build 4.2.0.053)
 - **The sample library takes uploads again, and the audio finally lives in its own store.**
   Chris: *"I can't upload either folders or files in my sample library."* The cause was mine —
