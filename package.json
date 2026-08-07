@@ -13,9 +13,10 @@
     "electron": "electron .",
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
-    "release": "node scripts/release.mjs",
+    "release": "node scripts/preflight.mjs && node scripts/release.mjs",
     "release:same": "node scripts/release.mjs --no-bump",
-    "release:dir": "node scripts/release.mjs --dir"
+    "release:dir": "node scripts/release.mjs --dir",
+    "preflight": "node scripts/preflight.mjs"
   },
   "build": {
     "appId": "com.cfunkycreations.lyricist",
@@ -51,7 +52,9 @@
     "jszip": "^3.10.1",
     "lucide-react": "^0.303.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "y-webrtc": "^10.3.0",
+    "yjs": "^13.6.32"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.2.0",

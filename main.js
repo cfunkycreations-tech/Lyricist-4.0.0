@@ -685,7 +685,14 @@ app.whenReady().then(() => {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://fonts.gstatic.com https://openrouter.ai https://api.replicate.com https://replicate.delivery https://api.datamuse.com https://api.dictionaryapi.dev https://img.buymeacoffee.com https://generativelanguage.googleapis.com data: blob:; " +
-          "media-src 'self' https: blob: data: mediastream:;"
+          "media-src 'self' https: blob: data: mediastream:; " +
+          // Collaboration (4.2.0) needs a WebSocket to a signalling server to
+          // introduce two peers to each other. connect-src falls back to
+          // default-src, which has no wss:, so without this line collab works
+          // in the dev browser and silently fails in the packaged app — the
+          // worst kind of bug. The song itself never goes through it: signalling
+          // only swaps connection details, then the peers talk directly.
+          "connect-src 'self' wss: https: blob: data:;"
         ],
       },
     });

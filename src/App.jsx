@@ -16,6 +16,7 @@ import ToolsHub from './components/ToolsHub/ToolsHub.jsx';
 import AlbumArchitect from './components/AlbumArchitect/AlbumArchitect.jsx';
 import SunoPlayer from './components/AudioPlayer/SunoPlayer.jsx';
 import RecordingBooth from './components/Recordings/RecordingBooth.jsx';
+import CollabTab from './components/Collab/CollabTab.jsx';
 import MasteringStudio from './components/MasteringStudio/MasteringStudio.jsx';
 import QuantumLab from './components/QuantumLab/QuantumLab.jsx';
 import LoopStation from './components/LoopStation/LoopStation.jsx';
@@ -48,6 +49,7 @@ const tabs = [
   { id: 'analyzer', icon: '👻', label: 'Ghost Rider', help: 'Studies any artist you name and breaks down how they write, then helps you write a NEW song in that same style. (It does not copy their actual lyrics.)' },
   { id: 'songforge', icon: '🪄', label: 'Song Forge', help: 'Auto-generate a full song and cover art using your single OpenRouter key (lyrics + Nano Banana image models on OpenRouter). Song First or Art First. No Google AI Studio key.' },
   { id: 'quantum', icon: '⚛️', label: 'Quantum Lab', help: 'Build a verse by playing with a grid of word tiles (the lattice). Heat words up, let energy spread, lock rhymes with Crystallize, then Generate Neural Lyrics for a real 4-line verse. Send to Songwriter or Song Forge in one click. Needs your OpenRouter key for generate.' },
+  { id: 'collab', icon: '🤝', label: 'Collaboration', help: 'Write a song with someone else at the same time, wherever they are. Start a session, send them the code, and you are both typing on the same page. Peer to peer — the words go straight between your two computers. No account, no server holding your song, free forever.' },
   { id: 'loopstation', icon: '🔁', label: 'RC-Funk 5000', help: 'Live multi-track loop station (Boss RC-style). Record loops on up to 4 tracks, stack layers, control volume, undo a track. Fully offline. Great for riffs and vocal hooks while you write.' },
   { id: 'stemmer', icon: '🎛️', label: 'Stemmer', help: 'Split a full mix into Vocals, Drums, Bass, Guitar, Keys, and Other. Offline mode (default) is free, light CPU, no key, no GPU. Optional Cloud mode uses a Replicate API key for pro Demucs stems on their servers.' },
   { id: 'booth', icon: '🎤', label: 'Recording Booth', help: 'Record harmonica, guitar, or vocals straight into the app (or upload takes) and keep them in a saved library. Play them in the persistent player while you write, convert them to MIDI, or export them as WAV.' },
@@ -436,6 +438,16 @@ function MainLayout() {
           </TabPane>
           <TabPane id="stemmer" active={activeTab} opened={openedTabs}>
             <Stemmer />
+          </TabPane>
+          <TabPane id="collab" active={activeTab} opened={openedTabs}>
+            <CollabTab
+              onSendToSongwriter={handleQuantumToSongwriter}
+              // Songwriter keeps lyrics as sections of lines; the shared page is
+              // plain text, so flatten it with the section names as headers.
+              currentLyrics={(store?.lyrics || [])
+                .map((s) => `[${s.type || 'verse'}]\n${(s.lines || []).map((l) => l.text || '').join('\n')}`)
+                .join('\n\n')}
+            />
           </TabPane>
           <TabPane id="booth" active={activeTab} opened={openedTabs}>
             <RecordingBooth onNavigate={setActiveTab} />
