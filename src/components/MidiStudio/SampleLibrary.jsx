@@ -6,7 +6,7 @@ import {
   listPacks, createPack, deletePack, renamePack,
   listSamples, deleteSample, updateSample,
   getSampleBuffer, importFiles, librarySize, formatBytes,
-  exportLibrary, importLibrary, clearLibrary,
+  exportLibrary, importLibrary, clearLibrary, migrateLegacyBlobs,
   AUDIO_EXTS, MAX_LIBRARY_BYTES,
 } from '../../services/sampleLibrary.js';
 
@@ -15,7 +15,9 @@ import {
 // bought) and play them from the piano roll. Everything is stored locally in
 // IndexedDB on this machine; nothing is uploaded anywhere.
 
-export default function SampleLibrary({ onUseSample }) {
+// `fxInput` returns the shared roll/sampler effects rack, so a preview here
+// sounds like what the piano roll will actually play.
+export default function SampleLibrary({ onUseSample, fxInput }) {
   const [packs, setPacks] = useState([]);
   const [activePackId, setActivePackId] = useState(null);
   const [samples, setSamples] = useState([]);
@@ -48,6 +50,28 @@ export default function SampleLibrary({ onUseSample }) {
   useEffect(() => { refreshPacks(); }, [refreshPacks]);
   useEffect(() => { refreshSamples(activePackId); }, [activePackId, refreshSamples]);
 
+  // A library written before the audio was split into its own store still has
+  // the audio sitting on the sample rows, which makes every listing read the
+  // whole thing off disk. Move it across quietly the first time this tab opens.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await migrateLegacyBlobs((done, total) => {
+          if (!cancelled && total > 8) setNote(`Tidying the library — ${done} / ${total}…`);
+        });
+        if (!cancelled && res.moved > 8) {
+          setNote(`Library tidied — ${res.moved} samples moved to the faster layout.`);
+        } else if (!cancelled && res.moved) {
+          setNote('');
+        }
+      } catch (err) {
+        console.warn('[sample library] migration skipped:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const activePack = packs.find((p) => p.id === activePackId) || null;
   // "All Packs" searches the whole library; otherwise you stay inside one pack
   // instead of wading through every sample you own.
@@ -65,18 +89,102 @@ export default function SampleLibrary({ onUseSample }) {
     return p.id;
   };
 
+  /**
+   * Import via the desktop app's own file dialog.
+   *
+   * `mode` is 'files' or 'folder'. Paths come back from the main process, then
+   * each file is pulled across one at a time and handed to the same import that
+   * drag-and-drop uses — so a folder of thousands never sits in memory at once.
+   * Returns false when there is no desktop bridge, so the caller can fall back
+   * to the plain file input in a browser.
+   */
+  const pickNative = async (mode) => {
+    const api = window.lyricistAPI;
+    if (!api?.pickSampleFiles) return false;
+
+    const res = mode === 'folder' ? await api.pickSampleFolder() : await api.pickSampleFiles();
+    if (!res?.ok) {
+      setNote(`Could not open the file picker: ${res?.error || 'unknown error'}`);
+      return true;
+    }
+    if (res.canceled) return true;
+    if (!res.paths.length) {
+      setNote(mode === 'folder'
+        ? 'That folder had no audio in it — looked for WAV, MP3, OGG, FLAC, AIFF, M4A and .zip packs, including subfolders.'
+        : 'No files were selected.');
+      return true;
+    }
+
+    const packId = await ensurePack();
+    setBusy({ done: 0, total: res.paths.length });
+    let added = 0, skipped = 0;
+    const errors = [];
+    for (let i = 0; i < res.paths.length; i++) {
+      const p = res.paths[i];
+      try {
+        const file = await api.readSampleFile(p);
+        if (!file?.ok) throw new Error(file?.error || 'could not be read');
+        const blob = new File([new Uint8Array(file.bytes)], file.name);
+        const one = await importFiles(packId, [blob]);
+        added += one.added;
+        skipped += one.skipped;
+        errors.push(...one.errors);
+      } catch (err) {
+        errors.push(`${p.split(/[\\/]/).pop()}: ${err.message}`);
+      }
+      setBusy({ done: i + 1, total: res.paths.length });
+    }
+    setBusy(null);
+    setNote(summarize({ added, skipped, errors }));
+    if (errors.length) console.warn('[sample library] import errors:', errors);
+    await refreshPacks();
+    await refreshSamples(packId);
+    return true;
+  };
+
+  /** One honest sentence about what happened, including WHY anything failed. */
+  const summarize = (res) => {
+    let msg = `Added ${res.added} sample${res.added === 1 ? '' : 's'}`;
+    if (res.skipped) msg += ` · skipped ${res.skipped} non-audio`;
+    if (res.errors.length) {
+      const reasons = new Map();
+      for (const e of res.errors) {
+        const why = e.slice(e.indexOf(': ') + 2);
+        reasons.set(why, (reasons.get(why) || 0) + 1);
+      }
+      const top = [...reasons.entries()].sort((a, b) => b[1] - a[1]).slice(0, 2);
+      msg += ` · ${res.errors.length} failed — `
+        + top.map(([why, n]) => (n > 1 ? `${why} (${n} files)` : why)).join('; ');
+    }
+    return msg;
+  };
+
   const handleFiles = async (fileList) => {
     const files = [...fileList];
-    if (!files.length) return;
+    if (!files.length) {
+      // A folder with no audio in it, or a cancelled dialog, used to return in
+      // silence — indistinguishable from the button being broken.
+      setNote('Nothing came through — no files were selected, or the folder had no audio in it.');
+      return;
+    }
     const packId = await ensurePack();
     setBusy({ done: 0, total: files.length });
-    const res = await importFiles(packId, files, (done, total) => setBusy({ done, total }));
+    let res;
+    try {
+      res = await importFiles(packId, files, (done, total) => setBusy({ done, total }));
+    } catch (err) {
+      setBusy(null);
+      setNote(`Import failed: ${err.message}`);
+      return;
+    }
     setBusy(null);
-    setNote(
-      `Added ${res.added} sample${res.added === 1 ? '' : 's'}` +
-      (res.skipped ? ` · skipped ${res.skipped} non-audio` : '') +
-      (res.errors.length ? ` · ${res.errors.length} failed` : '')
-    );
+
+    // SAY WHY. The reasons were being collected and then thrown away, so a
+    // failed import read as "Added 0 samples · 412 failed" and left you with no
+    // idea whether the files were too big, the library was full, or the app was
+    // broken.
+    setNote(summarize(res));
+    if (res.errors.length) console.warn('[sample library] import errors:', res.errors);
     await refreshPacks();
     await refreshSamples(packId);
   };
@@ -116,7 +224,7 @@ export default function SampleLibrary({ onUseSample }) {
       src.loop = Boolean(sample.loop);
       const g = ctx.createGain();
       g.gain.value = 0.9;
-      src.connect(g).connect(getMasterBus());
+      src.connect(g).connect(fxInput ? fxInput() : getMasterBus());
       src.onended = () => {
         if (playingRef.current.get(sample.id)?.src === src) {
           playingRef.current.delete(sample.id);
@@ -165,7 +273,7 @@ export default function SampleLibrary({ onUseSample }) {
 
           <button
             className="suno-chip"
-            onClick={() => fileRef.current?.click()}
+            onClick={async () => { if (!(await pickNative('files'))) fileRef.current?.click(); }}
             data-help="Pick audio files, or a .zip sample pack — the zip is unpacked automatically and every sound inside is imported."
           >
             <Upload size={12} /> Add Files
@@ -194,7 +302,7 @@ export default function SampleLibrary({ onUseSample }) {
 
           <button
             className="suno-chip"
-            onClick={() => folderRef.current?.click()}
+            onClick={async () => { if (!(await pickNative('folder'))) folderRef.current?.click(); }}
             data-help="Import a whole folder of samples at once, including everything in its subfolders."
           >
             <Upload size={12} /> Add Folder
@@ -307,8 +415,15 @@ export default function SampleLibrary({ onUseSample }) {
       </div>
 
       {note && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.66rem', color: 'rgba(52,211,153,0.9)' }}>
-          {note}
+        // Red when something went wrong. A failure reported in the same calm
+        // green as a success is a failure you scroll straight past.
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: '0.66rem', lineHeight: 1.5,
+          color: /failed|Nothing came through|full|over the|Could not/i.test(note)
+            ? 'rgba(248,113,113,0.95)'
+            : 'rgba(52,211,153,0.9)',
+        }}>
+          <span style={{ flex: 1, minWidth: 0 }}>{note}</span>
           <button onClick={() => setNote('')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', display: 'flex' }}>
             <X size={11} />
           </button>

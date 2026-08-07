@@ -38,6 +38,25 @@ ipcMain.handle('app-log', async (event, { message }) => {
   return { ok: true };
 });
 
+// Monitors attached right now, so the visualizer can be thrown onto whichever
+// one you want. `screen` can only be read once the app is ready, hence the lazy
+// require. Windows leaves `label` empty on most monitors, so fall back to a
+// number and hand back the resolution too — "Screen 2 · 2560x1440" tells you
+// which panel it is without knowing any monitor's model name.
+ipcMain.handle('list-displays', async () => {
+  const { screen } = require('electron');
+  const primaryId = screen.getPrimaryDisplay().id;
+  return screen.getAllDisplays().map((d, i) => ({
+    id: d.id,
+    index: i + 1,
+    label: (d.label || '').trim() || `Screen ${i + 1}`,
+    bounds: d.bounds,
+    workArea: d.workArea,
+    scaleFactor: d.scaleFactor,
+    isPrimary: d.id === primaryId,
+  }));
+});
+
 // Save a Ghost Rider style report as a .txt file in the user's Documents folder.
 // Called from the UI via the preload bridge (window.lyricistAPI.saveReport).
 ipcMain.handle('save-report', async (event, { filename, content }) => {
@@ -87,6 +106,78 @@ ipcMain.handle('save-recording', async (event, { filename, bytes }) => {
     return { ok: true, path: full };
   } catch (e) {
     return { ok: false, error: e.message };
+  }
+});
+
+/* ── Sample library pickers (4.2.0) ─────────────────────────────────────
+   The library used to rely on a plain <input type="file"> to get at samples.
+   Inside Electron that is the fragile path: it is at the mercy of the
+   permission handler and, when it fails, it fails INVISIBLY — the dialog just
+   never appears and it looks like the button is dead. Chris's report was
+   exactly that: "I can't upload either folders or files."
+
+   These handlers own the job instead. The main process opens the real OS
+   dialog, walks a chosen folder itself (no webkitdirectory quirks, and it can
+   skip junk before anything is read), and hands back paths. Audio is then
+   fetched one file at a time so a 5,000-sample folder never has to sit in
+   memory all at once. */
+const SAMPLE_EXTS = ['.wav', '.mp3', '.ogg', '.flac', '.aif', '.aiff', '.m4a', '.webm', '.opus'];
+const isSampleFile = (f) => SAMPLE_EXTS.some((e) => f.toLowerCase().endsWith(e));
+
+ipcMain.handle('pick-sample-files', async (event) => {
+  try {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const res = await require('electron').dialog.showOpenDialog(win, {
+      title: 'Add samples',
+      properties: ['openFile', 'multiSelections'],
+      filters: [
+        { name: 'Audio & sample packs', extensions: [...SAMPLE_EXTS.map((e) => e.slice(1)), 'zip'] },
+        { name: 'All files', extensions: ['*'] },
+      ],
+    });
+    return { ok: true, canceled: res.canceled, paths: res.filePaths || [] };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('pick-sample-folder', async (event) => {
+  try {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const res = await require('electron').dialog.showOpenDialog(win, {
+      title: 'Add a folder of samples',
+      properties: ['openDirectory'],
+    });
+    if (res.canceled || !res.filePaths?.length) return { ok: true, canceled: true, paths: [] };
+
+    // Walk it here rather than shipping a whole directory tree to the renderer.
+    const out = [];
+    const walk = (dir, depth = 0) => {
+      if (depth > 12 || out.length > 20000) return;      // no runaway on a symlink loop
+      let entries = [];
+      try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+      for (const entry of entries) {
+        if (entry.name.startsWith('.')) continue;
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full, depth + 1);
+        else if (isSampleFile(entry.name) || entry.name.toLowerCase().endsWith('.zip')) out.push(full);
+      }
+    };
+    walk(res.filePaths[0]);
+    return { ok: true, canceled: false, paths: out, root: res.filePaths[0] };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+/** Read ONE sample off disk. One at a time, on purpose — see the note above. */
+ipcMain.handle('read-sample-file', async (event, { filePath }) => {
+  try {
+    const stat = fs.statSync(filePath);
+    const bytes = fs.readFileSync(filePath);
+    return { ok: true, name: path.basename(filePath), size: stat.size, bytes };
+  } catch (e) {
+    return { ok: false, error: e.message, name: path.basename(String(filePath || '')) };
   }
 });
 
@@ -423,6 +514,43 @@ function createWindow() {
   installEditMenu();
   attachContextMenu(win);
 
+  // The visualizer popout. It has to be a window.open() child rather than a
+  // BrowserWindow we build here, because Butterchurn visualises a live
+  // AudioNode — and a separate renderer cannot reach the master bus, so a
+  // hand-built window would render silent, frozen graphics. A same-origin
+  // window.open child shares the renderer process, so the popout can draw using
+  // the AudioContext that is already playing.
+  //
+  // All this handler does is put that child on the monitor the UI picked.
+  win.webContents.setWindowOpenHandler(({ frameName, features }) => {
+    if (frameName !== 'lyricist-visualizer') return { action: 'deny' };
+    const num = (key) => {
+      const m = new RegExp(`(?:^|,)${key}=(-?\\d+)`).exec(features || '');
+      return m ? Number(m[1]) : undefined;
+    };
+    return {
+      action: 'allow',
+      overrideBrowserWindowOptions: {
+        x: num('left'),
+        y: num('top'),
+        width: num('width') || 1280,
+        height: num('height') || 720,
+        backgroundColor: '#000000',
+        title: 'Lyricist Visualizer',
+        autoHideMenuBar: true,
+        // Fullscreen on the target monitor is the point of the feature. The
+        // popout draws its own Close button, and Escape closes it, so this is
+        // never a window you can't get out of.
+        fullscreen: true,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true,
+          preload: path.join(__dirname, 'preload.js'),
+        },
+      },
+    };
+  });
+
   let shown = false;
   const reveal = (why) => {
     if (shown || win.isDestroyed()) return;
@@ -563,11 +691,20 @@ app.whenReady().then(() => {
     });
   });
 
-  // 4.1.3: MIDI Studio records voice memos via getUserMedia — grant the mic
-  // (and only the mic/media class of permissions) inside the packaged app.
+  // 4.1.3: MIDI Studio records voice memos via getUserMedia — grant the mic.
+  // 4.2.0: 'fileSystem' joins it. Everything the app reads is a file the user
+  // picked themselves — sample packs, backups, audio to master — and a blanket
+  // deny here is invisible from inside the app: the picker simply does nothing
+  // and it looks like the button is broken. Still a deny-by-default list; the
+  // things worth refusing (geolocation, notifications, opening links, reading
+  // the clipboard) are all still refused.
+  const ALLOWED_PERMISSIONS = new Set(['media', 'fileSystem', 'clipboard-sanitized-write']);
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-    callback(permission === 'media');
+    callback(ALLOWED_PERMISSIONS.has(permission));
   });
+  // Same list for the synchronous check Chromium makes before showing a picker.
+  session.defaultSession.setPermissionCheckHandler((webContents, permission) =>
+    ALLOWED_PERMISSIONS.has(permission));
 
   createWindow();
 

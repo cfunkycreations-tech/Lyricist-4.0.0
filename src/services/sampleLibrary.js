@@ -7,33 +7,52 @@
  * computer they were licensed on.
  *
  * Audio is kept as the original file bytes (ArrayBuffer) and decoded on demand,
- * so a 2 GB library costs nothing until you actually play something.
+ * so a big library costs nothing until you actually play something.
  *
  * Layout:
  *   packs   — a folder: { id, name, created, note }
- *   samples — one audio file: { id, packId, name, type, size, rootMidi, bytes }
+ *   samples — metadata ONLY: { id, packId, name, type, size, rootMidi }
+ *   blobs   — the audio, on its own: { id, bytes }
+ *   meta    — running totals
+ *
+ * THE SPLIT MATTERS. Audio used to live on the sample row itself, which meant
+ * every "what's in my library" question dragged the audio along with it: a
+ * cursor over the samples store deserializes each record whole, so listing the
+ * NAMES of a 12 GB library read 12 GB off the disk. Keeping the bytes in their
+ * own store means metadata reads stay metadata reads, and the only thing that
+ * ever loads audio is playing a sound.
+ *
+ * Old rows are migrated on the fly (see `migrateLegacyBlobs`), so a library
+ * built before the split keeps working while it moves itself across.
  */
 
 const DB_NAME = 'lyricistSampleLibrary';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const PACKS = 'packs';
 const SAMPLES = 'samples';
+const BLOBS = 'blobs';      // audio only — never read to list, count or size
 const META = 'meta';        // running totals, so nothing has to read the audio
 
 export const AUDIO_EXTS = ['.wav', '.mp3', '.ogg', '.flac', '.aif', '.aiff', '.m4a', '.webm', '.opus'];
 export const ARCHIVE_EXTS = ['.zip'];
 
 /**
- * Limits, because there weren't any.
+ * Limits — deliberately high enough to stay out of the way.
  *
- * A 12 GB library got built up one drag-and-drop at a time, and the app has to
- * hold a sample's bytes to store or play it — so an unbounded library is an
- * unbounded memory cost. The library is a shelf for the sounds you reach for,
- * not a second copy of your hard drive: keep the originals in your own folders
- * and load in the ones you actually use.
+ * These started at 60 MB per file and 2 GB total, which was the wrong answer to
+ * the right problem. The crash they were guarding against was never really
+ * about how much was STORED: it was `listSamples()` pulling every sample's
+ * audio through memory just to read names. That is fixed properly now — audio
+ * lives in its own store (see the layout note above) and nothing but playback
+ * ever touches it. The caps outlived their reason and turned into "I can't
+ * upload anything", on a machine holding a 12 GB library.
+ *
+ * What is left is a sanity guard, not a budget. A single sample is capped at
+ * something no real one-shot or loop approaches, and the library total is
+ * capped well past any working collection. Storage is on disk, not in memory.
  */
-export const MAX_FILE_BYTES = 60 * 1024 * 1024;         // 60 MB — a long stereo wav
-export const MAX_LIBRARY_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB total
+export const MAX_FILE_BYTES = 1024 * 1024 * 1024;             // 1 GB per sample
+export const MAX_LIBRARY_BYTES = 128 * 1024 * 1024 * 1024;    // 128 GB total
 
 export class LibraryLimitError extends Error {
   constructor(message) {
@@ -60,10 +79,29 @@ function openDB() {
       if (!db.objectStoreNames.contains(META)) {
         db.createObjectStore(META, { keyPath: 'key' });
       }
+      // v3: audio moves out of the sample rows into its own store. The existing
+      // rows are NOT rewritten here — an upgrade transaction blocks the whole
+      // app, and rewriting a 12 GB library inside one would look exactly like
+      // the freeze this schema change exists to prevent. They move across as
+      // they are touched, or in the background sweep.
+      if (!db.objectStoreNames.contains(BLOBS)) {
+        db.createObjectStore(BLOBS, { keyPath: 'id' });
+      }
     };
-    req.onsuccess = () => resolve(req.result);
+    // A schema bump waits for every other connection to close. Without this,
+    // an old connection left open anywhere turns the upgrade into a silent
+    // forever-wait and the library just never loads.
+    req.onblocked = () => reject(new Error(
+      'The sample library is open somewhere else and is blocking an upgrade. Close any other Lyricist window and try again.'));
+    req.onsuccess = () => {
+      const db = req.result;
+      // If another tab bumps the version later, let go rather than wedge it.
+      db.onversionchange = () => { db.close(); dbPromise = null; };
+      resolve(db);
+    };
     req.onerror = () => reject(req.error);
   });
+  dbPromise.catch(() => { dbPromise = null; });   // a failed open must not be cached
   return dbPromise;
 }
 
@@ -79,6 +117,23 @@ function tx(store, mode, fn) {
       return;
     }
     t.oncomplete = () => resolve(result?.result !== undefined ? result.result : result);
+    t.onerror = () => reject(t.error);
+    t.onabort = () => reject(t.error);
+  }));
+}
+
+/** Multi-store transaction — metadata and its audio must land together. */
+function txMulti(stores, mode, fn) {
+  return openDB().then((db) => new Promise((resolve, reject) => {
+    const t = db.transaction(stores, mode);
+    let result;
+    try {
+      result = fn(...stores.map((name) => t.objectStore(name)));
+    } catch (err) {
+      reject(err);
+      return;
+    }
+    t.oncomplete = () => resolve(result);
     t.onerror = () => reject(t.error);
     t.onabort = () => reject(t.error);
   }));
@@ -117,7 +172,9 @@ export async function renamePack(id, name) {
 
 export async function deletePack(id) {
   const samples = await listSamples(id);
-  await tx(SAMPLES, 'readwrite', (s) => { samples.forEach((smp) => s.delete(smp.id)); });
+  await txMulti([SAMPLES, BLOBS], 'readwrite', (store, blobs) => {
+    samples.forEach((smp) => { store.delete(smp.id); blobs.delete(smp.id); });
+  });
   await tx(PACKS, 'readwrite', (s) => s.delete(id));
   await addToTotal(-samples.reduce((sum, smp) => sum + (smp.size || 0), 0));
   samples.forEach((smp) => bufferCache.delete(smp.id));
@@ -217,7 +274,7 @@ export async function addSample(packId, file, { rootMidi = 60, budget = null } =
   if (budget) budget.used += file.size;
 
   const bytes = await file.arrayBuffer();
-  const row = {
+  const meta = {
     id: newId(),
     packId,
     name: file.name.replace(/\.[^.]+$/, ''),
@@ -226,22 +283,34 @@ export async function addSample(packId, file, { rootMidi = 60, budget = null } =
     size: bytes.byteLength,
     rootMidi,
     created: Date.now(),
-    bytes,
   };
-  await tx(SAMPLES, 'readwrite', (s) => s.put(row));
-  await addToTotal(row.size);
-  const { bytes: _omit, ...meta } = row;
+  // Metadata and audio in one transaction: a sample row without its audio (or
+  // an orphaned blob) would be a permanent little corruption.
+  await txMulti([SAMPLES, BLOBS], 'readwrite', (samples, blobs) => {
+    samples.put(meta);
+    blobs.put({ id: meta.id, bytes });
+  });
+  await addToTotal(meta.size);
   return meta;
 }
 
 export async function updateSample(id, patch) {
   const row = await tx(SAMPLES, 'readonly', (s) => s.get(id));
   if (!row) return null;
-  const next = { ...row, ...patch, id: row.id, bytes: row.bytes };
-  await tx(SAMPLES, 'readwrite', (s) => s.put(next));
+  // Renaming a sample must not rewrite its audio. Legacy rows still carry
+  // `bytes`; migrate this one across rather than writing the audio back out.
+  const { bytes: legacy, ...current } = row;
+  const next = { ...current, ...patch, id: row.id };
+  if (legacy) {
+    await txMulti([SAMPLES, BLOBS], 'readwrite', (samples, blobs) => {
+      samples.put(next);
+      blobs.put({ id: row.id, bytes: legacy });
+    });
+  } else {
+    await tx(SAMPLES, 'readwrite', (s) => s.put(next));
+  }
   bufferCache.delete(id);
-  const { bytes: _omit, ...meta } = next;
-  return meta;
+  return next;
 }
 
 /**
@@ -254,7 +323,7 @@ export async function clearLibrary() {
   // computing it walks every record, audio and all, which is what made this
   // hang on a large library instead of emptying it.
   const samples = await countSamples();
-  await tx(SAMPLES, 'readwrite', (s) => s.clear());
+  await txMulti([SAMPLES, BLOBS], 'readwrite', (s, b) => { s.clear(); b.clear(); });
   await tx(PACKS, 'readwrite', (s) => s.clear());
   await setTotalBytes(0);
   bufferCache.clear();
@@ -262,8 +331,12 @@ export async function clearLibrary() {
 }
 
 export async function deleteSample(id) {
+  // Read the row for its size only — `size` is metadata, so this costs nothing.
   const row = await tx(SAMPLES, 'readonly', (s) => s.get(id));
-  await tx(SAMPLES, 'readwrite', (s) => s.delete(id));
+  await txMulti([SAMPLES, BLOBS], 'readwrite', (samples, blobs) => {
+    samples.delete(id);
+    blobs.delete(id);
+  });
   if (row?.size) await addToTotal(-row.size);
   bufferCache.delete(id);
 }
@@ -272,15 +345,65 @@ export async function deleteSample(id) {
 
 const bufferCache = new Map(); // sampleId -> AudioBuffer
 
+/**
+ * Fetch a sample's raw audio. Blob store first; a library written before the
+ * split still keeps its audio on the sample row, so fall back to that and move
+ * it across on the way past.
+ */
+async function readBytes(id) {
+  const blob = await tx(BLOBS, 'readonly', (s) => s.get(id));
+  if (blob?.bytes) return blob.bytes;
+
+  const row = await tx(SAMPLES, 'readonly', (s) => s.get(id));
+  if (!row?.bytes) return null;
+  const { bytes, ...meta } = row;
+  await txMulti([SAMPLES, BLOBS], 'readwrite', (samples, blobs) => {
+    samples.put(meta);                 // row is now metadata-only
+    blobs.put({ id, bytes });
+  });
+  return bytes;
+}
+
 /** Decode a stored sample to an AudioBuffer, cached after the first play. */
 export async function getSampleBuffer(ctx, id) {
   if (bufferCache.has(id)) return bufferCache.get(id);
-  const row = await tx(SAMPLES, 'readonly', (s) => s.get(id));
-  if (!row?.bytes) throw new Error('Sample not found');
+  const bytes = await readBytes(id);
+  if (!bytes) throw new Error('Sample not found');
   // decodeAudioData detaches the buffer, so hand it a copy and keep the original.
-  const buf = await ctx.decodeAudioData(row.bytes.slice(0));
+  const buf = await ctx.decodeAudioData(bytes.slice(0));
   bufferCache.set(id, buf);
   return buf;
+}
+
+/**
+ * Walk any pre-split rows and move their audio into the blob store, one at a
+ * time so only a single sample is ever in memory. Safe to call repeatedly and
+ * safe to abandon half-done: every path handles both layouts.
+ *
+ * Until a library finishes this, listing it still reads the old rows whole —
+ * which is the slowness this whole change exists to remove.
+ */
+export async function migrateLegacyBlobs(onProgress = () => {}) {
+  const ids = await tx(SAMPLES, 'readonly', (s) => new Promise((resolve, reject) => {
+    const out = [];
+    const req = s.openCursor();
+    req.onsuccess = () => {
+      const cursor = req.result;
+      if (!cursor) { resolve(out); return; }
+      if (cursor.value.bytes) out.push(cursor.value.id);
+      cursor.continue();
+    };
+    req.onerror = () => reject(req.error);
+  }));
+
+  let done = 0;
+  for (const id of ids) {
+    try {
+      await readBytes(id);            // the read is what moves it
+    } catch { /* skip a bad row rather than stall the whole sweep */ }
+    onProgress(++done, ids.length);
+  }
+  return { moved: done };
 }
 
 /**
@@ -370,8 +493,8 @@ export async function exportLibrary(onProgress = () => {}) {
     while (usedNames.has(entry)) entry = `${packFolder}/${safeName(row.name)} (${n++})${ext}`;
     usedNames.add(entry);
 
-    const stored = await tx(SAMPLES, 'readonly', (s) => s.get(row.id));
-    if (stored?.bytes) zip.file(entry, stored.bytes);
+    const bytes = await readBytes(row.id);
+    if (bytes) zip.file(entry, bytes);
     manifest.samples.push({
       entry,
       packId: row.packId,
@@ -429,9 +552,14 @@ export async function importLibrary(file, onProgress = () => {}) {
         size: bytes.byteLength,
         rootMidi: meta.rootMidi ?? 60,
         created: meta.created || Date.now(),
-        bytes,
       };
-      await tx(SAMPLES, 'readwrite', (s) => s.put(row));
+      await txMulti([SAMPLES, BLOBS], 'readwrite', (samples2, blobs) => {
+        samples2.put(row);
+        blobs.put({ id: row.id, bytes });
+      });
+      // Restoring never used to update the running total, so the size readout
+      // under-reported everything you brought back until something recomputed it.
+      await addToTotal(row.size);
       result.added++;
     } catch (err) {
       result.errors.push(`${meta.name}: ${err.message}`);
