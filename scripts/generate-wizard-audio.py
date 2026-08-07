@@ -99,14 +99,26 @@ def split_for_tts(text: str):
 
 
 def trim(w: np.ndarray) -> np.ndarray:
-    """Drop the padding the decoder leaves either side of the speech."""
+    """Drop the padding the decoder leaves either side of the speech.
+
+    Keep a generous head margin. A tight cut eats the attack of the first
+    consonant — at 20 ms "Quantum Lab" was landing as "Quant Lab" — and a
+    plosive that starts on sample zero clicks.
+    """
     peak = float(np.max(np.abs(w)))
     if peak <= 0:
         return w
     nz = np.where(np.abs(w) > peak * 0.015)[0]
     if not len(nz):
         return w
-    return w[max(0, nz[0] - int(0.02 * SR)): nz[-1] + int(0.03 * SR)]
+    clip = w[max(0, nz[0] - int(0.07 * SR)): nz[-1] + int(0.06 * SR)]
+    # 5 ms fades so no chunk boundary can click
+    n = int(0.005 * SR)
+    if len(clip) > 2 * n:
+        clip = clip.copy()
+        clip[:n] *= np.linspace(0, 1, n, dtype=np.float32)
+        clip[-n:] *= np.linspace(1, 0, n, dtype=np.float32)
+    return clip
 
 
 def synthesize(tts, text, voice=VOICE, speed=SPEED):
@@ -119,6 +131,9 @@ def synthesize(tts, text, voice=VOICE, speed=SPEED):
             pieces.append(waves[k]); k += 1
             pieces.append(np.zeros(int(GAP_SENTENCE * SR), np.float32))
         pieces[-1] = np.zeros(int(GAP_PARAGRAPH * SR), np.float32)
+    # A beat of silence up front: the <audio> element and the speakers both need
+    # a moment, and starting on the first phoneme sounds like a dropped word.
+    pieces.insert(0, np.zeros(int(0.12 * SR), np.float32))
     audio = np.concatenate(pieces)
     peak = float(np.max(np.abs(audio)))
     if peak > 0:
