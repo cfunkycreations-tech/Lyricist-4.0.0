@@ -180,6 +180,28 @@ opaque backdrop already has one — its own root background.
 ## Status
 
 ### Done (as of build 4.2.0.050)
+- **Header art is three pieces now, not one strip, and the header height scales.**
+  `header-banner.png` was a single 1880×440 strip carrying **534px of flat #020516 filler**
+  between its three elements. That filler forced a 4.3:1 aspect, so fitting the strip into the
+  width left beside the medallion collapsed its height — Chris rendered about a third as tall as
+  the medallion. Chris: *"I should be as tall as that goddamn logo on the left, and everything
+  else needs to be to scale."*
+  - Sliced into `header-signature.png` (394×230), `header-chris.png` (244×440) and
+    `header-wordmark.png` (768×403). Only empty filler was dropped — no artwork altered, and the
+    original strip is still committed. The strip's background is `#020516`, the header's own
+    colour, so the pieces are seamless.
+  - **The header height is no longer a fixed 300.** Everything in the bar sizes off that height,
+    so a fixed height forced the art to letterbox down on narrow windows while the medallion
+    stayed full size — that mismatch *was* the bug. It is now
+    `clamp(170px, calc((100vw - 210px) / 4.7), 300px)`; the 4.7 is the row's total width measured
+    in header-heights (medallion 1 + signature 0.90 + Chris 0.55 + wordmark 1.75 + gaps) plus
+    slack. Medallion and Chris are therefore the same height at every window width.
+  - Relative scale comes from the source art: signature 52% of Chris, wordmark 92%.
+  - **Don't put maxWidth caps on those images.** A cap letterboxes one piece and silently breaks
+    the scale while `getBoundingClientRect().height` still reports the full box — measure the
+    *visible* art (`min(rect.w/naturalW, rect.h/naturalH)`), not the box, or you will verify a
+    layout that is actually wrong.
+
 - **Quantum Lab has no command line any more.** The tab used to hide `/run`, `/crystallize`,
   `/generate`, `/send`, `/forge` and `/help` behind a slash-command text box parked at the very
   bottom of the page. Chris's words: *"Most people are not gonna know how to use a terminal, let
