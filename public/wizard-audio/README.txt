@@ -1,54 +1,54 @@
 LYRICIST 4.2.0 GOES QUANTUM — WIZARD NARRATION
 ==============================================
 
-Voice:   Supertonic F2 (female), speed 1.05, 16 denoiser steps
-Engine:  Supertonic TTS (ONNX) — onnx-community/Supertonic-TTS-2-ONNX, openrail
-Model:   V:\models\supertonic-2   (263 MB, downloaded once)
-Format:  MP3, 44.1 kHz mono, 96 kbps, loudness-normalised to -16 LUFS / -1.5 dBTP
+Voice:   Kokoro af_heart (American female), speed 1.0
+Engine:  Kokoro-82M ONNX — onnx-community/Kokoro-82M-v1.0-ONNX, Apache-2.0
+Model:   V:\models\kokoro\onnx\model.onnx (325 MB) + voices-en.bin (29 voices)
+Format:  MP3, 24 kHz mono, 96 kbps, loudness-normalised to -16 LUFS / -1.5 dBTP
 
 Regenerate:      python scripts/generate-wizard-audio.py
 Regenerate + QA: python scripts/generate-wizard-audio.py --qa
-Different voice: python scripts/generate-wizard-audio.py --voice F4
+Different voice: python scripts/generate-wizard-audio.py --voice af_bella
+List voices:     python scripts/generate-wizard-audio.py --voice ?
 One card:        python scripts/generate-wizard-audio.py --cards 5
 
-Runs entirely on this machine. No API key, no account, no network, no per-word
-cost — which is the point: the narration can always be rebuilt for free, and it
-cannot break because someone else changed an endpoint. (The previous take used
-Microsoft's Ava via edge-tts, which needed a live connection to their service.)
+The model is build-time only. It is NOT shipped in the installer — only these
+baked MP3s are. Runs entirely on this machine: no API key, no account, no
+network, no per-word cost. Nothing here can start charging money later or break
+because somebody else changed an endpoint.
 
-WHY F2
-------
-All five female voices were auditioned on the same line, then the audio was run
-back through speech recognition and scored against the script. F2 tied for the
-best word error rate AND stayed clean on the harder scripts full of product
-names. F5 measured best on pure spectrum but slurred "Spotlight heats" into
-"Spotlheats" — which is exactly why the ear test has to be a measurement and
-not a guess. Full ranking is in the commit message.
+ENGINE HISTORY, AND WHY
+  edge-tts / Microsoft Ava  — good, but every rebuild called their servers.
+  Supertonic                — offline and free, but a flatter read.
+  Kokoro-82M (now)          — offline, free, and measurably clearer.
 
-TWO TRAPS, BOTH ALREADY HANDLED IN THE SCRIPT
----------------------------------------------
-1. Capitalised "Lyricist" is pronounced "Larasist", and "4.2.0" is read as
-   "4.0". The generator lowercases the name and spells the version out loud.
-   Same for "WAV", which comes out as "WOWWOW" — it is sent as "wave".
-   Verified fine as-is: AI, DNA, EQ, FX, MIDI, RC-Funk 5000, State A / B, 808.
-2. Given a whole 130-word card the model silently DROPS phrases. Card-05 lost
-   "run twelve gens spreads" mid-sentence. The generator synthesises one
-   sentence at a time and stitches them with real pauses; that took card-05
-   from 23.4% word error to 4.0%.
+Measured, not guessed. Every clip is transcribed back and scored against its
+script. Supertonic averaged 6.2% word error across the set; Kokoro averages
+3.0%, with eight of the eighteen cards at 0.0%. Same test, same script.
 
-QA RESULT FOR THIS TAKE
------------------------
-Every clip transcribed back and scored: mean 6.5% word error, which is the
-recognition engine's own error rate on synthetic speech. The worst number was
-card-16 at 14.8%, and all four of its "errors" are the recogniser writing
-compound words differently ("open router" for "openrouter", "songforge" for
-"song forge") — the audio is correct.
+PRONUNCIATION
+Only one substitution is still needed: "4.2.0" reads as "4, 2, 0", so the
+generator spells it out. Kokoro says Lyricist, WAV, AI, DNA, EQ, FX, MIDI,
+RC-Funk 5000, State A / State B, 808 and "gens" correctly with no help — all
+verified by synthesising and transcribing them. Supertonic needed the name
+lowercased or it said "Larasist", and "WAV" spelled "wave"; both hacks left
+with it. Never add a substitution on a hunch — test it.
+
+STILL TRUE WHATEVER THE ENGINE
+  - Synthesise SENTENCE BY SENTENCE, never a whole card. Supertonic silently
+    dropped phrases from long input; Kokoro is hard-limited to 510 style rows.
+    Chunking also buys the pauses between sentences and paragraphs.
+  - Keep a generous trim margin. At 20 ms the attack of the first consonant was
+    getting cut and "Quantum Lab" shipped as "Quant Lab" — caught by pulling the
+    clip back out of the installer's asar and transcribing THAT.
+  - Always run --qa. Nobody can hear a bug report.
 
 card-01  Welcome
 card-02  Songwriter
 card-03  Ghost Rider + Style DNA
 card-04  Song Forge (+ Quantum seed)
 card-05  Quantum Lab — numbered buttons, no command bar
+card-18  Collaboration — peer to peer with a code
 card-06  RC-Funk 5000 (loops + Delay/Reverb/Dub FX)
 card-07  Recording Booth
 card-08  MIDI Studio (synth + full viz pack)

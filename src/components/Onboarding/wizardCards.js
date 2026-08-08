@@ -58,6 +58,16 @@ Every control is a numbered button in the Lattice controls bar, right under the 
 Play. Experiment. Collapse the state you love.`
   },
   {
+    id: 18, icon: '🤝', title: 'Collaboration — write together', tab: 'collab', audio: 'card-18.mp3',
+    script: `Collaboration. Write a song with someone else.
+
+Start a session and you get a code. Send it to whoever you are writing with — text it, say it down the phone. They type it in, and you are both writing on the same page at the same time. Type a line, they see it appear.
+
+It goes straight between your two computers. Nobody's server is holding your song. There is no account, no sign up, no email, and nothing that can start charging you later.
+
+Two people on a corner, one song. That is where this app came from, and now it works from anywhere.`
+  },
+  {
     id: 6, icon: '🔁', title: 'RC-Funk 5000 — live loop station', tab: 'loopstation', audio: 'card-06.mp3',
     script: `RC-Funk 5000. Your live loop station.
 
