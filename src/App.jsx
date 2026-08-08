@@ -549,13 +549,16 @@ function MainLayout() {
             Always free, available for all · Keep Austin, Austin, Bruh
           </div>
 
+          {/* NO data-help ON ANY OF THESE. Everybody already knows what PayPal
+              and Cash App are, and a tooltip explaining them reads like the app
+              thinks you're stupid. Tips are for the parts of this app that
+              genuinely need explaining. */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 6, maxWidth: 360 }}>
             {/* Fiverr — plain link (more reliable than a popup in Brave) */}
             <a
               href="https://www.fiverr.com/s/m541z1V"
               target="_blank"
               rel="noopener noreferrer"
-              data-help="Hire Christopher on Fiverr to build something custom for you — a website, an AI tool, design work, and more."
               style={{
                 padding: '5px 11px',
                 fontSize: '0.7rem',
@@ -573,7 +576,6 @@ function MainLayout() {
               href="https://paypal.me/funkchris"
               target="_blank"
               rel="noopener noreferrer"
-              data-help="Send a tip or payment through PayPal."
               style={{
                 padding: '5px 11px',
                 fontSize: '0.7rem',
@@ -591,7 +593,6 @@ function MainLayout() {
               href="https://venmo.com/u/Chris-Funk-20"
               target="_blank"
               rel="noopener noreferrer"
-              data-help="Send a tip through Venmo (@Chris-Funk-20)."
               style={{
                 padding: '5px 11px',
                 fontSize: '0.7rem',
@@ -609,7 +610,6 @@ function MainLayout() {
               href="https://cash.app/$cfunkycreations"
               target="_blank"
               rel="noopener noreferrer"
-              data-help="Send a tip through Cash App ($cfunkycreations)."
               style={{
                 padding: '5px 11px',
                 fontSize: '0.7rem',
@@ -634,7 +634,6 @@ function MainLayout() {
                   alert(`Chime cashtag: ${tag}`);
                 }
               }}
-              data-help="Send a tip through Chime. Clicking copies Christopher's Chime cashtag ($Christopher-Funk-21) so you can paste it into the Chime app's Pay Anyone screen."
               style={{
                 padding: '5px 11px',
                 fontSize: '0.7rem',
@@ -653,7 +652,6 @@ function MainLayout() {
               href="https://buymeacoffee.com/cfunkycream"
               target="_blank"
               rel="noopener noreferrer"
-              data-help="Like the app? Buy Christopher a coffee — a small tip that helps keep these tools free for everyone."
             >
               <img
                 src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=cfunkycream&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff"

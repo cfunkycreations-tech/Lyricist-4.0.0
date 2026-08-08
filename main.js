@@ -522,8 +522,18 @@ function createWindow() {
   // the AudioContext that is already playing.
   //
   // All this handler does is put that child on the monitor the UI picked.
-  win.webContents.setWindowOpenHandler(({ frameName, features }) => {
-    if (frameName !== 'lyricist-visualizer') return { action: 'deny' };
+  win.webContents.setWindowOpenHandler(({ url, frameName, features }) => {
+    if (frameName !== 'lyricist-visualizer') {
+      // Everything else asking for a window is a real link — the Fiverr,
+      // PayPal, Venmo, Cash App and Buy Me A Coffee buttons in the footer.
+      // This handler used to just deny them, so every one of those buttons did
+      // NOTHING when clicked: no browser, no error, no clue why. They belong in
+      // the user's own browser, where they are already signed in.
+      if (/^https?:\/\//i.test(url || '')) {
+        shell.openExternal(url).catch((e) => bootLog(`openExternal failed: ${e.message}`));
+      }
+      return { action: 'deny' };
+    }
     const num = (key) => {
       const m = new RegExp(`(?:^|,)${key}=(-?\\d+)`).exec(features || '');
       return m ? Number(m[1]) : undefined;
@@ -549,6 +559,21 @@ function createWindow() {
         },
       },
     };
+  });
+
+  // A link WITHOUT target="_blank" doesn't ask for a window — it navigates this
+  // one. That would replace the whole app with a web page and there is no way
+  // back. Send those to the real browser too, and stay put.
+  win.webContents.on('will-navigate', (event, url) => {
+    const here = win.webContents.getURL();
+    const sameApp = (() => {
+      try { return new URL(url).origin === new URL(here).origin; } catch { return false; }
+    })();
+    if (sameApp || url.startsWith('file://')) return;
+    event.preventDefault();
+    if (/^https?:\/\//i.test(url)) {
+      shell.openExternal(url).catch((e) => bootLog(`openExternal failed: ${e.message}`));
+    }
   });
 
   let shown = false;
