@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useLyricStore, genres, subgenres, moods, rhymeSchemes, rapFlowPatterns } from '../../context/LyricStore.jsx';
 import SectionEditor from './SectionEditor.jsx';
 import StructureBuilder from './StructureBuilder.jsx';
-import { generateFullSong, fillBlank, generateBridgeVariations } from '../../services/AIService.js';
-import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, AlertCircle } from 'lucide-react';
+import { generateFullSong, fillBlank, generateBridgeVariations, lastGeneration, parseSectionsFromText } from '../../services/AIService.js';
+import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, AlertCircle, Upload } from 'lucide-react';
 import cfunkyLogoNew from '../../assets/cfunky-logo-new.jpg';
 import profileImg from '../../assets/profile.jpg';
 import songwriterBg from '../../assets/songwriter.mp4';
@@ -14,6 +14,49 @@ export default function SongwriterHub({ ghostRiderData }) {
   const [isFillingBlanks, setIsFillingBlanks] = useState(false);
   const [copied, setCopied] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [modelNote, setModelNote] = useState('');
+  const [showPasteBox, setShowPasteBox] = useState(false);
+  const [pasteDraft, setPasteDraft] = useState('');
+  const lyricsFileRef = useRef(null);
+
+  /**
+   * Take lyrics the user wrote themselves and put them in the workspace.
+   * Section headings are honoured; text with none becomes one verse per blank-
+   * line-separated block, so a plain typed-out song still comes in sensibly.
+   */
+  const loadOwnLyrics = (text, sourceLabel) => {
+    const raw = String(text || '').replace(/\r\n/g, '\n').trim();
+    if (!raw) { setErrorMsg('That file was empty — nothing to load.'); return; }
+
+    let prepared = raw;
+    if (!/^\[.+\]$/m.test(raw)) {
+      // No [Verse]/[Chorus] markers: treat each blank-line block as a section
+      // rather than dumping the whole song into one giant verse.
+      prepared = raw.split(/\n\s*\n/).map((block, i) =>
+        `[Verse ${i + 1}]\n${block.trim()}`).join('\n\n');
+    }
+    const sections = parseSectionsFromText(prepared, store);
+    if (!sections.length) { setErrorMsg('Could not find any lyrics in that.'); return; }
+
+    store.setFullLyrics(sections);
+    const lineCount = sections.reduce((n, s) => n + s.lines.length, 0);
+    setModelNote(`Loaded ${lineCount} lines from ${sourceLabel} — these are yours, nothing was generated.`);
+    setErrorMsg('');
+    setShowPasteBox(false);
+    setPasteDraft('');
+  };
+
+  const handleUploadLyrics = async () => {
+    const api = window.lyricistAPI;
+    if (api?.pickLyricsFile) {
+      const res = await api.pickLyricsFile();
+      if (!res?.ok) { setErrorMsg(`Could not open that file: ${res?.error || 'unknown error'}`); return; }
+      if (res.canceled) return;
+      loadOwnLyrics(res.text, res.name);
+      return;
+    }
+    lyricsFileRef.current?.click();   // browser fallback
+  };
   const [bridgeVars, setBridgeVars] = useState(null);
   const [showBridgeModal, setShowBridgeModal] = useState(false);
 
@@ -62,6 +105,16 @@ export default function SongwriterHub({ ghostRiderData }) {
     try {
       const generatedSections = await generateFullSong(store);
       store.setFullLyrics(generatedSections);
+      // Say which model actually wrote it, and own up if any of it was thrown
+      // away. A router can serve a different model than the one you picked, and
+      // when the words come back wrong you need to know who wrote them.
+      if (lastGeneration.model) {
+        setModelNote(
+          lastGeneration.dropped
+            ? `Written by ${lastGeneration.model} — but ${lastGeneration.dropped} line(s) came back garbled and were dropped (${lastGeneration.reasons.join('; ')}). Try a different model in Settings.`
+            : `Written by ${lastGeneration.model}`
+        );
+      }
     } catch (e) {
       setErrorMsg(e.message);
     } finally {
@@ -507,6 +560,77 @@ export default function SongwriterHub({ ghostRiderData }) {
             {isGenerating ? 'Channeling Muse...' : 'Generate Full Song'}
           </button>
 
+          {/* ── ALREADY WROTE ONE? ──────────────────────────────────────────
+              This existed before as a bare icon and nobody could tell what it
+              was for. It says what it does now, in words, with the file types
+              spelled out. Chris: "make it clear that that's what the fuck it
+              is, because last time it was not clear at all." */}
+          <div style={{
+            marginTop: 12, padding: '12px 13px', borderRadius: 10,
+            border: '1px dashed rgba(16,240,160,0.45)', background: 'rgba(6,20,16,0.45)',
+          }}>
+            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--ql-grn, #10f0a0)', marginBottom: 3 }}>
+              Already wrote a song?
+            </div>
+            <div style={{ fontSize: '0.68rem', color: 'rgba(200,190,220,0.72)', lineHeight: 1.5, marginBottom: 9 }}>
+              Load your own lyrics in from a file and work on them here — rewrite lines, fill blanks,
+              check rhymes, all of it. Nothing is sent anywhere. Plain text, .txt, .md or .lrc.
+              If your file has <b>[Verse]</b> / <b>[Chorus]</b> headings they'll be kept.
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <button
+                onClick={handleUploadLyrics}
+                className="btn-neon-green"
+                data-help="Opens a file picker. Choose a text file containing lyrics you already wrote, and they load into the workspace as editable sections."
+                style={{
+                  padding: '9px 14px', borderRadius: 8, border: '1px solid rgba(16,240,160,0.6)',
+                  background: 'rgba(16,240,160,0.12)', color: '#10f0a0', fontWeight: 700,
+                  fontSize: '0.76rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7,
+                }}
+              >
+                <Upload size={14} /> Upload my lyrics from a file
+              </button>
+              <button
+                onClick={() => setShowPasteBox((v) => !v)}
+                data-help="Paste lyrics straight in instead of picking a file."
+                style={{
+                  padding: '9px 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.18)',
+                  background: 'transparent', color: 'rgba(220,210,240,0.85)', fontWeight: 600,
+                  fontSize: '0.76rem', cursor: 'pointer',
+                }}
+              >
+                or paste them in
+              </button>
+            </div>
+            {showPasteBox && (
+              <div style={{ marginTop: 9 }}>
+                <textarea
+                  value={pasteDraft}
+                  onChange={(e) => setPasteDraft(e.target.value)}
+                  placeholder={'Paste your lyrics here.\n\n[Verse 1]\nyour line\nyour next line\n\n[Chorus]\n...'}
+                  style={{
+                    width: '100%', minHeight: 130, borderRadius: 8, padding: 10,
+                    background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.15)',
+                    color: '#f3ecff', fontSize: '0.8rem', lineHeight: 1.6, resize: 'vertical',
+                    fontFamily: "'Space Grotesk', sans-serif",
+                  }}
+                />
+                <button
+                  onClick={() => loadOwnLyrics(pasteDraft, 'pasted lyrics')}
+                  disabled={!pasteDraft.trim()}
+                  style={{
+                    marginTop: 6, padding: '8px 14px', borderRadius: 8,
+                    border: '1px solid rgba(16,240,160,0.6)', background: 'rgba(16,240,160,0.12)',
+                    color: '#10f0a0', fontWeight: 700, fontSize: '0.76rem',
+                    cursor: pasteDraft.trim() ? 'pointer' : 'not-allowed', opacity: pasteDraft.trim() ? 1 : 0.5,
+                  }}
+                >
+                  Load these lyrics
+                </button>
+              </div>
+            )}
+          </div>
+
           <div style={{ display: 'flex', gap: 6 }}>
             <button
               onClick={handleFillBlanks}
@@ -693,6 +817,36 @@ export default function SongwriterHub({ ghostRiderData }) {
             {errorMsg}
           </div>
         )}
+
+        {/* Who wrote this, and did any of it have to be thrown away. Without
+            this there is no way to tell which model produced a bad song. */}
+        {modelNote && (
+          <div style={{
+            margin: '10px 20px', padding: '9px 13px', borderRadius: 8, fontSize: '0.72rem', lineHeight: 1.5,
+            display: 'flex', alignItems: 'flex-start', gap: 8,
+            border: `1px solid ${/garbled|dropped/.test(modelNote) ? 'rgba(251,191,36,0.45)' : 'rgba(52,211,153,0.35)'}`,
+            background: /garbled|dropped/.test(modelNote) ? 'rgba(251,191,36,0.08)' : 'rgba(52,211,153,0.07)',
+            color: /garbled|dropped/.test(modelNote) ? 'rgba(253,224,71,0.95)' : 'rgba(110,231,183,0.9)',
+          }}>
+            <span style={{ flex: 1 }}>{modelNote}</span>
+            <button onClick={() => setModelNote('')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}>✕</button>
+          </div>
+        )}
+
+        {/* Browser fallback for the lyrics upload — in the desktop app the
+            native dialog is used instead (see handleUploadLyrics). */}
+        <input
+          ref={lyricsFileRef}
+          type="file"
+          accept=".txt,.md,.lrc,.text,text/plain"
+          style={{ display: 'none' }}
+          onChange={async (e) => {
+            const f = e.target.files?.[0];
+            e.target.value = '';
+            if (!f) return;
+            loadOwnLyrics(await f.text(), f.name);
+          }}
+        />
 
         {/* Workspace Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>

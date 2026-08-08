@@ -674,20 +674,35 @@ export default function Settings() {
         <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
           Creativity / Temperature — <span style={{ color: '#c084fc' }}>{store.config.temperature}</span>
         </label>
+        {/* Hard stop at 1.1. It used to run to 2.0 labelled "Wildly Creative",
+            which is not what happens up there — the words break apart. Chris
+            turned it up to 1.2 wanting more creativity, exactly as the label
+            invited, and got half-words and Cyrillic. The dial no longer goes
+            anywhere that produces rubbish. */}
         <input
           type="range"
           min="0"
-          max="2"
+          max="1.1"
           step="0.05"
-          value={store.config.temperature}
+          value={Math.min(store.config.temperature, 1.1)}
           onChange={(e) => handleUpdate('temperature', parseFloat(e.target.value))}
           style={{ width: '100%', accentColor: '#a855f7' }}
         />
-        <div style={{ display: 'flex', justifyBetween: 'space-between', fontSize: '0.62rem', color: 'rgba(148,130,200,0.35)', marginTop: 3, justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', fontSize: '0.62rem', color: 'rgba(148,130,200,0.35)', marginTop: 3, justifyContent: 'space-between' }}>
           <span>0 — Precise</span>
-          <span>1.0 — Balanced</span>
-          <span>2.0 — Wildly Creative</span>
+          <span>0.85 — Sweet spot</span>
+          <span>1.1 — As wild as it goes</span>
         </div>
+        {store.config.temperature >= 1.05 && (
+          <div style={{
+            marginTop: 8, padding: '8px 11px', borderRadius: 8, fontSize: '0.66rem', lineHeight: 1.55,
+            border: '1px solid rgba(251,191,36,0.45)', background: 'rgba(251,191,36,0.08)',
+            color: 'rgba(253,224,71,0.95)',
+          }}>
+            You're at the top of the dial. This is as loose as it gets before the words themselves
+            start coming apart, which is why it stops here. <b>0.7–0.95 writes the best songs.</b>
+          </div>
+        )}
       </div>
 
       {/* Max tokens */}

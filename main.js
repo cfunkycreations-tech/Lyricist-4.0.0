@@ -170,6 +170,73 @@ ipcMain.handle('pick-sample-folder', async (event) => {
   }
 });
 
+/**
+ * Save a whole set of stems together, in ONE folder, from ONE click.
+ *
+ * The Stemmer used to call the browser download path once per stem. Six or
+ * eight stems meant six or eight save prompts stacking up on top of each other,
+ * and the files scattered into Downloads with no grouping. They belong together
+ * — they are one song taken apart. Documents\Lyricist Stems\<song>\.
+ */
+ipcMain.handle('save-stems', async (event, { songName, files }) => {
+  try {
+    const safeSong = String(songName || 'Stems').replace(/[\\/:*?"<>|]/g, '-').slice(0, 120).trim() || 'Stems';
+    const dir = path.join(app.getPath('documents'), 'Lyricist Stems', safeSong);
+    fs.mkdirSync(dir, { recursive: true });
+    let written = 0;
+    for (const f of files || []) {
+      const safe = String(f.filename).replace(/[\\/:*?"<>|]/g, '-').slice(0, 180);
+      fs.writeFileSync(path.join(dir, safe), Buffer.from(f.bytes));
+      written++;
+    }
+    return { ok: true, path: dir, written };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+/** Reveal a folder in Explorer — "where did my stems go" should be one click. */
+ipcMain.handle('show-folder', async (event, { folderPath }) => {
+  try {
+    shell.openPath(folderPath);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+/** Open a lyrics file the user already wrote and hand back its text. */
+ipcMain.handle('pick-lyrics-file', async (event) => {
+  try {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const res = await require('electron').dialog.showOpenDialog(win, {
+      title: 'Open a song you already wrote',
+      properties: ['openFile'],
+      filters: [
+        { name: 'Lyrics & text', extensions: ['txt', 'md', 'lrc', 'text', 'rtf'] },
+        { name: 'All files', extensions: ['*'] },
+      ],
+    });
+    if (res.canceled || !res.filePaths?.length) return { ok: true, canceled: true };
+    const filePath = res.filePaths[0];
+    const stat = fs.statSync(filePath);
+    if (stat.size > 5 * 1024 * 1024) {
+      return { ok: false, error: 'That file is over 5 MB — it is probably not a lyric sheet.' };
+    }
+    let text = fs.readFileSync(filePath, 'utf8');
+    // Strip RTF control words so a WordPad file doesn't import as markup.
+    if (filePath.toLowerCase().endsWith('.rtf')) {
+      text = text.replace(/\\'[0-9a-f]{2}/gi, '')
+        .replace(/\\[a-z]+-?\d*\s?/gi, '')
+        .replace(/[{}]/g, '')
+        .trim();
+    }
+    return { ok: true, canceled: false, name: path.basename(filePath), text };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
 /** Read ONE sample off disk. One at a time, on purpose — see the note above. */
 ipcMain.handle('read-sample-file', async (event, { filePath }) => {
   try {

@@ -23,6 +23,7 @@ export default function Stemmer() {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState('Drop a mix, or click Load Mix.');
+  const [stemFolder, setStemFolder] = useState(null);   // where the last batch landed
   const [duration, setDuration] = useState(0);
   const [stems, setStems] = useState(null);
   const [muted, setMuted] = useState(() => Object.fromEntries(STEM_DEFS.map((s) => [s.id, false])));
@@ -168,12 +169,47 @@ export default function Stemmer() {
     setStatus(`Exported ${id}.wav`);
   };
 
-  const exportAll = () => {
+  /**
+   * Export every stem AS ONE GROUP.
+   *
+   * This used to call the single-file download once per stem, 180 ms apart, so
+   * splitting a song threw six to eight save prompts on screen one after another
+   * and scattered the files into Downloads unlabelled. They are one song taken
+   * apart — they stay together. In the desktop app they all land in
+   * Documents\Lyricist Stems\<song>\ from one click, with no prompts at all. In
+   * a browser they come down as a single .zip.
+   */
+  const exportAll = async () => {
     if (!stems) return;
-    STEM_DEFS.forEach((s, i) => {
-      setTimeout(() => exportStem(s.id), i * 180);
-    });
-    setStatus('Exporting all stems…');
+    const base = fileName.replace(/\.[^.]+$/, '') || 'mix';
+    const available = STEM_DEFS.filter((s) => stems[s.id]);
+    if (!available.length) return;
+
+    setStatus(`Bundling ${available.length} stems…`);
+    const api = window.lyricistAPI;
+
+    if (api?.saveStems) {
+      const files = [];
+      for (const s of available) {
+        const buf = await stemToWavBlob(stems[s.id]).arrayBuffer();
+        files.push({ filename: `${base}_${s.id}.wav`, bytes: new Uint8Array(buf) });
+      }
+      const res = await api.saveStems(base, files);
+      if (!res?.ok) { setStatus(`Could not save the stems: ${res?.error || 'unknown error'}`); return; }
+      setStemFolder(res.path);
+      setStatus(`All ${res.written} stems saved together in one folder — ${res.path}`);
+      return;
+    }
+
+    // Browser: one zip, so it is still a single download rather than eight.
+    const { default: JSZip } = await import('jszip');
+    const zip = new JSZip();
+    for (const s of available) {
+      zip.file(`${base}_${s.id}.wav`, stemToWavBlob(stems[s.id]));
+    }
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+    downloadBlob(blob, `${base}_stems.zip`);
+    setStatus(`All ${available.length} stems in one zip — ${base}_stems.zip`);
   };
 
   const toggleMute = (id) => {
@@ -222,10 +258,20 @@ export default function Stemmer() {
             className="stemmer-btn stemmer-btn-gold"
             disabled={!stems || busy}
             onClick={exportAll}
-            data-help="Download every stem as a separate 16-bit WAV file."
+            data-help="Saves every stem together in ONE folder — Documents\Lyricist Stems\<song name>\ — in a single click, no save prompts. Each stem is a 16-bit WAV you can drop straight into a DAW."
           >
-            Export All WAV
+            Save All Stems (one folder)
           </button>
+          {stemFolder && window.lyricistAPI?.showFolder && (
+            <button
+              type="button"
+              className="stemmer-btn"
+              onClick={() => window.lyricistAPI.showFolder(stemFolder)}
+              data-help="Opens the folder your stems were saved into."
+            >
+              Open folder
+            </button>
+          )}
           <input
             ref={fileRef}
             type="file"

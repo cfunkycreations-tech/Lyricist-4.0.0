@@ -33,6 +33,13 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   // the audio it found; readSampleFile fetches ONE file's bytes, so importing a
   // huge folder never holds more than one sample in memory.
   // Returns { ok, canceled, paths } / { ok, name, size, bytes }.
+  // Save every stem of one song into a single folder, from one click:
+  // Documents\Lyricist Stems\<song>\. Returns { ok, path, written }.
+  saveStems: (songName, files) => ipcRenderer.invoke('save-stems', { songName, files }),
+  // Open a folder in Explorer.
+  showFolder: (folderPath) => ipcRenderer.invoke('show-folder', { folderPath }),
+  // Open a lyrics file the user wrote elsewhere. Returns { ok, canceled, name, text }.
+  pickLyricsFile: () => ipcRenderer.invoke('pick-lyrics-file'),
   pickSampleFiles: () => ipcRenderer.invoke('pick-sample-files'),
   pickSampleFolder: () => ipcRenderer.invoke('pick-sample-folder'),
   readSampleFile: (filePath) => ipcRenderer.invoke('read-sample-file', { filePath }),

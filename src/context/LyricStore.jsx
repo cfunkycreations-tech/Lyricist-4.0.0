@@ -167,9 +167,24 @@ export const rapFlowPatterns = [
   'Stacked multis — packed multi-syllable rhymes throughout'
 ];
 
+/**
+ * Hard ceiling on Creativity / temperature.
+ *
+ * Past roughly this point a model stops writing and starts sampling from the
+ * tail of its own distribution: half-words, fused tokens, stray Cyrillic and
+ * Korean, programming vocabulary in a love song. It does not read as "wilder",
+ * it reads as broken. The slider used to run to 2.0 labelled "Wildly Creative",
+ * which is an invitation to wreck a song, and it did exactly that.
+ */
+export const MAX_TEMPERATURE = 1.1;
+
 const DEFAULT_CONFIG = {
   openRouterApiKey: '',
-  model: 'openrouter/free',
+  // A specific instruction-tuned text model, NOT `openrouter/free`. That router
+  // picks whichever free model is available, and the free pool includes coding
+  // agents, a content-safety classifier, and audio/vision models — none of which
+  // can write a verse. Never default to a router for creative work.
+  model: 'google/gemma-4-31b-it:free',
   temperature: 0.75,
   maxTokens: 2000,
   fusionEnabled: false,
@@ -195,10 +210,29 @@ export const LyricStoreProvider = ({ children }) => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Run migration only once to clear old default model, allowing manual settings overrides to persist
-        if (!parsed.migratedToFreeRouter) {
-          parsed.model = 'openrouter/free';
-          parsed.migratedToFreeRouter = true;
+        // DO NOT OVERWRITE THE USER'S MODEL HERE.
+        //
+        // This used to force `model = 'openrouter/free'` on anyone who hadn't
+        // been migrated yet. If you had chosen and paid for a model, an update
+        // silently swapped you onto a router — and `openrouter/free` routes to
+        // whatever free model is up, a pool that includes three coding agents
+        // and a content-safety classifier. Asking a coding agent for a chorus
+        // is how a song ends up full of "HTML", "GET", "lambda" and "getters".
+        // Chris hit exactly that and reasonably believed he was still on the
+        // model he picked. A silent change to someone's settings is a bug.
+        parsed.migratedToFreeRouter = true;
+        // Bring a saved temperature back under the ceiling. Anything above ~1.1
+        // samples from the tail of the distribution and the output degenerates
+        // — a song comes back with two good sections and then subword salad.
+        // The slider used to run to 2.0 and call it "Wildly Creative", so a
+        // saved 1.2 is the app's fault, not the user's. Correct it, and say so
+        // in the console rather than changing it behind their back in silence.
+        if (typeof parsed.temperature === 'number' && parsed.temperature > MAX_TEMPERATURE) {
+          console.warn(
+            `[Lyricist] Creativity was saved at ${parsed.temperature}, which produces garbled lyrics. `
+            + `Brought down to ${MAX_TEMPERATURE}. See Settings → Creativity.`
+          );
+          parsed.temperature = MAX_TEMPERATURE;
         }
         return { ...DEFAULT_CONFIG, ...parsed };
       } catch (e) {}

@@ -2,6 +2,20 @@
 // Enforces: Law of Subtext, Law of Human Paradox, Conversational Cadence
 
 import { cleanRefineOutput } from '../utils/refineClean.js';
+import { inspectGenerated, truncateAtCollapse } from '../utils/lyricSanity.js';
+
+/**
+ * The model that answered last, and what shape the answer was in.
+ *
+ * There was no way to tell which model wrote a song. When one started returning
+ * rubble, the app said nothing about where it came from and there was nothing to
+ * check — you could believe you were on the model you picked while something
+ * else entirely was answering. Every call now records it.
+ */
+export const lastGeneration = { model: null, provider: null, ok: true, reasons: [], dropped: 0, at: null };
+
+/** A model that returns this is not writing a song and should not be retried into. */
+const FALLBACK_MODEL = 'google/gemma-4-31b-it:free';
 
 async function singleCall(messages, config, modelId, customTemp, customMax) {
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -10,12 +24,30 @@ async function singleCall(messages, config, modelId, customTemp, customMax) {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${config.openRouterApiKey}`,
       "HTTP-Referer": "https://lyricist.app",
-      "X-Title": "Lyricist 4.0.7"
+      "X-Title": "Lyricist 4.2.0"
     },
     body: JSON.stringify({
       model: modelId,
       temperature: customTemp !== null ? customTemp : config.temperature,
       max_tokens: customMax !== null ? customMax : config.maxTokens,
+      // Sampling guards. Without these a model that starts to drift has nothing
+      // pulling it back, and it will happily fill the entire token budget with
+      // wreckage — which is exactly what happened: two good sections, then
+      // thousands of tokens of subword salad.
+      top_p: 0.9,
+      frequency_penalty: 0.3,
+      presence_penalty: 0.2,
+      // WHICH COPY OF THE MODEL ANSWERS MATTERS AS MUCH AS WHICH MODEL.
+      // OpenRouter spreads one model id across many hosts, and some serve
+      // aggressively quantised builds. A heavily squeezed model reads fine for
+      // a verse or two and then falls apart into subword salad on a long
+      // generation — the same wreckage a wrong-model router produces, from a
+      // model you correctly chose and are paying for. Ask for the unsqueezed
+      // builds and let it fail over rather than quietly serve a bad one.
+      provider: {
+        quantizations: ['fp32', 'bf16', 'fp16', 'fp8'],
+        allow_fallbacks: true,
+      },
       messages
     })
   });
@@ -24,14 +56,65 @@ async function singleCall(messages, config, modelId, customTemp, customMax) {
     throw new Error(errData?.error?.message || `API Error (${modelId}): status ${response.status}`);
   }
   const result = await response.json();
-  return result.choices?.[0]?.message?.content || "";
+  // OpenRouter reports the model it actually used, which for a router is not
+  // the one that was asked for.
+  const served = result.model || modelId;
+  const provider = result.provider || null;
+  // Truncation is its own failure: a reply cut off at the token ceiling looks
+  // like a song that stops mid-thought, and it is worth naming as that rather
+  // than leaving it to look like the model lost the plot.
+  const finish = result.choices?.[0]?.finish_reason || null;
+  return { text: result.choices?.[0]?.message?.content || "", model: served, provider, finish };
+}
+
+/**
+ * Call a model and refuse to pass back rubble.
+ *
+ * If the answer has collapsed, the good opening is kept and the wreckage cut.
+ * If there is nothing worth keeping, one retry goes to a known-good instruct
+ * model rather than whatever the router felt like — because the usual cause is
+ * that the request was handed to a model with no business writing lyrics.
+ */
+async function guardedCall(messages, config, modelId, customTemp, customMax) {
+  const { text, model, provider, finish } = await singleCall(messages, config, modelId, customTemp, customMax);
+  const verdict = inspectGenerated(text);
+  Object.assign(lastGeneration, {
+    model, provider, ok: verdict.ok, reasons: verdict.reasons, dropped: 0, at: Date.now(),
+  });
+  if (finish === 'length') {
+    lastGeneration.reasons = [...verdict.reasons, 'hit the token limit — raise Max Tokens in Settings'];
+  }
+  if (verdict.ok) return text;
+
+  const cut = truncateAtCollapse(text);
+  lastGeneration.dropped = cut.dropped;
+  const stillGood = cut.text.trim() && inspectGenerated(cut.text).ok;
+  // Keep a salvaged song only if a real amount of it survived.
+  if (stillGood && cut.text.split('\n').filter((l) => l.trim()).length >= 6) return cut.text;
+
+  if (modelId !== FALLBACK_MODEL) {
+    const retry = await singleCall(messages, config, FALLBACK_MODEL, customTemp, customMax);
+    const rv = inspectGenerated(retry.text);
+    Object.assign(lastGeneration, {
+      model: retry.model, ok: rv.ok, reasons: rv.reasons, dropped: 0, at: Date.now(),
+    });
+    if (rv.ok) return retry.text;
+    const rcut = truncateAtCollapse(retry.text);
+    lastGeneration.dropped = rcut.dropped;
+    if (rcut.text.trim()) return rcut.text;
+  }
+
+  throw new Error(
+    `"${model}" returned unusable text (${verdict.reasons.join('; ')}). `
+    + `Pick a different model in Settings — avoid the coding and safety models on the free router.`
+  );
 }
 
 export async function callAI(messages, config, customTemp = null, customMax = null) {
   if (!config.openRouterApiKey) {
     throw new Error("No API key configured. Go to the Settings tab to add your OpenRouter key.");
   }
-  return singleCall(messages, config, config.model || "google/gemini-2.5-flash", customTemp, customMax);
+  return guardedCall(messages, config, config.model || FALLBACK_MODEL, customTemp, customMax);
 }
 
 // Builds the global context block describing all active songwriting parameters
@@ -103,12 +186,25 @@ Ensure every section is clearly labeled, and that the lyrics are highly authenti
   if (fusionEnabled && activeFusionModels.length > 0) {
     // Multi-Model Fusion: call all selected models in parallel, then synthesize
     const allModels = [store.config.model, ...activeFusionModels].filter(Boolean);
+    // Each draft is checked on its own. Feeding a collapsed draft into the
+    // synthesiser poisons the final song with the same rubble — the editor
+    // prompt has no way to know that "closedRock noneMD youth aggregate" was
+    // never a lyric. A model that returns garbage is dropped from the panel.
     const drafts = (await Promise.all(
       allModels.map(modelId =>
         singleCall(messages, store.config, modelId, store.config.temperature, store.config.maxTokens)
+          .then(({ text }) => {
+            if (inspectGenerated(text).ok) return text;
+            const cut = truncateAtCollapse(text);
+            return cut.text.split('\n').filter((l) => l.trim()).length >= 6 ? cut.text : null;
+          })
           .catch(() => null)
       )
     )).filter(Boolean);
+
+    if (!drafts.length) {
+      throw new Error('Every model in the fusion set returned unusable text. Check which models are selected in Settings.');
+    }
 
     if (drafts.length === 1) {
       resultText = drafts[0];
@@ -133,7 +229,7 @@ ${drafts.map((d, i) => `=== DRAFT ${i + 1} (${allModels[i]}) ===\n${d}`).join('\
 
 Synthesize these into the single best version of this song:`;
 
-      resultText = await singleCall(
+      resultText = await guardedCall(
         [{ role: "system", content: synthSystemPrompt }, { role: "user", content: synthUserPrompt }],
         store.config,
         store.config.model,
