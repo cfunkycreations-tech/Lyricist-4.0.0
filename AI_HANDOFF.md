@@ -179,6 +179,23 @@ opaque backdrop already has one — its own root background.
 
 ## Status
 
+### Done (as of build 4.2.0.055)
+- **The donation buttons work. They never had.** Fiverr, PayPal, Venmo, Cash App and Buy Me A
+  Coffee all did nothing when clicked — no browser, no error. `setWindowOpenHandler` denied every
+  window request that wasn't the visualizer popout, **and a `target="_blank"` link is a window
+  request**. The URLs were right the whole time; nothing was ever allowed to open them. This is how
+  Chris gets paid for a free app, so treat any breakage here as urgent.
+  - http(s) links now go out through `shell.openExternal` — the user's own browser, where they are
+    already signed in to PayPal or Venmo. The visualizer popout path is untouched.
+  - A `will-navigate` guard was added too: a link **without** `target="_blank"` navigates the app
+    window itself, which would replace the whole app with a web page and no way back.
+  - **Any external link in this app depends on both paths. Test by clicking in the PACKAGED app** —
+    in a dev browser these links just work, which is exactly how this went unnoticed for so long.
+  - **No `data-help` on any of the six.** Chris: *"People know what the fuck they are."* A tooltip
+    defining PayPal reads like the app thinks the user is stupid. Note `HelpLayer` resolves tips
+    with `closest('[data-help]')`, so an ancestor's tip still fires on a child — removing the
+    attribute from the button alone is not enough.
+
 ### Done (as of build 4.2.0.054)
 - **COLLABORATION SHIPPED — peer to peer, joined with a code.** The thing he asked for twice.
   `src/components/Collab/CollabTab.jsx` + `src/services/collabSession.js`, tab id `collab`. Yjs
