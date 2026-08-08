@@ -1,5 +1,34 @@
 # AI HANDOFF — Lyricist 4.2.0 "Goes Quantum"
 
+> **START HERE — WHERE THINGS LIVE**
+>
+> | | |
+> |---|---|
+> | **The app. All source. Work here.** | **`V:\src\Lyricist-4.0.0`** |
+> | GitHub | `cfunkycreations-tech/Lyricist-4.0.0`, branch `main` |
+> | Finished installers | `V:\Releases\Lyricist 4.2.0 Releases\` |
+> | UI renders & exported art — **not code** | `V:\Lyricist 4.2.0 UI renders` |
+> | TTS models — build-time only, never shipped | `V:\models\kokoro`, `V:\models\supertonic-2` |
+>
+> The folder is named `4.0.0`; the app is version **4.2.0**. Don't let that mislead you.
+>
+> **Run it:** `npm run dev` → http://localhost:5173
+> **Build the installer** (must stage on C: — `V:` is a ReFS Dev Drive and electron-builder
+> cannot rename directories there):
+> ```
+> LYRICIST_RELEASE_DIR="C:\Users\crafu\AppData\Local\Temp\lyricist-stage" npm run release
+> ```
+> then move the `.exe`, its `.blockmap` and the unpacked folder to `V:\Releases\Lyricist 4.2.0 Releases\`.
+>
+> **Re-record the wizard narration** after changing any card text:
+> `python scripts/generate-wizard-audio.py --qa`
+>
+> **Who this is for:** Chris Funk / CFunky Creations LLC, Austin TX. The app is free, forever, for
+> everybody — so **every dependency must be free**, and nothing may require an account the user has
+> to pay to keep. Verify "free" before building on it. Read "The rules he has actually had to
+> repeat" below before you write any code.
+
+
 **Read this file first. Update it before you finish. Commit it every time.**
 
 This is the shared brain for every AI that works on this project. Chris has had several different
@@ -178,6 +207,42 @@ opaque backdrop already has one — its own root background.
 ---
 
 ## Status
+
+### Done (as of build 4.2.0.057)
+- **THE GARBLED LYRICS ARE FIXED — and the app caused them.** A song came back with two good
+  sections and then thousands of tokens of subword salad, Cyrillic, Korean and programming
+  vocabulary. His config was `deepseek/deepseek-v4-flash-0731` (a good model, correctly chosen),
+  **temperature 1.2**, fusion ON with `nemotron-3-ultra-550b` and
+  `nemotron-3-nano-omni-30b-a3b-reasoning`.
+  - **The Creativity slider ran to 2.0 labelled "Wildly Creative".** Past ~1.1 a model samples from
+    the tail of its distribution and the words break apart. He turned it up on the UI's own advice.
+    Slider now stops at **1.1** (`MAX_TEMPERATURE` in `LyricStore.jsx`), the far label tells the
+    truth, and a saved value above the ceiling is corrected on load.
+  - **No `top_p` or penalties were being sent**, so a drifting model had nothing pulling it back and
+    filled the whole token budget with wreckage. Now `top_p 0.9`, `frequency_penalty 0.3`,
+    `presence_penalty 0.2`.
+  - **Fusion blended the rubbish in.** Each draft went straight to the synthesiser, so a collapsed
+    draft from the small reasoning model got merged into the final song. Drafts are now validated
+    individually and bad ones dropped from the panel.
+  - **`src/utils/lyricSanity.js` is the durable guard** — any model can fall over.
+    `inspectGenerated()` scores non-Latin drift, fused tokens ("closedRock"), programming words and
+    the loss of ordinary English; `truncateAtCollapse()` keeps the good opening and cuts the rubble.
+    **Validated against the real bad output AND against deliberately-weird-but-intentional writing,
+    which must keep passing — invented words, slang and a foreign phrase all score 0.00.** If you
+    touch the thresholds, re-run that check or you will start deleting good lyrics.
+  - **`lastGeneration`** (AIService) records the model OpenRouter actually served, the provider, and
+    how many lines were dropped; Songwriter displays it. Before this there was no way to know which
+    model wrote a song, which is why the cause took so long to find. Provider quantisation is
+    pinned to unsqueezed builds — a heavily quantised MoE degrades the same way.
+  - **Never silently overwrite the user's model.** The old config migration forced
+    `model = 'openrouter/free'`, which is a router whose free pool contains three coding agents and
+    a content-safety classifier. That is removed. Default is now a specific instruct model.
+- **Upload your own lyrics** — Songwriter, "Already wrote a song?" with a labelled button and a
+  paste box. It was a bare icon before and nobody could tell what it was for. Files with
+  `[Verse]`/`[Chorus]` keep their sections; a plain song is split on blank lines.
+- **Stems save as one group** — Export All used to fire one download per stem, 180 ms apart, so six
+  to eight save prompts stacked up and the files scattered into Downloads. One click now writes them
+  all to `Documents\Lyricist Stems\<song>\`, with an Open folder button. Browser gets a single .zip.
 
 ### Done (as of build 4.2.0.055)
 - **The donation buttons work. They never had.** Fiverr, PayPal, Venmo, Cash App and Buy Me A
