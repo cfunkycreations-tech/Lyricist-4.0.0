@@ -3,6 +3,7 @@ import { useLyricStore, genres, subgenres, moods, rhymeSchemes, rapFlowPatterns 
 import SectionEditor from './SectionEditor.jsx';
 import StructureBuilder from './StructureBuilder.jsx';
 import { generateFullSong, fillBlank, generateBridgeVariations, lastGeneration, parseSectionsFromText } from '../../services/AIService.js';
+import { normalizeLineEndings, hasLineStructure, splitProseIntoLines, groupIntoSections } from '../../utils/importLyrics.js';
 import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, AlertCircle, Upload } from 'lucide-react';
 import cfunkyLogoNew from '../../assets/cfunky-logo-new.jpg';
 import profileImg from '../../assets/profile.jpg';
@@ -25,22 +26,39 @@ export default function SongwriterHub({ ghostRiderData }) {
    * line-separated block, so a plain typed-out song still comes in sensibly.
    */
   const loadOwnLyrics = (text, sourceLabel) => {
-    const raw = String(text || '').replace(/\r\n/g, '\n').trim();
+    const raw = normalizeLineEndings(text).trim();
     if (!raw) { setErrorMsg('That file was empty — nothing to load.'); return; }
 
     let prepared = raw;
-    if (!/^\[.+\]$/m.test(raw)) {
-      // No [Verse]/[Chorus] markers: treat each blank-line block as a section
+    let splitNote = '';
+    if (/^\[.+\]$/m.test(raw)) {
+      // His own [Verse]/[Chorus] markers. Nothing to work out — use them.
+      prepared = raw;
+    } else if (hasLineStructure(raw)) {
+      // Line-broken but unlabelled: each blank-line block becomes a section
       // rather than dumping the whole song into one giant verse.
       prepared = raw.split(/\n\s*\n/).map((block, i) =>
         `[Verse ${i + 1}]\n${block.trim()}`).join('\n\n');
+    } else {
+      // A WALL OF TEXT WITH NO LINE BREAKS IN IT.
+      // This is the case that broke: a 3130-character file with LF=0 and CR=0
+      // loaded as "1 line" — every word of it crammed into one row running off
+      // the edge of the workspace, with a message saying the import worked.
+      // Dictated notes, phone notes and anything pasted out of a chat box come
+      // in like this. Break it at sentence ends so it is editable, say exactly
+      // what was done, and change none of his words.
+      const lines = splitProseIntoLines(raw);
+      prepared = groupIntoSections(lines)
+        .map((block, i) => `[Verse ${i + 1}]\n${block.join('\n')}`)
+        .join('\n\n');
+      splitNote = ` That file had no line breaks in it, so it was split into ${lines.length} lines at sentence ends — your words are untouched, and you can merge or re-split them however you like.`;
     }
     const sections = parseSectionsFromText(prepared, store);
     if (!sections.length) { setErrorMsg('Could not find any lyrics in that.'); return; }
 
     store.setFullLyrics(sections);
     const lineCount = sections.reduce((n, s) => n + s.lines.length, 0);
-    setModelNote(`Loaded ${lineCount} lines from ${sourceLabel} — these are yours, nothing was generated.`);
+    setModelNote(`Loaded ${lineCount} lines from ${sourceLabel} — these are yours, nothing was generated.${splitNote}`);
     setErrorMsg('');
     setShowPasteBox(false);
     setPasteDraft('');
