@@ -1,5 +1,15 @@
 # AI HANDOFF — Lyricist 4.2.0 "Goes Quantum"
 
+> **2026-08-08 — DO NOT REMOVE `'unknown'` FROM `provider.quantizations`.**
+> `src/services/AIService.js` asks OpenRouter for unquantised hosts. Every first-party provider
+> (Anthropic, OpenAI, Google) reports `quantization: "unknown"` because they serve their own weights
+> and don't publish the precision. A list without `'unknown'` matches **zero endpoints for every
+> paid frontier model** and the request dies with
+> `No endpoints found for the request with quantization: ...`. `allow_fallbacks: true` does not
+> rescue it — fallback only picks among providers that still pass the filter. That shipped, and it
+> killed Ghost Rider and every other AI call on the paid model Chris runs as his number one, while
+> still appearing to work on free/open-weight models. Fixed in build 058.
+
 > **START HERE — WHERE THINGS LIVE**
 >
 > | | |

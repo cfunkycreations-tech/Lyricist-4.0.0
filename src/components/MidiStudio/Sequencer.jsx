@@ -51,7 +51,10 @@ const GRID_OPTIONS = [
 let idSeed = 0;
 const newNoteId = () => `n${Date.now().toString(36)}${(idSeed++).toString(36)}`;
 
-export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample }) {
+// `fxInput` returns the node the roll should play into — the effects rack owned
+// by MidiStudio. Falls back to the raw master bus if it isn't supplied, so the
+// component still works standalone.
+export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample, fxInput }) {
   const [playing, setPlaying] = useState(false);
   const [tempo, setTempo] = useState(midi?.tempo || 120);
   const [selectedId, setSelectedId] = useState(null);
@@ -176,12 +179,15 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
     centeredRef.current = true;
   }, [notes, maxMidi]);
 
+  // Everything the roll plays goes through the effects rack, not straight out.
+  const destination = useCallback(() => (fxInput ? fxInput() : getMasterBus()), [fxInput]);
+
   // Real sampled instrument, not an oscillator. Falls back to silence rather
   // than a buzz if the pack has not finished decoding yet.
   const scheduleVoice = (ctx, note, when, dur) => {
     const inst = instrumentRef.current;
     if (!inst) return null;
-    const stopFn = playNote(ctx, getMasterBus(), inst, note.midi, {
+    const stopFn = playNote(ctx, destination(), inst, note.midi, {
       when,
       duration: dur,
       velocity: 0.85 * (note.velocity ?? 0.8),
@@ -195,8 +201,8 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
     const ctx = getAudioContext();
     const inst = instrumentRef.current;
     if (!inst) return;
-    playNote(ctx, getMasterBus(), inst, midiNote, { duration: 0.45, velocity });
-  }, []);
+    playNote(ctx, destination(), inst, midiNote, { duration: 0.45, velocity });
+  }, [destination]);
 
   const play = async () => {
     if (!notes.length) return;

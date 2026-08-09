@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
-import { Shuffle, Pause, Play, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Shuffle, Pause, Play, ChevronLeft, ChevronRight, Search, MonitorUp } from 'lucide-react';
 import { getAudioContext, getMasterBus } from '../../services/audioEngine.js';
+import { listDisplays, describeDisplay, openPopout, sizePopoutCanvas } from '../../services/vizPopout.js';
 
 // Butterchurn (Milkdrop 2 WebGL port) — Lyricist 4.2.0
 // Full preset browser: dozens of visualizations (pack usually has 100+;
@@ -25,6 +26,92 @@ export default function Visualizer() {
   const [autoCycle, setAutoCycle] = useState(true);
   const autoCycleRef = useRef(true);
   useEffect(() => { autoCycleRef.current = autoCycle; }, [autoCycle]);
+
+  // Second-screen popout
+  const [displays, setDisplays] = useState([]);
+  const [poppedTo, setPoppedTo] = useState(null);   // the display it's showing on
+  const popoutRef = useRef(null);                    // { win, canvas, close }
+  const popVizRef = useRef(null);
+  const popRafRef = useRef(null);
+
+  const butterchurnRef = useRef(null);
+
+  useEffect(() => { listDisplays().then(setDisplays).catch(() => setDisplays([])); }, []);
+
+  /** Tear the popout down and hand rendering back to the inline canvas. */
+  const closePopout = useCallback(() => {
+    cancelAnimationFrame(popRafRef.current);
+    popVizRef.current = null;
+    const p = popoutRef.current;
+    popoutRef.current = null;
+    setPoppedTo(null);
+    if (p) p.close();
+  }, []);
+
+  /**
+   * Throw the visualizer onto `display`.
+   *
+   * The popout gets its own Butterchurn instance drawing into its own canvas,
+   * but built on THIS window's AudioContext and connected to the same master
+   * bus — that shared audio graph is only reachable because the popout is a
+   * same-origin window.open child sharing this renderer process.
+   */
+  const sendToScreen = useCallback(async (display) => {
+    setError('');
+    const butterchurn = butterchurnRef.current;
+    if (!butterchurn) { setError('Visualizer is still loading — try again in a second.'); return; }
+    closePopout();
+    try {
+      const p = openPopout(display, { onClose: () => {
+        cancelAnimationFrame(popRafRef.current);
+        popVizRef.current = null;
+        popoutRef.current = null;
+        setPoppedTo(null);
+      } });
+      popoutRef.current = p;
+
+      const ctx = getAudioContext();
+      const { w, h } = sizePopoutCanvas(p.win, p.canvas, null);
+      const viz = butterchurn.createVisualizer(ctx, p.canvas, {
+        width: w, height: h, pixelRatio: Math.min(p.win.devicePixelRatio || 1, 2),
+      });
+      viz.connectAudio(getMasterBus());
+      popVizRef.current = viz;
+
+      // Carry the preset that's already on screen across to the big screen.
+      const { map } = presetsRef.current;
+      if (presetName && map[presetName]) viz.loadPreset(map[presetName], 0);
+
+      p.win.addEventListener('resize', () => sizePopoutCanvas(p.win, p.canvas, popVizRef.current));
+      const nameEl = p.win.document.getElementById('name');
+      if (nameEl) nameEl.textContent = presetName || '';
+
+      const draw = () => {
+        if (!popVizRef.current) return;
+        popVizRef.current.render();
+        popRafRef.current = p.win.requestAnimationFrame(draw);
+      };
+      popRafRef.current = p.win.requestAnimationFrame(draw);
+      setPoppedTo(display);
+    } catch (e) {
+      setError(e.message || 'Could not open the visualizer window.');
+      closePopout();
+    }
+  }, [closePopout, presetName]);
+
+  // Never strand a fullscreen window on another monitor after this tab unmounts.
+  useEffect(() => closePopout, [closePopout]);
+
+  // Keep the popout on whatever preset the controls pick.
+  useEffect(() => {
+    const viz = popVizRef.current;
+    const p = popoutRef.current;
+    if (!viz || !p) return;
+    const { map } = presetsRef.current;
+    if (presetName && map[presetName]) viz.loadPreset(map[presetName], 1.5);
+    const nameEl = p.win.document.getElementById('name');
+    if (nameEl) nameEl.textContent = presetName || '';
+  }, [presetName]);
 
   const loadPresetByName = useCallback((name, blend = 2.0) => {
     const { map, names } = presetsRef.current;
@@ -88,6 +175,7 @@ export default function Visualizer() {
         const butterchurn = unwrap(bcMod, 'createVisualizer');
         if (!butterchurn) throw new Error('Butterchurn loaded but createVisualizer was not found');
         if (cancelled || !canvasRef.current) return;
+        butterchurnRef.current = butterchurn;   // the popout builds its own instance
 
         const ctx = getAudioContext();
         const canvas = canvasRef.current;
@@ -155,9 +243,11 @@ export default function Visualizer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadRandomPreset]);
 
+  // While it's on another screen the inline canvas stops drawing — no reason to
+  // run two WebGL visualizers when only one is being looked at.
   useEffect(() => {
     cancelAnimationFrame(rafRef.current);
-    if (running) {
+    if (running && !poppedTo) {
       const render = () => {
         if (vizRef.current) vizRef.current.render();
         rafRef.current = requestAnimationFrame(render);
@@ -165,7 +255,7 @@ export default function Visualizer() {
       rafRef.current = requestAnimationFrame(render);
     }
     return () => cancelAnimationFrame(rafRef.current);
-  }, [running]);
+  }, [running, poppedTo]);
 
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -189,10 +279,57 @@ export default function Visualizer() {
           <button className="suno-chip" onClick={() => setAutoCycle((v) => !v)} title="Auto-cycle every ~28s">
             Auto {autoCycle ? 'On' : 'Off'}
           </button>
+
+          {/* Send it to another monitor. Only worth showing when there is more
+              than one screen to send it to. */}
+          {displays.length > 1 && !poppedTo && (
+            <select
+              className="suno-chip"
+              value=""
+              onChange={(e) => {
+                const d = displays.find((x) => String(x.id) === e.target.value);
+                if (d) sendToScreen(d);
+              }}
+              style={{ fontSize: '0.58rem', cursor: 'pointer', maxWidth: 190 }}
+              data-help="Throw the visualizer full-screen onto one of your other monitors. It keeps reacting to the same audio, and the preset controls here still drive it. Press Esc on that screen to bring it back."
+            >
+              <option value="">Send to screen…</option>
+              {displays.map((d) => (
+                <option key={d.id} value={String(d.id)}>{describeDisplay(d)}</option>
+              ))}
+            </select>
+          )}
+
+          {poppedTo && (
+            <button
+              className="suno-chip"
+              onClick={closePopout}
+              style={{ borderColor: '#10f0a0', color: '#10f0a0', background: 'rgba(16,240,160,0.1)' }}
+              data-help="Bring the visualizer back into this panel and close the full-screen window."
+            >
+              <MonitorUp size={11} /> On {describeDisplay(poppedTo).split(' · ')[0]} — bring back
+            </button>
+          )}
         </div>
         {presetName && (
           <div style={{ position: 'absolute', left: 10, bottom: 8, fontSize: '0.58rem', color: 'rgba(0,229,255,0.85)', fontFamily: "'JetBrains Mono', monospace", textShadow: '0 0 6px rgba(0,0,0,0.9)', maxWidth: '70%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {presetIndex + 1}/{allNames.length || '—'} · {presetName}
+          </div>
+        )}
+        {poppedTo && (
+          <div style={{
+            position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: 8,
+            background: 'rgba(4,2,10,0.86)', color: '#00e5ff', textAlign: 'center', padding: 16,
+          }}>
+            <MonitorUp size={26} />
+            <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>
+              Playing on {describeDisplay(poppedTo)}
+            </div>
+            <div style={{ fontSize: '0.64rem', color: 'rgba(196,181,253,0.7)', maxWidth: 380 }}>
+              Shuffle, Prev/Next and the preset list still drive it. Press Esc on that screen, or use
+              the button above, to bring it back here.
+            </div>
           </div>
         )}
         {error && <div className="pill-red" style={{ position: 'absolute', inset: 'auto 10px 10px 10px', padding: '6px 10px', borderRadius: 8, fontSize: '0.66rem' }}>{error}</div>}

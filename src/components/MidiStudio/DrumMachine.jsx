@@ -8,6 +8,7 @@ import {
 } from '../../services/drumEngine.js';
 import { listPacks, listSamples, getSampleBuffer } from '../../services/sampleLibrary.js';
 import { registerDemoSnapshot } from '../../services/demoSafety.js';
+import { Knob, FxKnobGrid, FxToggles } from './FxRackPanel.jsx';
 
 // 808 Drum Machine — Lyricist 4.2.0
 // Synthesized 808 kit, 16 steps, per-track effects rack, master rack, and
@@ -459,51 +460,9 @@ export default function DrumMachine() {
           <div style={{ fontSize: '0.72rem', fontWeight: 700, marginBottom: 8, color: '#ff2d95' }}>
             {fxOpen === 'master' ? 'Master' : KIT.find((k) => k.id === fxOpen)?.name} — Effects Rack
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(168px, 1fr))', gap: 10 }}>
-            <Knob label="Level" value={fxTarget.level} min={0} max={1.5} step={0.01} onChange={(v) => setFxTarget({ level: v })} help="Output volume for this rack." />
-            <Knob label="Pan" value={fxTarget.pan} min={-1} max={1} step={0.01} onChange={(v) => setFxTarget({ pan: v })} help="Left / right placement." />
-            <Knob label="Filter Hz" value={fxTarget.filterFreq} min={40} max={20000} step={10} onChange={(v) => setFxTarget({ filterFreq: v })} help="Cutoff frequency. Sweep it down to muffle, up to open." />
-            <Knob label="Resonance" value={fxTarget.filterQ} min={0.1} max={16} step={0.1} onChange={(v) => setFxTarget({ filterQ: v })} help="Emphasis right at the cutoff — high values whistle." />
-            <Knob label="Drive" value={fxTarget.drive} min={0} max={1} step={0.01} onChange={(v) => setFxTarget({ drive: v })} help="Analog-style saturation. A little thickens, a lot destroys." />
-            <Knob label="Bitcrush" value={fxTarget.crush} min={0} max={16} step={1} onChange={(v) => setFxTarget({ crush: v })} help="Bit depth reduction. 0 is off; low numbers get grimy and lo-fi." />
-            <Knob label="Delay Time" value={fxTarget.delayTime} min={0} max={1} step={0.005} onChange={(v) => setFxTarget({ delayTime: v })} help="Echo spacing in seconds." />
-            <Knob label="Delay Fb" value={fxTarget.delayFeedback} min={0} max={0.92} step={0.01} onChange={(v) => setFxTarget({ delayFeedback: v })} help="How many times the echo repeats." />
-            <Knob label="Delay Mix" value={fxTarget.delayMix} min={0} max={1} step={0.01} onChange={(v) => setFxTarget({ delayMix: v })} help="How loud the echoes sit against the dry sound." />
-            <Knob label="Reverb Mix" value={fxTarget.reverbMix} min={0} max={1} step={0.01} onChange={(v) => setFxTarget({ reverbMix: v })} help="Room amount." />
-            <Knob label="Reverb Size" value={fxTarget.reverbSize} min={0.2} max={6} step={0.1} onChange={(v) => setFxTarget({ reverbSize: v })} help="How big the room is, in seconds of tail." />
-            <Knob label="Compress" value={fxTarget.compress} min={0} max={1} step={0.01} onChange={(v) => setFxTarget({ compress: v })} help="Glues and levels the hits. Push it for pump. Makes up its own gain, so it never just gets quieter." />
-            <Knob label="High-Pass" value={fxTarget.hpFreq} min={20} max={2000} step={5} onChange={(v) => setFxTarget({ hpFreq: v })} help="Cuts the low end away. Lift it on hats and claps to get them out of the kick's way." />
-            <Knob label="EQ Low" value={fxTarget.eqLow} min={-18} max={18} step={0.5} onChange={(v) => setFxTarget({ eqLow: v })} help="Shelf below 180Hz, in dB. Weight and body." />
-            <Knob label="EQ Mid" value={fxTarget.eqMid} min={-18} max={18} step={0.5} onChange={(v) => setFxTarget({ eqMid: v })} help="Peak at the mid frequency, in dB. Cut it to get out of the way of vocals." />
-            <Knob label="Mid Hz" value={fxTarget.eqMidFreq} min={150} max={8000} step={25} onChange={(v) => setFxTarget({ eqMidFreq: v })} help="Where the mid EQ sits." />
-            <Knob label="EQ High" value={fxTarget.eqHigh} min={-18} max={18} step={0.5} onChange={(v) => setFxTarget({ eqHigh: v })} help="Shelf above 6.5kHz, in dB. Air and snap." />
-            <Knob label="Delay Tone" value={fxTarget.delayDamp} min={400} max={16000} step={100} onChange={(v) => setFxTarget({ delayDamp: v })} help="How bright the echoes stay. Lower makes each repeat darker than the last, like tape." />
-            <Knob label="Reverb Pre" value={fxTarget.reverbPreDelay} min={0} max={0.12} step={0.002} onChange={(v) => setFxTarget({ reverbPreDelay: v })} help="Gap before the room answers. A little keeps the hit clear of its own reverb." />
-            <Knob label="Reverb Damp" value={fxTarget.reverbDamp} min={0.02} max={0.95} step={0.01} onChange={(v) => setFxTarget({ reverbDamp: v })} help="How fast the room's highs die away. Up is a soft room, down is tiled and bright." />
-            <label style={{ fontSize: '0.62rem', display: 'flex', flexDirection: 'column', gap: 3 }}
-              data-help="Filter shape. Lowpass keeps the lows, highpass keeps the tops, bandpass keeps a slice.">
-              Filter Type
-              <select value={fxTarget.filterType} onChange={(e) => setFxTarget({ filterType: e.target.value })}
-                className="suno-chip" style={{ fontSize: '0.62rem', padding: '3px 5px' }}>
-                {['lowpass', 'highpass', 'bandpass', 'notch', 'peaking'].map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </label>
-          </div>
+          <FxKnobGrid fx={fxTarget} onChange={setFxTarget} />
 
-          {fxOpen === 'master' && (
-            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-              <label style={{ fontSize: '0.66rem', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
-                data-help="Catches anything that would clip the output. Leave it on — it only acts when the master is being pushed past full scale.">
-                <input type="checkbox" checked={!!fxTarget.limit} onChange={(e) => setFxTarget({ limit: e.target.checked ? 1 : 0 })} />
-                Limiter
-              </label>
-              <label style={{ fontSize: '0.66rem', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
-                data-help="Echoes bounce left and right instead of repeating down the middle.">
-                <input type="checkbox" checked={!!fxTarget.delayPingPong} onChange={(e) => setFxTarget({ delayPingPong: e.target.checked ? 1 : 0 })} />
-                Ping-Pong Delay
-              </label>
-            </div>
-          )}
+          {fxOpen === 'master' && <FxToggles fx={fxTarget} onChange={setFxTarget} />}
 
           {/* The voice's own panel — the knobs a real 808 has on the front for
               this drum, and only the ones this drum actually has. */}
@@ -533,17 +492,3 @@ export default function DrumMachine() {
   );
 }
 
-function Knob({ label, value, min, max, step, onChange, help }) {
-  return (
-    <label style={{ fontSize: '0.62rem', display: 'flex', flexDirection: 'column', gap: 3 }} data-help={help}>
-      <span style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <span>{label}</span>
-        <span style={{ color: 'rgba(0,229,255,0.8)' }}>
-          {typeof value === 'number' ? (value >= 100 ? Math.round(value) : value.toFixed(2)) : value}
-        </span>
-      </span>
-      <input type="range" min={min} max={max} step={step} value={value} className="suno-range"
-        onChange={(e) => onChange(Number(e.target.value))} />
-    </label>
-  );
-}

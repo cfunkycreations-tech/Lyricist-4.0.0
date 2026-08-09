@@ -12,12 +12,21 @@ import { inspectGenerated, truncateAtCollapse } from '../utils/lyricSanity.js';
  * check — you could believe you were on the model you picked while something
  * else entirely was answering. Every call now records it.
  */
-export const lastGeneration = { model: null, provider: null, ok: true, reasons: [], dropped: 0, at: null };
+export const lastGeneration = { model: null, provider: null, ok: true, reasons: [], dropped: 0, at: null, unfiltered: false };
 
 /** A model that returns this is not writing a song and should not be retried into. */
 const FALLBACK_MODEL = 'google/gemma-4-31b-it:free';
 
-async function singleCall(messages, config, modelId, customTemp, customMax) {
+/**
+ * Did OpenRouter reject the request because our provider filter left nothing
+ * to route to? That is a filter problem, not a model problem, and it must
+ * never be what the user sees.
+ */
+function isNoEndpointsError(status, message) {
+  return status === 404 || /no endpoints found/i.test(message || '');
+}
+
+async function postCompletion(body, config) {
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -26,36 +35,64 @@ async function singleCall(messages, config, modelId, customTemp, customMax) {
       "HTTP-Referer": "https://lyricist.app",
       "X-Title": "Lyricist 4.2.0"
     },
-    body: JSON.stringify({
-      model: modelId,
-      temperature: customTemp !== null ? customTemp : config.temperature,
-      max_tokens: customMax !== null ? customMax : config.maxTokens,
-      // Sampling guards. Without these a model that starts to drift has nothing
-      // pulling it back, and it will happily fill the entire token budget with
-      // wreckage — which is exactly what happened: two good sections, then
-      // thousands of tokens of subword salad.
-      top_p: 0.9,
-      frequency_penalty: 0.3,
-      presence_penalty: 0.2,
-      // WHICH COPY OF THE MODEL ANSWERS MATTERS AS MUCH AS WHICH MODEL.
-      // OpenRouter spreads one model id across many hosts, and some serve
-      // aggressively quantised builds. A heavily squeezed model reads fine for
-      // a verse or two and then falls apart into subword salad on a long
-      // generation — the same wreckage a wrong-model router produces, from a
-      // model you correctly chose and are paying for. Ask for the unsqueezed
-      // builds and let it fail over rather than quietly serve a bad one.
-      provider: {
-        quantizations: ['fp32', 'bf16', 'fp16', 'fp8'],
-        allow_fallbacks: true,
-      },
-      messages
-    })
+    body: JSON.stringify(body)
   });
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(errData?.error?.message || `API Error (${modelId}): status ${response.status}`);
+  if (response.ok) return { ok: true, result: await response.json() };
+  const errData = await response.json().catch(() => ({}));
+  return { ok: false, status: response.status, message: errData?.error?.message || '' };
+}
+
+async function singleCall(messages, config, modelId, customTemp, customMax) {
+  const body = {
+    model: modelId,
+    temperature: customTemp !== null ? customTemp : config.temperature,
+    max_tokens: customMax !== null ? customMax : config.maxTokens,
+    // Sampling guards. Without these a model that starts to drift has nothing
+    // pulling it back, and it will happily fill the entire token budget with
+    // wreckage — which is exactly what happened: two good sections, then
+    // thousands of tokens of subword salad.
+    top_p: 0.9,
+    frequency_penalty: 0.3,
+    presence_penalty: 0.2,
+    // WHICH COPY OF THE MODEL ANSWERS MATTERS AS MUCH AS WHICH MODEL.
+    // OpenRouter spreads one model id across many hosts, and some serve
+    // aggressively quantised builds. A heavily squeezed model reads fine for
+    // a verse or two and then falls apart into subword salad on a long
+    // generation — the same wreckage a wrong-model router produces, from a
+    // model you correctly chose and are paying for. So we ASK for the
+    // unsqueezed builds.
+    //
+    // 'unknown' IS IN THIS LIST AND MUST STAY IN IT. Every first-party provider
+    // — Anthropic, OpenAI, Google — reports quantization 'unknown', because
+    // they serve their own weights and don't publish the precision. Only
+    // open-weight models rehosted by third parties (Llama, Qwen, Mistral)
+    // declare fp8/bf16. Leaving 'unknown' out doesn't screen out bad hosts; it
+    // screens out every paid frontier model there is, and the request dies with
+    // "No endpoints found for the request with quantization: ..." — API jargon
+    // where the song should be. That is exactly what shipped, and it broke
+    // Ghost Rider on the paid model that was set as number one.
+    //
+    // What this still excludes is the real target: int4/int8/q4 rehosts of
+    // open-weight models, which are the ones that read fine for a verse and
+    // then fall apart.
+    provider: {
+      quantizations: ['fp32', 'bf16', 'fp16', 'fp8', 'unknown'],
+      allow_fallbacks: true,
+    },
+    messages
+  };
+
+  let attempt = await postCompletion(body, config);
+  let unfiltered = false;
+  if (!attempt.ok && isNoEndpointsError(attempt.status, attempt.message)) {
+    const { provider, ...noFilter } = body;
+    attempt = await postCompletion({ ...noFilter, provider: { allow_fallbacks: true } }, config);
+    unfiltered = attempt.ok;
   }
-  const result = await response.json();
+  if (!attempt.ok) {
+    throw new Error(attempt.message || `API Error (${modelId}): status ${attempt.status}`);
+  }
+  const result = attempt.result;
   // OpenRouter reports the model it actually used, which for a router is not
   // the one that was asked for.
   const served = result.model || modelId;
@@ -64,7 +101,7 @@ async function singleCall(messages, config, modelId, customTemp, customMax) {
   // like a song that stops mid-thought, and it is worth naming as that rather
   // than leaving it to look like the model lost the plot.
   const finish = result.choices?.[0]?.finish_reason || null;
-  return { text: result.choices?.[0]?.message?.content || "", model: served, provider, finish };
+  return { text: result.choices?.[0]?.message?.content || "", model: served, provider, finish, unfiltered };
 }
 
 /**
@@ -76,13 +113,19 @@ async function singleCall(messages, config, modelId, customTemp, customMax) {
  * that the request was handed to a model with no business writing lyrics.
  */
 async function guardedCall(messages, config, modelId, customTemp, customMax) {
-  const { text, model, provider, finish } = await singleCall(messages, config, modelId, customTemp, customMax);
+  const { text, model, provider, finish, unfiltered } = await singleCall(messages, config, modelId, customTemp, customMax);
   const verdict = inspectGenerated(text);
   Object.assign(lastGeneration, {
-    model, provider, ok: verdict.ok, reasons: verdict.reasons, dropped: 0, at: Date.now(),
+    model, provider, ok: verdict.ok, reasons: verdict.reasons, dropped: 0, at: Date.now(), unfiltered,
   });
+  // Not an error — the song still got written. But if this one turns out to be
+  // rubble, the fact that no unquantised host was available is the first thing
+  // worth knowing.
+  if (unfiltered) {
+    lastGeneration.reasons = [...verdict.reasons, 'no full-precision host was available for this model — any provider was allowed'];
+  }
   if (finish === 'length') {
-    lastGeneration.reasons = [...verdict.reasons, 'hit the token limit — raise Max Tokens in Settings'];
+    lastGeneration.reasons = [...lastGeneration.reasons, 'hit the token limit — raise Max Tokens in Settings'];
   }
   if (verdict.ok) return text;
 
