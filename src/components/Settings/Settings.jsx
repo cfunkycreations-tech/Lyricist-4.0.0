@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { Save, RefreshCw, Key, Shield, HelpCircle } from 'lucide-react';
 import { normalizeApiKey } from '../../services/AIService.js';
+import { IMAGE_MODELS, DEFAULT_IMAGE_MODEL } from '../../services/GeminiService.js';
 import settingsBg from '../../assets/settings.mp4';
 
 const MODELS_CACHE_KEY = 'openrouter-models-cache';
@@ -323,7 +324,7 @@ export default function Settings() {
         fusionModels: [],
         googleApiKey: '',
         geminiTextModel: 'gemini-3.5-flash',
-        geminiImageModel: 'gemini-3.1-flash-image',
+        geminiImageModel: DEFAULT_IMAGE_MODEL,
         useFlexTier: true,
         imageAspectRatio: '1:1',
         imageSize: '2K',
@@ -580,7 +581,7 @@ export default function Settings() {
               Cover Art Model (OpenRouter)
             </label>
             <select
-              value={store.config.geminiImageModel || 'google/gemini-2.5-flash-image-preview'}
+              value={store.config.geminiImageModel || DEFAULT_IMAGE_MODEL}
               onChange={(e) => handleUpdate('geminiImageModel', e.target.value)}
               style={{
                 width: '100%',
@@ -594,9 +595,12 @@ export default function Settings() {
                 fontFamily: "'Space Grotesk', sans-serif"
               }}
             >
-              <option value="google/gemini-2.5-flash-image-preview">Nano Banana 2 Lite — fast (OpenRouter)</option>
-              <option value="google/gemini-2.5-flash-image">Nano Banana 2 — balanced (OpenRouter)</option>
-              <option value="black-forest-labs/flux.2-flex">Flux 2 Flex — alt (OpenRouter)</option>
+              {/* Driven from GeminiService so there is ONE list of image models.
+                  The hand-written options here were two thirds dead: a renamed
+                  Gemini id and a Flux model that does not exist on OpenRouter. */}
+              {IMAGE_MODELS.map((m) => (
+                <option key={m.id} value={m.id}>{m.label}</option>
+              ))}
             </select>
           </div>
 

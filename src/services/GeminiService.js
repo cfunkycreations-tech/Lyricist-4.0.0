@@ -8,12 +8,51 @@ import { callAI, buildPromptContext, parseSectionsFromText, assertApiKey, normal
 
 // OpenRouter image-model slugs (Nano Banana family exposed through OpenRouter).
 // User can change these in Settings; defaults target Nano Banana 2 Lite/class.
+// All ids checked against https://openrouter.ai/api/v1/models on 2026-08-12.
+// The previous list was two thirds dead: 'google/gemini-2.5-flash-image-preview'
+// had been renamed and 'black-forest-labs/flux.2-flex' does not exist (there are
+// no flux models on OpenRouter at all). Cheapest first.
 export const IMAGE_MODELS = [
-  { id: 'google/gemini-2.5-flash-image-preview', label: 'Nano Banana 2 Lite — fast (via OpenRouter)' },
-  { id: 'google/gemini-2.5-flash-image', label: 'Nano Banana 2 — balanced (via OpenRouter)' },
-  { id: 'black-forest-labs/flux.2-flex', label: 'Flux 2 Flex — alt quality (via OpenRouter)' },
+  { id: 'google/gemini-2.5-flash-image', label: 'Nano Banana 2, cheapest' },
+  { id: 'google/gemini-3.1-flash-lite-image', label: 'Nano Banana 3 Lite, fast' },
+  { id: 'google/gemini-3.1-flash-image', label: 'Nano Banana 3, balanced (default)' },
+  { id: 'google/gemini-3-pro-image', label: 'Nano Banana 3 Pro, best quality' },
+  { id: 'openai/gpt-5-image-mini', label: 'GPT-5 Image Mini, cheapest of all' },
+  { id: 'openai/gpt-5-image', label: 'GPT-5 Image' },
 ];
-export const DEFAULT_IMAGE_MODEL = 'google/gemini-2.5-flash-image-preview';
+/**
+ * Cover-art model, as OpenRouter spells it.
+ *
+ * VERIFIED AGAINST THE LIVE MODEL LIST, 2026-08-12. Two dead ids were in here
+ * and every one of them 404'd, which is why Song Forge could not make art at all:
+ *
+ *   'gemini-3.1-flash-image'                 <- saved config default. No provider
+ *                                               prefix, so no such model.
+ *   'google/gemini-2.5-flash-image-preview'  <- this constant. Renamed upstream;
+ *                                               the '-preview' suffix is gone.
+ *
+ * Because the saved value was truthy it won over this fallback, and the fallback
+ * was broken too, so there was no path to a working image model.
+ *
+ * Check an id against https://openrouter.ai/api/v1/models before putting it here.
+ * A model id is not a guess.
+ */
+export const DEFAULT_IMAGE_MODEL = 'google/gemini-3.1-flash-image';
+
+/** Vision-capable and free. Used only when the user's own chat model cannot
+ *  read an image. Verified present on OpenRouter 2026-08-12. */
+export const VISION_FALLBACK_MODEL = 'google/gemma-4-31b-it:free';
+
+/** Image-output models that exist on OpenRouter, cheapest first. Used to tell
+ *  the user what to pick when their configured model is not a real one. */
+export const KNOWN_IMAGE_MODELS = [
+  'google/gemini-2.5-flash-image',
+  'google/gemini-3.1-flash-lite-image',
+  'google/gemini-3.1-flash-image',
+  'google/gemini-3-pro-image',
+  'openai/gpt-5-image-mini',
+  'openai/gpt-5-image',
+];
 
 // Kept for Settings UI that still labels a "text model" — Song Forge lyrics use
 // the same OpenRouter model as the rest of Lyricist (store.config.model).
@@ -125,6 +164,42 @@ function extractImageFromOR(result) {
   return null;
 }
 
+/**
+ * Work out which image model to actually send, repairing the two shapes of bad
+ * id that shipped.
+ *
+ * An id with no "provider/" prefix is never valid on OpenRouter, and that is
+ * exactly what was saved into every install ('gemini-3.1-flash-image'). Rather
+ * than 404 on it, prefix it with google/ when that yields a model we know is
+ * real, and otherwise fall back to the default. Silent correction of a broken
+ * value is right here; silently changing a WORKING choice would not be.
+ */
+export function resolveImageModel(store) {
+  const raw = String(
+    store?.config?.geminiImageModel || store?.config?.openRouterImageModel || ''
+  ).trim();
+  if (!raw) return DEFAULT_IMAGE_MODEL;
+  if (KNOWN_IMAGE_MODELS.includes(raw)) return raw;
+  if (!raw.includes('/')) {
+    const prefixed = `google/${raw}`;
+    if (KNOWN_IMAGE_MODELS.includes(prefixed)) {
+      console.warn(`[Lyricist] Cover-art model "${raw}" has no provider prefix; using "${prefixed}".`);
+      return prefixed;
+    }
+  }
+  // Retired upstream: the '-preview' suffix was dropped from these.
+  const depreviewed = raw.replace(/-preview$/, '');
+  if (KNOWN_IMAGE_MODELS.includes(depreviewed)) {
+    console.warn(`[Lyricist] Cover-art model "${raw}" was renamed; using "${depreviewed}".`);
+    return depreviewed;
+  }
+  // Unknown but plausibly valid (the list moves) - let it through rather than
+  // blocking a model that exists but postdates this build.
+  if (raw.includes('/')) return raw;
+  console.warn(`[Lyricist] Cover-art model "${raw}" is not a valid OpenRouter id; using "${DEFAULT_IMAGE_MODEL}".`);
+  return DEFAULT_IMAGE_MODEL;
+}
+
 function dataUrlParts(dataUrlOrBase64) {
   if (!dataUrlOrBase64) return { dataUrl: null, base64: null };
   if (dataUrlOrBase64.startsWith('data:')) {
@@ -185,7 +260,7 @@ export async function generateImage(store, { prompt, aspectRatio, imageSize } = 
     throw new Error('Enter a description of the image you want to create.');
   }
   const apiKey = requireOpenRouter(store);
-  const model = store.config.geminiImageModel || store.config.openRouterImageModel || DEFAULT_IMAGE_MODEL;
+  const model = resolveImageModel(store);
 
   const result = await openRouterChat({
     apiKey,
@@ -239,7 +314,7 @@ export async function generateImageToImage(store, { referenceBase64, referenceMi
     throw new Error('No reference image provided. Upload one first.');
   }
   const apiKey = requireOpenRouter(store);
-  const model = store.config.geminiImageModel || store.config.openRouterImageModel || DEFAULT_IMAGE_MODEL;
+  const model = resolveImageModel(store);
   const mime = referenceMimeType || 'image/png';
   const dataUrl = `data:${mime};base64,${referenceBase64}`;
 
@@ -319,14 +394,21 @@ export async function generateSongFromImage(store, { imageBase64, mimeType, note
   if (!imageBase64) {
     throw new Error('No image provided. Upload one or generate one first.');
   }
-  requireOpenRouter(store);
+  // Take the CLEANED key that requireOpenRouter returns. This used to re-read
+  // store.config.openRouterApiKey raw a few lines later, which skipped the
+  // normalisation every other path goes through, so a key with a trailing
+  // newline failed Art First with "Missing Authentication header" even after
+  // that bug was fixed everywhere else.
+  const apiKey = requireOpenRouter(store);
   const context = buildPromptContext(store);
   const structureSequence = (store.customStructure || []).map((s) => s.toUpperCase()).join(' -> ');
   const dataUrl = `data:${mimeType || 'image/png'};base64,${imageBase64}`;
 
-  // Multimodal lyric write via OpenRouter (vision-capable chat model)
-  const apiKey = store.config.openRouterApiKey;
-  const model = store.config.model || 'openai/gpt-4o-mini';
+  // Writing lyrics from a picture needs a model that can SEE the picture. The
+  // user's chosen model is used when it can; most frontier models and the app's
+  // free default are vision-capable, but plenty are not, and a text-only model
+  // answers an image request with an opaque provider error.
+  const model = store.config.model || VISION_FALLBACK_MODEL;
 
   const userText = `Study the attached image closely — its subject, colors, lighting, mood, and any story it seems to tell. Use it as the creative seed for a song; the lyrics should feel clearly inspired by what's in the image.
 ${notes && notes.trim() ? `Additional direction from the songwriter: ${notes.trim()}\n` : ''}
@@ -338,22 +420,36 @@ ${structureSequence}
 
 Write the complete song lyrics. Ensure every section is clearly labeled. Output only the lyrics.`;
 
-  const result = await openRouterChat({
+  const messages = [
+    { role: 'system', content: WRITING_LAWS },
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: userText },
+        { type: 'image_url', image_url: { url: dataUrl } },
+      ],
+    },
+  ];
+  const opts = {
     apiKey,
-    model,
     temperature: store.config.temperature ?? 0.75,
     max_tokens: store.config.maxTokens ?? 4000,
-    messages: [
-      { role: 'system', content: WRITING_LAWS },
-      {
-        role: 'user',
-        content: [
-          { type: 'text', text: userText },
-          { type: 'image_url', image_url: { url: dataUrl } },
-        ],
-      },
-    ],
-  });
+    messages,
+  };
+
+  let result;
+  try {
+    result = await openRouterChat({ ...opts, model });
+  } catch (e) {
+    // A text-only model rejects the image part rather than ignoring it. Retry
+    // once on a known vision model instead of handing the user a provider error
+    // about "content parts" that names nothing they can act on.
+    if (model === VISION_FALLBACK_MODEL || !/image|modal|content|vision|not support/i.test(e.message || '')) {
+      throw e;
+    }
+    console.warn(`[Lyricist] "${model}" could not read the image; retrying on ${VISION_FALLBACK_MODEL}.`);
+    result = await openRouterChat({ ...opts, model: VISION_FALLBACK_MODEL });
+  }
 
   const rawText = result?.choices?.[0]?.message?.content;
   const text = typeof rawText === 'string' ? rawText : Array.isArray(rawText)

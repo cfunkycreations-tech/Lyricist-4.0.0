@@ -193,7 +193,12 @@ const DEFAULT_CONFIG = {
   // Song Forge (Gemini Interactions API — text + Nano Banana cover art)
   googleApiKey: '',
   geminiTextModel: 'gemini-3.5-flash',
-  geminiImageModel: 'gemini-3.1-flash-image',
+  // MUST carry the provider prefix. This shipped as bare 'gemini-3.1-flash-image',
+  // which is not a model id OpenRouter can route, so every Song Forge cover-art
+  // request 404'd. The saved value is truthy, so it also beat the code's fallback,
+  // and that fallback was a renamed id that no longer existed either. Result: no
+  // working path to cover art at all. Verified live before changing.
+  geminiImageModel: 'google/gemini-3.1-flash-image',
   useFlexTier: true,
   imageAspectRatio: '1:1',
   imageSize: '2K',
@@ -233,6 +238,21 @@ export const LyricStoreProvider = ({ children }) => {
             + `Brought down to ${MAX_TEMPERATURE}. See Settings → Creativity.`
           );
           parsed.temperature = MAX_TEMPERATURE;
+        }
+        // Repair a cover-art model id that cannot possibly work. Anything with
+        // no "provider/" prefix is not routable on OpenRouter, and every install
+        // has the bare 'gemini-3.1-flash-image' saved, so Song Forge could never
+        // make art. Changing a BROKEN value is a fix; changing a working choice
+        // would be the bug described above, so this only touches ids that are
+        // structurally invalid.
+        if (typeof parsed.geminiImageModel === 'string'
+            && parsed.geminiImageModel.trim()
+            && !parsed.geminiImageModel.includes('/')) {
+          console.warn(
+            `[Lyricist] Cover-art model was saved as "${parsed.geminiImageModel}", which is not a `
+            + `routable OpenRouter id. Reset to "${DEFAULT_CONFIG.geminiImageModel}". See Settings.`
+          );
+          parsed.geminiImageModel = DEFAULT_CONFIG.geminiImageModel;
         }
         return { ...DEFAULT_CONFIG, ...parsed };
       } catch (e) {}
