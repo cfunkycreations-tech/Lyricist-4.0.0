@@ -506,7 +506,9 @@ export default function SongwriterHub({ ghostRiderData }) {
         </div>
 
         {/* Structure Presets & Builder */}
-        <StructureBuilder />
+        <div data-demo="sw-structure">
+          <StructureBuilder />
+        </div>
 
         {/* Hook first mode toggle */}
         <div

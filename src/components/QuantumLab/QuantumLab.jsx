@@ -302,6 +302,43 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     setTimeout(() => setRunning(false), 900);
   };
 
+  /**
+   * Steps 4 and 5 in one press — Chris, 2026-08-12: "take several of the action
+   * steps… can't you incorporate some of those, two things together or three?"
+   *
+   * Run and Crystallize are always done back to back and nobody who is new to
+   * this tab can tell you why they are two buttons. They stay as two buttons
+   * (nothing is hidden, nothing is removed — you can still do them one at a
+   * time and watch what each does), and this is the one-press version for
+   * people who just want a verse.
+   *
+   * It cannot be written as doRun() + doCrystallize(): doCrystallize reads
+   * `section` from the render closure, which would still be the pre-Run value,
+   * so it would lock the OLD lattice. The two transforms are chained on the
+   * value instead of on state.
+   */
+  const doRunAndLock = () => {
+    setRunning(true);
+    const ran = runGens(section, 12);
+    const locked = crystallizeLab(ran.section);
+    setSection(locked.section);
+    setGen((g) => g + 12);
+    setCrystallized(true);
+    const audit = checkContracts(locked.section, contracts);
+    setStatus(
+      audit.ok
+        ? {
+            lead: 'Spread and locked.',
+            rest: ' Energy moved across the lattice for 12 steps and the field is now locked (Crystallize went green). Your own keywords were never swapped out. Next: Step 6, Generate Neural Lyrics.',
+          }
+        : {
+            lead: 'Spread and locked — but contracts broken.',
+            rest: ` ${audit.violations.length} entanglement contract(s) failed: ${audit.violations.map((v) => `“${v.aText}”↔“${v.bText}”`).join('; ')}. Fix those tiles or remove the contracts before you generate.`,
+          }
+    );
+    setTimeout(() => setRunning(false), 900);
+  };
+
   const doCrystallize = () => {
     const res = crystallizeLab(section);
     setSection(res.section);
@@ -715,7 +752,10 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       >
         <div className="ql-actionbar-caption">
           <span className="ql-actionbar-title">Lattice controls</span>
-          <span className="ql-actionbar-sub">Press them left to right. Hover any button for plain English.</span>
+          <span className="ql-actionbar-sub">
+            Press them left to right — or use the one orange button to do Steps 4 and 5 in a single press.
+            Hover any button for plain English.
+          </span>
         </div>
 
         <div className="ql-actionbar-row ql-actionbar-primary">
@@ -753,6 +793,18 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             data-help="STEP 5. Locks the lattice energy state. Your keywords stay. Turns GREEN once it is locked."
           >
             <span className="ql-step-tag">Step 5</span> ❄ Crystallize
+          </button>
+          {/* Steps 4+5 in one press. Sits right after them so the relationship
+              is obvious, and it does not replace either one. */}
+          <button
+            type="button"
+            className={`ql-btn ql-btn-combo ${running ? 'ql-btn-busy' : ''}`}
+            onClick={doRunAndLock}
+            disabled={running}
+            data-demo="ql-runlock"
+            data-help="Does STEP 4 and STEP 5 together in one press — spreads the energy for 12 steps, then locks the field. Same result as clicking Run then Crystallize. Use the two buttons separately if you want to watch what each one does."
+          >
+            <span className="ql-step-tag">Steps 4+5</span> ⚡ Spread &amp; Lock
           </button>
           <button
             type="button"

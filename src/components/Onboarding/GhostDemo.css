@@ -257,6 +257,40 @@ body.ghost-demo-active .ghost-demo-bar * {
   color: #ffb4d4;
 }
 
+/* Speed control — Slow / Medium / Fast, always visible on the demo bar so
+   nobody has to know a setting exists somewhere else to slow it down. */
+.ghost-demo-bar-speed {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 4px;
+  border-right: 1px solid rgba(139, 92, 246, 0.3);
+  margin-right: 4px;
+}
+
+.ghost-demo-bar-speed-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(196, 181, 253, 0.75);
+  margin-right: 2px;
+}
+
+.ghost-demo-bar-speed-btn {
+  padding: 4px 9px;
+  font-size: 0.65rem;
+  opacity: 0.72;
+}
+
+.ghost-demo-bar-speed-btn.is-on {
+  opacity: 1;
+  color: #fff;
+  border-color: rgba(0, 229, 255, 0.75);
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.3), rgba(168, 85, 247, 0.35));
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.35);
+}
+
 /* Brief flash when ghost "clicks" a control */
 .ghost-demo-click {
   filter: brightness(1.35) saturate(1.2) !important;

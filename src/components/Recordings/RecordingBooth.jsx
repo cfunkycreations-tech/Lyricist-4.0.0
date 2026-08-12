@@ -255,6 +255,7 @@ export default function RecordingBooth({ onNavigate }) {
             <button
               onClick={startRecording}
               className="btn-neon-purple"
+              data-demo="booth-record"
               data-help="Start recording from your microphone. Audio processing (echo cancellation, noise suppression) is OFF so instruments keep their real tone."
               style={{ width: '100%', padding: '12px', borderRadius: 8, border: 'none', color: '#fff', fontSize: '0.86rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             >
@@ -285,7 +286,7 @@ export default function RecordingBooth({ onNavigate }) {
         </div>
 
         {/* Library */}
-        <div className="booth-main">
+        <div className="booth-main" data-demo="booth-library">
           <h4 style={{ margin: '0 0 12px', fontSize: '0.9rem' }}>
             <Music size={15} style={{ verticalAlign: '-2px', marginRight: 6 }} />
             Your Takes — {recordings.length}

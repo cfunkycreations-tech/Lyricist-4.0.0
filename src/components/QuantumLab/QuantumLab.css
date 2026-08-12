@@ -420,6 +420,20 @@
 .ql-btn.on-ylw { border-color: var(--ql-ylw); color: var(--ql-ylw); box-shadow: 0 0 22px rgba(16,240,160,0.5), inset 0 0 14px rgba(16,240,160,0.14); }
 .ql-btn.accent-ylw { border-color: rgba(16,240,160,0.75); color: var(--ql-ylw); }
 
+/* Steps 4+5 in one press. Deliberately the only orange-filled button on the
+   bar so it reads as "the shortcut", distinct from the numbered singles it
+   stands in for — it does not replace them, both are still right there. */
+.ql-btn.ql-btn-combo {
+  border-color: #ff8c00;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(255,111,0,0.32), rgba(255,45,149,0.26));
+  box-shadow: 0 0 22px rgba(255,111,0,0.45), inset 0 0 14px rgba(255,111,0,0.16);
+}
+.ql-btn.ql-btn-combo:hover {
+  border-color: #ffae42;
+  box-shadow: 0 0 30px rgba(255,111,0,0.7), inset 0 0 16px rgba(255,111,0,0.22);
+}
+
 /* Toolbar buttons: NO violet (violet is lattice tiles only).
    Spotlight stays orange, crystallize/freeze/ent stay green when on. */
 .ql-btn.ql-btn-busy {

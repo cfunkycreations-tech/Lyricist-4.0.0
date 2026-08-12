@@ -318,7 +318,7 @@ export default function MasteringStudio({ onNavigate }) {
           </div>
 
           {/* Mastering chain */}
-          <div data-help="The mastering chain applied to every track: 3-band EQ, glue compression, a limiter, and loudness normalization capped at -1 dB peak. Pick a preset or shape it yourself.">
+          <div data-demo="master-chain" data-help="The mastering chain applied to every track: 3-band EQ, glue compression, a limiter, and loudness normalization capped at -1 dB peak. Pick a preset or shape it yourself.">
             <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>
               Mastering Preset: {preset}
             </label>
@@ -354,6 +354,7 @@ export default function MasteringStudio({ onNavigate }) {
             onClick={exportAlbum}
             disabled={!allMastered || exporting}
             className="btn-neon-cyan"
+            data-demo="master-export"
             data-help="Exports the finished album — numbered mastered WAVs, cover.png, and tracklist.txt — into Documents\Lyricist Albums (desktop) or as downloads (browser)."
             style={{ width: '100%', padding: '11px', borderRadius: 8, border: 'none', color: '#fff', fontSize: '0.82rem', fontWeight: 700, cursor: !allMastered || exporting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: !allMastered ? 0.55 : 1 }}>
             {exporting ? <><RefreshCw size={14} className="pulse-glow" /> Exporting...</> : <><Download size={14} /> Export Album</>}

@@ -328,7 +328,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
           )}
 
           {/* Mode toggle */}
-          <div style={{ display: 'flex', gap: 6 }} data-help="Song First writes the lyrics, then paints matching cover art. Art First flips it: create or upload an image, then Gemini writes a song inspired by it.">
+          <div style={{ display: 'flex', gap: 6 }} data-demo="sf-mode" data-help="Song First writes the lyrics, then paints matching cover art. Art First flips it: create or upload an image, then Gemini writes a song inspired by it.">
             {[['songFirst', '🎵 Song First'], ['artFirst', '🎨 Art First']].map(([id, label]) => (
               <button
                 key={id}
@@ -433,6 +433,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                 onClick={handleForgeSongFirst}
                 disabled={busy || !ready}
                 className="btn-neon-cyan"
+                data-demo="sf-forge"
                 data-help="Writes a full song with Gemini, then generates matching cover art. Two chained AI calls, so it takes a bit longer than a single generation."
                 style={{ width: '100%', padding: '11px', borderRadius: 8, border: 'none', color: '#fff', fontSize: '0.84rem', fontWeight: 700, cursor: busy || !ready ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               >
@@ -555,6 +556,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                     <button
                       onClick={handleSendToWorkspace}
                       className="btn-neon-purple"
+                      data-demo="sf-send"
                       data-help="Sends this song into the Songwriter tab, broken into editable sections, so you can polish it line by line."
                       style={{ fontSize: '0.7rem', border: 'none', color: '#fff', padding: '4px 10px', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700 }}
                     >

@@ -363,7 +363,7 @@ export default function SectionEditor({ section, index }) {
       )}
 
       {/* Section Lines — one row, one string, no underlay, no A/B ghost */}
-      <div className="songwriter-lines" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div className="songwriter-lines" data-demo="sw-lines" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {section.lines.map((line, lIdx) => {
           const activeText = String(line?.text ?? '').split('\n')[0] ?? '';
           const sylCount = countLineSyllables(activeText);

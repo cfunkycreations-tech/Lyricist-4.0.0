@@ -23,16 +23,29 @@ function setReactInputValue(el, value) {
   el.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-function firePointerSequence(el, clientX, clientY) {
+/**
+ * Dispatch a pointer sequence at an element.
+ *
+ * `click` MUST be opt-in. This function used to always fire a click event and
+ * then call el.click() on top of it — including from the 'point' branch, whose
+ * own comment said "Don't force button actions on pure point steps". It did.
+ * That is why the Quantum Lab demo ended up on Song Forge: the "Send to Song
+ * Forge" step is a point step, it really pressed the button, the app changed
+ * tabs underneath the demo, and every remaining target went display:none.
+ */
+function firePointerSequence(el, clientX, clientY, { click = true } = {}) {
   if (!el) return;
-  const opts = { bubbles: true, cancelable: true, clientX, clientY, view: window, buttons: 1 };
-  const types = [
-    'pointerover', 'pointerenter', 'mouseover', 'mouseenter',
-    'pointermove', 'mousemove',
-    'pointerdown', 'mousedown',
-    'pointerup', 'mouseup',
-    'click',
-  ];
+  const opts = { bubbles: true, cancelable: true, clientX, clientY, view: window, buttons: click ? 1 : 0 };
+  const types = click
+    ? [
+        'pointerover', 'pointerenter', 'mouseover', 'mouseenter',
+        'pointermove', 'mousemove',
+        'pointerdown', 'mousedown',
+        'pointerup', 'mouseup',
+        'click',
+      ]
+    : // Hover only — enough for the UI to light up, nothing that activates it.
+      ['pointerover', 'pointerenter', 'mouseover', 'mouseenter', 'pointermove', 'mousemove'];
   for (const type of types) {
     try {
       if (type.startsWith('pointer')) {
@@ -45,11 +58,41 @@ function firePointerSequence(el, clientX, clientY) {
     }
   }
   // React synthetic listeners often listen on the element itself
-  try { el.click(); } catch { /* */ }
+  if (click) { try { el.click(); } catch { /* */ } }
 }
 
 export default function GhostDemo({ tabId, onClose }) {
   const demo = getGhostDemo(tabId);
+
+  /**
+   * onClose comes in as an inline arrow from App.jsx, so its identity changes
+   * on EVERY App render. runDemo used to close over it through useCallback, and
+   * the effect depended on runDemo — so every App re-render tore the running
+   * demo down and started it again from step 1. Because the demo really types
+   * into fields, its own typing re-rendered App, which restarted it, which
+   * typed again: the cursor snapping back and forth until it gave up. Holding
+   * the callback in a ref breaks that loop — identity churn can no longer
+   * reach the effect.
+   */
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  const closeDemo = useCallback(() => { onCloseRef.current?.(); }, []);
+
+  /**
+   * Every launch of the walkthrough gets an id. A run keeps going only while
+   * its own id is still the current one, so a superseded run stops on its next
+   * await instead of racing the new one.
+   *
+   * This is what makes the mount-only effect safe under React.StrictMode, which
+   * deliberately mounts, tears down, and remounts every effect in dev. A plain
+   * "only start once" flag looked right and was worse than the bug it replaced:
+   * StrictMode's teardown cancelled run 1, the remount saw the flag and never
+   * started run 2, and the demo sat on step 1 with the bar open forever.
+   */
+  const runIdRef = useRef(0);
+  // The tab it was launched for. If the app navigates away mid-run, stop —
+  // every target on the old tab is display:none and the run would just hang.
+  const tabAtStartRef = useRef(tabId);
   const [stepIdx, setStepIdx] = useState(0);
   const [cursor, setCursor] = useState({ x: window.innerWidth * 0.5, y: window.innerHeight * 0.4 });
   const [bubble, setBubble] = useState({ text: '', x: 0, y: 0, visible: false });
@@ -59,6 +102,34 @@ export default function GhostDemo({ tabId, onClose }) {
   const [statusLine, setStatusLine] = useState('Remote operator connecting…');
   const cancelRef = useRef(false);
   const snapshotRef = useRef(null);
+
+  /**
+   * Playback speed. Chris, 2026-08-12: "don't zip across the screen so fast…
+   * give people a chance to read what you're doing. You can go medium speed."
+   * Medium is the default and it is the honest default — the old build had no
+   * speed control at all and every bubble was capped at 1.2s on screen before
+   * the click fired, which is less time than it takes to read one sentence.
+   * Slow is roughly half pace for someone reading carefully; Fast is for a
+   * second watch when you already know the tab.
+   */
+  const SPEEDS = { slow: 1.55, medium: 1.0, fast: 0.62 };
+  const [speed, setSpeed] = useState('medium');
+  const speedRef = useRef(1.0);
+  useEffect(() => { speedRef.current = SPEEDS[speed] ?? 1.0; }, [speed]);
+
+  /**
+   * How long a bubble must stay up before the ghost acts on it. Derived from
+   * the actual sentence, not a constant: ~2.6 words/sec is an unhurried adult
+   * reading pace, plus a beat to find the highlighted control. Floored at 2.6s
+   * so even a four-word line does not flash past, ceilinged at 13s so a long
+   * explanation cannot strand someone who already gets it (Pause holds it
+   * open indefinitely, and the bubble stays up during the action anyway).
+   */
+  const readTimeFor = (text) => {
+    const words = String(text || '').trim().split(/\s+/).filter(Boolean).length;
+    const raw = (words / 2.6) * 1000 + 1100;
+    return Math.round(Math.min(13000, Math.max(2600, raw)) * speedRef.current);
+  };
 
   /**
    * Put the user's work back. Safe to call more than once — the snapshot is
@@ -85,30 +156,36 @@ export default function GhostDemo({ tabId, onClose }) {
     };
   }, []);
 
-  const wait = (ms) =>
+  /** True once this run has been stopped, or superseded by a newer run. */
+  const isDead = (runId) => cancelRef.current || (runId != null && runIdRef.current !== runId);
+
+  const wait = (ms, runId) =>
     new Promise((resolve) => {
+      // A NaN duration here would spin forever — `Date.now() - start >= NaN` is
+      // never true — so the duration is sanitised at the door.
+      const dur = Number.isFinite(ms) ? Math.max(0, ms) : 0;
       const start = Date.now();
       const tick = () => {
-        if (cancelRef.current) return resolve();
+        if (isDead(runId)) return resolve();
         if (pauseRef.current) {
           setTimeout(tick, 60);
           return;
         }
-        if (Date.now() - start >= ms) resolve();
+        if (Date.now() - start >= dur) resolve();
         else setTimeout(tick, 30);
       };
       tick();
     });
 
   /** Human-ish path with a slight curve */
-  const animateCursorTo = (x, y, duration = 850) =>
+  const animateCursorTo = (x, y, duration = 850, runId) =>
     new Promise((resolve) => {
       const from = { ...cursorRef.current };
       const midX = (from.x + x) / 2 + (Math.random() - 0.5) * 40;
       const midY = (from.y + y) / 2 + (Math.random() - 0.5) * 30;
       const t0 = performance.now();
       const step = (now) => {
-        if (cancelRef.current) return resolve();
+        if (isDead(runId)) return resolve();
         if (pauseRef.current) {
           requestAnimationFrame(step);
           return;
@@ -148,38 +225,41 @@ export default function GhostDemo({ tabId, onClose }) {
     return el;
   };
 
-  const typeLikeHuman = async (el, text) => {
+  const typeLikeHuman = async (el, text, runId) => {
     if (!el || !text) return;
     el.focus();
     el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    await wait(200);
+    await wait(200, runId);
     setReactInputValue(el, '');
     let built = '';
     for (const ch of text) {
-      if (cancelRef.current) return;
+      if (isDead(runId)) return;
       built += ch;
       setReactInputValue(el, built);
-      await wait(28 + Math.random() * 45);
+      // Was 28–73ms — faster than any human types and it read as a blur.
+      // 42–110ms scaled by the speed control lands around 110 wpm: clearly
+      // a person typing, slow enough to watch the words appear.
+      await wait((42 + Math.random() * 68) * speedRef.current, runId);
     }
+    // Let the finished text sit before anything else happens.
+    await wait(700 * speedRef.current, runId);
   };
 
-  const realClick = async (el) => {
+  const realClick = async (el, runId) => {
     if (!el) return;
     const r = el.getBoundingClientRect();
     const cx = r.left + r.width / 2;
     const cy = r.top + r.height / 2;
     setClickPulse(true);
     el.classList.add('ghost-demo-click');
-    await wait(90);
+    await wait(90, runId);
     firePointerSequence(el, cx, cy);
-    await wait(160);
+    await wait(160, runId);
     setClickPulse(false);
     el.classList.remove('ghost-demo-click');
   };
 
-  const runDemo = useCallback(async () => {
-    cancelRef.current = false;
-
+  const runDemo = useCallback(async (runId) => {
     if (!demo) {
       setStatusLine('This tab uses Tips hover — no remote demo needed.');
       setBubble({
@@ -188,8 +268,8 @@ export default function GhostDemo({ tabId, onClose }) {
         y: Math.max(90, window.innerHeight / 2 - 50),
         visible: true,
       });
-      await wait(4800);
-      if (!cancelRef.current) onClose?.();
+      await wait(4800, runId);
+      if (!isDead(runId)) closeDemo();
       return;
     }
 
@@ -205,7 +285,7 @@ export default function GhostDemo({ tabId, onClose }) {
     const steps = demo.steps || [];
 
     for (let i = 0; i < steps.length; i++) {
-      if (cancelRef.current) break;
+      if (isDead(runId)) break;
       setStepIdx(i);
       const step = steps[i];
       let tx = window.innerWidth * 0.5;
@@ -216,9 +296,36 @@ export default function GhostDemo({ tabId, onClose }) {
         el = await findEl(step.target);
       }
 
+      // A step that names a control it cannot find used to fall through to
+      // 'say': the ghost drifted to the middle of the screen and narrated a
+      // button nobody could see. That is what made the demo look broken on
+      // most tabs — 13 of these anchors had never been added to the components
+      // at all. Now a miss is explicit.
+      if (step.target && !el) {
+        if (step.optional) {
+          // Genuinely conditional controls (Send appears only after a result).
+          // Say why it is not there instead of pointing at nothing.
+          setHighlight(null);
+          setBubble({
+            text: step.whenMissing || `${step.say} — it is not on screen yet; it appears once the step before it has produced a result.`,
+            x: Math.max(16, window.innerWidth / 2 - 190),
+            y: Math.max(80, window.innerHeight * 0.32),
+            visible: true,
+          });
+          setStatusLine('Not on screen yet — explaining instead of pointing');
+          await wait(readTimeFor(step.whenMissing || step.say), runId);
+          continue;
+        }
+        // Not optional: the anchor is missing from the component. Loud in dev,
+        // skipped cleanly for the user rather than faked.
+        console.warn(`[GhostDemo] step ${i + 1} target not found: ${step.target}`);
+        setStatusLine(`Skipped a step — control not found (${step.target})`);
+        continue;
+      }
+
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-        await wait(400);
+        await wait(500 * speedRef.current, runId);
         const r = el.getBoundingClientRect();
         tx = r.left + Math.min(r.width * 0.55, r.width - 8);
         ty = r.top + r.height / 2;
@@ -233,12 +340,16 @@ export default function GhostDemo({ tabId, onClose }) {
       }
 
       // Move the visible mouse like a remote session
-      await animateCursorTo(tx, ty, el ? 900 + Math.random() * 200 : 600);
+      await animateCursorTo(tx, ty, (el ? 900 + Math.random() * 200 : 600) * speedRef.current, runId);
 
       const bx = Math.min(window.innerWidth - 330, Math.max(12, tx + 28));
       const by = Math.max(56, ty - 130);
       setBubble({ text: step.say, x: bx, y: by, visible: true });
-      await wait(Math.min(1200, step.wait ? step.wait * 0.35 : 1000));
+      // THE pacing bug. This was `Math.min(1200, …)` — a hard 1.2s ceiling on
+      // how long the explanation sat there before the ghost clicked, no matter
+      // how long the sentence was. You could not finish reading a step before
+      // the app had already moved on. Now it waits for the sentence.
+      await wait(readTimeFor(step.say), runId);
 
       const action = step.action || (el ? 'click' : 'say');
 
@@ -248,27 +359,37 @@ export default function GhostDemo({ tabId, onClose }) {
         if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) {
           field = el.querySelector('textarea, input') || el;
         }
-        await typeLikeHuman(field, step.typeText);
+        await typeLikeHuman(field, step.typeText, runId);
         setStatusLine(`Typed into ${step.target || 'field'}`);
       } else if (action === 'click' && el) {
         // Default: really operate the control
         if (step.skipClick) {
           setStatusLine('Pointing (no click — would open mic/API)');
         } else {
-          await realClick(el);
+          await realClick(el, runId);
           setStatusLine(`Clicked ${step.target || 'control'}`);
         }
       } else if (action === 'point' && el) {
-        // Hover only — still fires mouseenter so UI can highlight
+        // Hover only — fires mouseenter so the UI can highlight, but never
+        // activates the control. See firePointerSequence: click is opt-in now.
         const r = el.getBoundingClientRect();
-        firePointerSequence(el, r.left + r.width / 2, r.top + r.height / 2);
-        // Don't force button actions on pure point steps
+        firePointerSequence(el, r.left + r.width / 2, r.top + r.height / 2, { click: false });
+        setStatusLine('Pointing — not pressing it');
       }
 
-      await wait(step.wait ?? 2800);
+      // Beat after the action so the result is visible before the ghost leaves.
+      // `then` is the optional "here is what just happened" line — the demo used
+      // to click and move on without ever saying what changed on screen.
+      if (step.then) {
+        setBubble((b) => ({ ...b, text: step.then }));
+        setStatusLine('Showing the result');
+        await wait(readTimeFor(step.then), runId);
+      } else {
+        await wait((step.wait ?? 2800) * speedRef.current, runId);
+      }
     }
 
-    if (!cancelRef.current) {
+    if (!isDead(runId)) {
       setHighlight(null);
       restoreWork();
       setBubble({
@@ -278,24 +399,45 @@ export default function GhostDemo({ tabId, onClose }) {
         visible: true,
       });
       setStatusLine('Session complete — your work restored');
-      await wait(3500);
-      onClose?.();
+      await wait(3500, runId);
+      closeDemo();
     }
-  }, [demo, onClose, restoreWork]);
+  }, [demo, closeDemo, restoreWork]);
 
+  const runDemoRef = useRef(runDemo);
+  useEffect(() => { runDemoRef.current = runDemo; }, [runDemo]);
+
+  // Mount-only. Empty deps means no amount of re-rendering — including the
+  // re-renders the demo causes itself by typing into the app — can restart it.
+  // StrictMode's dev remount bumps the run id, which retires run 1 on its next
+  // await and lets run 2 proceed cleanly. Teardown restores the user's work.
   useEffect(() => {
-    runDemo();
-    // Restore on any teardown — skipped, closed, tab switched, unmounted.
+    const myId = ++runIdRef.current;
+    cancelRef.current = false;
+    runDemoRef.current(myId);
     return () => {
       cancelRef.current = true;
       restoreWork();
     };
-  }, [runDemo, restoreWork]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // If something navigates the app to a different tab while the demo is
+  // running, every remaining target is on a display:none pane. Stop cleanly
+  // instead of standing there pointing at nothing.
+  useEffect(() => {
+    if (tabId !== tabAtStartRef.current) {
+      cancelRef.current = true;
+      setStatusLine('Tab changed — demo stopped');
+      restoreWork();
+      closeDemo();
+    }
+  }, [tabId, restoreWork, closeDemo]);
 
   const skip = () => {
     cancelRef.current = true;
     restoreWork();
-    onClose?.();
+    closeDemo();
   };
 
   return (
@@ -361,6 +503,23 @@ export default function GhostDemo({ tabId, onClose }) {
           <img src={ghostGuideImg} alt="" className="ghost-demo-bar-avatar" />
           Remote demo — {demo?.title || 'Tips'} · {statusLine}
         </span>
+        {/* Speed is a visible, labelled control — not a preference buried in
+            Settings. Medium is the default. */}
+        <span className="ghost-demo-bar-speed" aria-label="Demo speed">
+          <span className="ghost-demo-bar-speed-label">Speed</span>
+          {[['slow', 'Slow'], ['medium', 'Medium'], ['fast', 'Fast']].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              className={`ghost-demo-bar-btn ghost-demo-bar-speed-btn ${speed === id ? 'is-on' : ''}`}
+              aria-pressed={speed === id}
+              onClick={() => setSpeed(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </span>
+
         <button type="button" className="ghost-demo-bar-btn" onClick={() => setPaused((p) => !p)}>
           {paused ? '▶ Resume' : '⏸ Pause'}
         </button>

@@ -136,7 +136,11 @@ export default function MidiStudio() {
             </p>
           </div>
 
-          {!OFF.has('a2m') && <AudioToMidi onNotes={handleNotes} />}
+          {!OFF.has('a2m') && (
+            <div data-demo="midi-convert">
+              <AudioToMidi onNotes={handleNotes} />
+            </div>
+          )}
 
           {sourceName && (
             <div className="pill-green" style={{ padding: '7px 10px', borderRadius: 8, fontSize: '0.68rem' }}>
@@ -151,7 +155,7 @@ export default function MidiStudio() {
           {/* Rack for the roll + sampler. Collapsed by default so it doesn't
               push the drum machine off the page. */}
           {!OFF.has('seq') && (
-            <div style={{ border: '1px solid rgba(0,229,255,0.3)', borderRadius: 10, padding: 12, background: 'rgba(13,8,28,0.5)' }}>
+            <div data-demo="midi-roll" style={{ border: '1px solid rgba(0,229,255,0.3)', borderRadius: 10, padding: 12, background: 'rgba(13,8,28,0.5)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                 <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#00e5ff' }}>
                   Piano Roll &amp; Sampler — Effects Rack

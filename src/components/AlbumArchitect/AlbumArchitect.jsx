@@ -143,7 +143,7 @@ export default function AlbumArchitect() {
             </p>
           </div>
 
-          <div data-help="The album's global metadata — title, artist, genre, and the concept holding it together.">
+          <div data-demo="album-meta" data-help="The album's global metadata — title, artist, genre, and the concept holding it together.">
             <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Album Title</label>
             <input className="input-cosmic" style={{ width: '100%', borderRadius: 8, padding: '8px 10px', fontSize: '0.8rem' }}
               value={album.title} onChange={(e) => setMeta({ title: e.target.value })} />
@@ -190,7 +190,7 @@ export default function AlbumArchitect() {
         </div>
 
         {/* Track list */}
-        <div className="album-main">
+        <div className="album-main" data-demo="album-tracks">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 10, flexWrap: 'wrap' }}>
             <h4 style={{ margin: 0, fontSize: '0.9rem' }}>
               <Disc3 size={15} style={{ verticalAlign: '-2px', marginRight: 6 }} />
