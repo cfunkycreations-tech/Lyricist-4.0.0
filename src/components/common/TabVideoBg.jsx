@@ -15,6 +15,7 @@ import collabMp4 from '../../assets/bg/collab.mp4';
 import loopstationMp4 from '../../assets/bg/loopstation.mp4';
 import masteringMp4 from '../../assets/bg/mastering.mp4';
 import midistudioMp4 from '../../assets/bg/midistudio.mp4';
+import scratchpadMp4 from '../../assets/bg/scratchpad.mp4';
 import songforgeMp4 from '../../assets/bg/songforge.mp4';
 import stemmerMp4 from '../../assets/bg/stemmer.mp4';
 import toolshubMp4 from '../../assets/bg/toolshub.mp4';
@@ -26,6 +27,7 @@ const CLIPS = {
   loopstation: loopstationMp4,
   mastering: masteringMp4,
   midistudio: midistudioMp4,
+  scratchpad: scratchpadMp4,
   songforge: songforgeMp4,
   stemmer: stemmerMp4,
   toolshub: toolshubMp4,

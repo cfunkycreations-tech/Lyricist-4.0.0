@@ -224,11 +224,11 @@ export default function Stemmer() {
 
   return (
     <div className="tab-video-shell">
-      {/* Background video pulled 2026-08-11 at Chris's call — the word-card clip
-          did not belong on this tab. The clip itself is still in
-          src/assets/bg/stemmer.mp4 and still registered in TabVideoBg, so
-          putting it back (or swapping in a different one) is this one line:
-            <TabVideoBg name="stemmer" /> */}
+      {/* The bud-macro clip that was here got pulled on 2026-08-11 — it said
+          nothing about what this tab does. This one is his
+          Light_thread_splitting_into_colors render: one white thread separating
+          into its coloured strands, which is the tab in one image. */}
+      <TabVideoBg name="stemmer" />
       <div className="tab-video-content">
     <div
       className="stemmer-root"
