@@ -446,19 +446,25 @@ Implemented in `index.css` as `--emerald-edge: #00ff9c` with `-webkit-text-strok
 anything else that needs it. Widen its reach as more white text turns up.
 
 ### Open
-- **Quantum Lab top banner is REJECTED.** Chris is supplying his own artwork. Spec: a new medallion
-  plus his signature, the guitar photo comes OUT, and the only text is **"LYRICIST GOES QUANTUM"** —
-  no "Quantum Lab" title, no subtitle, no DNA pill. **Do not redesign it on your own initiative.**
-  Wait for his file and match it exactly.
+
+> Audited 2026-08-11 against the actual tree. Several items that sat here for days were already
+> finished; they are struck through rather than deleted so nobody rebuilds them. **Verify before
+> adding anything back to this list** — a stale "open" item costs a whole session.
+
+- ~~**Quantum Lab top banner is REJECTED.**~~ **Built 2026-08-09.** He reversed the "guitar photo
+  OUT" call and now wants the guitar shot IN. Built from his own art — `quantum-banner-bg.png`,
+  `quantum-chris.png`, `quantum-medallion-glass.png`. Do not redesign it.
+- ~~**Collaboration tab — HIGH PRIORITY.**~~ **Built 2026-08-07 (build 054)** — peer to peer with
+  room codes, `src/components/Collab/CollabTab.jsx`. Free signalling servers keep dying; if it won't
+  connect, check those first.
+- ~~**Icon overhaul** — every flat icon out.~~ **Done 2026-08-10 (build 061).** 32 of his dichroic
+  pieces keyed to transparent PNGs in `src/assets/icons/`, 17 wired into the tab bar.
+- ~~**8 tab background videos still missing.**~~ **Down to one.** 16 of 17 tabs have a clip as of
+  build 066. **Scratchpad is the only tab left with no background video.** Do not reuse the old
+  deleted clips; ask him which of his renders it should get.
 - **Footer art is wrong.** The current square medallion got squished into a 200×100 rectangle without
   his approval and he hates it. He is supplying replacement art. Keep the same box size; do not
   redesign around it.
-- **Collaboration tab — HIGH PRIORITY.** Chris's own words: *"the collab button is really important
-  to me"* and *"I don't know how I wanna do that. I just want people to be able to write music
-  together."* So the goal is settled and the mechanism is not — real-time co-editing, passing
-  sessions back and forth, or a room people join. Bring him options rather than guessing. Whatever it
-  becomes, it has to stay free and must not require an account he'd have to pay to run. Ties straight
-  back to the busking origin — two people on a corner.
 - ~~**Paintbrush tool for the piano roll.**~~ **Done in 4.2.0.021.** The roll has four tools —
   Select (drag to move, drag the right edge to resize), Draw, Paint, Erase — snap from 1 bar down to
   1/32 with triplets, and a velocity lane under the grid. Right-click deletes a note; Delete removes
@@ -468,8 +474,8 @@ anything else that needs it. Widen its reach as more white text turns up.
 - **Drum machine with 808s.** A step-sequencer drum machine, 808 kit front and center. The sample
   library already handles user kits, so this can lean on `sampleLibrary.js` for custom sounds while
   shipping a stock 808 kit of its own.
-- **MIDI background video is missing**, along with several other tab videos. The old ones were
-  deleted; they belonged to a previous version and he doesn't want them reused.
+- ~~**MIDI background video is missing**, along with several other tab videos.~~ **Landed in 064.**
+  See the Scratchpad item above for the one that is genuinely still missing.
 - **Visualizer quality.** 395 presets load, but Chris thinks the stock Butterchurn ones are mediocre.
   Wanted: a better library, or hand-built visualizers. Make them good.
 - **Piano roll — what's still missing.** Drawing, dragging, snap and velocity all landed in
@@ -477,14 +483,26 @@ anything else that needs it. Widen its reach as more white text turns up.
   notes, and a loop/playback region.
 - **Drum machine needs per-key kit mapping** — one sample per key across a pad grid, not just one
   sample per track.
-- **Footer art is wrong.** The square medallion got squished into a 200×100 rectangle without his
-  approval and he hates it. He's supplying replacement art; keep the same box size.
 - **Ask him what "upload pixels" meant** for the drum machine. It was read as pattern presets and
   those were built — he may have meant artwork on the pads.
-- **Icon overhaul.** He wants every flat icon gone — 3D, "5D", multidimensional. It's Quantum Lab.
-- 8 tab background videos still missing; Kling AI prompts are written, Chris is generating them.
-- Splash screen not built. Art is `V:\assets\Crystal_Geode_Cavern_QUANTUM_LAB_202608011431.jpeg`;
-  wire the video into `main.js` to play before the main window shows.
+- **Splash screen not built.** Art is `V:\assets\Crystal_Geode_Cavern_QUANTUM_LAB_202608011431.jpeg`,
+  but the note also says "wire the video into `main.js`" — **ask him: still image or video?** Then it
+  plays before the main window shows.
+
+### Background video: use the Vite import, never `public/`
+
+Every background clip must be `import`ed so Vite emits it into `dist/assets/` with a resolved URL.
+Build 063 shipped 17 tab videos read out of `public/` at runtime and **every one of them was a black
+panel in the packaged app**, because the runtime-built path does not resolve there. 064 fixed it by
+importing them (`src/components/common/TabVideoBg.jsx`). The header video hit the identical bug on
+2026-08-11 — it was written as `src="./bg/header.mp4"` and was caught before it shipped; it is now
+`import headerVideo from './assets/bg/header.mp4'` and `public/bg/` is gone.
+
+`src/components/QuantumLab/QuantumLab.jsx` is the last holdout — it still builds its src from
+`import.meta.env.BASE_URL` and reads `quantum_bg.mp4` / `quantum_bg_mobile.mp4` from `public/`.
+Both files *are* present inside build 066's `app.asar` at `dist/`, and Chris has not reported that
+banner going black, so **it is not confirmed broken — do not convert it blind.** If he ever reports a
+black Quantum Lab background, that is the cause and the fix is a two-line import.
 
 ---
 
