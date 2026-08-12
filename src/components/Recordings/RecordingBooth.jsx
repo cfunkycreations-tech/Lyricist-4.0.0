@@ -10,6 +10,7 @@ import {
 import { getAudioContext, resumeAudio, decodeBlob } from '../../services/audioEngine.js';
 import { audioBufferToWav } from '../../utils/wavEncoder.js';
 
+import TabVideoBg from '../common/TabVideoBg.jsx';
 // Recording Booth — Lyricist 4.1.3
 // Record harmonica, guitar, singing — anything — straight into the app with a
 // live input meter, or upload existing takes. Everything is saved to a
@@ -210,6 +211,9 @@ export default function RecordingBooth({ onNavigate }) {
   };
 
   return (
+    <div className="tab-video-shell">
+      <TabVideoBg name="booth" />
+      <div className="tab-video-content">
     <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden', background: '#000' }}>
       <audio ref={previewRef} style={{ display: 'none' }} />
       <div className="booth-shell">
@@ -354,6 +358,8 @@ export default function RecordingBooth({ onNavigate }) {
             </div>
           ))}
         </div>
+      </div>
+    </div>
       </div>
     </div>
   );

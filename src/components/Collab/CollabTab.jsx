@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Users, Copy, Check, LogOut, Radio, Send, Download, AlertTriangle, RefreshCw } from 'lucide-react';
+import TabVideoBg from '../common/TabVideoBg.jsx';
 import {
   joinRoom, newRoomCode, normalizeCode, isCompleteCode,
   checkSignaling, applyLocalEdit, getSignalingUrls, setSignalingUrls, DEFAULT_SIGNALING,
@@ -88,6 +89,9 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
   const allSignalingDown = Array.isArray(signalCheck) && signalCheck.every((r) => !r.ok);
 
   return (
+    <div className="tab-video-shell">
+      <TabVideoBg name="collab" />
+      <div className="tab-video-content">
     <div style={{ padding: '18px 22px 40px', minHeight: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
       <div>
@@ -329,6 +333,8 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
             </div>
           </div>
         )}
+      </div>
+    </div>
       </div>
     </div>
   );

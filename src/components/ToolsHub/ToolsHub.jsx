@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowBigUp, Plus, ExternalLink, Search, X } from 'lucide-react';
 
+import TabVideoBg from '../common/TabVideoBg.jsx';
 // Community AI Tools Hub — Lyricist 4.1.3
 // A browsable tab where users share, upvote, and access free developer AI
 // tools. Ships seeded with CFunky's own free tools plus well-known free
@@ -98,6 +99,9 @@ export default function ToolsHub() {
   }, [state.tools, category, query, sort]);
 
   return (
+    <div className="tab-video-shell">
+      <TabVideoBg name="toolshub" />
+      <div className="tab-video-content">
     <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#000' }}>
       <div className="toolshub-main">
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
@@ -201,6 +205,8 @@ export default function ToolsHub() {
             </div>
           )}
         </div>
+      </div>
+    </div>
       </div>
     </div>
   );

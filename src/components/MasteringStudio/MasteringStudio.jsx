@@ -9,6 +9,7 @@ import { masterTrack, MASTERING_PRESETS, DEFAULT_MASTERING } from '../../service
 import { generateImage, MANDATORY_MEDALLION_FRAME } from '../../services/GeminiService.js';
 import { resumeAudio } from '../../services/audioEngine.js';
 
+import TabVideoBg from '../common/TabVideoBg.jsx';
 // Mastering Studio — Lyricist 4.1.3
 // The last mile: pull the songs you've made (Recording Booth takes, Suno
 // downloads, any audio) into an album, run each track through a real
@@ -252,6 +253,9 @@ export default function MasteringStudio({ onNavigate }) {
   const busyAny = masteringAll || tracks.some(t => t.busy);
 
   return (
+    <div className="tab-video-shell">
+      <TabVideoBg name="mastering" />
+      <div className="tab-video-content">
     <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden', background: '#000' }}>
       <audio ref={previewRef} style={{ display: 'none' }} />
       <div className="album-shell">
@@ -464,6 +468,8 @@ export default function MasteringStudio({ onNavigate }) {
             </p>
           )}
         </div>
+      </div>
+    </div>
       </div>
     </div>
   );

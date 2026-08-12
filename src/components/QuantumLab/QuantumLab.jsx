@@ -17,7 +17,8 @@ import {
 } from './quantumFeatures.js';
 import { registerDemoSnapshot } from '../../services/demoSafety.js';
 import './QuantumLab.css';
-import quantumMedallionImg from '../../assets/header-medallion.png';
+import quantumMedallionImg from '../../assets/quantum-medallion-glass.png';
+import quantumChrisImg from '../../assets/quantum-chris.png';
 
 // ============================================================
 // Quantum Lab — "Lyricist Goes Quantum" (Lyricist 4.2.0)
@@ -494,8 +495,8 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         className="ql-banner"
         data-help="Quantum Lab — heat the lattice, crystallize, generate neural lyrics. Medallion left, controls right."
       >
-        {/* Left: Chris's medallion — the same one the app header carries */}
-        <img src={quantumMedallionImg} alt="Lyricist Goes Quantum" className="ql-banner-medallion" />
+        {/* Left: the dichroic glass CFunky medallion — cannabis leaf + treble clef */}
+        <img src={quantumMedallionImg} alt="CFunky Creations" className="ql-banner-medallion" />
 
         {/* Center: title + subtitle with dynamic DNA state */}
         <div className="ql-banner-center">
@@ -504,7 +505,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
               rotating high-colour double helix — and Chris cut them. The
               medallion to the left carries the real artwork. */}
           <div className="ql-banner-title-row">
-            <h1 className="ql-title ql-banner-title">QUANTUM LAB</h1>
+            <h1 className="ql-title ql-banner-title">LYRICIST GOES QUANTUM</h1>
           </div>
           <p className="ql-banner-subtitle">
             Lyricist's Quantum{' '}
@@ -516,6 +517,9 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             </span>
           </p>
         </div>
+
+        {/* Right: Chris and the guitar, cut out of the Austin boardwalk shot. */}
+        <img src={quantumChrisImg} alt="Chris Funk" className="ql-banner-chris" />
 
         {/* Every action button now lives in the action bar directly under the
             lattice (.ql-actionbar) — nothing hides at the bottom of the page. */}

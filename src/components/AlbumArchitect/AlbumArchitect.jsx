@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, GripVertical, Download, Disc3 } from 'lucide-react';
 import { registerDemoSnapshot } from '../../services/demoSafety.js';
 
+import TabVideoBg from '../common/TabVideoBg.jsx';
 // "The Universal Solvent" Album Architect — Lyricist 4.1.3
 // Project-management view for shaping up to 12 tracks into a cohesive concept
 // album: drag-and-drop track reordering (native HTML5 DnD — no libraries) and
@@ -127,6 +128,9 @@ export default function AlbumArchitect() {
   };
 
   return (
+    <div className="tab-video-shell">
+      <TabVideoBg name="album" />
+      <div className="tab-video-content">
     <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden', background: '#000' }}>
       <div className="album-shell">
         {/* Global metadata sidebar */}
@@ -245,6 +249,8 @@ export default function AlbumArchitect() {
             </div>
           ))}
         </div>
+      </div>
+    </div>
       </div>
     </div>
   );

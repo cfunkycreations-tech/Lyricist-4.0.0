@@ -817,14 +817,30 @@
    ============================================================ */
 
 .ql-banner {
+  /* One driver for every figure in the banner, so the medallion and Chris
+     always scale together instead of one capping the other. */
+  --ql-banner-art: clamp(124px, 16vw, 210px);
+
   display: flex;
-  align-items: center;
+  align-items: flex-end;           /* Chris stands ON the banner floor */
   gap: 18px;
-  padding: 12px 20px 12px 14px;
+  padding: 12px 20px 0 14px;
   margin: -22px -26px 20px;        /* bleed to ql-root edges */
+  /* Chris is the tallest figure (art * 1.12), so he sets the floor — otherwise
+     his hat clips off the top edge. */
+  min-height: calc(var(--ql-banner-art) * 1.12 + 14px);
+  /* Aurora borealis + cannabis sky. The scrim over it is what keeps the
+     title legible against the bright green leaf behind it. */
   background:
-    linear-gradient(135deg, rgba(0, 12, 40, 0.96) 0%, rgba(10, 4, 30, 0.94) 100%),
-    linear-gradient(90deg, rgba(0,229,255,0.06) 0%, rgba(168,85,247,0.08) 100%);
+    /* Heavy on the left where the words sit, clearing to almost nothing on
+       the right so the leaf, the aurora and Chris all read at full strength. */
+    linear-gradient(90deg,
+      rgba(0, 10, 34, 0.92) 0%,
+      rgba(2, 9, 32, 0.78) 30%,
+      rgba(6, 6, 30, 0.34) 58%,
+      rgba(10, 4, 30, 0.10) 100%),
+    url('../../assets/quantum-banner-bg.png') center 42% / cover no-repeat,
+    linear-gradient(135deg, rgba(0, 12, 40, 0.96) 0%, rgba(10, 4, 30, 0.94) 100%);
   border-bottom: 1px solid rgba(0,229,255,0.28);
   box-shadow:
     0 2px 40px rgba(168,85,247,0.18),
@@ -836,13 +852,26 @@
 }
 
 .ql-banner-medallion {
-  height: 76px;
+  height: var(--ql-banner-art);
   width: auto;
   object-fit: contain;
   flex-shrink: 0;
+  align-self: center;
   filter:
     drop-shadow(0 0 10px rgba(0,229,255,0.6))
     drop-shadow(0 0 22px rgba(168,85,247,0.45));
+}
+
+/* Chris + guitar. Same driver as the medallion so the two never drift apart.
+   He is bottom-aligned so his boots sit on the banner's lower edge. */
+.ql-banner-chris {
+  height: calc(var(--ql-banner-art) * 1.12);
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+  align-self: flex-end;
+  display: block;
+  filter: drop-shadow(0 0 14px rgba(0, 0, 0, 0.85));
 }
 
 .ql-banner-center {
@@ -890,6 +919,5 @@
   .ql-root { padding: 16px 14px 26px; }
   .ql-adv-tabs { gap: 3px; }
   .ql-adv-tab { font-size: 0.62rem; padding: 5px 7px; }
-  .ql-banner { flex-wrap: wrap; gap: 10px; }
-  .ql-banner-medallion { height: 54px; }
+  .ql-banner { flex-wrap: wrap; gap: 10px; --ql-banner-art: 78px; }
 }

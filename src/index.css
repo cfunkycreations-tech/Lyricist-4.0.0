@@ -548,6 +548,55 @@ body.tips-on [data-help] {
   transition: background 0.15s, color 0.15s, box-shadow 0.15s, transform 0.12s;
   margin-bottom: -1px;
 }
+/* Tab background video shell. The video sits at z0 and the tab's real content
+   rides above it at z1. Black underneath so nothing of the app-wide background
+   image can show through while the clip is still buffering. */
+.tab-video-shell {
+  position: relative;
+  min-height: 100%;
+  width: 100%;
+  background: #000;
+  overflow: hidden;
+}
+
+.tab-video-content {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+}
+
+/* Chris's dichroic-glass tab icons. They replaced the flat emoji, so they need
+   to sit on the text baseline the same way a glyph did — hence the -1px nudge
+   and the matching line-height, not a bare vertical-align. */
+.tab-browser-icon {
+  /* 2.8em ~= 36px against the 0.8rem tab text. Much of this art is landscape
+     (anvil, piano key, stemmer), so inside a square box its actual height is
+     roughly half the box — at 29px those were rendering ~15px tall and turning
+     to mush. Size is the lever here, not balancing the artwork. */
+  height: 2.8em;
+  width: 2.8em;
+  object-fit: contain;
+  margin-right: 7px;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+  flex-shrink: 0;
+  /* dim when the tab is asleep, full colour when it wakes up */
+  opacity: 0.72;
+  filter: saturate(0.85);
+  transition: opacity 0.15s, filter 0.15s, transform 0.12s;
+}
+
+.tab-browser:hover .tab-browser-icon {
+  opacity: 1;
+  filter: saturate(1.1) drop-shadow(0 0 6px rgba(0, 229, 255, 0.5));
+}
+
+.tab-browser.is-active .tab-browser-icon {
+  opacity: 1;
+  filter: saturate(1.15) drop-shadow(0 0 8px rgba(0, 229, 255, 0.6));
+}
+
 .tab-browser:hover {
   background: rgba(20, 32, 64, 0.8);
   color: #e8eef8;

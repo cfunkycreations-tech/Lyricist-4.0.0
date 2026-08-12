@@ -10,6 +10,7 @@ import { clearLibrary, countSamples } from '../../services/sampleLibrary.js';
 import { getAudioContext, getMasterBus } from '../../services/audioEngine.js';
 import { createFxChain, DEFAULT_FX } from '../../services/fxRack.js';
 
+import TabVideoBg from '../common/TabVideoBg.jsx';
 // MIDI Studio tab — Lyricist 4.1.3
 // Audio → MIDI (basic-pitch, fully offline) feeding an offline piano-roll
 // sequencer, with a Butterchurn/Milkdrop visualizer wired to the same audio
@@ -120,6 +121,9 @@ export default function MidiStudio() {
   };
 
   return (
+    <div className="tab-video-shell">
+      <TabVideoBg name="midistudio" />
+      <div className="tab-video-content">
     <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden', background: '#000' }}>
       <div className="midi-shell">
         <div className="midi-sidebar">
@@ -187,6 +191,8 @@ export default function MidiStudio() {
           {!OFF.has('sampler') && <SampleLibrary onUseSample={setUserSample} fxInput={getFxInput} />}
           {!OFF.has('viz') && <Visualizer />}
         </div>
+      </div>
+    </div>
       </div>
     </div>
   );

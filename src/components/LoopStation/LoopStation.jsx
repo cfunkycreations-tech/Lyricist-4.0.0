@@ -3,6 +3,7 @@ import { getAudioContext, getMasterBus, resumeAudio, decodeBlob } from '../../se
 import { audioBufferToWav } from '../../utils/wavEncoder.js';
 import { registerDemoSnapshot } from '../../services/demoSafety.js';
 
+import TabVideoBg from '../common/TabVideoBg.jsx';
 // ============================================================
 // RC-Funk 5000 — Live Loop Station (Lyricist 4.2.0)
 // 4-track looper + master FX: Delay, Reverb, Dub FX (toggleable)
@@ -380,6 +381,9 @@ export default function LoopStation() {
   );
 
   return (
+    <div className="tab-video-shell">
+      <TabVideoBg name="loopstation" />
+      <div className="tab-video-content">
     <div className="rc-funk-root" style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', overflow: 'auto', background: '#050208', padding: '20px 24px', color: '#f3ecff' }}>
       {/* No backdrop sheet here. The root above is already opaque (#050208), so
           the app-wide street scene never shows through at any scroll position.
@@ -624,6 +628,8 @@ export default function LoopStation() {
         <li>Play All, then stack Tracks 2–4 while it loops.</li>
         <li>Flip <b>Delay</b>, <b>Reverb</b>, or <b>Dub FX</b> on the master bus and ride the amounts.</li>
       </ol>
+      </div>
+    </div>
       </div>
     </div>
   );
