@@ -26,12 +26,32 @@ function isNoEndpointsError(status, message) {
   return status === 404 || /no endpoints found/i.test(message || '');
 }
 
+/**
+ * Clean a pasted key into something that can actually go in a header.
+ *
+ * A key copied off a web page routinely arrives with a trailing newline, a
+ * non-breaking space, smart quotes around it, or the word "Bearer" already on
+ * the front. Every one of those is TRUTHY, so it sailed past the `!key` guard
+ * and then went out as `Bearer  ` or `Bearer Bearer sk-...` — and OpenRouter
+ * answers that with "Missing Authentication header", which tells the user
+ * nothing and reads like the app is broken.
+ */
+export function normalizeApiKey(raw) {
+  return String(raw ?? '')
+    // strip every kind of space, including NBSP and stray line breaks
+    .replace(/[\s ​]+/g, '')
+    // smart or straight quotes wrapped around a paste
+    .replace(/^["'‘’“”]+|["'‘’“”]+$/g, '')
+    // "Bearer sk-or-..." pasted whole
+    .replace(/^bearer/i, '');
+}
+
 async function postCompletion(body, config) {
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${config.openRouterApiKey}`,
+      "Authorization": `Bearer ${normalizeApiKey(config.openRouterApiKey)}`,
       "HTTP-Referer": "https://lyricist.app",
       "X-Title": "Lyricist 4.2.0"
     },
@@ -154,8 +174,21 @@ async function guardedCall(messages, config, modelId, customTemp, customMax) {
 }
 
 export async function callAI(messages, config, customTemp = null, customMax = null) {
-  if (!config.openRouterApiKey) {
+  // Check the CLEANED key, not the raw one. A field holding only a space, or a
+  // newline, is truthy — it passed this guard, went out as an empty Bearer
+  // token, and came back as OpenRouter's "Missing Authentication header". The
+  // user then sees a server error for what is really an empty settings box.
+  const key = normalizeApiKey(config.openRouterApiKey);
+  if (!key) {
     throw new Error("No API key configured. Go to the Settings tab to add your OpenRouter key.");
+  }
+  // Say what is actually wrong while the key is still in our hands. Once the
+  // request leaves, all we get back is a generic auth error.
+  if (!/^sk-or-/i.test(key)) {
+    throw new Error(
+      `That does not look like an OpenRouter key. It should start with "sk-or-v1-", and yours starts with "${key.slice(0, 8)}…". `
+      + `Get a free key at openrouter.ai/keys and paste the whole thing into Settings.`
+    );
   }
   return guardedCall(messages, config, config.model || FALLBACK_MODEL, customTemp, customMax);
 }

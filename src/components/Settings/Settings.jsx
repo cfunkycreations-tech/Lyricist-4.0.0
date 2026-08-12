@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { Save, RefreshCw, Key, Shield, HelpCircle } from 'lucide-react';
+import { normalizeApiKey } from '../../services/AIService.js';
 import settingsBg from '../../assets/settings.mp4';
 
 const MODELS_CACHE_KEY = 'openrouter-models-cache';
@@ -295,7 +296,13 @@ export default function Settings() {
   const [saved, setSaved] = useState(false);
 
   const handleUpdate = (field, val) => {
-    store.setConfig({ ...store.config, [field]: val });
+    // Keys get cleaned on the way IN, not just on the way out. A key copied off
+    // a web page arrives with a trailing newline, a non-breaking space, quotes
+    // around it, or "Bearer " on the front more often than not — all truthy, so
+    // the app happily stored one and then failed every request with OpenRouter's
+    // "Missing Authentication header", which names nothing the user can act on.
+    const next = field === 'openRouterApiKey' ? normalizeApiKey(val) : val;
+    store.setConfig({ ...store.config, [field]: next });
     setSaved(false);
   };
 
