@@ -2,7 +2,7 @@
   "name": "lyricist",
   "version": "4.2.0",
   "main": "main.js",
-  "description": "AI Songwriting Studio \u2014 Lyricist 4.2.0 Goes Quantum",
+  "description": "AI Songwriting Studio — Lyricist 4.2.0 Goes Quantum",
   "author": "CFunky Creations LLC",
   "license": "MIT",
   "scripts": {
@@ -28,8 +28,7 @@
       "dist/**/*",
       "main.js",
       "preload.js",
-      "src/assets/icon.ico",
-      "!node_modules/**/*"
+      "src/assets/icon.ico"
     ],
     "win": {
       "target": "nsis",
@@ -51,6 +50,7 @@
     "butterchurn": "^2.6.7",
     "butterchurn-presets": "^2.4.7",
     "jszip": "^3.10.1",
+    "kokoro-js": "^1.2.1",
     "lucide-react": "^0.303.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
