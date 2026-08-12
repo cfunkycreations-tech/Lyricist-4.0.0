@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { Sparkles, Search, Clipboard, Check, BookOpen, Layers } from 'lucide-react';
+import { assertApiKey } from '../../services/AIService.js';
 import rhymeBg from '../../assets/rhyme04.mp4';
 
 export default function RhymeHelper() {
@@ -63,11 +64,15 @@ export default function RhymeHelper() {
 
 Plain lists under each heading. Focus on what sounds great in lyrics.`;
 
+      // Same guard as every other AI path — this one built its own request and
+      // had no key check at all, so a bad key reached OpenRouter raw.
+      const rhymeKey = assertApiKey(store.config);
+
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${store.config.openRouterApiKey}`,
+          "Authorization": `Bearer ${rhymeKey}`,
           "HTTP-Referer": "https://lyricist.app",
           "X-Title": "Lyricist 4.0.2"
         },

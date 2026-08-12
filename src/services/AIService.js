@@ -173,23 +173,35 @@ async function guardedCall(messages, config, modelId, customTemp, customMax) {
   );
 }
 
-export async function callAI(messages, config, customTemp = null, customMax = null) {
-  // Check the CLEANED key, not the raw one. A field holding only a space, or a
-  // newline, is truthy — it passed this guard, went out as an empty Bearer
-  // token, and came back as OpenRouter's "Missing Authentication header". The
-  // user then sees a server error for what is really an empty settings box.
-  const key = normalizeApiKey(config.openRouterApiKey);
+/**
+ * The ONE key check. Every path that can reach OpenRouter must call this first.
+ *
+ * It used to live inline in callAI, which meant it only covered the paths that
+ * went through callAI — and three did not: the Multi-Model Fusion drafts
+ * (singleCall directly), the fusion synthesiser (guardedCall directly), and the
+ * separate raw fetches in GeminiService and RhymeHelper. Those sent the request
+ * with no guard at all, so an unusable key produced OpenRouter's
+ * "Missing Authentication header" instead of a sentence naming the problem.
+ * That is what Chris hit while rewriting lyrics he had uploaded.
+ *
+ * Throws with something the user can act on. Returns the cleaned key.
+ */
+export function assertApiKey(config) {
+  const key = normalizeApiKey(config?.openRouterApiKey);
   if (!key) {
     throw new Error("No API key configured. Go to the Settings tab to add your OpenRouter key.");
   }
-  // Say what is actually wrong while the key is still in our hands. Once the
-  // request leaves, all we get back is a generic auth error.
   if (!/^sk-or-/i.test(key)) {
     throw new Error(
       `That does not look like an OpenRouter key. It should start with "sk-or-v1-", and yours starts with "${key.slice(0, 8)}…". `
       + `Get a free key at openrouter.ai/keys and paste the whole thing into Settings.`
     );
   }
+  return key;
+}
+
+export async function callAI(messages, config, customTemp = null, customMax = null) {
+  assertApiKey(config);
   return guardedCall(messages, config, config.model || FALLBACK_MODEL, customTemp, customMax);
 }
 
@@ -226,6 +238,10 @@ STRICT WRITING RULES:
 
 // Single-stage songwriting engine (supports Multi-Model Fusion when enabled)
 export async function generateFullSong(store) {
+  // Guard BEFORE the fusion branch. The fusion drafts call singleCall directly
+  // and the synthesiser calls guardedCall directly, so neither ever reached
+  // callAI's check — with fusion on, a bad key skipped every guard in the file.
+  assertApiKey(store.config);
   const context = buildPromptContext(store);
   const structureSequence = store.customStructure.map(s => s.toUpperCase()).join(" -> ");
 

@@ -4,7 +4,7 @@
 // Cover art: OpenRouter image models (Nano Banana / Gemini image via OpenRouter).
 // NO Google AI Studio key. NO @google/genai client.
 
-import { callAI, buildPromptContext, parseSectionsFromText } from './AIService.js';
+import { callAI, buildPromptContext, parseSectionsFromText, assertApiKey, normalizeApiKey } from './AIService.js';
 
 // OpenRouter image-model slugs (Nano Banana family exposed through OpenRouter).
 // User can change these in Settings; defaults target Nano Banana 2 Lite/class.
@@ -46,11 +46,19 @@ STRICT WRITING LAWS:
 6. SECTION COMPOSITION: Label each section clearly (e.g. [Intro], [Verse 1], [Chorus], [Bridge], [Outro]). Output only the raw lyrics — no commentary.`;
 
 function requireOpenRouter(store) {
-  const key = store?.config?.openRouterApiKey;
-  if (!key) {
-    throw new Error('No OpenRouter API key configured. Add it once in Settings — that single key runs Song Forge lyrics and Nano Banana cover art.');
+  // Was a bare truthiness check on the raw field, so a key with a trailing
+  // newline or a stray space passed it and then went out as a broken
+  // Authorization header. assertApiKey normalises AND range-checks it, and it
+  // is the same check every other path uses.
+  try {
+    return assertApiKey(store?.config);
+  } catch (e) {
+    // Keep the Song Forge wording — one key runs both halves of this tab.
+    if (/No API key configured/.test(e.message)) {
+      throw new Error('No OpenRouter API key configured. Add it once in Settings — that single key runs Song Forge lyrics and Nano Banana cover art.');
+    }
+    throw e;
   }
-  return key;
 }
 
 async function openRouterChat({ apiKey, model, messages, temperature = 0.75, max_tokens = 4000, modalities }) {
@@ -67,7 +75,7 @@ async function openRouterChat({ apiKey, model, messages, temperature = 0.75, max
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${normalizeApiKey(apiKey)}`,
       'HTTP-Referer': 'https://lyricist.app',
       'X-Title': 'Lyricist Song Forge',
     },
