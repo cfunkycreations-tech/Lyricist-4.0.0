@@ -174,8 +174,12 @@ function MainLayout() {
   // treatment: whenever the window is visible again, get it playing.
   useEffect(() => {
     const resume = () => {
-      const v = document.querySelector('.header-cosmic video');
-      if (v?.paused) { const p = v.play(); if (p?.catch) p.catch(() => {}); }
+      // Two clips now — the whole-frame one and the blurred backdrop behind it.
+      // querySelector only ever woke the first, which left the backdrop frozen
+      // on one frame while the banner moved.
+      document.querySelectorAll('.header-cosmic video').forEach((v) => {
+        if (v?.paused) { const p = v.play(); if (p?.catch) p.catch(() => {}); }
+      });
     };
     resume();
     document.addEventListener('visibilitychange', resume);
@@ -275,20 +279,31 @@ function MainLayout() {
 
       {/* Main Layout Wrap */}
       <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100vh' }}>
-        {/* Header — medallion | signature · Chris · wordmark | controls (4.2.0) */}
-        {/* The height is NOT a fixed 300 any more. Everything in this bar is sized
-            off the header height, so a fixed height meant that on a window too
-            narrow for the row, the art had to letterbox down while the medallion
-            stayed full size — Chris ended up two thirds its height, which is what
-            made the header look broken. Now the header itself shrinks when the
-            window can't fit the row at full scale, so the medallion and Chris are
-            ALWAYS the same height and the whole bar stays to scale. It caps at 300.
-            The 4.7 divisor is the row's total width expressed in header-heights
-            (medallion 1 + signature 0.90 + Chris 0.55 + wordmark 1.75 + gaps), with
-            a little slack; 210px covers the left pad and the controls column. */}
-        <div className="header-cosmic" style={{ flexShrink: 0, position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center', background: '#020516', height: 'clamp(170px, calc((100vw - 210px) / 4.7), 300px)', overflow: 'hidden', width: '100%' }}>
+        {/* Header — the banner clip, WHOLE. Nothing cropped. (4.2.0) */}
+        {/* THE WHOLE VIDEO IS THE HEADER. Chris's call, 2026-08-11 — and this is
+            the second time it has been asked for, so it is written down now.
 
-          {/* Header background video */}
+            Every earlier version of this bar sized the header by a width formula and
+            let object-fit:cover crop the clip to whatever band was left. That is what
+            cut his head off: the clip is 1920x1080, the bar is ~4.7:1, so cover only
+            ever showed a centred ~33% slice of the frame. No amount of nudging the
+            height fixes that — a 16:9 frame cannot fit in a 5:1 slot. Half an inch
+            bought 5% more frame; the medallion needed 500px; the answer is not to
+            crop at all.
+
+            So: the height IS the clip's own aspect (9/16 of the window width), capped
+            at 62vh so it can never swallow the whole screen, and the clip is
+            object-fit:CONTAIN — the full frame, top to bottom, never cut. Behind it a
+            second copy runs blurred and over-scaled to fill whatever width is left
+            over, so there are no black bars at the sides when the cap is in play.
+            Both copies get resumed by the occlusion fix above.
+
+            The tabs sit below it and the tab content is its own tall scrolling page,
+            so nothing underneath is compressed to make room. */}
+        <div className="header-cosmic" style={{ flexShrink: 0, position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center', background: '#020516', height: 'min(calc(100vw * 0.5625), 62vh)', overflow: 'hidden', width: '100%' }}>
+
+          {/* Backdrop — same clip, blurred and over-scaled, purely to fill the
+              side margins when the 62vh cap makes the bar wider than 16:9. */}
           <video
             src={headerVideo}
             autoPlay
@@ -297,7 +312,19 @@ function MainLayout() {
             playsInline
             preload="auto"
             aria-hidden="true"
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, opacity: 1 }}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, filter: 'blur(34px) saturate(1.15) brightness(0.7)', transform: 'scale(1.15)' }}
+          />
+
+          {/* The banner itself — the entire frame, never cropped. */}
+          <video
+            src={headerVideo}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            aria-hidden="true"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', zIndex: 1, opacity: 1 }}
           />
 
           {/* Controls — stacked vertically on the right */}
