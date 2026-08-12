@@ -1,5 +1,5 @@
 // ============================================================
-// Ghost Demo scripts — HARD tabs only.
+// Ghost Demo scripts, HARD tabs only.
 // action: 'type' | 'click' | 'point' | 'say'
 // Default for button targets is REAL click (operates the app).
 // skipClick: true for mic/API-heavy controls we only show.
@@ -25,31 +25,31 @@ export const GHOST_DEMOS = {
     title: 'Quantum Lab',
     steps: [
       {
-        say: 'Remote session starting on Quantum Lab. Nothing here needs typed commands — every step is a numbered button. Watch me press them in order.',
+        say: 'Remote session starting on Quantum Lab. Nothing here needs typed commands, every step is a numbered button. Watch me press them in order.',
         wait: 3200,
       },
       {
         target: '[data-demo="ql-keywords"]',
-        say: 'Step 1 — click the keyword box and type your own words. Anything you want in the song.',
+        say: 'Step 1, click the keyword box and type your own words. Anything you want in the song.',
         action: 'type',
         typeText: 'neon rain, midnight, heartbreak, empty highway, static, fever',
         wait: 2600,
       },
       {
         target: '[data-demo="ql-load"]',
-        say: 'Step 2 — Load into lattice. Watch the grid fill with YOUR words. They stay yours.',
+        say: 'Step 2, Load into lattice. Watch the grid fill with YOUR words. They stay yours.',
         action: 'click',
         wait: 3200,
       },
       {
         target: '[data-demo="ql-actionbar"]',
-        say: 'These are the Lattice controls — every button lives right here under the grid. Left to right, numbered, in order.',
+        say: 'These are the Lattice controls, every button lives right here under the grid. Left to right, numbered, in order.',
         action: 'point',
         wait: 3600,
       },
       {
         target: '[data-demo="ql-spotlight"]',
-        say: 'Step 3 — Spotlight ON. It goes orange so you know it is armed.',
+        say: 'Step 3, Spotlight ON. It goes orange so you know it is armed.',
         action: 'click',
         wait: 2200,
       },
@@ -61,33 +61,33 @@ export const GHOST_DEMOS = {
       },
       {
         target: '[data-demo="ql-spotlight"]',
-        say: 'Spotlight off — clicks go back to selecting tiles instead of heating them.',
+        say: 'Spotlight off, clicks go back to selecting tiles instead of heating them.',
         action: 'click',
         wait: 1800,
       },
       {
         target: '[data-demo="ql-run"]',
-        say: 'Step 4 — Run 12 gens. The energy spreads across the grid.',
+        say: 'Step 4, Run 12 gens. The energy spreads across the grid.',
         action: 'click',
         wait: 2800,
       },
       {
         target: '[data-demo="ql-crystallize"]',
-        say: 'Step 5 — Crystallize. This locks the field in place so it stops changing, and the button turns green so you can see it worked. Your own words are never swapped out for dictionary words — whatever you typed stays yours.',
+        say: 'Step 5, Crystallize. This locks the field in place so it stops changing, and the button turns green so you can see it worked. Your own words are never swapped out for dictionary words, whatever you typed stays yours.',
         action: 'click',
         then: 'Locked. The lattice is frozen exactly as it is now, and that frozen state is what the AI reads when it writes your verse.',
         wait: 2800,
       },
       {
         target: '[data-demo="ql-runlock"]',
-        say: 'And here is the shortcut. Spread and Lock is Steps 4 and 5 in a single press — it runs the twelve generations and then locks the field for you. It is the orange button, so it is easy to find.',
+        say: 'And here is the shortcut. Spread and Lock is Steps 4 and 5 in a single press, it runs the twelve generations and then locks the field for you. It is the orange button, so it is easy to find.',
         action: 'point',
         then: 'Both buttons are still there on purpose. Use Run and Crystallize one at a time while you are learning what each does, and use this one when you just want a verse.',
         wait: 3400,
       },
       {
         target: '[data-demo="ql-generate"]',
-        say: 'Step 6 — Generate Neural Lyrics. This one needs a free OpenRouter key in Settings. Set it, then replay this demo.',
+        say: 'Step 6, Generate Neural Lyrics. This one needs a free OpenRouter key in Settings. Set it, then replay this demo.',
         action: 'click',
         wait: 3500,
       },
@@ -120,7 +120,7 @@ export const GHOST_DEMOS = {
     title: 'Stemmer',
     steps: [
       {
-        say: 'Remote session on Stemmer — split a mix into real tracks you can solo and export.',
+        say: 'Remote session on Stemmer, split a mix into real tracks you can solo and export.',
         wait: 2800,
       },
       {
@@ -154,7 +154,7 @@ export const GHOST_DEMOS = {
         wait: 3000,
       },
       {
-        say: 'That’s Stemmer — Offline by default, Cloud when you want pro Demucs quality.',
+        say: 'That’s Stemmer, Offline by default, Cloud when you want pro Demucs quality.',
         wait: 3000,
       },
     ],
@@ -175,7 +175,7 @@ export const GHOST_DEMOS = {
       },
       {
         target: '[data-demo="rc-play"]',
-        say: 'Play All — if you have loops recorded they start; if empty you’ll see the status say so. Record Track 1 yourself first for a full stack demo.',
+        say: 'Play All, if you have loops recorded they start; if empty you’ll see the status say so. Record Track 1 yourself first for a full stack demo.',
         action: 'click',
         wait: 3200,
       },
@@ -187,7 +187,7 @@ export const GHOST_DEMOS = {
       },
       {
         target: '[data-demo="rc-record"]',
-        say: 'Record grabs the mic — I won’t force a rec without you, but this is the button: phrase → Stop Rec → loop.',
+        say: 'Record grabs the mic, I won’t force a rec without you, but this is the button: phrase, then Stop Rec, then loop.',
         action: 'point',
         wait: 3600,
       },
@@ -214,7 +214,7 @@ export const GHOST_DEMOS = {
       },
       {
         target: '[data-demo="gr-analyze"]',
-        say: 'Clicking Analyze — report + Style DNA will build if your OpenRouter key is set.',
+        say: 'Clicking Analyze, report + Style DNA will build if your OpenRouter key is set.',
         action: 'click',
         wait: 4000,
       },
@@ -224,20 +224,20 @@ export const GHOST_DEMOS = {
         action: 'point',
         optional: true,
         whenMissing:
-          'The next button is Write Lyrics, and it is not on screen yet — it only appears once an analysis has finished. Run Analyze on a real artist with your key set, and Write Lyrics shows up right underneath the report. It writes you a NEW verse in that artist’s pocket. It never copies their actual words.',
+          'The next button is Write Lyrics, and it is not on screen yet, it only appears once an analysis has finished. Run Analyze on a real artist with your key set, and Write Lyrics shows up right underneath the report. It writes you a NEW verse in that artist’s pocket. It never copies their actual words.',
         wait: 3200,
       },
       {
         target: '[data-demo="gr-send"]',
-        say: 'Send to Songwriter appears after you have lyrics — one click into the main desk.',
+        say: 'Send to Songwriter appears after you have lyrics, one click into the main desk.',
         action: 'point',
         optional: true,
         whenMissing:
-          'After that comes Send to Songwriter, which is also not on screen yet — it appears once you actually have lyrics. One click and the verse lands on the Songwriter tab, split into sections you can edit line by line.',
+          'After that comes Send to Songwriter, which is also not on screen yet, it appears once you actually have lyrics. One click and the verse lands on the Songwriter tab, split into sections you can edit line by line.',
         wait: 3200,
       },
       {
-        say: 'Flow: name → Analyze → Style DNA → Write → Send. Done.',
+        say: 'Flow: name, then Analyze, then Style DNA, then Write, then Send. Done.',
         wait: 2800,
       },
     ],
@@ -247,26 +247,26 @@ export const GHOST_DEMOS = {
     title: 'Songwriter',
     steps: [
       {
-        say: 'Songwriter is home base — the tab you will spend most of your time in. Everything the other tabs make ends up here so you can finish it by hand. I am going to walk the controls in the order you would actually use them.',
+        say: 'Songwriter is home base, the tab you will spend most of your time in. Everything the other tabs make ends up here so you can finish it by hand. I am going to walk the controls in the order you would actually use them.',
         wait: 3400,
       },
       {
         target: '[data-demo="sw-structure"]',
-        say: 'Start here — the structure. This is the skeleton of the song: which parts come in what order, verse, chorus, verse, chorus, bridge. Pick a preset if you do not know what you want; the presets are just the shapes most songs already use.',
+        say: 'Start here, the structure. This is the skeleton of the song: which parts come in what order, verse, chorus, verse, chorus, bridge. Pick a preset if you do not know what you want; the presets are just the shapes most songs already use.',
         action: 'point',
         then: 'Getting the shape down first is what stops you writing four great lines and then having nowhere to put them.',
         wait: 3800,
       },
       {
         target: '[data-demo="sw-generate"]',
-        say: 'Generate Full Song writes the whole thing in one go, using the style, mood and topic you set above and the structure you just picked. It needs your free OpenRouter key from Settings — without a key this button will tell you so rather than doing nothing.',
+        say: 'Generate Full Song writes the whole thing in one go, using the style, mood and topic you set above and the structure you just picked. It needs your free OpenRouter key from Settings, without a key this button will tell you so rather than doing nothing.',
         action: 'click',
         then: 'Whatever comes back is a starting point, not a final answer. It lands in the editor below, already split into the sections you chose.',
         wait: 3600,
       },
       {
         target: '[data-demo="sw-lines"]',
-        say: 'This is where the real work happens — the line editor. One row per line of the song, and you can retype any of them. Nothing is locked. Whether a line came from the AI, from Ghost Rider, or out of your own head, you edit it here the same way.',
+        say: 'This is where the real work happens, the line editor. One row per line of the song, and you can retype any of them. Nothing is locked. Whether a line came from the AI, from Ghost Rider, or out of your own head, you edit it here the same way.',
         action: 'point',
         wait: 3800,
       },
@@ -286,14 +286,14 @@ export const GHOST_DEMOS = {
       },
       {
         target: '[data-demo="sf-mode"]',
-        say: 'First choose which comes first. Song First writes the lyrics and then paints a cover that matches what it wrote. Art First flips it — you make or upload a picture, and the song gets written from that image. Same tools, different starting point.',
+        say: 'First choose which comes first. Song First writes the lyrics and then paints a cover that matches what it wrote. Art First flips it, you make or upload a picture, and the song gets written from that image. Same tools, different starting point.',
         action: 'point',
         then: 'If you have no idea what you want yet, Art First is often easier: it is simpler to react to a picture than to a blank page.',
         wait: 3600,
       },
       {
         target: '[data-demo="sf-forge"]',
-        say: 'This is Forge. It runs two AI calls back to back — one writes the song, the second paints the cover — so it takes noticeably longer than a normal generate. The button shows you which half it is on while it works. It needs your OpenRouter key from Settings.',
+        say: 'This is Forge. It runs two AI calls back to back, one writes the song, the second paints the cover, so it takes noticeably longer than a normal generate. The button shows you which half it is on while it works. It needs your OpenRouter key from Settings.',
         action: 'point',
         then: 'Turn Auto-save on underneath and every finished song and cover pair is written to your Documents folder automatically, so nothing gets lost.',
         wait: 3800,
@@ -318,19 +318,19 @@ export const GHOST_DEMOS = {
     title: 'Recording Booth',
     steps: [
       {
-        say: 'This is the Recording Booth. It records straight into Lyricist — harmonica, guitar, singing, humming, anything — so you can catch an idea the second you have it instead of hunting for your phone. I am going to point at each control rather than press it, because pressing Record would switch your microphone on.',
+        say: 'This is the Recording Booth. It records straight into Lyricist, harmonica, guitar, singing, humming, anything, so you can catch an idea the second you have it instead of hunting for your phone. I am going to point at each control rather than press it, because pressing Record would switch your microphone on.',
         wait: 3600,
       },
       {
         target: '[data-demo="booth-record"]',
         say: 'This is Start Recording. One press and it begins capturing from your microphone, with a live meter above it so you can see your level moving. Audio clean-up like echo cancellation is deliberately switched OFF here, so an instrument keeps its real tone instead of being processed like a phone call.',
         action: 'point',
-        then: 'While it is running this same button becomes Stop and Save, with a timer on it. Press that and the take is saved automatically — you do not have to name it first.',
+        then: 'While it is running this same button becomes Stop and Save, with a timer on it. Press that and the take is saved automatically, you do not have to name it first.',
         wait: 3800,
       },
       {
         target: '[data-demo="booth-library"]',
-        say: 'Everything you record lands here in your library and stays on your computer. Each take has a play button, so you can listen back to a riff on a loop while you write words for it on another tab — the player keeps going when you switch tabs.',
+        say: 'Everything you record lands here in your library and stays on your computer. Each take has a play button, so you can listen back to a riff on a loop while you write words for it on another tab, the player keeps going when you switch tabs.',
         action: 'point',
         then: 'You can rename a take, delete it, or export it. Nothing here is uploaded anywhere.',
         wait: 3800,
@@ -346,25 +346,25 @@ export const GHOST_DEMOS = {
     title: 'MIDI Studio',
     steps: [
       {
-        say: 'MIDI Studio turns audio into notes you can edit. MIDI just means the notes themselves rather than a recording of them — once something is MIDI you can move a wrong note instead of replaying the whole part. All of this runs offline on your machine.',
+        say: 'MIDI Studio turns audio into notes you can edit. MIDI just means the notes themselves rather than a recording of them, once something is MIDI you can move a wrong note instead of replaying the whole part. All of this runs offline on your machine.',
         wait: 3800,
       },
       {
         target: '[data-demo="midi-convert"]',
-        say: 'This is the converter. Give it audio — a hummed voice memo, a guitar riff, a take from the Recording Booth — and it works out which notes were played and builds them into the sequencer. Humming a melody you cannot play is a completely legitimate way to use this.',
+        say: 'This is the converter. Give it audio, a hummed voice memo, a guitar riff, a take from the Recording Booth, and it works out which notes were played and builds them into the sequencer. Humming a melody you cannot play is a completely legitimate way to use this.',
         action: 'point',
         then: 'When it finishes you get a green line telling you what it converted and how many notes it found.',
         wait: 4000,
       },
       {
         target: '[data-demo="midi-roll"]',
-        say: 'This is the piano roll and effects rack. Every note is a block you can drag to move it, stretch to make it longer, or delete. The rack underneath shapes the sound it plays back with — filter, drive, delay, reverb — and Reset puts every knob back to flat if you get lost.',
+        say: 'This is the piano roll and effects rack. Every note is a block you can drag to move it, stretch to make it longer, or delete. The rack underneath shapes the sound it plays back with, filter, drive, delay, reverb, and Reset puts every knob back to flat if you get lost.',
         action: 'point',
         wait: 4000,
       },
       {
         target: '[data-demo="midi-viz"]',
-        say: 'And this is the visualiser — the moving artwork that reacts to your music. Shuffle jumps to a different preset, and there are hundreds of them. Watch, I will press it.',
+        say: 'And this is the visualiser, the moving artwork that reacts to your music. Shuffle jumps to a different preset, and there are hundreds of them. Watch, I will press it.',
         action: 'click',
         then: 'That is purely for enjoying what you made. It has no effect on the audio.',
         wait: 3400,
@@ -385,14 +385,14 @@ export const GHOST_DEMOS = {
       },
       {
         target: '[data-demo="album-tracks"]',
-        say: 'This is the track list — up to twelve songs. Drag a row by its number to move it, and the running order updates instantly. Each row also has its own tempo, key, and a notes box for where that song sits in the story you are telling.',
+        say: 'This is the track list, up to twelve songs. Drag a row by its number to move it, and the running order updates instantly. Each row also has its own tempo, key, and a notes box for where that song sits in the story you are telling.',
         action: 'point',
         then: 'Running order matters more than people expect: it is the difference between a folder of songs and an album that pulls someone through from front to back.',
         wait: 3800,
       },
       {
         target: '[data-demo="album-meta"]',
-        say: 'These are the album-wide details — title, artist name, genre, the concept holding it together, and a master tempo. Setting the master tempo here can push that same tempo onto every track at once, so you are not typing it twelve times.',
+        say: 'These are the album-wide details, title, artist name, genre, the concept holding it together, and a master tempo. Setting the master tempo here can push that same tempo onto every track at once, so you are not typing it twelve times.',
         action: 'point',
         wait: 3600,
       },
@@ -407,12 +407,12 @@ export const GHOST_DEMOS = {
     title: 'Mastering Studio',
     steps: [
       {
-        say: 'Mastering Studio is the finish line. Mastering means putting every track through the same final polish so they all sit at the same loudness and tone — that is what stops track four sounding thin and quiet next to track five. All of it runs offline on your machine.',
+        say: 'Mastering Studio is the finish line. Mastering means putting every track through the same final polish so they all sit at the same loudness and tone, that is what stops track four sounding thin and quiet next to track five. All of it runs offline on your machine.',
         wait: 3800,
       },
       {
         target: '[data-demo="master-chain"]',
-        say: 'This is the chain, and it runs on every track. In order: a three-band EQ for bass, mids and treble; a compressor to glue it together; a limiter to stop it clipping; and loudness normalisation capped just under maximum so nothing distorts. Start with a preset — you do not have to understand any of these to use it.',
+        say: 'This is the chain, and it runs on every track. In order: a three-band EQ for bass, mids and treble; a compressor to glue it together; a limiter to stop it clipping; and loudness normalisation capped just under maximum so nothing distorts. Start with a preset, you do not have to understand any of these to use it.',
         action: 'point',
         then: 'Change anything here and every track is automatically re-mastered with the new settings. You do not have to redo them one by one.',
         wait: 4200,
@@ -424,7 +424,7 @@ export const GHOST_DEMOS = {
         wait: 4000,
       },
       {
-        say: 'That folder is a real release package — the files you would hand to a distributor, upload, or burn. Songwriter to Album Architect to here, and you are done.',
+        say: 'That folder is a real release package, the files you would hand to a distributor, upload, or burn. Songwriter to Album Architect to here, and you are done.',
         wait: 3200,
       },
     ],
@@ -434,17 +434,17 @@ export const GHOST_DEMOS = {
     title: 'Settings',
     steps: [
       {
-        say: 'Settings remote pass — keys unlock the studio.',
+        say: 'Settings remote pass, keys unlock the studio.',
         wait: 2600,
       },
       {
         target: '[data-demo="settings-key"]',
-        say: 'OpenRouter key field — paste once. That single key runs writing AND Song Forge / Nano Banana cover art via OpenRouter. No Google AI Studio key.',
+        say: 'OpenRouter key field, paste once. That single key runs writing AND Song Forge / Nano Banana cover art via OpenRouter. No Google AI Studio key.',
         action: 'click',
         wait: 3800,
       },
       {
-        say: 'Save once. Free models exist; paid go further — including image models on OpenRouter when you need covers.',
+        say: 'Save once. Free models exist; paid go further, including image models on OpenRouter when you need covers.',
         wait: 3000,
       },
     ],

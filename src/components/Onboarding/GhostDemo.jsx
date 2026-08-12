@@ -6,6 +6,26 @@ import ghostGuideImg from '../../assets/ghost.demo.png';
 import './GhostDemo.css';
 
 /**
+ * The ghost's voice — am_adam dragged down to ~68 Hz, baked by
+ * `scripts/generate-ghost-audio.py`. Chris picked the voice and the depth by
+ * ear on 2026-08-12.
+ *
+ * Resolved through Vite's import.meta.glob, NOT loaded from public/ at runtime.
+ * Assets under public/ do not resolve once the app is packaged — that exact
+ * mistake shipped 17 black tab panels in build 063 and a dead header clip in
+ * 067. If a clip is missing the demo simply runs silent; it never blocks.
+ */
+const VO_URLS = import.meta.glob('../../assets/ghost-vo/*.mp3', {
+  eager: true, query: '?url', import: 'default',
+});
+const VO = Object.fromEntries(
+  Object.entries(VO_URLS).map(([path, url]) => [
+    path.split('/').pop().replace(/\.mp3$/, ''),
+    url,
+  ])
+);
+
+/**
  * Ghost Demo — operates the UI like a remote operator:
  * hides the real cursor, moves a visible pointer, types into fields,
  * and really clicks buttons so the feature runs.
@@ -117,6 +137,54 @@ export default function GhostDemo({ tabId, onClose }) {
   const speedRef = useRef(1.0);
   useEffect(() => { speedRef.current = SPEEDS[speed] ?? 1.0; }, [speed]);
 
+  // Voice on by default, and switchable from the demo bar — a labelled button,
+  // not a setting hidden on another tab.
+  const [voiceOn, setVoiceOn] = useState(true);
+  const voiceOnRef = useRef(true);
+  const audioRef = useRef(null);
+
+  const stopVoice = useCallback(() => {
+    const a = audioRef.current;
+    if (a) { try { a.pause(); a.currentTime = 0; } catch { /* */ } }
+  }, []);
+
+  useEffect(() => {
+    voiceOnRef.current = voiceOn;
+    if (!voiceOn) stopVoice();
+  }, [voiceOn, stopVoice]);
+
+  // Never leave a voice talking to an empty room.
+  useEffect(() => () => stopVoice(), [stopVoice]);
+
+  /**
+   * Speak a baked line. Resolves with how long it runs, in ms, so the step can
+   * hold the bubble up until the ghost has actually finished the sentence —
+   * the clips run well past the reading estimate (one is 21 seconds), and
+   * cutting the voice off mid-word to advance would be worse than silence.
+   * Resolves 0 when voice is off or the clip is missing, and the step then
+   * falls back to read-time alone.
+   */
+  const speak = useCallback((id) => new Promise((resolve) => {
+    if (!voiceOnRef.current || !VO[id]) return resolve(0);
+    let a = audioRef.current;
+    if (!a) { a = new Audio(); audioRef.current = a; }
+    try { a.pause(); } catch { /* */ }
+    a.onloadedmetadata = null;
+    a.onerror = null;
+    a.src = VO[id];
+    // Slow/Fast changes the pace of the whole walkthrough; the voice follows it
+    // rather than desyncing from the captions. Clamped because the browser
+    // refuses rates outside this range and throws.
+    a.playbackRate = Math.min(2, Math.max(0.5, 1 / (speedRef.current || 1)));
+    a.onloadedmetadata = () => {
+      const ms = Number.isFinite(a.duration) ? (a.duration * 1000) / a.playbackRate : 0;
+      resolve(ms);
+    };
+    a.onerror = () => resolve(0);
+    const p = a.play();
+    if (p?.catch) p.catch(() => resolve(0));
+  }), []);
+
   /**
    * How long a bubble must stay up before the ghost acts on it. Derived from
    * the actual sentence, not a constant: ~2.6 words/sec is an unhurried adult
@@ -165,13 +233,25 @@ export default function GhostDemo({ tabId, onClose }) {
       // never true — so the duration is sanitised at the door.
       const dur = Number.isFinite(ms) ? Math.max(0, ms) : 0;
       const start = Date.now();
+      let paused = 0, pausedAt = 0;
       const tick = () => {
         if (isDead(runId)) return resolve();
+        const a = audioRef.current;
         if (pauseRef.current) {
+          // Pause holds the VOICE too. Without this the ghost kept narrating
+          // over a frozen screen, which is worse than either alone.
+          if (!pausedAt) { pausedAt = Date.now(); if (a && !a.paused) { try { a.pause(); } catch { /* */ } } }
           setTimeout(tick, 60);
           return;
         }
-        if (Date.now() - start >= dur) resolve();
+        if (pausedAt) {
+          paused += Date.now() - pausedAt;
+          pausedAt = 0;
+          if (a && a.paused && a.currentTime > 0 && !a.ended && voiceOnRef.current) {
+            const p = a.play(); if (p?.catch) p.catch(() => {});
+          }
+        }
+        if (Date.now() - start - paused >= dur) resolve();
         else setTimeout(tick, 30);
       };
       tick();
@@ -268,7 +348,8 @@ export default function GhostDemo({ tabId, onClose }) {
         y: Math.max(90, window.innerHeight / 2 - 50),
         visible: true,
       });
-      await wait(4800, runId);
+      const noneMs = await speak('system-0-notabdemo');
+      await wait(Math.max(4800, noneMs + 600), runId);
       if (!isDead(runId)) closeDemo();
       return;
     }
@@ -313,7 +394,8 @@ export default function GhostDemo({ tabId, onClose }) {
             visible: true,
           });
           setStatusLine('Not on screen yet — explaining instead of pointing');
-          await wait(readTimeFor(step.whenMissing || step.say), runId);
+          const missMs = await speak(`${tabId}-${i}-whenMissing`);
+          await wait(Math.max(readTimeFor(step.whenMissing || step.say), missMs + 450), runId);
           continue;
         }
         // Not optional: the anchor is missing from the component. Loud in dev,
@@ -348,8 +430,10 @@ export default function GhostDemo({ tabId, onClose }) {
       // THE pacing bug. This was `Math.min(1200, …)` — a hard 1.2s ceiling on
       // how long the explanation sat there before the ghost clicked, no matter
       // how long the sentence was. You could not finish reading a step before
-      // the app had already moved on. Now it waits for the sentence.
-      await wait(readTimeFor(step.say), runId);
+      // the app had already moved on. Now it waits for the sentence — and, when
+      // the voice is on, for the ghost to finish saying it, whichever is longer.
+      const sayMs = await speak(`${tabId}-${i}-say`);
+      await wait(Math.max(readTimeFor(step.say), sayMs + 450), runId);
 
       const action = step.action || (el ? 'click' : 'say');
 
@@ -383,7 +467,8 @@ export default function GhostDemo({ tabId, onClose }) {
       if (step.then) {
         setBubble((b) => ({ ...b, text: step.then }));
         setStatusLine('Showing the result');
-        await wait(readTimeFor(step.then), runId);
+        const thenMs = await speak(`${tabId}-${i}-then`);
+        await wait(Math.max(readTimeFor(step.then), thenMs + 450), runId);
       } else {
         await wait((step.wait ?? 2800) * speedRef.current, runId);
       }
@@ -399,7 +484,9 @@ export default function GhostDemo({ tabId, onClose }) {
         visible: true,
       });
       setStatusLine('Session complete — your work restored');
-      await wait(3500, runId);
+      const endMs = await speak('system-0-finished');
+      await wait(Math.max(3500, endMs + 600), runId);
+      stopVoice();
       closeDemo();
     }
   }, [demo, closeDemo, restoreWork]);
@@ -436,6 +523,7 @@ export default function GhostDemo({ tabId, onClose }) {
 
   const skip = () => {
     cancelRef.current = true;
+    stopVoice();
     restoreWork();
     closeDemo();
   };
@@ -519,6 +607,16 @@ export default function GhostDemo({ tabId, onClose }) {
             </button>
           ))}
         </span>
+
+        <button
+          type="button"
+          className={`ghost-demo-bar-btn ghost-demo-bar-voice ${voiceOn ? 'is-on' : ''}`}
+          aria-pressed={voiceOn}
+          onClick={() => setVoiceOn((v) => !v)}
+          title={voiceOn ? 'Turn the ghost’s voice off' : 'Turn the ghost’s voice on'}
+        >
+          {voiceOn ? '🔊 Voice On' : '🔇 Voice Off'}
+        </button>
 
         <button type="button" className="ghost-demo-bar-btn" onClick={() => setPaused((p) => !p)}>
           {paused ? '▶ Resume' : '⏸ Pause'}
