@@ -571,6 +571,16 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
+      // Chromium suspends media decoding and throttles timers whenever it thinks
+      // the window is hidden — and on Windows that includes merely being COVERED
+      // by another window, not just minimized. The background videos came back
+      // frozen on a single frame after any alt-tab, and nothing in the renderer
+      // ever restarted them, so the whole app looked like the videos were dead.
+      // The renderer pauses hidden tabs itself (see TabPane in App.jsx) and
+      // pauses everything on visibilitychange, so we are not trading this for
+      // wasted CPU — we just want to be the ones deciding, not the occlusion
+      // detector.
+      backgroundThrottling: false,
     },
     autoHideMenuBar: true,
     // Don't put an empty frame on screen. A window painted before its content

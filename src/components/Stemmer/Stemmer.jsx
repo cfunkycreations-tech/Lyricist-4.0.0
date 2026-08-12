@@ -11,6 +11,7 @@ import { separateStemsCloud } from '../../services/stemmerCloud.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import './Stemmer.css';
 
+import TabVideoBg from '../common/TabVideoBg.jsx';
 /**
  * Stemmer tab — Offline (default, light CPU, no key) OR Cloud Demucs (optional API key).
  */
@@ -222,6 +223,13 @@ export default function Stemmer() {
   };
 
   return (
+    <div className="tab-video-shell">
+      {/* Background video pulled 2026-08-11 at Chris's call — the word-card clip
+          did not belong on this tab. The clip itself is still in
+          src/assets/bg/stemmer.mp4 and still registered in TabVideoBg, so
+          putting it back (or swapping in a different one) is this one line:
+            <TabVideoBg name="stemmer" /> */}
+      <div className="tab-video-content">
     <div
       className="stemmer-root"
       data-help="Stemmer splits a mix into Vocals, Drums, Bass, Guitar, Keys, and Other. Offline = free, light CPU, no key. Cloud = optional Replicate Demucs API for pro quality (no local GPU)."
@@ -436,6 +444,8 @@ export default function Stemmer() {
         with your own key — pro stems without a powerful PC. Guitar/Keys slots fill from residual when the cloud
         model only returns four stems (vocals/drums/bass/other).
       </p>
+    </div>
+      </div>
     </div>
   );
 }

@@ -24,6 +24,26 @@ import Stemmer from './components/Stemmer/Stemmer.jsx';
 import { APP_VERSION } from './buildInfo.js';
 
 import bgImg from './assets/cfunky-bg-new.jpg';   // new Austin street-scene background (4.0.2)
+
+// Tab icons — Chris's dichroic-glass artwork, keyed off its dark background.
+// These replace the flat emoji: every icon is his own 3D render.
+import icoSongwriter from './assets/icons/icon-songwriter.png';
+import icoAnalyzer from './assets/icons/icon-analyzer.png';
+import icoSongforge from './assets/icons/icon-songforge.png';
+import icoQuantum from './assets/icons/icon-quantum.png';
+import icoCollab from './assets/icons/icon-collab.png';
+import icoLoopstation from './assets/icons/icon-loopstation.png';
+import icoStemmer from './assets/icons/icon-stemmer.png';
+import icoBooth from './assets/icons/icon-booth.png';
+import icoMidistudio from './assets/icons/icon-midistudio.png';
+import icoAlbum from './assets/icons/icon-album.png';
+import icoMastering from './assets/icons/icon-mastering.png';
+import icoRhyme from './assets/icons/icon-rhyme.png';
+import icoThesaurus from './assets/icons/icon-thesaurus.png';
+import icoDictionary from './assets/icons/icon-dictionary.png';
+import icoToolshub from './assets/icons/icon-toolshub.png';
+import icoScratchpad from './assets/icons/icon-scratchpad.png';
+import icoSettings from './assets/icons/icon-settings.png';
 import profileImg from './assets/profile.jpg';     // new founder selfie
 import logoImg from './assets/logo.jpg';           // new neon medallion logo
 import headerMedallionImg from './assets/header-medallion.png'; // Chris's peace-sign DNA medallion (4.2.0)
@@ -37,6 +57,10 @@ import headerSignatureImg from './assets/header-signature.png'; // Chris's signa
 import headerChrisImg from './assets/header-chris.png';         // Chris + guitar
 import headerWordmarkImg from './assets/header-wordmark.png';   // LYRICIST 4.2.0 GOES QUANTUM
 import footerMedallionImg from './assets/footer-medallion-new.png'; // Chris's bottom-left medallion (4.2.0)
+// Header banner clip. Imported, NOT read out of public/ at runtime — see the note
+// in components/common/TabVideoBg.jsx. Everything else in this app that plays a
+// background video goes through a Vite import, so this does too.
+import headerVideo from './assets/bg/header.mp4';
 
 // Footer medallion sizing. The whole image has to be visible — no crop at the
 // top, no crop at the bottom. An earlier version hung it past the bar and
@@ -45,23 +69,23 @@ const FOOTER_MEDALLION_H = 112;
 
 const tabs = [
   // Write / story tools first, then Quantum Lab
-  { id: 'songwriter', icon: '🎵', label: 'Songwriter', help: 'The main workspace. Set up the kind of song you want (style, mood, topic), then write and polish the lyrics line by line.' },
-  { id: 'analyzer', icon: '👻', label: 'Ghost Rider', help: 'Studies any artist you name and breaks down how they write, then helps you write a NEW song in that same style. (It does not copy their actual lyrics.)' },
-  { id: 'songforge', icon: '🪄', label: 'Song Forge', help: 'Auto-generate a full song and cover art using your single OpenRouter key (lyrics + Nano Banana image models on OpenRouter). Song First or Art First. No Google AI Studio key.' },
-  { id: 'quantum', icon: '⚛️', label: 'Quantum Lab', help: 'Build a verse by playing with a grid of word tiles (the lattice). Heat words up, let energy spread, lock rhymes with Crystallize, then Generate Neural Lyrics for a real 4-line verse. Send to Songwriter or Song Forge in one click. Needs your OpenRouter key for generate.' },
-  { id: 'collab', icon: '🤝', label: 'Collaboration', help: 'Write a song with someone else at the same time, wherever they are. Start a session, send them the code, and you are both typing on the same page. Peer to peer — the words go straight between your two computers. No account, no server holding your song, free forever.' },
-  { id: 'loopstation', icon: '🔁', label: 'RC-Funk 5000', help: 'Live multi-track loop station (Boss RC-style). Record loops on up to 4 tracks, stack layers, control volume, undo a track. Fully offline. Great for riffs and vocal hooks while you write.' },
-  { id: 'stemmer', icon: '🎛️', label: 'Stemmer', help: 'Split a full mix into Vocals, Drums, Bass, Guitar, Keys, and Other. Offline mode (default) is free, light CPU, no key, no GPU. Optional Cloud mode uses a Replicate API key for pro Demucs stems on their servers.' },
-  { id: 'booth', icon: '🎤', label: 'Recording Booth', help: 'Record harmonica, guitar, or vocals straight into the app (or upload takes) and keep them in a saved library. Play them in the persistent player while you write, convert them to MIDI, or export them as WAV.' },
-  { id: 'midistudio', icon: '🎹', label: 'MIDI Studio', help: 'Turn any audio into editable MIDI, tweak it on a piano-roll with a stronger multi-voice synth, and pick from dozens of Milkdrop-class visualizer presets. Runs fully offline.' },
-  { id: 'album', icon: '💿', label: 'Album Architect', help: 'Group up to 12 tracks into a cohesive concept album. Drag tracks to reorder, and set album-wide metadata like genre and master tempo.' },
-  { id: 'mastering', icon: '💽', label: 'Mastering Studio', help: 'The finish line: pull your songs together into an album, master each track with a real EQ/compression/limiter chain (all offline), add cover art (upload or AI-generated), and export the finished album — WAVs, cover, and tracklist.' },
-  { id: 'rhyme', icon: '📖', label: 'Rhyme Helper', help: 'A rhyming dictionary and rhyme finder. Look up words that rhyme, and check the rhymes inside lines you have already written.' },
-  { id: 'thesaurus', icon: '📚', label: 'Thesaurus', help: 'A word finder: type a word to get other words that mean the same, words that mean the opposite, and related ideas. Free, no AI key needed.' },
-  { id: 'dictionary', icon: '📕', label: 'Dictionary', help: 'Look up what a word means, how to say it, and example sentences — in English or Spanish. Free, no AI key needed.' },
-  { id: 'toolshub', icon: '🧰', label: 'AI Tools Hub', help: 'A community shelf of free AI tools — browse them, upvote your favorites, and share the ones you use. Free tools for the masses.' },
-  { id: 'scratchpad', icon: '📝', label: 'Scratchpad', help: 'A free, blank notepad for jotting ideas, hooks, or lines. It saves automatically on your computer so nothing gets lost.' },
-  { id: 'settings', icon: '⚙️', label: 'Settings', help: 'Where you connect your AI key and choose which AI model writes your lyrics. Set this up first so the rest of the app works.' }
+  { id: 'songwriter', icon: '🎵', img: icoSongwriter, label: 'Songwriter', help: 'The main workspace. Set up the kind of song you want (style, mood, topic), then write and polish the lyrics line by line.' },
+  { id: 'analyzer', icon: '👻', img: icoAnalyzer, label: 'Ghost Rider', help: 'Studies any artist you name and breaks down how they write, then helps you write a NEW song in that same style. (It does not copy their actual lyrics.)' },
+  { id: 'songforge', icon: '🪄', img: icoSongforge, label: 'Song Forge', help: 'Auto-generate a full song and cover art using your single OpenRouter key (lyrics + Nano Banana image models on OpenRouter). Song First or Art First. No Google AI Studio key.' },
+  { id: 'quantum', icon: '⚛️', img: icoQuantum, label: 'Quantum Lab', help: 'Build a verse by playing with a grid of word tiles (the lattice). Heat words up, let energy spread, lock rhymes with Crystallize, then Generate Neural Lyrics for a real 4-line verse. Send to Songwriter or Song Forge in one click. Needs your OpenRouter key for generate.' },
+  { id: 'collab', icon: '🤝', img: icoCollab, label: 'Collaboration', help: 'Write a song with someone else at the same time, wherever they are. Start a session, send them the code, and you are both typing on the same page. Peer to peer — the words go straight between your two computers. No account, no server holding your song, free forever.' },
+  { id: 'loopstation', icon: '🔁', img: icoLoopstation, label: 'RC-Funk 5000', help: 'Live multi-track loop station (Boss RC-style). Record loops on up to 4 tracks, stack layers, control volume, undo a track. Fully offline. Great for riffs and vocal hooks while you write.' },
+  { id: 'stemmer', icon: '🎛️', img: icoStemmer, label: 'Stemmer', help: 'Split a full mix into Vocals, Drums, Bass, Guitar, Keys, and Other. Offline mode (default) is free, light CPU, no key, no GPU. Optional Cloud mode uses a Replicate API key for pro Demucs stems on their servers.' },
+  { id: 'booth', icon: '🎤', img: icoBooth, label: 'Recording Booth', help: 'Record harmonica, guitar, or vocals straight into the app (or upload takes) and keep them in a saved library. Play them in the persistent player while you write, convert them to MIDI, or export them as WAV.' },
+  { id: 'midistudio', icon: '🎹', img: icoMidistudio, label: 'MIDI Studio', help: 'Turn any audio into editable MIDI, tweak it on a piano-roll with a stronger multi-voice synth, and pick from dozens of Milkdrop-class visualizer presets. Runs fully offline.' },
+  { id: 'album', icon: '💿', img: icoAlbum, label: 'Album Architect', help: 'Group up to 12 tracks into a cohesive concept album. Drag tracks to reorder, and set album-wide metadata like genre and master tempo.' },
+  { id: 'mastering', icon: '💽', img: icoMastering, label: 'Mastering Studio', help: 'The finish line: pull your songs together into an album, master each track with a real EQ/compression/limiter chain (all offline), add cover art (upload or AI-generated), and export the finished album — WAVs, cover, and tracklist.' },
+  { id: 'rhyme', icon: '📖', img: icoRhyme, label: 'Rhyme Helper', help: 'A rhyming dictionary and rhyme finder. Look up words that rhyme, and check the rhymes inside lines you have already written.' },
+  { id: 'thesaurus', icon: '📚', img: icoThesaurus, label: 'Thesaurus', help: 'A word finder: type a word to get other words that mean the same, words that mean the opposite, and related ideas. Free, no AI key needed.' },
+  { id: 'dictionary', icon: '📕', img: icoDictionary, label: 'Dictionary', help: 'Look up what a word means, how to say it, and example sentences — in English or Spanish. Free, no AI key needed.' },
+  { id: 'toolshub', icon: '🧰', img: icoToolshub, label: 'AI Tools Hub', help: 'A community shelf of free AI tools — browse them, upvote your favorites, and share the ones you use. Free tools for the masses.' },
+  { id: 'scratchpad', icon: '📝', img: icoScratchpad, label: 'Scratchpad', help: 'A free, blank notepad for jotting ideas, hooks, or lines. It saves automatically on your computer so nothing gets lost.' },
+  { id: 'settings', icon: '⚙️', img: icoSettings, label: 'Settings', help: 'Where you connect your AI key and choose which AI model writes your lyrics. Set this up first so the rest of the app works.' }
 ];
 
 /**
@@ -76,13 +100,44 @@ function TabPane({ id, active, opened, children }) {
   // display:none does not stop a <video> decoding. A background video you
   // cannot see still burns memory and CPU for as long as the app is open, so
   // park it while the tab is hidden and start it again when you come back.
+  //
+  // This used to run ONLY when isActive flipped, and that was the bug behind
+  // "the videos are all stopped": anything that paused a video without changing
+  // the active tab left it frozen forever. Chromium suspends media whenever it
+  // considers the window hidden — on Windows that includes being covered by
+  // another window — so one alt-tab killed every background video until you
+  // clicked a different tab and came back. Now the same sync runs on
+  // visibilitychange and window focus too, and a MutationObserver catches
+  // <video> elements that mount later (the Recording Booth adds one per take).
   useEffect(() => {
     const root = ref.current;
     if (!root) return;
-    for (const v of root.querySelectorAll('video')) {
-      if (isActive) { const p = v.play(); if (p?.catch) p.catch(() => {}); }
-      else v.pause();
-    }
+
+    // Deliberately NOT gated on document.visibilityState. Electron reports a
+    // merely-COVERED window as hidden, so gating on it can refuse to play a
+    // video Chris can see — which is the exact "they're all stopped" symptom
+    // this is supposed to cure. Active tab means play, full stop; the only thing
+    // that pauses a video here is its own tab being switched away from.
+    const sync = () => {
+      for (const v of root.querySelectorAll('video')) {
+        if (isActive) {
+          if (v.paused) { const p = v.play(); if (p?.catch) p.catch(() => {}); }
+        } else if (!v.paused) {
+          v.pause();
+        }
+      }
+    };
+
+    sync();
+    document.addEventListener('visibilitychange', sync);
+    window.addEventListener('focus', sync);
+    const obs = new MutationObserver(sync);
+    obs.observe(root, { childList: true, subtree: true });
+    return () => {
+      document.removeEventListener('visibilitychange', sync);
+      window.removeEventListener('focus', sync);
+      obs.disconnect();
+    };
   }, [isActive]);
 
   if (!opened.has(id)) return null;
@@ -112,6 +167,24 @@ function MainLayout() {
   // main.js reads this when it samples memory, so boot.log records which tab
   // was open while the renderer was growing.
   useEffect(() => { window.__lyricistActiveTab = activeTab; }, [activeTab]);
+
+  // The header banner clip lives outside every TabPane, so the per-tab video
+  // sync never touches it — but Chromium suspends it on occlusion just the same,
+  // which left the top of the app frozen on one frame after an alt-tab. Same
+  // treatment: whenever the window is visible again, get it playing.
+  useEffect(() => {
+    const resume = () => {
+      const v = document.querySelector('.header-cosmic video');
+      if (v?.paused) { const p = v.play(); if (p?.catch) p.catch(() => {}); }
+    };
+    resume();
+    document.addEventListener('visibilitychange', resume);
+    window.addEventListener('focus', resume);
+    return () => {
+      document.removeEventListener('visibilitychange', resume);
+      window.removeEventListener('focus', resume);
+    };
+  }, []);
   const [ghostRiderData, setGhostRiderData] = useState(null);
   const [quantumForgeSeed, setQuantumForgeSeed] = useState(null);
   const [showWizard, setShowWizard] = useState(false);
@@ -215,47 +288,20 @@ function MainLayout() {
             a little slack; 210px covers the left pad and the controls column. */}
         <div className="header-cosmic" style={{ flexShrink: 0, position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center', background: '#020516', height: 'clamp(170px, calc((100vw - 210px) / 4.7), 300px)', overflow: 'hidden', width: '100%' }}>
 
-          {/* 1. Medallion logo — full header height, top edge to bottom edge.
-               Tied to the header's own height rather than a number, so it can't
-               fall out of step the next time the header is resized. */}
-          <img
-            src={headerMedallionImg}
-            alt="CFunky Creations — Lyricist Goes Quantum"
-            style={{ height: '100%', width: 'auto', objectFit: 'contain', display: 'block', flexShrink: 0 }}
+          {/* Header background video */}
+          <video
+            src={headerVideo}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            aria-hidden="true"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, opacity: 1 }}
           />
 
-          {/* 2. Hero row — signature · Chris · wordmark, sized off ONE reference:
-               Chris stands the full height of the header, exactly as tall as the
-               medallion on the left. The other two are set to the height they had
-               relative to him in the original artwork (signature 230/440 = 52%,
-               wordmark 403/440 = 92%), so the whole row stays to scale.
-               Chris never shrinks; on a cramped window the other two give way. */}
-          <div
-            style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(6px, 3.2vw, 60px)', paddingLeft: 16, paddingRight: 190, overflow: 'hidden' }}
-            data-help="Lyricist is your songwriting studio. Pick a vibe, give it a topic, and it helps you write full songs, line by line — then polish them. Everything here is explained: just hover over anything you don't recognize."
-          >
-            {/* No maxWidth caps — the header height already guarantees the row
-                fits, so every piece renders at its true size. Caps would letterbox
-                a piece and silently break the scale. */}
-            <img
-              src={headerSignatureImg}
-              alt="Chris Funk"
-              style={{ height: '52%', width: 'auto', objectFit: 'contain', display: 'block', flexShrink: 0 }}
-            />
-            <img
-              src={headerChrisImg}
-              alt="Chris Funk with his guitar"
-              style={{ height: '100%', width: 'auto', objectFit: 'contain', display: 'block', flexShrink: 0 }}
-            />
-            <img
-              src={headerWordmarkImg}
-              alt={`Lyricist ${APP_VERSION} Goes Quantum — CFunky Creations`}
-              style={{ height: '92%', width: 'auto', objectFit: 'contain', display: 'block', flexShrink: 0 }}
-            />
-          </div>
-
           {/* Controls — stacked vertically on the right */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)', zIndex: 2 }}>
             {/* Re-launch the guided tour any time */}
             <button
               onClick={() => setShowWizard(true)}
@@ -397,7 +443,9 @@ function MainLayout() {
                 }}
                 data-help={t.help}
               >
-                <span style={{ marginRight: 6 }}>{t.icon}</span>
+                {t.img
+                  ? <img src={t.img} alt="" className="tab-browser-icon" aria-hidden="true" />
+                  : <span style={{ marginRight: 6 }}>{t.icon}</span>}
                 {t.label}
               </button>
             );
