@@ -124,7 +124,7 @@ export default function MidiStudio() {
     <div className="tab-video-shell">
       <TabVideoBg name="midistudio" />
       <div className="tab-video-content">
-    <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden', background: '#000' }}>
+    <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden' }}>
       <div className="midi-shell">
         <div className="midi-sidebar">
           <div>
