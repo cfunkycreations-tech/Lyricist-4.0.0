@@ -384,7 +384,7 @@ export default function LoopStation() {
     <div className="tab-video-shell">
       <TabVideoBg name="loopstation" />
       <div className="tab-video-content">
-    <div className="rc-funk-root" style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', overflow: 'auto', background: '#050208', padding: '20px 24px', color: '#f3ecff' }}>
+    <div className="rc-funk-root" style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', overflow: 'auto', background: 'rgba(5,2,8,0.5)', padding: '20px 24px', color: '#f3ecff' }}>
       {/* No backdrop sheet here. The root above is already opaque (#050208), so
           the app-wide street scene never shows through at any scroll position.
           There used to be a position:fixed sheet doing this job, and fixed means
