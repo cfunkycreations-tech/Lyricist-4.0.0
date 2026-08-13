@@ -303,7 +303,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
     <div className="tab-video-shell">
       <TabVideoBg name="songforge" />
       <div className="tab-video-content">
-    <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden', background: '#000' }}>
+    <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden' }}>
       <div className="songforge-shell">
         {/* Controls sidebar */}
         <div className="songforge-sidebar" style={{ background: 'rgba(0,0,0,0.55)', borderRight: '1px solid rgba(34,211,238,0.2)' }}>
