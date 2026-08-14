@@ -28,6 +28,7 @@
       "dist/**/*",
       "main.js",
       "preload.js",
+      "demucsLocal.js",
       "src/assets/icon.ico",
       "!node_modules/**/*"
     ],

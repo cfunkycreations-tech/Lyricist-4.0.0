@@ -57,8 +57,59 @@ function checkPreloadChannels() {
   return invoked.size;
 }
 
+/**
+ * Every local module the main process requires must be in build.files.
+ *
+ * The whitelist there is opt-in: a new root-level module (demucsLocal.js) built
+ * and ran fine in dev, then threw "Cannot find module" the instant the app was
+ * packaged, because it was never copied into app.asar. Walk the require graph
+ * from main.js/preload.js and prove each file is covered by a files entry.
+ */
+function checkPackagedMainModules() {
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+  const patterns = (pkg.build?.files || []).filter((f) => typeof f === 'string' && !f.startsWith('!'));
+  // Turn a files glob into a regex that can test a repo-relative path.
+  const covers = (rel) => patterns.some((p) => {
+    const rx = new RegExp('^' + p
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*\*\/\*/g, '.*')
+      .replace(/\*\*/g, '.*')
+      .replace(/\*/g, '[^/]*') + '$');
+    return rx.test(rel);
+  });
+
+  const seen = new Set();
+  const queue = ['main.js', 'preload.js'];
+  let checked = 0;
+  while (queue.length) {
+    const rel = queue.shift();
+    if (seen.has(rel)) continue;
+    seen.add(rel);
+    const abs = path.join(ROOT, rel);
+    if (!fs.existsSync(abs)) continue;
+    checked++;
+    if (rel !== 'main.js' && rel !== 'preload.js' && !covers(rel)) {
+      problems.push(
+        `main process requires '${rel}' but build.files in package.json does not include it — `
+        + `it will be missing from app.asar and the packaged app will crash on launch.`
+      );
+    }
+    const src = fs.readFileSync(abs, 'utf8');
+    for (const m of src.matchAll(/require\(\s*['"`](\.[^'"`]+)['"`]\s*\)/g)) {
+      let dep = path.posix.normalize(path.posix.join(path.posix.dirname(rel), m[1]));
+      if (!/\.[cm]?js$/.test(dep)) {
+        if (fs.existsSync(path.join(ROOT, dep + '.js'))) dep += '.js';
+        else if (fs.existsSync(path.join(ROOT, dep, 'index.js'))) dep = path.posix.join(dep, 'index.js');
+      }
+      queue.push(dep);
+    }
+  }
+  return checked;
+}
+
 const channels = checkDuplicateIpcHandlers();
 const bridged = checkPreloadChannels();
+const mainModules = checkPackagedMainModules();
 
 if (problems.length) {
   console.error('\n  PREFLIGHT FAILED\n');
@@ -67,4 +118,4 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log(`preflight ok — ${channels} ipc channels, ${bridged} bridged, no duplicates`);
+console.log(`preflight ok — ${channels} ipc channels, ${bridged} bridged, ${mainModules} main modules packaged, no duplicates`);
