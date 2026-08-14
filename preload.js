@@ -47,4 +47,17 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   // payload: { apiKey, audioBase64, mimeType, fileName }
   // Returns { ok, stems: { vocals|drums|bass|other: base64 }, error }.
   stemmerCloud: (payload) => ipcRenderer.invoke('stemmer-cloud', payload),
+
+  // Local Demucs — true six-stem AI separation on the user's own GPU/CPU.
+  demucsStatus: () => ipcRenderer.invoke('demucs-status'),
+  demucsSetup: () => ipcRenderer.invoke('demucs-setup'),
+  // payload: { bytes: Uint8Array, fileName, device: 'auto'|'gpu'|'cpu' }
+  // Returns { ok, device, stems: { vocals|drums|bass|guitar|keys|other: base64 } }.
+  demucsSeparate: (payload) => ipcRenderer.invoke('demucs-separate', payload),
+  // Progress during setup/separate. Returns an unsubscribe function.
+  onDemucsProgress: (cb) => {
+    const h = (_e, data) => cb(data);
+    ipcRenderer.on('demucs-progress', h);
+    return () => ipcRenderer.removeListener('demucs-progress', h);
+  },
 });

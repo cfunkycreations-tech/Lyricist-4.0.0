@@ -204,8 +204,11 @@ const DEFAULT_CONFIG = {
   imageSize: '2K',
   customArtStyle: '',
 
-  // Stemmer — offline (default, light CPU) or cloud Demucs (needs Replicate key)
-  stemmerMode: 'offline', // 'offline' | 'cloud'
+  // Stemmer engine:
+  //  'local'   — true 6-stem AI (Demucs) on the user's own GPU/CPU (default)
+  //  'cloud'   — Demucs on Replicate (needs API key)
+  //  'offline' — fast DSP spectral split (rough, not true stems)
+  stemmerMode: 'local', // 'local' | 'cloud' | 'offline'
   // Offline processor: 'auto' tries the GPU first and falls back to the CPU if
   // the GPU is missing or runs out of memory; 'gpu' / 'cpu' force one path.
   stemmerDevice: 'auto', // 'auto' | 'gpu' | 'cpu'

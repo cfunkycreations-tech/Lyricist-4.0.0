@@ -9,6 +9,7 @@ import {
 } from '../../services/stemmerEngine.js';
 import { separateStemsCloud } from '../../services/stemmerCloud.js';
 import { separateStemsGPU, gpuAvailable, gpuName } from '../../services/stemmerEngineGpu.js';
+import { available as localAvailable, localStatus, localSetup, separateStemsLocal } from '../../services/stemmerLocal.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import './Stemmer.css';
 
@@ -18,12 +19,18 @@ import TabVideoBg from '../common/TabVideoBg.jsx';
  */
 export default function Stemmer() {
   const store = useLyricStore();
-  const mode = store.config.stemmerMode === 'cloud' ? 'cloud' : 'offline';
+  const rawMode = store.config.stemmerMode;
+  const mode = ['local', 'cloud', 'offline'].includes(rawMode) ? rawMode : 'local';
   const device = store.config.stemmerDevice || 'auto'; // 'auto' | 'gpu' | 'cpu'
   const hasCloudKey = !!(store.config.replicateApiKey || '').trim();
 
   const [gpuOk, setGpuOk] = useState(null);   // null = checking, true/false once known
   const [gpuLabel, setGpuLabel] = useState('');
+
+  // Local Demucs (true AI stems) availability.
+  const canLocal = localAvailable();
+  const [local, setLocal] = useState({ pythonFound: false, ready: false, cuda: false, checked: false });
+  const [setupBusy, setSetupBusy] = useState(false);
 
   const [fileName, setFileName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -62,6 +69,33 @@ export default function Stemmer() {
     return () => { alive = false; };
   }, []);
 
+  // Ask the desktop app whether local AI stems are installed and GPU-capable.
+  const refreshLocal = useCallback(async () => {
+    if (!canLocal) { setLocal({ pythonFound: false, ready: false, cuda: false, checked: true }); return; }
+    const s = await localStatus();
+    setLocal({ pythonFound: !!s.pythonFound, ready: !!s.ready, cuda: !!s.cuda, checked: true });
+  }, [canLocal]);
+
+  useEffect(() => { refreshLocal(); }, [refreshLocal]);
+
+  const runLocalSetup = async () => {
+    setSetupBusy(true);
+    setError('');
+    setStatus('Setting up local AI separation (one-time, a few hundred MB)…');
+    setProgress(0);
+    try {
+      const res = await localSetup((p, msg) => { setProgress(p || 0); if (msg) setStatus(msg); });
+      if (!res?.ok) { setError(res?.error || 'Setup failed.'); setStatus('Setup failed'); }
+      else { setStatus(res.cuda ? 'Local AI ready — GPU detected.' : 'Local AI ready — running on CPU.'); }
+      await refreshLocal();
+    } catch (e) {
+      setError(e?.message || 'Setup failed.');
+      setStatus('Setup failed');
+    } finally {
+      setSetupBusy(false);
+    }
+  };
+
   const getCtx = () => {
     if (!ctxRef.current) {
       ctxRef.current = new (window.AudioContext || window.webkitAudioContext)();
@@ -91,10 +125,42 @@ export default function Stemmer() {
       const ctx = getCtx();
       if (ctx.state === 'suspended') await ctx.resume();
 
-      if (mode === 'cloud') {
+      if (mode === 'local') {
+        if (!canLocal) {
+          throw new Error('Local AI stems need the desktop app. In a browser, use Cloud or Offline.');
+        }
+        if (!local.ready) {
+          throw new Error(
+            local.pythonFound
+              ? 'Local AI is not set up yet — click "Set up local AI" (one-time download), then try again.'
+              : 'Local AI needs Python 3 installed. Install Python 3.9+ from python.org, then click "Set up local AI" — or use Cloud / Offline.'
+          );
+        }
+        const onStepL = (p, l) => { setProgress(p); setStatus(l); };
+        setStatus(`Preparing ${file.name} for AI separation…`);
+        let ran;
+        try {
+          ran = await separateStemsLocal(file, device, onStepL, ctx);
+        } catch (e) {
+          // GPU out of memory mid-run, and the user didn't force GPU → retry CPU.
+          if (e.cudaError && device !== 'gpu') {
+            setStatus('GPU ran out of memory — finishing on your CPU…');
+            ran = await separateStemsLocal(file, 'cpu', onStepL, ctx);
+          } else {
+            throw e;
+          }
+        }
+        const result = ran.stems;
+        const anyStem = Object.values(result)[0];
+        setDuration(anyStem ? anyStem.duration : 0);
+        setStems(result);
+        setStatus(
+          `Ready (Local AI · ${ran.device === 'cuda' ? 'GPU' : 'CPU'}) — ${Object.keys(result).length} real stems from ${file.name}`
+        );
+      } else if (mode === 'cloud') {
         if (!hasCloudKey) {
           throw new Error(
-            'Cloud mode needs a Replicate API key. Paste one in Settings → Stemmer Cloud, or switch to Offline (no key, no GPU).'
+            'Cloud mode needs a Replicate API key. Paste one in Settings → Stemmer Cloud, or switch to Local (on your machine) or Offline.'
           );
         }
         setStatus('Cloud Demucs — uploading…');
@@ -291,8 +357,8 @@ export default function Stemmer() {
         <div>
           <h2 className="chrome-title stemmer-title">Stemmer</h2>
           <p className="stemmer-sub">
-            Separate a full mix into playable, exportable tracks. Choose Offline (always works, no key, no GPU)
-            or Cloud Demucs (optional API key — runs on remote servers when your PC is light).
+            Separate a full mix into playable, exportable tracks. Offline runs on your own machine (GPU or CPU),
+            free and no key. Cloud Demucs is an optional API key that runs on remote servers.
           </p>
         </div>
         <div className="stemmer-actions">
@@ -326,7 +392,7 @@ export default function Stemmer() {
           {stemFolder && window.lyricistAPI?.showFolder && (
             <button
               type="button"
-              className="stemmer-btn"
+              className="stemmer-btn stemmer-btn-emerald"
               onClick={() => window.lyricistAPI.showFolder(stemFolder)}
               data-help="Opens the folder your stems were saved into."
             >
@@ -343,20 +409,26 @@ export default function Stemmer() {
         </div>
       </div>
 
-      {/* Mode toggle — Offline (default) vs Cloud API */}
+      {/* Engine: Local AI (real stems) · Cloud AI · Offline (fast/rough) */}
       <div
         className="stemmer-mode-bar"
-        data-help="Offline: mid-side + bands on your CPU, free, no key. Cloud: Demucs on Replicate — needs a free Replicate account token. No local GPU required either way."
+        data-help="Local AI = true separation on your own machine (Demucs), real isolated stems, free. Cloud AI = same quality on remote servers, needs a Replicate key. Offline = fast frequency split on your CPU/GPU, rough (stems bleed) — good for a quick preview, not true stems."
       >
         <span className="stemmer-mode-label">Engine</span>
         <button
           type="button"
-          className={`stemmer-mode-btn ${mode === 'offline' ? 'is-active' : ''}`}
+          className={`stemmer-mode-btn ${mode === 'local' ? 'is-active' : ''}`}
           disabled={busy}
-          onClick={() => setMode('offline')}
+          onClick={() => setMode('local')}
         >
-          Offline
-          <small>No key · light CPU · no GPU</small>
+          Local AI
+          <small>
+            {!canLocal ? 'desktop app only'
+              : !local.checked ? 'checking…'
+              : local.ready ? (local.cuda ? 'real stems · GPU' : 'real stems · CPU')
+              : local.pythonFound ? 'needs one-time setup'
+              : 'needs Python'}
+          </small>
         </button>
         <button
           type="button"
@@ -364,21 +436,59 @@ export default function Stemmer() {
           disabled={busy}
           onClick={() => setMode('cloud')}
         >
-          Cloud API
-          <small>{hasCloudKey ? 'Replicate key ready' : 'Needs Replicate key'}</small>
+          Cloud AI
+          <small>{hasCloudKey ? 'real stems · Replicate' : 'needs Replicate key'}</small>
         </button>
+        <button
+          type="button"
+          className={`stemmer-mode-btn ${mode === 'offline' ? 'is-active' : ''}`}
+          disabled={busy}
+          onClick={() => setMode('offline')}
+        >
+          Offline
+          <small>fast · rough · no key</small>
+        </button>
+
+        {mode === 'local' && canLocal && !local.ready && (
+          <button
+            type="button"
+            className="stemmer-btn stemmer-btn-emerald"
+            disabled={setupBusy || busy || !local.pythonFound}
+            onClick={runLocalSetup}
+          >
+            {setupBusy ? 'Setting up…' : 'Set up local AI'}
+          </button>
+        )}
+        {mode === 'local' && !canLocal && (
+          <span className="stemmer-mode-hint">Local AI runs in the desktop app. In a browser, use Cloud or Offline.</span>
+        )}
+        {mode === 'local' && canLocal && local.checked && !local.pythonFound && !local.ready && (
+          <span className="stemmer-mode-hint">
+            Needs <strong>Python 3.9+</strong> (python.org). Then click Set up local AI — or use Cloud / Offline.
+          </span>
+        )}
+        {mode === 'local' && canLocal && local.ready && (
+          <span className="stemmer-mode-hint ok">
+            True AI stems on your machine{local.cuda ? ' — GPU ready.' : ' — running on CPU.'}
+          </span>
+        )}
         {mode === 'cloud' && !hasCloudKey && (
           <span className="stemmer-mode-hint">
-            Add a Replicate key in <strong>Settings</strong>, or stay Offline.
+            Add a Replicate key in <strong>Settings</strong>, or use Local / Offline.
           </span>
         )}
         {mode === 'cloud' && hasCloudKey && (
-          <span className="stemmer-mode-hint ok">Cloud Demucs will run remotely — your GPU is not used.</span>
+          <span className="stemmer-mode-hint ok">Cloud Demucs runs remotely — real stems, your GPU is not used.</span>
+        )}
+        {mode === 'offline' && (
+          <span className="stemmer-mode-hint">
+            Rough preview — stems bleed into each other. For true isolation use Local AI or Cloud.
+          </span>
         )}
       </div>
 
-      {/* Processor picker — only relevant for the offline engine */}
-      {mode === 'offline' && (
+      {/* Processor picker — GPU/CPU applies to Local AI and the Offline engine */}
+      {(mode === 'offline' || mode === 'local') && (
         <div
           className="stemmer-mode-bar"
           data-help="GPU uses your graphics card — much faster, needs enough video memory. CPU uses your processor — always works, uses more system RAM, slower. Auto tries the GPU first and falls back to the CPU if the GPU can't handle it."

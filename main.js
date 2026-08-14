@@ -1,6 +1,7 @@
 const { app, BrowserWindow, session, ipcMain, Menu, MenuItem, clipboard, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const demucsLocal = require('./demucsLocal');
 
 // One copy at a time. A second instance can't take the profile lock the first
 // one holds, so its storage comes up broken and the window can land black —
@@ -193,6 +194,30 @@ ipcMain.handle('save-stems', async (event, { songName, files }) => {
   } catch (e) {
     return { ok: false, error: e.message };
   }
+});
+
+// ── Local Demucs (true six-stem AI separation on the user's own machine) ──────
+// Status is cheap and safe to call on tab open. Setup and separate are long and
+// stream progress back to the renderer over 'demucs-progress'.
+ipcMain.handle('demucs-status', async () => {
+  try { return { ok: true, ...(await demucsLocal.status()) }; }
+  catch (e) { return { ok: false, error: e.message, pythonFound: false, ready: false, cuda: false }; }
+});
+
+ipcMain.handle('demucs-setup', async (event) => {
+  try {
+    return await demucsLocal.setup((p, msg) => {
+      try { event.sender.send('demucs-progress', { phase: 'setup', p, msg }); } catch { /* window gone */ }
+    });
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+
+ipcMain.handle('demucs-separate', async (event, { bytes, fileName, device }) => {
+  try {
+    return await demucsLocal.separate(bytes, fileName, device || 'auto', (p, msg) => {
+      try { event.sender.send('demucs-progress', { phase: 'separate', p, msg }); } catch { /* window gone */ }
+    });
+  } catch (e) { return { ok: false, error: e.message }; }
 });
 
 /** Reveal a folder in Explorer — "where did my stems go" should be one click. */

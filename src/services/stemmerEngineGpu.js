@@ -443,13 +443,20 @@ async function readFloats(device, buf, floatCount) {
   return out;
 }
 
-function normalize(buf, target = 0.92) {
-  let peak = 0;
-  for (let i = 0; i < buf.length; i++) { const a = Math.abs(buf[i]); if (a > peak) peak = a; }
-  if (peak < 1e-8 || peak <= target) return buf;
-  const g = target / peak;
-  for (let i = 0; i < buf.length; i++) buf[i] *= g;
-  return buf;
+// One shared gain across all stems: the loudest stem hits `target`, the rest
+// stay proportional. This brings the low-level ISTFT output up to an audible
+// level (a per-stem "only attenuate" version left every stem near-silent) while
+// preserving the balance between stems and not inflating an empty stem to hiss.
+function normalizeAll(bufs, target = 0.92) {
+  let maxPeak = 0;
+  for (const b of bufs) {
+    for (let i = 0; i < b.length; i++) { const a = Math.abs(b[i]); if (a > maxPeak) maxPeak = a; }
+  }
+  if (maxPeak < 1e-7) return bufs;
+  const g = target / maxPeak;
+  if (Math.abs(g - 1) < 1e-3) return bufs;
+  for (const b of bufs) { for (let i = 0; i < b.length; i++) b[i] *= g; }
+  return bufs;
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
@@ -534,19 +541,25 @@ export async function separateStemsGPU(audioBuffer, onProgress) {
 
   const stemBufs = { vocals: vocal, drums: drum, bass, guitar, keys, other };
   const order = ['vocals', 'drums', 'bass', 'guitar', 'keys', 'other'];
-  const result = {};
+  const sigs = {};
   let step = 0;
   for (const id of order) {
     report(0.5 + 0.08 * step, `Reconstructing ${id}…`);
     dispatch(device, pPolar, [stemBufs[id], phaseMid, reBuf, imBuf], FB, n, frames, sr);
     dispatch(device, pInverse, [reBuf, imBuf, cosBuf, sinBuf, rawBuf], frames * FFT_N, n, frames, sr);
     dispatch(device, pOla, [rawBuf, winBuf, outBuf], n, n, frames, sr);
-    const sig = normalize(await readFloats(device, outBuf, n));
+    sigs[id] = await readFloats(device, outBuf, n);
+    step++;
+  }
+
+  // Shared-gain loudness pass, then pack into audio buffers.
+  normalizeAll(order.map((id) => sigs[id]));
+  const result = {};
+  for (const id of order) {
     const oac = new OfflineAudioContext(1, n, sr);
     const ab = oac.createBuffer(1, n, sr);
-    ab.copyToChannel(sig, 0);
+    ab.copyToChannel(sigs[id], 0);
     result[id] = ab;
-    step++;
   }
 
   // cleanup

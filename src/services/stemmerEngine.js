@@ -281,19 +281,31 @@ function smoothStep(edge0, edge1, x) {
   return t * t * (3 - 2 * t);
 }
 
-// ─── Soft-clip normalize ──────────────────────────────────────────────────
-
-function normalize(buf, target = 0.92) {
+// ─── Loudness normalize ────────────────────────────────────────────────────
+// The STFT→mask→ISTFT round-trip comes back at a low absolute level, so the
+// stems must be brought UP to an audible level, not just capped. Critically we
+// scale every stem by ONE shared gain (set so the loudest stem peaks at target)
+// rather than normalizing each on its own — that keeps the relative balance
+// between stems and stops an almost-empty stem from being blown up into full
+// hiss. (An old per-stem "only ever attenuate" version left every stem at the
+// raw ~0.02 peak, which played back as silence — that was the "no sound" bug.)
+function peakOf(buf) {
   let peak = 0;
   for (let i = 0; i < buf.length; i++) {
     const a = Math.abs(buf[i]);
     if (a > peak) peak = a;
   }
-  if (peak < 1e-8 || peak <= target) return buf;
-  const g = target / peak;
-  const out = new Float32Array(buf.length);
-  for (let i = 0; i < buf.length; i++) out[i] = buf[i] * g;
-  return out;
+  return peak;
+}
+
+function normalizeAll(bufs, target = 0.92) {
+  let maxPeak = 0;
+  for (const b of bufs) { const p = peakOf(b); if (p > maxPeak) maxPeak = p; }
+  if (maxPeak < 1e-7) return bufs; // genuinely silent input — leave as-is
+  const g = target / maxPeak;
+  if (Math.abs(g - 1) < 1e-3) return bufs;
+  for (const b of bufs) { for (let i = 0; i < b.length; i++) b[i] *= g; }
+  return bufs;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────
@@ -346,7 +358,7 @@ export async function separateStems(audioBuffer, onProgress) {
   for (let f = 0; f < frames; f++) {
     for (let k = 0; k < BINS; k++) drumMag[f][k] *= (1 + pMask[f][k]);
   }
-  const drumsSignal = normalize(istft(drumMag, midPhase, n));
+  const drumsSignal = istft(drumMag, midPhase, n);
   await yieldFrame();
 
   // Harmonic content = hMask on mid
@@ -368,7 +380,7 @@ export async function separateStems(audioBuffer, onProgress) {
     for (let k = 0; k < BINS; k++) out[k] = row[k] * wVocal[f][k];
     return out;
   });
-  const vocalsSignal = normalize(istft(vocalMag, midPhase, n));
+  const vocalsSignal = istft(vocalMag, midPhase, n);
   await yieldFrame();
 
   report(0.74, 'Extracting bass…');
@@ -377,7 +389,7 @@ export async function separateStems(audioBuffer, onProgress) {
     for (let k = 0; k < BINS; k++) out[k] = row[k] * wBass[f][k];
     return out;
   });
-  const bassSignal = normalize(istft(bassMag, midPhase, n));
+  const bassSignal = istft(bassMag, midPhase, n);
   await yieldFrame();
 
   report(0.79, 'Extracting guitar (stereo side + mid blend)…');
@@ -389,7 +401,7 @@ export async function separateStems(audioBuffer, onProgress) {
     }
     return out;
   });
-  const guitarSignal = normalize(istft(guitarMag, midPhase, n));
+  const guitarSignal = istft(guitarMag, midPhase, n);
   await yieldFrame();
 
   report(0.84, 'Extracting keys / pads…');
@@ -401,7 +413,7 @@ export async function separateStems(audioBuffer, onProgress) {
     }
     return out;
   });
-  const keysSignal = normalize(istft(keysMag, midPhase, n));
+  const keysSignal = istft(keysMag, midPhase, n);
   await yieldFrame();
 
   report(0.89, 'Building residual (other)…');
@@ -410,10 +422,14 @@ export async function separateStems(audioBuffer, onProgress) {
     for (let k = 0; k < BINS; k++) out[k] = row[k] * wOther[f][k];
     return out;
   });
-  const otherSignal = normalize(istft(otherMag, midPhase, n));
+  const otherSignal = istft(otherMag, midPhase, n);
   await yieldFrame();
 
   report(0.95, 'Packaging stems…');
+  // One shared gain across all stems so they come out audible while keeping
+  // their relative balance (see normalizeAll).
+  normalizeAll([vocalsSignal, drumsSignal, bassSignal, guitarSignal, keysSignal, otherSignal]);
+
   const makeMonoBuf = (data) => {
     const ctx = new OfflineAudioContext(1, data.length, sampleRate);
     const buf = ctx.createBuffer(1, data.length, sampleRate);

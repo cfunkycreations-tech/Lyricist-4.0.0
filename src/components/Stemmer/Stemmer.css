@@ -160,6 +160,24 @@
   transform: translateY(-1px);
 }
 
+/* Open folder — emerald neon so it matches the family instead of a bare
+   white pill. */
+.stemmer-btn-emerald {
+  background: linear-gradient(145deg, #10f0a0 0%, #059669 100%);
+  color: #04140d;
+  box-shadow:
+    0 0 14px rgba(16, 240, 160, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.stemmer-btn-emerald:hover:not(:disabled) {
+  box-shadow:
+    0 0 24px rgba(16, 240, 160, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
 .stemmer-drop {
   border: 1.5px dashed rgba(0, 229, 255, 0.45);
   border-radius: 16px;
