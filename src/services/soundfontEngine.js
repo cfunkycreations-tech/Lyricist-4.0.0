@@ -1,90 +1,110 @@
 /**
  * Sampled-instrument engine for the MIDI Studio piano roll.
  *
- * Replaces the old two-oscillator (sawtooth + triangle) synth with real
- * recorded instruments: grand piano, guitars, harp, flute, cello, strings,
- * horns, organs, mallets and more.
+ * This is real SoundFont2 synthesis, not one-shot sample playback. The bank is
+ * GeneralUser GS v2.0.3 by S. Christian Collins, rendered through
+ * spessasynth_core (Apache-2.0). That buys the things a flat sample map cannot
+ * give you, and which made every instrument sound like the same generic blip:
  *
- * Samples are MusyngKite General MIDI packs from gleitz/midi-js-soundfonts
- * (MIT). They are bundled in `public/soundfonts/`, so playback is fully
- * offline — nothing is fetched from the network at runtime.
+ *   - velocity layers: a soft note is a different recording, not the loud one
+ *     turned down, so dynamics change timbre the way a real instrument does,
+ *   - per-instrument envelopes: a piano rings and decays, an organ stops dead,
+ *     strings swell in. Previously every instrument wore one 8 ms attack and
+ *     one 0.35 s release,
+ *   - looped sustain, so a held string or pad holds for as long as you hold it
+ *     instead of running out of sample,
+ *   - the bank's own filters, LFOs and modulators, plus a level balance the
+ *     bank author mixed so the instruments sit together.
  *
- * Each pack is a JS file assigning a `{ "C4": "data:audio/ogg;base64,..." }`
- * map. We parse the object out as JSON rather than executing it, decode the
- * clips once, and pitch-shift the nearest sample to cover any missing notes.
+ * The whole bank is one 32 MB file that replaces ~100 MB of per-note oggs, and
+ * it is bundled, so playback stays fully offline.
+ *
+ * Timing model: notes are rendered offline into AudioBuffers and cached, then
+ * played through a BufferSource at an exact AudioContext timestamp. The
+ * sequencer needs sample-accurate scheduling into the future, which a
+ * real-time synth cannot give it, so we synthesize ahead of time and schedule
+ * the result. `playNote`'s signature is unchanged.
  */
+
+import { SpessaSynthProcessor, SoundBankLoader } from 'spessasynth_core';
 
 const NOTES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 const FLAT_TO_SHARP = { Db: 'C#', Eb: 'D#', Gb: 'F#', Ab: 'G#', Bb: 'A#' };
 
-/** General MIDI instruments bundled with the app, grouped for the picker. */
+const SF2_URL = 'sf2/GeneralUser-GS.sf2';
+
+/**
+ * General MIDI instruments, grouped for the picker. `program` is the GM program
+ * number the bank is addressed by. Same ids as before, so a saved project that
+ * stored an instrument id still resolves.
+ */
 export const INSTRUMENT_GROUPS = [
   {
     group: 'Keys',
     items: [
-      { id: 'acoustic_grand_piano', name: 'Grand Piano' },
-      { id: 'bright_acoustic_piano', name: 'Bright Piano' },
-      { id: 'electric_piano_1', name: 'Electric Piano' },
-      { id: 'electric_piano_2', name: 'Rhodes' },
-      { id: 'harpsichord', name: 'Harpsichord' },
-      { id: 'celesta', name: 'Celesta' },
+      { id: 'acoustic_grand_piano', name: 'Grand Piano', program: 0 },
+      { id: 'bright_acoustic_piano', name: 'Bright Piano', program: 1 },
+      { id: 'electric_piano_1', name: 'Electric Piano', program: 4 },
+      { id: 'electric_piano_2', name: 'Rhodes', program: 5 },
+      { id: 'harpsichord', name: 'Harpsichord', program: 6 },
+      { id: 'celesta', name: 'Celesta', program: 8 },
     ],
   },
   {
     group: 'Guitar & Bass',
     items: [
-      { id: 'acoustic_guitar_nylon', name: 'Nylon Guitar' },
-      { id: 'acoustic_guitar_steel', name: 'Steel Guitar' },
-      { id: 'electric_guitar_clean', name: 'Clean Electric' },
-      { id: 'electric_guitar_jazz', name: 'Jazz Guitar' },
-      { id: 'overdriven_guitar', name: 'Overdrive Guitar' },
-      { id: 'distortion_guitar', name: 'Distortion Guitar' },
-      { id: 'acoustic_bass', name: 'Upright Bass' },
-      { id: 'electric_bass_finger', name: 'Electric Bass' },
+      { id: 'acoustic_guitar_nylon', name: 'Nylon Guitar', program: 24 },
+      { id: 'acoustic_guitar_steel', name: 'Steel Guitar', program: 25 },
+      { id: 'electric_guitar_clean', name: 'Clean Electric', program: 27 },
+      { id: 'electric_guitar_jazz', name: 'Jazz Guitar', program: 26 },
+      { id: 'overdriven_guitar', name: 'Overdrive Guitar', program: 29 },
+      { id: 'distortion_guitar', name: 'Distortion Guitar', program: 30 },
+      { id: 'acoustic_bass', name: 'Upright Bass', program: 32 },
+      { id: 'electric_bass_finger', name: 'Electric Bass', program: 33 },
     ],
   },
   {
     group: 'Strings',
     items: [
-      { id: 'orchestral_harp', name: 'Harp' },
-      { id: 'violin', name: 'Violin' },
-      { id: 'viola', name: 'Viola' },
-      { id: 'cello', name: 'Cello' },
-      { id: 'contrabass', name: 'Contrabass' },
-      { id: 'string_ensemble_1', name: 'String Ensemble' },
-      { id: 'synth_strings_1', name: 'Synth Strings' },
+      { id: 'orchestral_harp', name: 'Harp', program: 46 },
+      { id: 'violin', name: 'Violin', program: 40 },
+      { id: 'viola', name: 'Viola', program: 41 },
+      { id: 'cello', name: 'Cello', program: 42 },
+      { id: 'contrabass', name: 'Contrabass', program: 43 },
+      { id: 'string_ensemble_1', name: 'String Ensemble', program: 48 },
+      { id: 'synth_strings_1', name: 'Synth Strings', program: 50 },
     ],
   },
   {
     group: 'Winds & Brass',
     items: [
-      { id: 'flute', name: 'Flute' },
-      { id: 'pan_flute', name: 'Pan Flute' },
-      { id: 'clarinet', name: 'Clarinet' },
-      { id: 'alto_sax', name: 'Alto Sax' },
-      { id: 'trumpet', name: 'Trumpet' },
-      { id: 'french_horn', name: 'French Horn' },
+      { id: 'flute', name: 'Flute', program: 73 },
+      { id: 'pan_flute', name: 'Pan Flute', program: 75 },
+      { id: 'clarinet', name: 'Clarinet', program: 71 },
+      { id: 'alto_sax', name: 'Alto Sax', program: 65 },
+      { id: 'trumpet', name: 'Trumpet', program: 56 },
+      { id: 'french_horn', name: 'French Horn', program: 60 },
     ],
   },
   {
     group: 'Organs & Voices',
     items: [
-      { id: 'church_organ', name: 'Church Organ' },
-      { id: 'drawbar_organ', name: 'Drawbar Organ' },
-      { id: 'choir_aahs', name: 'Choir Aahs' },
-      { id: 'voice_oohs', name: 'Voice Oohs' },
-      { id: 'pad_2_warm', name: 'Warm Pad' },
-      { id: 'lead_2_sawtooth', name: 'Saw Lead' },
+      { id: 'church_organ', name: 'Church Organ', program: 19 },
+      { id: 'drawbar_organ', name: 'Drawbar Organ', program: 16 },
+      { id: 'choir_aahs', name: 'Choir Aahs', program: 52 },
+      { id: 'voice_oohs', name: 'Voice Oohs', program: 53 },
+      { id: 'pad_2_warm', name: 'Warm Pad', program: 89 },
+      { id: 'lead_2_sawtooth', name: 'Saw Lead', program: 81 },
     ],
   },
   {
     group: 'Mallets & Percussion',
     items: [
-      { id: 'vibraphone', name: 'Vibraphone' },
-      { id: 'marimba', name: 'Marimba' },
-      { id: 'xylophone', name: 'Xylophone' },
-      { id: 'music_box', name: 'Music Box' },
-      { id: 'timpani', name: 'Timpani' },
+      { id: 'vibraphone', name: 'Vibraphone', program: 11 },
+      { id: 'marimba', name: 'Marimba', program: 12 },
+      { id: 'xylophone', name: 'Xylophone', program: 13 },
+      { id: 'music_box', name: 'Music Box', program: 10 },
+      { id: 'timpani', name: 'Timpani', program: 47 },
     ],
   },
 ];
@@ -92,14 +112,7 @@ export const INSTRUMENT_GROUPS = [
 export const ALL_INSTRUMENTS = INSTRUMENT_GROUPS.flatMap((g) => g.items);
 export const DEFAULT_INSTRUMENT = 'acoustic_grand_piano';
 
-/** "C#4" / "Db4" -> MIDI number. */
-function noteNameToMidi(name) {
-  const m = /^([A-G])([#b]?)(-?\d+)$/.exec(name);
-  if (!m) return null;
-  const base = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]];
-  const accidental = m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0;
-  return (parseInt(m[3], 10) + 1) * 12 + base + accidental;
-}
+const PROGRAM_BY_ID = new Map(ALL_INSTRUMENTS.map((i) => [i.id, i.program]));
 
 export function midiToNoteName(midi, useSharps = true) {
   const flat = NOTES[((midi % 12) + 12) % 12];
@@ -111,71 +124,147 @@ export function isBlackKey(midi) {
   return [1, 3, 6, 8, 10].includes(((midi % 12) + 12) % 12);
 }
 
-function base64ToArrayBuffer(b64) {
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return bytes.buffer;
+/* ------------------------------------------------------------------ *
+ * The shared bank + offline renderer
+ * ------------------------------------------------------------------ */
+
+let bankPromise = null;
+
+/** Fetch and parse the SF2 once; every instrument shares it. */
+function loadBank() {
+  if (!bankPromise) {
+    bankPromise = (async () => {
+      const res = await fetch(SF2_URL);
+      if (!res.ok) throw new Error(`Could not load the instrument bank (${res.status})`);
+      return SoundBankLoader.fromArrayBuffer(await res.arrayBuffer());
+    })();
+    bankPromise.catch(() => { bankPromise = null; });   // let a failed load retry
+  }
+  return bankPromise;
+}
+
+const RENDER_CHUNK = 128;   // spessasynth renders in small blocks
+const TAIL_SEC = 1.6;       // room for the instrument's own release to ring out
+
+let processor = null;
+let processorRate = 0;
+
+async function getProcessor(sampleRate) {
+  const bank = await loadBank();
+  if (!processor || processorRate !== sampleRate) {
+    processor = new SpessaSynthProcessor(sampleRate, { enableEffects: false });
+    await processor.processorInitialized;
+    processor.soundBankManager.addSoundBank(bank, 'main');
+    processorRate = sampleRate;
+  }
+  return processor;
 }
 
 /**
- * Pull the `{ "C4": "data:audio/ogg;base64,..." }` map out of a midi-js pack.
- * Parsed as JSON — the file is never executed.
+ * Synthesize one note to a stereo AudioBuffer.
+ *
+ * Renders are serialized through `renderQueue` because a single processor
+ * instance is shared — two renders interleaved would bleed into each other.
  */
-function parsePack(text) {
-  // The file opens with `var MIDI = {};` guards, so the first `{` is the wrong
-  // brace — anchor on the `MIDI.Soundfont.<name> =` assignment instead.
-  const marker = text.indexOf('MIDI.Soundfont.');
-  let start = -1;
-  if (marker !== -1) {
-    const eq = text.indexOf('=', marker);
-    if (eq !== -1) start = text.indexOf('{', eq);
-  }
-  if (start === -1) start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
-  if (start === -1 || end === -1) throw new Error('Unrecognized soundfont file');
+function renderNote(ctx, program, midi, velocity127, holdSec) {
+  return (async () => {
+    const proc = await getProcessor(ctx.sampleRate);
+    const rate = ctx.sampleRate;
+    const total = Math.ceil((holdSec + TAIL_SEC) * rate);
+    const holdSamples = Math.floor(holdSec * rate);
 
-  // These packs end with a trailing comma before the closing brace, which is
-  // legal JS but not legal JSON. Base64 payloads contain no `}`, so anchoring
-  // the match to the final brace cannot touch sample data.
-  const json = text.slice(start, end + 1).replace(/,\s*(?=}\s*$)/, '');
-  return JSON.parse(json);
+    // Clean slate: a previous note must not leak into this one.
+    proc.stopAllChannels?.(true);
+    proc.programChange(0, program);
+
+    const left = new Float32Array(total);
+    const right = new Float32Array(total);
+    const chunkL = new Float32Array(RENDER_CHUNK);
+    const chunkR = new Float32Array(RENDER_CHUNK);
+
+    proc.noteOn(0, midi, velocity127);
+
+    let released = false;
+    for (let i = 0; i < total; i += RENDER_CHUNK) {
+      if (!released && i >= holdSamples) {
+        proc.noteOff(0, midi);
+        released = true;
+      }
+      const n = Math.min(RENDER_CHUNK, total - i);
+      chunkL.fill(0);
+      chunkR.fill(0);
+      proc.process(chunkL, chunkR, 0, n);
+      left.set(chunkL.subarray(0, n), i);
+      right.set(chunkR.subarray(0, n), i);
+    }
+    if (!released) proc.noteOff(0, midi);
+    proc.stopAllChannels?.(true);
+
+    const buf = ctx.createBuffer(2, total, rate);
+    buf.copyToChannel(left, 0);
+    buf.copyToChannel(right, 1);
+    return buf;
+  })();
 }
 
-const cache = new Map();   // instrumentId -> Promise<{ buffers: Map<midi, AudioBuffer>, sorted: number[] }>
+let renderQueue = Promise.resolve();
+function queueRender(fn) {
+  const next = renderQueue.then(fn, fn);
+  renderQueue = next.catch(() => {});
+  return next;
+}
 
-/** Load and decode an instrument. Cached, so switching back is instant. */
-export function loadInstrument(ctx, instrumentId) {
-  const key = instrumentId;
-  if (cache.has(key)) return cache.get(key);
+/* ------------------------------------------------------------------ *
+ * Note cache
+ * ------------------------------------------------------------------ */
 
-  const promise = (async () => {
-    const url = `soundfonts/${instrumentId}-ogg.js`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Missing soundfont: ${instrumentId}`);
-    const pack = parsePack(await res.text());
+// Velocity is bucketed so a passage doesn't render a fresh take per note, but
+// finely enough that the bank's velocity layers still switch.
+const VEL_BUCKETS = 8;
+const HOLD_STEP = 0.25;     // quantize held length so similar notes share a render
+const MAX_HOLD = 4;
+const CACHE_LIMIT = 320;    // rendered notes kept in memory (LRU)
 
-    const buffers = new Map();
-    await Promise.all(
-      Object.entries(pack).map(async ([noteName, dataUri]) => {
-        const midi = noteNameToMidi(noteName);
-        if (midi == null) return;
-        const b64 = dataUri.slice(dataUri.indexOf('base64,') + 7);
-        try {
-          const buf = await ctx.decodeAudioData(base64ToArrayBuffer(b64));
-          buffers.set(midi, buf);
-        } catch {
-          /* skip a clip that fails to decode rather than losing the instrument */
-        }
-      })
-    );
-    if (!buffers.size) throw new Error(`No playable samples in ${instrumentId}`);
-    return { buffers, sorted: [...buffers.keys()].sort((a, b) => a - b) };
-  })();
+const noteCache = new Map();   // key -> Promise<AudioBuffer>
 
-  cache.set(key, promise);
-  promise.catch(() => cache.delete(key));   // let a failed load be retried
+function cacheKey(program, midi, velBucket, holdQ) {
+  return `${program}:${midi}:${velBucket}:${holdQ}`;
+}
+
+function getRenderedNote(ctx, program, midi, velocity, duration) {
+  const velBucket = Math.max(1, Math.min(VEL_BUCKETS, Math.ceil(velocity * VEL_BUCKETS)));
+  const holdQ = Math.min(MAX_HOLD, Math.max(HOLD_STEP, Math.ceil(duration / HOLD_STEP) * HOLD_STEP));
+  const key = cacheKey(program, midi, velBucket, holdQ);
+
+  const hit = noteCache.get(key);
+  if (hit) {
+    noteCache.delete(key);       // refresh LRU position
+    noteCache.set(key, hit);
+    return hit;
+  }
+
+  const velocity127 = Math.round((velBucket / VEL_BUCKETS) * 126) + 1;
+  const promise = queueRender(() => renderNote(ctx, program, midi, velocity127, holdQ));
+  noteCache.set(key, promise);
+  promise.catch(() => noteCache.delete(key));
+
+  while (noteCache.size > CACHE_LIMIT) {
+    const oldest = noteCache.keys().next().value;
+    noteCache.delete(oldest);
+  }
   return promise;
+}
+
+/**
+ * Warm the bank and pre-render a few notes so the first key press is instant.
+ * Safe to call repeatedly.
+ */
+export async function loadInstrument(ctx, instrumentId) {
+  const program = PROGRAM_BY_ID.get(instrumentId);
+  if (program == null) throw new Error(`Unknown instrument: ${instrumentId}`);
+  await loadBank();
+  await getRenderedNote(ctx, program, 60, 0.8, 0.5);
+  return { kind: 'sf2', id: instrumentId, program };
 }
 
 /**
@@ -184,7 +273,7 @@ export function loadInstrument(ctx, instrumentId) {
  * how a sampler treats a one-shot.
  */
 export function instrumentFromBuffer(buffer, rootMidi = 60) {
-  return { buffers: new Map([[rootMidi, buffer]]), sorted: [rootMidi] };
+  return { kind: 'sample', buffers: new Map([[rootMidi, buffer]]), sorted: [rootMidi] };
 }
 
 /** Nearest recorded sample, so notes between samples still play. */
@@ -193,10 +282,7 @@ function nearestSample(sorted, midi) {
   let bestDist = Math.abs(midi - best);
   for (const s of sorted) {
     const d = Math.abs(midi - s);
-    if (d < bestDist) {
-      best = s;
-      bestDist = d;
-    }
+    if (d < bestDist) { best = s; bestDist = d; }
   }
   return best;
 }
@@ -204,9 +290,10 @@ function nearestSample(sorted, midi) {
 /**
  * Play one note. Returns a stop handle so held notes can be released.
  *
- * `when` is an AudioContext timestamp; `duration` is in seconds. The tail is
- * an exponential release rather than a hard cut, which is most of what makes
- * a sampled instrument sound real instead of clipped.
+ * `when` is an AudioContext timestamp; `duration` is in seconds. For bank
+ * instruments the envelope is the bank's own — we do not impose an attack or
+ * release on top of it, because that flattening is what made everything sound
+ * alike. Stopping early still fades out, so releasing a key never clicks.
  */
 export function playNote(ctx, destination, instrument, midi, {
   when = ctx.currentTime,
@@ -214,37 +301,77 @@ export function playNote(ctx, destination, instrument, midi, {
   velocity = 0.8,
   release = 0.35,
 } = {}) {
-  const { buffers, sorted } = instrument;
-  const sampleMidi = nearestSample(sorted, midi);
-  const buffer = buffers.get(sampleMidi);
-  if (!buffer) return () => {};
+  if (!instrument) return () => {};
 
-  const src = ctx.createBufferSource();
-  src.buffer = buffer;
-  // Equal-temperament pitch shift from the nearest recorded pitch.
-  src.playbackRate.value = Math.pow(2, (midi - sampleMidi) / 12);
+  // A user's own sample: straight one-shot playback, pitched from its root.
+  if (instrument.kind === 'sample') {
+    const { buffers, sorted } = instrument;
+    const sampleMidi = nearestSample(sorted, midi);
+    const buffer = buffers.get(sampleMidi);
+    if (!buffer) return () => {};
 
-  const gain = ctx.createGain();
-  const peak = Math.max(0.0001, Math.min(1, velocity));
-  gain.gain.setValueAtTime(0.0001, when);
-  gain.gain.linearRampToValueAtTime(peak, when + 0.008);   // short attack, no click
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.playbackRate.value = Math.pow(2, (midi - sampleMidi) / 12);
 
-  const releaseStart = when + Math.max(0.02, duration);
-  gain.gain.setValueAtTime(peak, releaseStart);
-  gain.gain.exponentialRampToValueAtTime(0.0001, releaseStart + release);
+    const gain = ctx.createGain();
+    const peak = Math.max(0.0001, Math.min(1, velocity));
+    gain.gain.setValueAtTime(0.0001, when);
+    gain.gain.linearRampToValueAtTime(peak, when + 0.008);
+    const releaseStart = when + Math.max(0.02, duration);
+    gain.gain.setValueAtTime(peak, releaseStart);
+    gain.gain.exponentialRampToValueAtTime(0.0001, releaseStart + release);
 
-  src.connect(gain).connect(destination);
-  src.start(when);
-  src.stop(releaseStart + release + 0.05);
+    src.connect(gain).connect(destination);
+    src.start(when);
+    src.stop(releaseStart + release + 0.05);
+    return (stopAt = ctx.currentTime) => {
+      try {
+        gain.gain.cancelScheduledValues(stopAt);
+        gain.gain.setValueAtTime(Math.max(0.0001, gain.gain.value), stopAt);
+        gain.gain.exponentialRampToValueAtTime(0.0001, stopAt + release);
+        src.stop(stopAt + release + 0.05);
+      } catch { /* already stopped */ }
+    };
+  }
+
+  // Bank instrument: the note is synthesized (or pulled from cache) and then
+  // scheduled. Rendering is async, so a note whose start time has already
+  // passed by the time it is ready starts immediately instead of being lost.
+  let src = null;
+  let gain = null;
+  let cancelled = false;
+  let stopAtRequested = null;
+
+  getRenderedNote(ctx, instrument.program, midi, velocity, duration)
+    .then((buffer) => {
+      if (cancelled) return;
+      src = ctx.createBufferSource();
+      src.buffer = buffer;
+      gain = ctx.createGain();
+      gain.gain.value = 1;
+      src.connect(gain).connect(destination);
+
+      const startAt = Math.max(when, ctx.currentTime);
+      src.start(startAt);
+
+      if (stopAtRequested != null) applyStop(Math.max(stopAtRequested, startAt));
+    })
+    .catch(() => { /* a note that fails to render is silent, never a buzz */ });
+
+  function applyStop(stopAt) {
+    if (!gain || !src) return;
+    try {
+      const t = Math.max(stopAt, ctx.currentTime);
+      gain.gain.cancelScheduledValues(t);
+      gain.gain.setValueAtTime(Math.max(0.0001, gain.gain.value), t);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + release);
+      src.stop(t + release + 0.05);
+    } catch { /* already stopped */ }
+  }
 
   return (stopAt = ctx.currentTime) => {
-    try {
-      gain.gain.cancelScheduledValues(stopAt);
-      gain.gain.setValueAtTime(Math.max(0.0001, gain.gain.value), stopAt);
-      gain.gain.exponentialRampToValueAtTime(0.0001, stopAt + release);
-      src.stop(stopAt + release + 0.05);
-    } catch {
-      /* already stopped */
-    }
+    if (!src) { cancelled = true; stopAtRequested = stopAt; return; }
+    applyStop(stopAt);
   };
 }

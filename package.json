@@ -2,7 +2,7 @@
   "name": "lyricist",
   "version": "4.2.0",
   "main": "main.js",
-  "description": "AI Songwriting Studio \u2014 Lyricist 4.2.0 Goes Quantum",
+  "description": "AI Songwriting Studio — Lyricist 4.2.0 Goes Quantum",
   "author": "CFunky Creations LLC",
   "license": "MIT",
   "scripts": {
@@ -55,6 +55,7 @@
     "lucide-react": "^0.303.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "spessasynth_core": "^4.3.17",
     "y-webrtc": "^10.3.0",
     "yjs": "^13.6.32"
   },
