@@ -125,16 +125,71 @@ export default function Stemmer() {
       const ctx = getCtx();
       if (ctx.state === 'suspended') await ctx.resume();
 
+      // Guaranteed-output engine. No key, no setup, works on any machine — so
+      // the Stemmer NEVER just does nothing. Local/Cloud fall back to this when
+      // they aren't set up, and the picker's Offline option runs it directly.
+      const runOffline = async (note) => {
+        setStatus(`${note ? note + ' ' : ''}Decoding ${file.name}…`);
+        const buffer = await decodeAudioFile(file, ctx);
+        setDuration(buffer.duration);
+        const onStep = (p, label) => { setProgress(p); setStatus(label); };
+        const wantGpu = device === 'gpu' || (device === 'auto' && gpuOk !== false);
+        let result = null;
+        let ranOn = 'CPU';
+        if (wantGpu) {
+          try {
+            const canGpu = gpuOk === null ? await gpuAvailable() : gpuOk;
+            if (!canGpu) throw new Error('no-gpu');
+            setStatus('Separating stems on your GPU…');
+            ({ stems: result } = await separateStemsGPU(buffer, onStep));
+            ranOn = 'GPU';
+          } catch (gpuErr) {
+            console.warn('GPU stemming failed, falling back to CPU:', gpuErr);
+            if (device === 'gpu') {
+              throw new Error(
+                'GPU separation failed — your GPU may not have enough memory for a file this long. '
+                + 'Switch the processor to CPU or Auto and try again.'
+              );
+            }
+            result = null;
+          }
+        }
+        if (!result) {
+          setStatus(device === 'cpu' ? 'Separating stems on your CPU…' : 'GPU unavailable — separating on your CPU…');
+          ({ stems: result } = await separateStems(buffer, onStep));
+          ranOn = 'CPU';
+        }
+        setStems(result);
+        setStatus(
+          note
+            ? `${note} Ready (Offline · ${ranOn}) — ${STEM_DEFS.length} stems from ${file.name}`
+            : `Ready (Offline · ${ranOn}) — ${STEM_DEFS.length} stems from ${file.name}`
+        );
+      };
+
       if (mode === 'local') {
+        // Local AI not usable on this machine yet? Never leave the user with
+        // nothing — give them Offline stems now and tell them how to unlock
+        // true AI separation.
         if (!canLocal) {
-          throw new Error('Local AI stems need the desktop app. In a browser, use Cloud or Offline.');
+          await runOffline('Local AI needs the desktop app —');
+          setError('Local AI (true isolated stems) runs only in the installed desktop app. Ran Offline this time.');
+          setMuted(Object.fromEntries(STEM_DEFS.map((s) => [s.id, false])));
+          setSolo(null);
+          setProgress(1);
+          return;
         }
         if (!local.ready) {
-          throw new Error(
+          await runOffline('Local AI not set up yet —');
+          setError(
             local.pythonFound
-              ? 'Local AI is not set up yet — click "Set up local AI" (one-time download), then try again.'
-              : 'Local AI needs Python 3 installed. Install Python 3.9+ from python.org, then click "Set up local AI" — or use Cloud / Offline.'
+              ? 'Ran Offline. For true isolated stems, click "Set up local AI" above (one-time download), then run again.'
+              : 'Ran Offline. Local AI needs Python 3.9+ (python.org); then click "Set up local AI" for true isolated stems.'
           );
+          setMuted(Object.fromEntries(STEM_DEFS.map((s) => [s.id, false])));
+          setSolo(null);
+          setProgress(1);
+          return;
         }
         const onStepL = (p, l) => { setProgress(p); setStatus(l); };
         setStatus(`Preparing ${file.name} for AI separation…`);
@@ -159,9 +214,13 @@ export default function Stemmer() {
         );
       } else if (mode === 'cloud') {
         if (!hasCloudKey) {
-          throw new Error(
-            'Cloud mode needs a Replicate API key. Paste one in Settings → Stemmer Cloud, or switch to Local (on your machine) or Offline.'
-          );
+          // No key? Don't dead-end — run Offline now and point them at Settings.
+          await runOffline('Cloud needs a Replicate key —');
+          setError('Ran Offline. For Cloud Demucs, paste a Replicate API key in Settings → Stemmer Cloud.');
+          setMuted(Object.fromEntries(STEM_DEFS.map((s) => [s.id, false])));
+          setSolo(null);
+          setProgress(1);
+          return;
         }
         setStatus('Cloud Demucs — uploading…');
         const { stems: result, duration: dur } = await separateStemsCloud(
@@ -177,49 +236,7 @@ export default function Stemmer() {
         setStems(result);
         setStatus(`Ready (Cloud Demucs) — ${STEM_DEFS.length} stems from ${file.name}`);
       } else {
-        setStatus(`Decoding ${file.name}…`);
-        const buffer = await decodeAudioFile(file, ctx);
-        setDuration(buffer.duration);
-
-        const onStep = (p, label) => { setProgress(p); setStatus(label); };
-        // Decide GPU vs CPU. 'auto' prefers the GPU and falls back to the CPU
-        // if there's no usable GPU or it fails part-way (e.g. out of VRAM).
-        const wantGpu = device === 'gpu' || (device === 'auto' && gpuOk !== false);
-        let result;
-        let ranOn = 'CPU';
-
-        if (wantGpu) {
-          try {
-            const canGpu = gpuOk === null ? await gpuAvailable() : gpuOk;
-            if (!canGpu) throw new Error('no-gpu');
-            setStatus('Separating stems on your GPU…');
-            ({ stems: result } = await separateStemsGPU(buffer, onStep));
-            ranOn = 'GPU';
-          } catch (gpuErr) {
-            console.warn('GPU stemming failed, falling back to CPU:', gpuErr);
-            if (device === 'gpu') {
-              // User forced GPU — tell them plainly instead of silently switching.
-              throw new Error(
-                'GPU separation failed — your GPU may not have enough memory for a file this long. '
-                + 'Switch the processor to CPU or Auto and try again.'
-              );
-            }
-            result = null; // fall through to CPU below
-          }
-        }
-
-        if (!result) {
-          setStatus(
-            device === 'cpu'
-              ? 'Separating stems on your CPU…'
-              : 'GPU unavailable — separating on your CPU…'
-          );
-          ({ stems: result } = await separateStems(buffer, onStep));
-          ranOn = 'CPU';
-        }
-
-        setStems(result);
-        setStatus(`Ready (Offline · ${ranOn}) — ${STEM_DEFS.length} stems from ${file.name}`);
+        await runOffline();
       }
 
       setMuted(Object.fromEntries(STEM_DEFS.map((s) => [s.id, false])));
