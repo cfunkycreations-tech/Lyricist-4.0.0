@@ -214,7 +214,7 @@ export default function RecordingBooth({ onNavigate }) {
     <div className="tab-video-shell">
       <TabVideoBg name="booth" />
       <div className="tab-video-content">
-    <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden', background: '#000' }}>
+    <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden' }}>
       <audio ref={previewRef} style={{ display: 'none' }} />
       <div className="booth-shell">
         {/* Capture panel */}
