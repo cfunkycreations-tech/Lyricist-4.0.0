@@ -206,6 +206,9 @@ const DEFAULT_CONFIG = {
 
   // Stemmer — offline (default, light CPU) or cloud Demucs (needs Replicate key)
   stemmerMode: 'offline', // 'offline' | 'cloud'
+  // Offline processor: 'auto' tries the GPU first and falls back to the CPU if
+  // the GPU is missing or runs out of memory; 'gpu' / 'cpu' force one path.
+  stemmerDevice: 'auto', // 'auto' | 'gpu' | 'cpu'
   replicateApiKey: '',
 };
 

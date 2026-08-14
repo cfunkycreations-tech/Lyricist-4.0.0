@@ -8,6 +8,7 @@ import {
   playBuffer,
 } from '../../services/stemmerEngine.js';
 import { separateStemsCloud } from '../../services/stemmerCloud.js';
+import { separateStemsGPU, gpuAvailable, gpuName } from '../../services/stemmerEngineGpu.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import './Stemmer.css';
 
@@ -18,7 +19,11 @@ import TabVideoBg from '../common/TabVideoBg.jsx';
 export default function Stemmer() {
   const store = useLyricStore();
   const mode = store.config.stemmerMode === 'cloud' ? 'cloud' : 'offline';
+  const device = store.config.stemmerDevice || 'auto'; // 'auto' | 'gpu' | 'cpu'
   const hasCloudKey = !!(store.config.replicateApiKey || '').trim();
+
+  const [gpuOk, setGpuOk] = useState(null);   // null = checking, true/false once known
+  const [gpuLabel, setGpuLabel] = useState('');
 
   const [fileName, setFileName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -41,6 +46,21 @@ export default function Stemmer() {
   const setMode = (next) => {
     store.setConfig({ ...store.config, stemmerMode: next });
   };
+
+  const setDevice = (next) => {
+    store.setConfig({ ...store.config, stemmerDevice: next });
+  };
+
+  // Detect the GPU once so the UI can tell the user whether it's available.
+  useEffect(() => {
+    let alive = true;
+    gpuAvailable().then((ok) => {
+      if (!alive) return;
+      setGpuOk(ok);
+      setGpuLabel(ok ? gpuName() : '');
+    });
+    return () => { alive = false; };
+  }, []);
 
   const getCtx = () => {
     if (!ctxRef.current) {
@@ -94,13 +114,46 @@ export default function Stemmer() {
         setStatus(`Decoding ${file.name}…`);
         const buffer = await decodeAudioFile(file, ctx);
         setDuration(buffer.duration);
-        setStatus('Separating stems offline (light CPU, no GPU)…');
-        const { stems: result } = await separateStems(buffer, (p, label) => {
-          setProgress(p);
-          setStatus(label);
-        });
+
+        const onStep = (p, label) => { setProgress(p); setStatus(label); };
+        // Decide GPU vs CPU. 'auto' prefers the GPU and falls back to the CPU
+        // if there's no usable GPU or it fails part-way (e.g. out of VRAM).
+        const wantGpu = device === 'gpu' || (device === 'auto' && gpuOk !== false);
+        let result;
+        let ranOn = 'CPU';
+
+        if (wantGpu) {
+          try {
+            const canGpu = gpuOk === null ? await gpuAvailable() : gpuOk;
+            if (!canGpu) throw new Error('no-gpu');
+            setStatus('Separating stems on your GPU…');
+            ({ stems: result } = await separateStemsGPU(buffer, onStep));
+            ranOn = 'GPU';
+          } catch (gpuErr) {
+            console.warn('GPU stemming failed, falling back to CPU:', gpuErr);
+            if (device === 'gpu') {
+              // User forced GPU — tell them plainly instead of silently switching.
+              throw new Error(
+                'GPU separation failed — your GPU may not have enough memory for a file this long. '
+                + 'Switch the processor to CPU or Auto and try again.'
+              );
+            }
+            result = null; // fall through to CPU below
+          }
+        }
+
+        if (!result) {
+          setStatus(
+            device === 'cpu'
+              ? 'Separating stems on your CPU…'
+              : 'GPU unavailable — separating on your CPU…'
+          );
+          ({ stems: result } = await separateStems(buffer, onStep));
+          ranOn = 'CPU';
+        }
+
         setStems(result);
-        setStatus(`Ready (Offline) — ${STEM_DEFS.length} stems from ${file.name}`);
+        setStatus(`Ready (Offline · ${ranOn}) — ${STEM_DEFS.length} stems from ${file.name}`);
       }
 
       setMuted(Object.fromEntries(STEM_DEFS.map((s) => [s.id, false])));
@@ -324,6 +377,61 @@ export default function Stemmer() {
         )}
       </div>
 
+      {/* Processor picker — only relevant for the offline engine */}
+      {mode === 'offline' && (
+        <div
+          className="stemmer-mode-bar"
+          data-help="GPU uses your graphics card — much faster, needs enough video memory. CPU uses your processor — always works, uses more system RAM, slower. Auto tries the GPU first and falls back to the CPU if the GPU can't handle it."
+        >
+          <span className="stemmer-mode-label">Processor</span>
+          <button
+            type="button"
+            className={`stemmer-mode-btn ${device === 'auto' ? 'is-active' : ''}`}
+            disabled={busy}
+            onClick={() => setDevice('auto')}
+          >
+            Auto
+            <small>GPU first, CPU backup</small>
+          </button>
+          <button
+            type="button"
+            className={`stemmer-mode-btn ${device === 'gpu' ? 'is-active' : ''}`}
+            disabled={busy}
+            onClick={() => setDevice('gpu')}
+          >
+            GPU
+            <small>
+              {gpuOk === null ? 'checking…' : gpuOk ? (gpuLabel || 'ready') : 'not detected'}
+            </small>
+          </button>
+          <button
+            type="button"
+            className={`stemmer-mode-btn ${device === 'cpu' ? 'is-active' : ''}`}
+            disabled={busy}
+            onClick={() => setDevice('cpu')}
+          >
+            CPU
+            <small>always works · slower</small>
+          </button>
+          {device === 'gpu' && gpuOk === false && (
+            <span className="stemmer-mode-hint">
+              No GPU detected — this will fail. Use <strong>CPU</strong> or <strong>Auto</strong>.
+            </span>
+          )}
+          {device === 'gpu' && gpuOk && (
+            <span className="stemmer-mode-hint ok">
+              Running on your GPU. If a long song runs out of video memory, switch to Auto or CPU.
+            </span>
+          )}
+          {device === 'auto' && (
+            <span className="stemmer-mode-hint ok">
+              {gpuOk ? 'Will use your GPU, and fall back to CPU if it runs short on memory.'
+                     : 'No GPU detected yet — will run on your CPU.'}
+            </span>
+          )}
+        </div>
+      )}
+
       <div
         className={`stemmer-drop ${dragOver ? 'is-over' : ''} ${busy ? 'is-busy' : ''}`}
         onDragOver={(e) => {
@@ -434,8 +542,11 @@ export default function Stemmer() {
       </div>
 
       <p className="stemmer-note">
-        <strong>Offline</strong> (default): spectral mid-side split on your machine — free, private, light CPU, no
-        API key, no GPU. Great for practice and rough karaoke tracks.
+        <strong>Offline</strong> (default): spectral mid-side split on your own machine — free, private, no API key.
+        Runs on your <strong>GPU</strong> (fast, needs enough video memory) or <strong>CPU</strong> (always works,
+        slower). <strong>Auto</strong> uses the GPU and falls back to the CPU if the card runs short on memory.
+        A weak GPU or CPU just means a longer wait — a very long song can outrun a small GPU's memory, and that's
+        when CPU (or a shorter clip) is the move.
         <br />
         <strong>Cloud</strong> (optional): Demucs ML on{' '}
         <a href="https://replicate.com/account/api-tokens" target="_blank" rel="noopener noreferrer">
