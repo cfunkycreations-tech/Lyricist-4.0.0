@@ -1,5 +1,18 @@
 # AI HANDOFF — Lyricist 4.2.0 "Goes Quantum"
 
+> **2026-08-15 — NO VIDEO IN THIS APP HAS AN AUDIO TRACK. Keep it that way.**
+> Chris: *"NO SOUND ON ANY BACK GROUND VIDEO."* Muting the element is not enough — the tracks are
+> stripped from the files (`ffmpeg -i in.mp4 -an -c:v copy out.mp4`). Eleven shipped clips still
+> carried AAC when this was done. **Any new clip he hands in gets stripped before it goes in**, and
+> the check is `ffprobe -select_streams a` over `src/assets`, `public/` and `splash/` — the archived
+> masters in `src/assets/originals-video/` keep their audio and are never imported.
+> The one sound the app may make on its own is a voice-over HE recorded (`<userData>\voice\`).
+
+> **2026-08-15 — the splash waits for the whole clip, on purpose.** `reveal()` in `main.js` defers
+> behind `splashHeld()` so a recorded voice-over is never cut off mid-sentence. Ceiling is 30s and
+> every failure path passes `reveal(why, true)`. Don't "fix" the perceived slow start by making the
+> splash close on ready-to-show again.
+
 > **2026-08-08 — DO NOT REMOVE `'unknown'` FROM `provider.quantizations`.**
 > `src/services/AIService.js` asks OpenRouter for unquantised hosts. Every first-party provider
 > (Anthropic, OpenAI, Google) reports `quantization: "unknown"` because they serve their own weights
@@ -23,10 +36,10 @@
 > The folder is named `4.0.0`; the app is version **4.2.0**. Don't let that mislead you.
 >
 > **Run it:** `npm run dev` → http://localhost:5173
-> **Build the installer** (must stage on C: — `V:` is a ReFS Dev Drive and electron-builder
-> cannot rename directories there):
+> **Build the installer** (stage on `D:` — `V:` is a ReFS Dev Drive electron-builder cannot
+> rename directories on, and `C:` runs at ~1 GB free, which fails the pack step):
 > ```
-> LYRICIST_RELEASE_DIR="C:\Users\crafu\AppData\Local\Temp\lyricist-stage" npm run release
+> LYRICIST_RELEASE_DIR="D:\lyricist-stage" npm run release
 > ```
 > then move the `.exe`, its `.blockmap` and the unpacked folder to `V:\Releases\Lyricist 4.2.0 Releases\`.
 >
@@ -129,7 +142,7 @@ If a tab looks cramped, **give its content more height.** Never take height from
 Do this automatically after a batch of fixes. Don't ask.
 
 ```bash
-LYRICIST_RELEASE_DIR="C:\Users\crafu\AppData\Local\Temp\lyricist-stage" npm run release
+LYRICIST_RELEASE_DIR="D:\lyricist-stage" npm run release
 ```
 
 Then move `Lyricist 4.2.0.0NN Setup.exe`, its `.blockmap`, and the unpacked folder into
@@ -380,7 +393,7 @@ opaque backdrop already has one — its own root background.
 - **FL-grade piano roll** — Select / Draw / Paint / Erase, drag-to-move, right-edge resize, snap
   from 1 bar to 1/32 with triplets, and a velocity lane under the grid
 - **Ghost Demo safety extended** to the song store, MIDI Studio, Song Forge, Album Architect and
-  Loop Station (see below)
+  Loop Station (see below) — *Album Architect was removed from the app on 2026-08-15*
 - Tools Hub no longer ships — or keeps — a duplicate OpenRouter row
 
 ### Done (as of build 4.2.0.019)
@@ -408,7 +421,7 @@ plain form fields are captured automatically.
 
 Registered: `lyric-store` (the song itself — covers Songwriter, Ghost Rider and Song Forge, plus
 every writing knob), `quantum-lab`, `midi-studio`, `drum-machine`, `song-forge` (results and art),
-`album-architect`, `loop-station`. Still field-level only: Stemmer, Recording Booth, Mastering,
+`loop-station`. Still field-level only: Stemmer, Recording Booth, Mastering,
 Artist Analyzer — all result/file tabs, so the exposure is lower, but register them when you touch
 those files.
 

@@ -33,6 +33,104 @@ try {
   }
 } catch { /* never block startup over this */ }
 
+/* ---------------------------------------------------------------------------
+ * Voice pack — Chris's own recorded narration.
+ *
+ * The wizard ships with baked TTS clips, but a recording in his own voice beats
+ * a synthesised one every time. Rather than making him hand me a file and wait
+ * for a rebuild, the app reads a plain folder in userData:
+ *
+ *     <userData>/voice/splash.mp3     plays over the opener
+ *     <userData>/voice/card-01.mp3    replaces wizard card 1's narration
+ *     ...                             through card-17
+ *
+ * Anything present wins over the baked clip; anything missing falls back. Any
+ * of mp3 / m4a / wav / ogg works, so he can drop in whatever his recorder makes
+ * without converting. The folder is created on first launch and there is a
+ * button in Settings that opens it — no typed paths, no hidden steps.
+ * ------------------------------------------------------------------------- */
+const VOICE_EXTS = ['mp3', 'm4a', 'wav', 'ogg', 'webm'];
+
+function voiceDir() {
+  return path.join(app.getPath('userData'), 'voice');
+}
+
+/** Absolute path of a voice-pack recording, or null when he hasn't made one. */
+function voiceFile(stem) {
+  try {
+    for (const ext of VOICE_EXTS) {
+      const p = path.join(voiceDir(), `${stem}.${ext}`);
+      if (fs.existsSync(p)) return p;
+    }
+  } catch { /* a missing folder just means no voice pack yet */ }
+  return null;
+}
+
+function ensureVoiceDir() {
+  try {
+    const dir = voiceDir();
+    fs.mkdirSync(dir, { recursive: true });
+    // A README so the folder explains itself when he opens it, rather than
+    // being an empty window he has to guess at.
+    const readme = path.join(dir, 'READ ME - how to add your voice.txt');
+    if (!fs.existsSync(readme)) {
+      fs.writeFileSync(readme, [
+        'YOUR OWN VOICE IN LYRICIST',
+        '',
+        'Drop recordings in this folder and the app uses them instead of the',
+        'built-in narration. Nothing to install, no rebuild - just restart the app.',
+        '',
+        'File names (mp3, m4a, wav, ogg all work):',
+        '',
+        '  splash.mp3    plays over the opening title video (about 25 seconds)',
+        '  card-01.mp3   Tour card 1',
+        '  card-02.mp3   Tour card 2',
+        '  ... through card-17.mp3  (17 cards in all)',
+        '',
+        'Only the ones you record get replaced. Anything you leave out keeps the',
+        'built-in voice, so you can do them a few at a time.',
+        '',
+        'Tip: record in the Recording Booth tab, export the WAV, and drop it here.',
+      ].join('\r\n'), 'utf8');
+    }
+    return dir;
+  } catch (e) {
+    bootLog(`voice: could not prepare folder (${e.message})`);
+    return null;
+  }
+}
+
+/**
+ * Which voice-pack recordings exist, as file:// URLs the renderer can play.
+ * Returns a map of stem -> url so the wizard can decide per card in one call.
+ */
+ipcMain.handle('voice-pack', async () => {
+  try {
+    const dir = ensureVoiceDir();
+    const found = {};
+    const stems = ['splash', ...Array.from({ length: 17 }, (_, i) => `card-${String(i + 1).padStart(2, '0')}`)];
+    for (const stem of stems) {
+      const p = voiceFile(stem);
+      if (p) found[stem] = require('url').pathToFileURL(p).href;
+    }
+    return { ok: true, dir, found };
+  } catch (e) {
+    return { ok: false, error: e.message, found: {} };
+  }
+});
+
+/** Open the voice folder in Explorer so he can drop files straight in. */
+ipcMain.handle('open-voice-folder', async () => {
+  try {
+    const dir = ensureVoiceDir();
+    if (!dir) return { ok: false, error: 'Could not create the voice folder.' };
+    shell.openPath(dir);
+    return { ok: true, dir };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
 // Let the UI write into boot.log. See preload.js for why.
 ipcMain.handle('app-log', async (event, { message }) => {
   bootLog(`ui: ${String(message).slice(0, 500)}`);
@@ -595,8 +693,32 @@ function failurePage(title, detail) {
  * Chris's opener, then gets out of the way the moment the real window is ready.
  * It is a pure sibling — it owns no state, and closing it can never cancel the
  * load happening behind it.
+ *
+ * The opener is a title card with a voice-over, so it is NOT cut short the
+ * instant the renderer is ready: `splashHeld()` keeps the reveal waiting until
+ * the clip has played out, the user clicks, or SPLASH_CEILING_MS passes —
+ * whichever comes first. Cutting to the app mid-sentence is worse than a couple
+ * of seconds of wait, and clicking always skips it.
  */
 let splashWin = null;
+let splashDone = false;               // clip ended, was clicked, or timed out
+let onSplashDone = null;              // set by createWindow when it is waiting
+const SPLASH_CEILING_MS = 30_000;     // absolute cap: a broken clip can't hang the app
+
+/** True while the splash still has the floor and the app should wait for it. */
+function splashHeld() {
+  return splashWin !== null && !splashWin.isDestroyed() && !splashDone;
+}
+
+/** The splash is finished with the screen. Idempotent. */
+function finishSplash(why) {
+  if (splashDone) return;
+  splashDone = true;
+  bootLog(`splash: done (${why})`);
+  const cb = onSplashDone;
+  onSplashDone = null;
+  if (cb) cb();
+}
 
 function createSplash() {
   try {
@@ -622,13 +744,32 @@ function createSplash() {
       show: false,
       center: true,
       backgroundColor: '#00000000',
-      webPreferences: { nodeIntegration: false, contextIsolation: true },
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        // Only so the page can say "I'm finished". It exposes nothing else.
+        preload: path.join(__dirname, 'splash', 'splash-preload.js'),
+      },
     });
     splashWin.once('ready-to-show', () => {
       if (splashWin && !splashWin.isDestroyed()) splashWin.show();
     });
-    splashWin.on('closed', () => { splashWin = null; });
-    splashWin.loadFile(page);
+    // A closed splash is a finished splash — otherwise closing it by hand would
+    // leave the main window waiting on a signal that can never arrive.
+    splashWin.on('closed', () => { splashWin = null; finishSplash('splash closed'); });
+
+    // His own recording, if he has made one. The video itself carries no audio
+    // track at all, so this is the only sound the splash can ever make.
+    const voice = voiceFile('splash') || (fs.existsSync(path.join(__dirname, 'splash', 'splash-voice.mp3'))
+      ? path.join(__dirname, 'splash', 'splash-voice.mp3')
+      : null);
+    const search = voice ? `voice=${encodeURIComponent(require('url').pathToFileURL(voice).href)}` : '';
+    if (voice) bootLog(`splash: voice-over found (${path.basename(voice)})`);
+
+    splashWin.loadFile(page, search ? { search } : undefined);
+    // Hard ceiling. A clip that never fires 'ended' — a decode failure, a
+    // corrupt file — must not hold the app hostage.
+    setTimeout(() => finishSplash(`ceiling ${SPLASH_CEILING_MS / 1000}s`), SPLASH_CEILING_MS).unref?.();
     bootLog('splash: shown');
   } catch (e) {
     // A splash is decoration. It must never be the reason the app fails to
@@ -644,6 +785,14 @@ function closeSplash(why) {
   try { splashWin.close(); } catch { /* already gone */ }
   splashWin = null;
 }
+
+// The splash page reporting that the clip played out or the user clicked
+// through it. Only the splash window is allowed to say so.
+ipcMain.on('splash-done', (event, why) => {
+  if (!splashWin || splashWin.isDestroyed()) return;
+  if (event.sender !== splashWin.webContents) return;
+  finishSplash(String(why || 'clip'));
+});
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -744,8 +893,19 @@ function createWindow() {
   });
 
   let shown = false;
-  const reveal = (why) => {
+  // `force` skips the wait for anything the user needs to see NOW — a failure
+  // card is not worth sitting through a title video for.
+  const reveal = (why, force = false) => {
     if (shown || win.isDestroyed()) return;
+    // The renderer being ready is not a reason to cut the opener off. Wait for
+    // the splash to finish (clip ended / clicked / ceiling), then come back
+    // here. `onSplashDone` is a single slot, which is all we need — reveal is
+    // the only caller and it latches with `shown` the moment it runs.
+    if (!force && splashHeld()) {
+      bootLog(`window ready (${why}) — waiting for the opener`);
+      onSplashDone = () => reveal(why);
+      return;
+    }
     shown = true;
     bootLog(`window shown (${why})`);
     // Order matters: drop the always-on-top splash BEFORE showing the real
@@ -771,7 +931,7 @@ function createWindow() {
     if (!isMainFrame) return;                   // a missing image is not a dead app
     bootLog(`did-fail-load ${code} ${desc} ${url}`);
     win.loadURL(failurePage('Lyricist could not load', `${desc} (${code})\n${url}`));
-    reveal('load failure');
+    reveal('load failure', true);
   });
 
   // A dead renderer or GPU process is the other way this ends up black. Say so,
@@ -782,7 +942,7 @@ function createWindow() {
     if (!reloadedAfterCrash && !win.isDestroyed()) {
       reloadedAfterCrash = true;
       win.reload();
-      reveal('renderer crash retry');
+      reveal('renderer crash retry', true);
       return;
     }
     if (!win.isDestroyed()) {
@@ -795,7 +955,7 @@ function createWindow() {
             + 'usually clears it. Send over %APPDATA%\\Lyricist\\boot.log either way.'
           : `Renderer process gone: ${details.reason}`,
       ));
-      reveal('renderer crash');
+      reveal('renderer crash', true);
     }
   });
 
@@ -857,7 +1017,7 @@ function createWindow() {
     if (!fs.existsSync(index)) {
       bootLog(`MISSING ${index}`);
       win.loadURL(failurePage('Lyricist is missing its app files', `Not found:\n${index}\n\nReinstall over the top of this copy.`));
-      reveal('missing index.html');
+      reveal('missing index.html', true);
       return;
     }
     // LYRICIST_START_TAB=loopstation opens straight onto that tab, so a crash

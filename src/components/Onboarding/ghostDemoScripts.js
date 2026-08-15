@@ -14,7 +14,6 @@ export const GHOST_DEMO_TABS = new Set([
   'stemmer',
   'booth',
   'midistudio',
-  'album',
   'mastering',
   'settings',
 ]);
@@ -376,33 +375,6 @@ export const GHOST_DEMOS = {
     ],
   },
 
-  album: {
-    title: 'Album Architect',
-    steps: [
-      {
-        say: 'Album Architect is where a pile of finished songs becomes an actual record. You decide what order people hear them in, and you set the details that belong to the whole album rather than to any one song.',
-        wait: 3400,
-      },
-      {
-        target: '[data-demo="album-tracks"]',
-        say: 'This is the track list, up to twelve songs. Drag a row by its number to move it, and the running order updates instantly. Each row also has its own tempo, key, and a notes box for where that song sits in the story you are telling.',
-        action: 'point',
-        then: 'Running order matters more than people expect: it is the difference between a folder of songs and an album that pulls someone through from front to back.',
-        wait: 3800,
-      },
-      {
-        target: '[data-demo="album-meta"]',
-        say: 'These are the album-wide details, title, artist name, genre, the concept holding it together, and a master tempo. Setting the master tempo here can push that same tempo onto every track at once, so you are not typing it twelve times.',
-        action: 'point',
-        wait: 3600,
-      },
-      {
-        say: 'When the order feels right, Mastering Studio is the next tab. It takes this exact track list and runs every song through the same polish, so the record sounds like one body of work instead of twelve separate sessions.',
-        wait: 3400,
-      },
-    ],
-  },
-
   mastering: {
     title: 'Mastering Studio',
     steps: [
@@ -424,7 +396,11 @@ export const GHOST_DEMOS = {
         wait: 4000,
       },
       {
-        say: 'That folder is a real release package, the files you would hand to a distributor, upload, or burn. Songwriter to Album Architect to here, and you are done.',
+        // "Songwriter to here" measured 12% word error — the narrator voice
+        // splits a sentence-initial "Songwriter" into "some writer". Keeping the
+        // word mid-sentence fixes it. See project-ghost-voice: judge a line by
+        // what the recogniser hears, not by how it reads on the page.
+        say: 'That folder is a real release package, the files you would hand to a distributor, upload, or burn. That is the whole trip, from the Songwriter tab to a finished record.',
         wait: 3200,
       },
     ],

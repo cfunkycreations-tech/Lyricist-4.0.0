@@ -20,6 +20,13 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   // provable after the fact — "did the library actually get emptied" — instead
   // of relying on console events, whose shape changes between Electron versions.
   log: (message) => ipcRenderer.invoke('app-log', { message: String(message) }),
+  // His own recorded narration, kept in <userData>\voice as loose files.
+  // voicePack() -> { ok, dir, found: { splash, 'card-01', ... } } where each
+  // value is a file:// URL ready to hand to an <audio>. Only the recordings he
+  // has actually made come back; everything else keeps the built-in clip.
+  voicePack: () => ipcRenderer.invoke('voice-pack'),
+  // Open that folder in Explorer so recordings can be dropped straight in.
+  openVoiceFolder: () => ipcRenderer.invoke('open-voice-folder'),
   // Fetch a Suno playlist's tracks from the main process (no browser CORS wall).
   // Returns { ok: true, tracks: [{ name, url }] } or { ok: false, error }.
   sunoPlaylist: (id) => ipcRenderer.invoke('suno-playlist', { id }),

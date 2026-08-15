@@ -13,7 +13,6 @@ import OnboardingWizard from './components/Onboarding/OnboardingWizard.jsx';
 import GhostDemo from './components/Onboarding/GhostDemo.jsx';
 import MidiStudio from './components/MidiStudio/MidiStudio.jsx';
 import ToolsHub from './components/ToolsHub/ToolsHub.jsx';
-import AlbumArchitect from './components/AlbumArchitect/AlbumArchitect.jsx';
 import SunoPlayer from './components/AudioPlayer/SunoPlayer.jsx';
 import RecordingBooth from './components/Recordings/RecordingBooth.jsx';
 import CollabTab from './components/Collab/CollabTab.jsx';
@@ -36,7 +35,6 @@ import icoLoopstation from './assets/icons/icon-loopstation.png';
 import icoStemmer from './assets/icons/icon-stemmer.png';
 import icoBooth from './assets/icons/icon-booth.png';
 import icoMidistudio from './assets/icons/icon-midistudio.png';
-import icoAlbum from './assets/icons/icon-album.png';
 import icoMastering from './assets/icons/icon-mastering.png';
 import icoRhyme from './assets/icons/icon-rhyme.png';
 import icoThesaurus from './assets/icons/icon-thesaurus.png';
@@ -72,7 +70,6 @@ const tabs = [
   { id: 'stemmer', icon: '🎛️', img: icoStemmer, label: 'Stemmer', help: 'Split a full mix into Vocals, Drums, Bass, Guitar, Keys, and Other. Offline mode (default) is free, light CPU, no key, no GPU. Optional Cloud mode uses a Replicate API key for pro Demucs stems on their servers.' },
   { id: 'booth', icon: '🎤', img: icoBooth, label: 'Recording Booth', help: 'Record harmonica, guitar, or vocals straight into the app (or upload takes) and keep them in a saved library. Play them in the persistent player while you write, convert them to MIDI, or export them as WAV.' },
   { id: 'midistudio', icon: '🎹', img: icoMidistudio, label: 'MIDI Studio', help: 'Turn any audio into editable MIDI, tweak it on a piano-roll with a stronger multi-voice synth, and pick from dozens of Milkdrop-class visualizer presets. Runs fully offline.' },
-  { id: 'album', icon: '💿', img: icoAlbum, label: 'Album Architect', help: 'Group up to 12 tracks into a cohesive concept album. Drag tracks to reorder, and set album-wide metadata like genre and master tempo.' },
   { id: 'mastering', icon: '💽', img: icoMastering, label: 'Mastering Studio', help: 'The finish line: pull your songs together into an album, master each track with a real EQ/compression/limiter chain (all offline), add cover art (upload or AI-generated), and export the finished album — WAVs, cover, and tracklist.' },
   { id: 'rhyme', icon: '📖', img: icoRhyme, label: 'Rhyme Helper', help: 'A rhyming dictionary and rhyme finder. Look up words that rhyme, and check the rhymes inside lines you have already written.' },
   { id: 'thesaurus', icon: '📚', img: icoThesaurus, label: 'Thesaurus', help: 'A word finder: type a word to get other words that mean the same, words that mean the opposite, and related ideas. Free, no AI key needed.' },
@@ -524,11 +521,8 @@ function MainLayout() {
           <TabPane id="midistudio" active={activeTab} opened={openedTabs}>
             <MidiStudio />
           </TabPane>
-          <TabPane id="album" active={activeTab} opened={openedTabs}>
-            <AlbumArchitect />
-          </TabPane>
           <TabPane id="mastering" active={activeTab} opened={openedTabs}>
-            <MasteringStudio onNavigate={setActiveTab} />
+            <MasteringStudio />
           </TabPane>
           <TabPane id="toolshub" active={activeTab} opened={openedTabs}>
             <ToolsHub />

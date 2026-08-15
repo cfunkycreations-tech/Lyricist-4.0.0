@@ -296,6 +296,23 @@ export default function Settings() {
   const [showGoogleKey, setShowGoogleKey] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  // How many of his own narration recordings the app found. Reported as a
+  // count rather than a yes/no so a misnamed file shows up as a number that is
+  // lower than he expects, instead of silently doing nothing.
+  const [voiceCount, setVoiceCount] = useState(0);
+  useEffect(() => {
+    let live = true;
+    window.lyricistAPI?.voicePack?.()
+      .then((r) => { if (live && r?.ok) setVoiceCount(Object.keys(r.found || {}).length); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
+  const openVoiceFolder = () => {
+    window.lyricistAPI?.openVoiceFolder?.().then((r) => {
+      if (r && !r.ok) window.alert(`Could not open the voice folder: ${r.error}`);
+    }).catch(() => {});
+  };
+
   const handleUpdate = (field, val) => {
     // Keys get cleaned on the way IN, not just on the way out. A key copied off
     // a web page arrives with a trailing newline, a non-breaking space, quotes
@@ -726,6 +743,37 @@ export default function Settings() {
           <span>2000</span>
           <span>4000</span>
         </div>
+      </div>
+
+      {/* Your own voice — the voice pack folder */}
+      <div style={{ marginBottom: 18 }} data-help="Record the tour in your own voice instead of the built-in one. Click the button, drop your recordings in the folder that opens, and restart the app. Name them splash.mp3 for the opening video and card-01.mp3 through card-18.mp3 for the tour cards. Anything you don't record keeps the built-in voice.">
+        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+          Your Own Voice — <span style={{ color: voiceCount > 0 ? '#34d399' : '#c084fc' }}>
+            {voiceCount > 0 ? `${voiceCount} recording${voiceCount === 1 ? '' : 's'} in use` : 'using the built-in voice'}
+          </span>
+        </label>
+        <p style={{ fontSize: '0.72rem', color: 'rgba(196,181,253,0.6)', margin: '0 0 8px', lineHeight: 1.5 }}>
+          Drop your own recordings in this folder and the app plays them instead of the built-in
+          narration — <code style={{ color: '#67e8f9' }}>splash.mp3</code> over the opening video,
+          <code style={{ color: '#67e8f9' }}> card-01.mp3</code> to <code style={{ color: '#67e8f9' }}>card-18.mp3</code> for
+          the tour. mp3, m4a, wav and ogg all work. Restart the app to pick up new files.
+        </p>
+        <button
+          onClick={openVoiceFolder}
+          style={{
+            padding: '8px 18px',
+            borderRadius: 8,
+            border: '1px solid rgba(52,211,153,0.4)',
+            background: 'rgba(13,8,28,0.7)',
+            color: '#34d399',
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            fontFamily: "'Space Grotesk', sans-serif",
+          }}
+        >
+          🎙 Open my voice folder
+        </button>
       </div>
 
       {/* Action Buttons */}

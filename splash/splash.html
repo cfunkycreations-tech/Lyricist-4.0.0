@@ -14,7 +14,7 @@
     height: 100%;
     overflow: hidden;
     background: transparent;
-    /* Whole splash is click-to-dismiss, so show a hand over all of it. */
+    /* Whole splash is click-to-skip, so show a hand over all of it. */
     cursor: pointer;
     user-select: none;
   }
@@ -32,10 +32,11 @@
     object-fit: cover;
     display: block;
   }
-  /* A quiet line so a slow first boot does not read as a hung window. It sits
-     over the clip rather than adding height, so the window stays exactly the
-     video's shape. */
-  #status {
+  /* Says what clicking does, because the opener now runs its full length and a
+     person who wants straight into the app must be able to see the way past it.
+     It sits over the clip rather than adding height, so the window stays
+     exactly the video's shape. */
+  #skip {
     position: absolute;
     left: 0;
     right: 0;
@@ -52,19 +53,58 @@
 </head>
 <body>
   <div id="wrap">
-    <!-- Muted on purpose: every video this app plays by itself is silent, and a
-         splash that makes noise on launch is the first thing people would want
-         turned off. `playsinline` and the play() retry cover the case where
-         autoplay is refused before the window has focus. -->
+    <!-- The file itself has no audio track at all, by his rule that no video in
+         this app makes noise. The only sound the splash can make is a voice-over
+         he recorded himself, handed in as ?voice= by main.js. -->
     <video id="clip" src="./splash.mp4" autoplay muted playsinline></video>
-    <div id="status">Starting Lyricist 4.2.0</div>
+    <div id="skip">Click to skip</div>
   </div>
   <script>
     const clip = document.getElementById('clip');
-    clip.play().catch(() => { /* a still first frame is fine */ });
-    // Click anywhere to get rid of it. The main window is already loading
-    // behind this, so dismissing early never cancels anything.
-    addEventListener('click', () => window.close());
+    const skip = document.getElementById('skip');
+
+    // Told main once, no matter which of these fires first.
+    let reported = false;
+    const finish = (why) => {
+      if (reported) return;
+      reported = true;
+      try { window.splash?.done(why); } catch { /* main closes us anyway */ }
+    };
+
+    // His own recording, played as a separate track alongside the silent video.
+    const voiceUrl = new URLSearchParams(location.search).get('voice');
+    let voice = null;
+    if (voiceUrl) {
+      voice = new Audio(voiceUrl);
+      voice.play().catch(() => { /* no voice is not a failure */ });
+    }
+
+    clip.play().catch(() => {
+      // Autoplay refused before the window has focus. A still first frame is
+      // fine to look at, but nothing will fire 'ended', so don't make the app
+      // wait on a clip that is never going to run.
+      finish('clip would not autoplay');
+    });
+
+    // The opener plays out. If a voice-over is longer than the video, wait for
+    // the voice — cutting his own recording off mid-word is the one thing this
+    // whole change exists to prevent.
+    clip.addEventListener('ended', () => {
+      if (voice && !voice.ended && !voice.paused) {
+        voice.addEventListener('ended', () => finish('voice ended'), { once: true });
+        return;
+      }
+      finish('clip ended');
+    });
+    clip.addEventListener('error', () => finish('clip error'));
+
+    // Click anywhere to get past it. The main window is already loading behind
+    // this, so skipping early never cancels anything.
+    addEventListener('click', () => {
+      try { voice?.pause(); } catch {}
+      skip.textContent = 'Starting Lyricist 4.2.0';
+      finish('clicked');
+    });
   </script>
 </body>
 </html>

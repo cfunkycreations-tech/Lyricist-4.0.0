@@ -24,7 +24,7 @@ let nextId = Date.now();
 
 function fmtDb(v) { return `${v >= 0 ? '+' : ''}${v.toFixed(1)} dB`; }
 
-export default function MasteringStudio({ onNavigate }) {
+export default function MasteringStudio() {
   const store = useLyricStore();
 
   const [meta, setMeta] = useState(() => {
@@ -32,7 +32,9 @@ export default function MasteringStudio({ onNavigate }) {
       const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
       if (saved) return saved;
     } catch { /* fresh */ }
-    // Prefill from Album Architect's plan if one exists.
+    // Prefill from an album plan saved by an older build (the Album tab it came
+    // from is gone). Harmless when absent, and it keeps his existing title and
+    // artist rather than resetting them to 'Untitled Album' on upgrade.
     try {
       const arch = JSON.parse(localStorage.getItem('lyricistAlbumArchitect_v1') || 'null');
       if (arch) return { title: arch.title || 'Untitled Album', artist: arch.artist || '', genre: arch.genre || '', year: new Date().getFullYear() };
@@ -95,7 +97,7 @@ export default function MasteringStudio({ onNavigate }) {
 
   const removeTrack = (id) => setTracks(prev => prev.filter(t => t.id !== id));
 
-  // ── Drag-and-drop reorder (same pattern as Album Architect) ──
+  // ── Drag-and-drop reorder: the running order here is the exported order ──
   const onDragStart = (e, i) => { setDragIndex(i); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(i)); };
   const onDragOver = (e, i) => { e.preventDefault(); if (i !== overIndex) setOverIndex(i); };
   const onDrop = (e, i) => {
@@ -465,7 +467,7 @@ export default function MasteringStudio({ onNavigate }) {
           {tracks.length > 0 && (
             <p style={{ fontSize: '0.64rem', color: 'rgba(196,181,253,0.55)', marginTop: 10 }}>
               Tracks are re-mastered automatically when you change the chain settings.
-              Plan the concept and running order in <button onClick={() => onNavigate && onNavigate('album')} style={{ background: 'none', border: 'none', color: '#ff7eb6', cursor: 'pointer', fontSize: 'inherit', padding: 0, textDecoration: 'underline' }}>Album Architect</button> — the title, artist, and genre carry over.
+              Drag a row to set the running order — that order is what gets exported.
             </p>
           )}
         </div>

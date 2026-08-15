@@ -22,7 +22,19 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
   const [muted, setMuted] = useState(() => localStorage.getItem('wizardMuted') === 'true');
   const [playing, setPlaying] = useState(false);
   const [hasAudio, setHasAudio] = useState(false);
+  // Chris's own recordings, dropped into <userData>\voice as card-NN.mp3. Any
+  // card he has recorded plays HIS voice instead of the baked TTS clip; the
+  // rest are untouched, so the pack can be filled in a few cards at a time.
+  const [ownVoice, setOwnVoice] = useState({});
   const audioRef = useRef(null);
+
+  useEffect(() => {
+    let live = true;
+    window.lyricistAPI?.voicePack?.()
+      .then((r) => { if (live && r?.ok) setOwnVoice(r.found || {}); })
+      .catch(() => { /* no pack is the normal case */ });
+    return () => { live = false; };
+  }, []);
 
   const cards = WIZARD_CARDS;
   const current = cards[step];
@@ -42,14 +54,17 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
     if (!a) return;
     setHasAudio(false);
     setPlaying(false);
-    a.src = AUDIO_BASE + current.audio;
+    // His recording wins when there is one. `current.audio` is 'card-NN.mp3',
+    // and the pack is keyed on the stem, so drop the extension to look it up.
+    const stem = current.audio.replace(/\.[^.]+$/, '');
+    a.src = ownVoice[stem] || AUDIO_BASE + current.audio;
     a.load();
     if (!muted) {
       a.play().then(() => setPlaying(true)).catch(() => {});
     }
     return () => { try { a.pause(); } catch {} };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
+  }, [step, ownVoice]);
 
   useEffect(() => { localStorage.setItem('wizardMuted', String(muted)); }, [muted]);
 
@@ -121,8 +136,10 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
             <button onClick={togglePlay} title={playing ? 'Pause' : 'Play'} style={narrBtn}>{playing ? '⏸' : '▶'}</button>
             <button onClick={replay} title="Replay" style={narrBtn}>🔁</button>
             <button onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'} style={narrBtn}>{muted ? '🔇' : '🔊'}</button>
-            <span style={{ fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.45)' }}>
-              {playing ? 'Narrating…' : 'Narration'}
+            <span style={{ fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: ownVoice[current.audio.replace(/\.[^.]+$/, '')] ? 'rgba(52,211,153,0.7)' : 'rgba(167,139,250,0.45)' }}>
+              {ownVoice[current.audio.replace(/\.[^.]+$/, '')]
+                ? (playing ? 'Your voice…' : 'Your voice')
+                : (playing ? 'Narrating…' : 'Narration')}
             </span>
           </div>
         )}

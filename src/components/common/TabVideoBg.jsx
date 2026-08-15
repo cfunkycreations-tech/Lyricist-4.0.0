@@ -9,7 +9,6 @@ import React from 'react';
 // these tabs rendered a black panel and no video. Importing them makes Vite emit
 // the file and hand back a URL it has already resolved for the build — which is
 // why the older tabs never had this problem.
-import albumMp4 from '../../assets/bg/album.mp4';
 import boothMp4 from '../../assets/bg/booth.mp4';
 import collabMp4 from '../../assets/bg/collab.mp4';
 import loopstationMp4 from '../../assets/bg/loopstation.mp4';
@@ -21,7 +20,6 @@ import stemmerMp4 from '../../assets/bg/stemmer.mp4';
 import toolshubMp4 from '../../assets/bg/toolshub.mp4';
 
 const CLIPS = {
-  album: albumMp4,
   booth: boothMp4,
   collab: collabMp4,
   loopstation: loopstationMp4,
