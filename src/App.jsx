@@ -44,18 +44,12 @@ import icoDictionary from './assets/icons/icon-dictionary.png';
 import icoToolshub from './assets/icons/icon-toolshub.png';
 import icoScratchpad from './assets/icons/icon-scratchpad.png';
 import icoSettings from './assets/icons/icon-settings.png';
-import profileImg from './assets/profile.jpg';     // new founder selfie
-import logoImg from './assets/logo.jpg';           // new neon medallion logo
-import headerMedallionImg from './assets/header-medallion.png'; // Chris's peace-sign DNA medallion (4.2.0)
-// The header art used to be ONE 1880x440 strip (header-banner.png). That strip
-// carried 534px of flat #020516 filler between its three elements, which forced
-// a 4.3:1 aspect — so fitting it to the leftover width collapsed its height and
-// Chris rendered barely a third as tall as the medallion beside him. The three
-// elements are now separate crops of that same file, laid out below, so Chris
-// can be locked to the full header height and the rest scaled off him.
-import headerSignatureImg from './assets/header-signature.png'; // Chris's signature
-import headerChrisImg from './assets/header-chris.png';         // Chris + guitar
-import headerWordmarkImg from './assets/header-wordmark.png';   // LYRICIST 4.2.0 GOES QUANTUM
+// The still header art (profile.jpg, logo.jpg, header-medallion / -signature /
+// -chris / -wordmark .png) is no longer imported here. The header became the
+// whole uncropped video clip, and its <img> elements went with it, but the six
+// imports stayed behind — and Vite emits an imported asset whether or not it is
+// rendered, so every build was still shipping them. The files themselves are
+// left in src/assets/ untouched.
 import footerMedallionImg from './assets/footer-medallion-new.png'; // Chris's bottom-left medallion (4.2.0)
 // Header banner clip. Imported, NOT read out of public/ at runtime — see the note
 // in components/common/TabVideoBg.jsx. Everything else in this app that plays a

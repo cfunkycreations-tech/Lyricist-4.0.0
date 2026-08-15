@@ -178,7 +178,10 @@ export const rapFlowPatterns = [
  */
 export const MAX_TEMPERATURE = 1.1;
 
-const DEFAULT_CONFIG = {
+// Exported so Settings' "Reset to default" resets to THESE values. It used to
+// carry its own hand-copied duplicate of this object, which had already drifted
+// — it reset the model to 'openrouter/free' and the stemmer to 'offline'.
+export const DEFAULT_CONFIG = {
   openRouterApiKey: '',
   // A specific instruction-tuned text model, NOT `openrouter/free`. That router
   // picks whichever free model is available, and the free pool includes coding
@@ -261,14 +264,32 @@ export const LyricStoreProvider = ({ children }) => {
           parsed.geminiImageModel = DEFAULT_CONFIG.geminiImageModel;
         }
         return { ...DEFAULT_CONFIG, ...parsed };
-      } catch (e) {}
+      } catch (e) {
+        console.warn('[Lyricist] Saved settings were unreadable and have been reset to defaults.', e);
+      }
     }
     return { ...DEFAULT_CONFIG, migratedToFreeRouter: true };
   });
 
   const [lyrics, setLyricsState] = useState(() => {
+    // A half-written localStorage value (quota hit mid-write, a crash during
+    // save, or anything that edits it by hand) used to throw straight out of
+    // this initializer. That throw happens while the provider is being
+    // constructed, so React never mounts anything and the whole app is a blank
+    // window with no way back short of clearing site data. One bad key must not
+    // be able to brick the app: keep a copy of the damaged value under a
+    // separate key so the words are still recoverable, and start empty.
     const saved = localStorage.getItem('lyricistLyrics');
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed;
+      console.warn('[Lyricist] Saved lyrics were not a list; starting with an empty sheet.');
+    } catch (e) {
+      console.warn('[Lyricist] Saved lyrics were corrupt. A copy is kept at "lyricistLyrics.corrupt".', e);
+      try { localStorage.setItem('lyricistLyrics.corrupt', saved); } catch { /* nothing more we can do */ }
+    }
+    return [];
   });
 
   const [undoStack, setUndoStack] = useState([]);

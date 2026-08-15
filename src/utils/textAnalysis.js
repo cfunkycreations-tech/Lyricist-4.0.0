@@ -62,8 +62,11 @@ export function getLastWord(lineText) {
 // Simple rhyme detection between two words (checks if ending phonetics match)
 export function isNearRhyme(word1, word2) {
   if (!word1 || !word2) return false;
-  w1 = word1.toLowerCase().trim();
-  w2 = word2.toLowerCase().trim();
+  // These were undeclared assignments. Module code is strict mode, so the first
+  // one threw a ReferenceError rather than quietly creating a global — every
+  // call to this function was a crash waiting for its first caller.
+  const w1 = String(word1).toLowerCase().trim();
+  const w2 = String(word2).toLowerCase().trim();
   if (w1 === w2) return false;
   
   const endings = ["ing", "ed", "er", "y", "le", "tion", "ent", "ant", "al", "ic"];

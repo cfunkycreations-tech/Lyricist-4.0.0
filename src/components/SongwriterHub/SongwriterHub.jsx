@@ -5,8 +5,9 @@ import StructureBuilder from './StructureBuilder.jsx';
 import { generateFullSong, fillBlank, generateBridgeVariations, lastGeneration, parseSectionsFromText } from '../../services/AIService.js';
 import { normalizeLineEndings, hasLineStructure, splitProseIntoLines, groupIntoSections } from '../../utils/importLyrics.js';
 import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, AlertCircle, Upload } from 'lucide-react';
-import cfunkyLogoNew from '../../assets/cfunky-logo-new.jpg';
-import profileImg from '../../assets/profile.jpg';
+// The logo and the founder photo were imported here but never rendered — a
+// leftover from the old in-tab header. Vite emits an imported asset whether or
+// not it is used, so both were being copied into every build for nothing.
 import songwriterBg from '../../assets/songwriter.mp4';
 
 export default function SongwriterHub({ ghostRiderData }) {

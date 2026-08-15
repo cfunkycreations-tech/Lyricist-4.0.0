@@ -218,7 +218,6 @@ SONGWRITING CONFIGURATION:
 - Cadence Notes: ${store.cadenceNotes || "none"}
 - Topic / Concept: ${store.topic || "generic human tension"}
 - Artist Reference: ${store.artistRef || "none"}
-- Keyword Seeds: ${store.keywordSeeds || "none"}
 - Additional Notes: ${store.notes || "none"}
 - Hook-First Resequencing: ${store.hookFirstMode ? "ON" : "OFF"}
 `;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLyricStore } from '../../context/LyricStore.jsx';
+import { useLyricStore, DEFAULT_CONFIG } from '../../context/LyricStore.jsx';
 import { Save, RefreshCw, Key, Shield, HelpCircle } from 'lucide-react';
 import { normalizeApiKey } from '../../services/AIService.js';
 import { IMAGE_MODELS, DEFAULT_IMAGE_MODEL } from '../../services/GeminiService.js';
@@ -315,23 +315,14 @@ export default function Settings() {
 
   const handleReset = () => {
     if (window.confirm('Reset settings to default?')) {
-      store.setConfig({
-        openRouterApiKey: '',
-        model: 'openrouter/free',
-        temperature: 0.75,
-        maxTokens: 2000,
-        fusionEnabled: false,
-        fusionModels: [],
-        googleApiKey: '',
-        geminiTextModel: 'gemini-3.5-flash',
-        geminiImageModel: DEFAULT_IMAGE_MODEL,
-        useFlexTier: true,
-        imageAspectRatio: '1:1',
-        imageSize: '2K',
-        customArtStyle: '',
-        stemmerMode: 'offline',
-        replicateApiKey: '',
-      });
+      // Reset to the ONE set of defaults the app actually ships with. This used
+      // to be a hand-copied second copy of DEFAULT_CONFIG, and it had drifted:
+      // it put the writing model back to 'openrouter/free' — a router whose
+      // free pool includes coding agents and a safety classifier, none of which
+      // can write a verse — and it forced the Stemmer to 'offline' DSP instead
+      // of the real local separation. Reset is not a place to introduce values
+      // a fresh install would never have.
+      store.setConfig({ ...DEFAULT_CONFIG, migratedToFreeRouter: true });
       setSaved(false);
     }
   };
