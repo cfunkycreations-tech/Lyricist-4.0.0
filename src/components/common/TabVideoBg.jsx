@@ -14,7 +14,11 @@ import collabMp4 from '../../assets/bg/collab.mp4';
 import loopstationMp4 from '../../assets/bg/loopstation.mp4';
 import masteringMp4 from '../../assets/bg/mastering.mp4';
 import midistudioMp4 from '../../assets/bg/midistudio.mp4';
-import scratchpadMp4 from '../../assets/bg/scratchpad.mp4';
+// NOTE: scratchpad.mp4 is deliberately NOT imported. The Scratchpad renders an
+// opaque legal-pad yellow (#f8eea6) over its whole panel, so a clip behind it
+// would never be seen — and Vite emits an imported asset whether or not anything
+// renders it, so the registration alone was putting 16.7 MB into every
+// installer. The file is still in src/assets/bg/ if that tab ever changes.
 import songforgeMp4 from '../../assets/bg/songforge.mp4';
 import stemmerMp4 from '../../assets/bg/stemmer.mp4';
 import toolshubMp4 from '../../assets/bg/toolshub.mp4';
@@ -25,7 +29,6 @@ const CLIPS = {
   loopstation: loopstationMp4,
   mastering: masteringMp4,
   midistudio: midistudioMp4,
-  scratchpad: scratchpadMp4,
   songforge: songforgeMp4,
   stemmer: stemmerMp4,
   toolshub: toolshubMp4,
