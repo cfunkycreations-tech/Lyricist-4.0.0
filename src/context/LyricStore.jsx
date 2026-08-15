@@ -208,10 +208,23 @@ export const DEFAULT_CONFIG = {
   customArtStyle: '',
 
   // Stemmer engine:
-  //  'local'   — true 6-stem AI (Demucs) on the user's own GPU/CPU (default)
-  //  'cloud'   — Demucs on Replicate (needs API key)
-  //  'offline' — fast DSP spectral split (rough, not true stems)
-  stemmerMode: 'local', // 'local' | 'cloud' | 'offline'
+  //  'offline' — DSP spectral split on the user's own CPU/GPU (DEFAULT)
+  //  'local'   — true 6-stem AI (Demucs), needs Python 3.9+ and a one-time install
+  //  'cloud'   — Demucs on Replicate (needs a paid API key)
+  //
+  // This defaulted to 'local', and that is a setup wall standing where the
+  // front door should be. Local Demucs needs the user to go and install Python
+  // from python.org, then sit through a multi-gigabyte Torch download. Chris
+  // has a dev machine and it was still a pain; someone who downloaded a
+  // songwriting app to split a track is not going to install a language
+  // runtime, and defaulting to that mode meant their first visit to this tab
+  // was a list of things to go and do.
+  //
+  // 'offline' works on every machine with nothing installed, no key, no
+  // account, and no network — rougher stems, but instantly. Local AI is still
+  // right there as an opt-in upgrade for anyone who wants true separation.
+  // Advertise the path that works for everyone; sell the upgrade second.
+  stemmerMode: 'offline', // 'offline' | 'local' | 'cloud'
   // Offline processor: 'auto' tries the GPU first and falls back to the CPU if
   // the GPU is missing or runs out of memory; 'gpu' / 'cpu' force one path.
   stemmerDevice: 'auto', // 'auto' | 'gpu' | 'cpu'

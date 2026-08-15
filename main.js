@@ -580,6 +580,71 @@ function failurePage(title, detail) {
   return 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
 }
 
+/**
+ * Launch splash.
+ *
+ * The main window is deliberately created with `show: false` and only revealed
+ * on ready-to-show, because a window painted before its content is the black
+ * rectangle people report as "the app is broken". The cost of that choice was
+ * the opposite problem: from double-click to first paint there was NOTHING on
+ * screen — no window, just a taskbar icon — and on a cold start with this many
+ * background clips to warm up that gap is long enough to click the icon a
+ * second time wondering if it took.
+ *
+ * So: a small frameless always-on-top window that appears immediately and plays
+ * Chris's opener, then gets out of the way the moment the real window is ready.
+ * It is a pure sibling — it owns no state, and closing it can never cancel the
+ * load happening behind it.
+ */
+let splashWin = null;
+
+function createSplash() {
+  try {
+    const page = path.join(__dirname, 'splash', 'splash.html');
+    if (!fs.existsSync(page)) { bootLog('splash: page missing, skipping'); return; }
+
+    // The clip is 1280x720. Half size keeps it crisp on a 1080p screen and
+    // small enough not to dominate a laptop display.
+    splashWin = new BrowserWindow({
+      width: 640,
+      height: 360,
+      frame: false,
+      transparent: true,
+      resizable: false,
+      movable: false,
+      minimizable: false,
+      maximizable: false,
+      fullscreenable: false,
+      // Above everything WHILE loading, and skipped in the task switcher so it
+      // never looks like a second app.
+      alwaysOnTop: true,
+      skipTaskbar: true,
+      show: false,
+      center: true,
+      backgroundColor: '#00000000',
+      webPreferences: { nodeIntegration: false, contextIsolation: true },
+    });
+    splashWin.once('ready-to-show', () => {
+      if (splashWin && !splashWin.isDestroyed()) splashWin.show();
+    });
+    splashWin.on('closed', () => { splashWin = null; });
+    splashWin.loadFile(page);
+    bootLog('splash: shown');
+  } catch (e) {
+    // A splash is decoration. It must never be the reason the app fails to
+    // start, so every failure here is logged and swallowed.
+    bootLog(`splash: failed (${e.message})`);
+    splashWin = null;
+  }
+}
+
+function closeSplash(why) {
+  if (!splashWin || splashWin.isDestroyed()) { splashWin = null; return; }
+  bootLog(`splash: closing (${why})`);
+  try { splashWin.close(); } catch { /* already gone */ }
+  splashWin = null;
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1400,
@@ -683,8 +748,16 @@ function createWindow() {
     if (shown || win.isDestroyed()) return;
     shown = true;
     bootLog(`window shown (${why})`);
+    // Order matters: drop the always-on-top splash BEFORE showing the real
+    // window, or the app appears behind it for a frame and reads as a flicker.
+    closeSplash(why);
     win.show();
+    // The splash was alwaysOnTop, so make sure the window that replaced it is
+    // the one holding focus — otherwise the first keystroke goes nowhere.
+    win.focus();
   };
+  // Whatever happens to the main window, the splash does not outlive it.
+  win.on('closed', () => closeSplash('main window closed'));
 
   win.once('ready-to-show', () => reveal('ready-to-show'));
   // If the content stalls, show the window anyway — never leave the user
@@ -840,6 +913,10 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionCheckHandler((webContents, permission) =>
     ALLOWED_PERMISSIONS.has(permission));
 
+  // Splash first so something is on screen while the renderer boots. The
+  // 12-second reveal timeout in createWindow is also the splash's hard ceiling
+  // — it is closed by reveal(), which always runs.
+  createSplash();
   createWindow();
 
   app.on('activate', () => {

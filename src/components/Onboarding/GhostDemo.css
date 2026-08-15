@@ -1,14 +1,18 @@
 /* Ghost Demo overlay — translucent operator + speech bubbles */
 
 /* Hide real OS cursor so only the remote ghost pointer is visible */
-body.ghost-demo-active,
-body.ghost-demo-active * {
-  cursor: none !important;
-}
-body.ghost-demo-active .ghost-demo-bar,
-body.ghost-demo-active .ghost-demo-bar * {
-  cursor: pointer !important;
-}
+/* The demo used to set `cursor: none !important` on the whole document so the
+ * only pointer on screen was the ghost's. It looked right in a screenshot and
+ * was wrong to sit in front of: your own mouse vanished for the entire run, so
+ * you could not see what you were pointing at, could not tell whether the app
+ * was frozen, and had to hunt blind for Pause and Skip. Hiding the user's
+ * cursor is not a visual effect, it is taking the mouse away from them.
+ *
+ * A real remote-support session shows BOTH pointers — yours and the tech's.
+ * The ghost carries a figure and a "Remote" label, so there is never any doubt
+ * which one is which. Your cursor stays visible and every layer of this overlay
+ * is pointer-events:none, so the app underneath stays fully usable while the
+ * demo runs. */
 
 .ghost-demo-root {
   position: fixed;

@@ -29,6 +29,7 @@
       "main.js",
       "preload.js",
       "demucsLocal.js",
+      "splash/**/*",
       "src/assets/icon.ico",
       "!node_modules/**/*"
     ],

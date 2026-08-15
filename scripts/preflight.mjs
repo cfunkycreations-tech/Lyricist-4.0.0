@@ -107,9 +107,43 @@ function checkPackagedMainModules() {
   return checked;
 }
 
+/**
+ * Non-JS files the main process loads off disk at runtime.
+ *
+ * `build.files` is a WHITELIST, so anything not named there is simply absent
+ * from the installed app while working perfectly in dev — the failure only ever
+ * shows up on a real install, which is the worst place to find it. The splash
+ * is loaded with loadFile() rather than imported, so no module scan can see it.
+ */
+function checkPackagedRuntimeAssets() {
+  const assets = ['splash/splash.html', 'splash/splash.mp4'];
+  const pkgJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+  const patterns = pkgJson.build?.files || [];
+  for (const rel of assets) {
+    if (!fs.existsSync(path.join(ROOT, rel))) {
+      problems.push(`${rel} is loaded at runtime but is missing from the repo.`);
+      continue;
+    }
+    const covered = patterns.some((p) => {
+      if (typeof p !== 'string' || p.startsWith('!')) return false;
+      if (p === rel) return true;
+      const dir = p.replace(/\/\*\*\/\*$/, '').replace(/\/\*$/, '');
+      return dir !== p && (rel === dir || rel.startsWith(dir + '/'));
+    });
+    if (!covered) {
+      problems.push(
+        `${rel} is loaded at runtime but no build.files pattern covers it — `
+        + `it would be missing from the installed app. Add it to build.files.`
+      );
+    }
+  }
+  return assets.length;
+}
+
 const channels = checkDuplicateIpcHandlers();
 const bridged = checkPreloadChannels();
 const mainModules = checkPackagedMainModules();
+const runtimeAssets = checkPackagedRuntimeAssets();
 
 if (problems.length) {
   console.error('\n  PREFLIGHT FAILED\n');
@@ -118,4 +152,4 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log(`preflight ok — ${channels} ipc channels, ${bridged} bridged, ${mainModules} main modules packaged, no duplicates`);
+console.log(`preflight ok — ${channels} ipc channels, ${bridged} bridged, ${mainModules} main modules packaged, ${runtimeAssets} runtime assets packaged, no duplicates`);
