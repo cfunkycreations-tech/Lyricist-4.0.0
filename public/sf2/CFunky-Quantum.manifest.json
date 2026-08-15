@@ -1,0 +1,302 @@
+[
+ {
+  "program": 0,
+  "bank": 42,
+  "name": "Underwater 1",
+  "source": "1A Synthesizer Chord Drowned Behind A Steep Low Pass Filter Set At Three Hundr.mp3",
+  "rootKey": 39,
+  "cents": 42,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 1,
+  "bank": 42,
+  "name": "Cathedral 1",
+  "source": "1A Vast Pipe Organ And A Boys Choir Sounding Together Inside An Enormous Stone.mp3",
+  "rootKey": 48,
+  "cents": 17,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 2,
+  "bank": 42,
+  "name": "Aurora Choir 1",
+  "source": "1A Wordless Human Choir Sung Through A Slowly Sweeping Formant Filter, The Vow.mp3",
+  "rootKey": 72,
+  "cents": 10,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 3,
+  "bank": 42,
+  "name": "Braam",
+  "source": "1Braam, Huge Distorted Brass Horn Hit, Cinematic Trailer Impact, Deep And Over.wav",
+  "rootKey": 60,
+  "cents": 0,
+  "looped": false,
+  "seconds": 7
+ },
+ {
+  "program": 4,
+  "bank": 42,
+  "name": "Cathedral 2",
+  "source": "1Cathedral Pad, Vast Reverberant Stone Space, Single Sustained Note C3, Sacred.wav",
+  "rootKey": 72,
+  "cents": -3,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 5,
+  "bank": 42,
+  "name": "Cosmic Space 1",
+  "source": "1Cosmic Space Pad, Wide Stereo, Slowly Evolving Harmonics, Single Sustained No.wav",
+  "rootKey": 24,
+  "cents": -1,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 6,
+  "bank": 42,
+  "name": "Metallic Drone 1",
+  "source": "1Metallic Resonant Drone, Bowed Metal And Singing Bowls, Single Sustained Note.wav",
+  "rootKey": 61,
+  "cents": -18,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 7,
+  "bank": 42,
+  "name": "Metallic Drone 2",
+  "source": "1The Edge Of A Large Cymbal Bowed Slowly With A Double Bass Bow, Layered With.wav",
+  "rootKey": 35,
+  "cents": 3,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 8,
+  "bank": 42,
+  "name": "Reverse Riser 1",
+  "source": "2A Four Second Reversed Swell Building Tension. Reversed Cymbal Wash Layered W.mp3",
+  "rootKey": 60,
+  "cents": 0,
+  "looped": false,
+  "seconds": 3.91
+ },
+ {
+  "program": 9,
+  "bank": 42,
+  "name": "Reverse Riser 2",
+  "source": "3A Four Second Reversed Swell Building Tension. Reversed Cymbal Wash Layered W.mp3",
+  "rootKey": 60,
+  "cents": 0,
+  "looped": false,
+  "seconds": 6.59
+ },
+ {
+  "program": 10,
+  "bank": 42,
+  "name": "Reverse Riser 3",
+  "source": "A Four Second Reversed Swell Building Tension. Reversed 1Cymbal Wash Layered W.mp3",
+  "rootKey": 60,
+  "cents": 0,
+  "looped": false,
+  "seconds": 4.33
+ },
+ {
+  "program": 11,
+  "bank": 42,
+  "name": "Reverse Riser 4",
+  "source": "A Four Second Reversed Swell Building Tension. Reversed Cymbal Wash Layered 1W.wav",
+  "rootKey": 60,
+  "cents": 0,
+  "looped": false,
+  "seconds": 4.96
+ },
+ {
+  "program": 12,
+  "bank": 42,
+  "name": "Reverse Riser 5",
+  "source": "A Four Second Reversed Swell Building Tension. Reversed Cymbal Wash Layered W.wav",
+  "rootKey": 60,
+  "cents": 0,
+  "looped": false,
+  "seconds": 7
+ },
+ {
+  "program": 13,
+  "bank": 42,
+  "name": "Underwater 2",
+  "source": "A Synthesizer Chord Drowned Behind A Steep Low Pass Filter Set At Three Hundr.wav",
+  "rootKey": 24,
+  "cents": 18,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 14,
+  "bank": 42,
+  "name": "Cathedral 3",
+  "source": "A Vast Pipe Organ And A Boys Choir Sounding Together Inside An Enormous Stone.mp3",
+  "rootKey": 29,
+  "cents": -19,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 15,
+  "bank": 42,
+  "name": "Aurora Choir 2",
+  "source": "A Wordless Human Choir Sung Through A Slowly Sweeping Formant Filter, The Vow.mp3",
+  "rootKey": 41,
+  "cents": 22,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 16,
+  "bank": 42,
+  "name": "Breathing Pad 1",
+  "source": "Breathing Pad, Volume Swelling In And Out Like Slow Lungs, Single Sustained N.wav",
+  "rootKey": 60,
+  "cents": 12,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 17,
+  "bank": 42,
+  "name": "Cathedral 4",
+  "source": "Cathedral Pad, Vast Reverberant Stone Space, Single Sustained Note C3, Sacred.wav",
+  "rootKey": 48,
+  "cents": 1,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 18,
+  "bank": 42,
+  "name": "Cosmic Space 2",
+  "source": "Cosmic Space Pad, Wide Stereo, Slowly Evolving Harmonics, Single Sustained No.wav",
+  "rootKey": 72,
+  "cents": 1,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 19,
+  "bank": 42,
+  "name": "Glass Pad",
+  "source": "Crystal Wine Glasses Played By Wet Fingers Circling The Rims, Glass Armonica,.mp3",
+  "rootKey": 72,
+  "cents": 33,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 20,
+  "bank": 42,
+  "name": "Cosmic Space 3",
+  "source": "Enormously Wide Detuned Synthesizer Strings Drifting Through Empty Space, 1Voi.wav",
+  "rootKey": 47,
+  "cents": 39,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 21,
+  "bank": 42,
+  "name": "Cosmic Space 4",
+  "source": "Enormously Wide Detuned Synthesizer Strings Drifting Through Empty Space, Voi.wav",
+  "rootKey": 48,
+  "cents": -6,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 22,
+  "bank": 42,
+  "name": "Granular Cloud",
+  "source": "Granular Cloud Pad, Thousands Of Tiny Particles Of Sound, Single Sustained No.mp3",
+  "rootKey": 36,
+  "cents": 3,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 23,
+  "bank": 42,
+  "name": "Metallic Drone 3",
+  "source": "Metallic Resonant Drone, Bowed Metal And Singing Bowls, Single Sustained Note.wav",
+  "rootKey": 49,
+  "cents": -8,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 24,
+  "bank": 42,
+  "name": "Quantum Shimmer 1",
+  "source": "Quantum Shimmer Sweep, Crystalline Particles Rising And Scattering, Six Secon.wav",
+  "rootKey": 60,
+  "cents": 0,
+  "looped": false,
+  "seconds": 5.8
+ },
+ {
+  "program": 25,
+  "bank": 42,
+  "name": "Quantum Shimmer 2",
+  "source": "Quantum Shimmer Sweep, Crystalline Particles Rising And Scattering,2 Six Secon.wav",
+  "rootKey": 60,
+  "cents": 0,
+  "looped": false,
+  "seconds": 7
+ },
+ {
+  "program": 26,
+  "bank": 42,
+  "name": "Metallic Drone 4",
+  "source": "The Edge Of A Large Cymbal Bowed Slowly With A Double Bass Bow, Layered With.wav",
+  "rootKey": 36,
+  "cents": 28,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 27,
+  "bank": 42,
+  "name": "Dark Drone",
+  "source": "Three Heavily Detuned Analog Oscillators Stacked Beneath A Bowed Contrabass P.mp3",
+  "rootKey": 48,
+  "cents": -22,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 28,
+  "bank": 42,
+  "name": "Underwater 3",
+  "source": "Underwater Pad, Heavily Filtered And Muffled, Single Sustained Note C2, Subme.wav",
+  "rootKey": 72,
+  "cents": 4,
+  "looped": true,
+  "seconds": 7
+ },
+ {
+  "program": 29,
+  "bank": 42,
+  "name": "Breathing Pad 2",
+  "source": "Warm Analog String Machine Layered With Genuine Recorded Human Breath, Inhali.mp3",
+  "rootKey": 60,
+  "cents": -1,
+  "looped": true,
+  "seconds": 7
+ }
+]

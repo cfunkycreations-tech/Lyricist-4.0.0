@@ -34,6 +34,18 @@ const FLAT_TO_SHARP = { Db: 'C#', Eb: 'D#', Gb: 'F#', Ab: 'G#', Bb: 'A#' };
 const SF2_URL = 'sf2/GeneralUser-GS.sf2';
 
 /**
+ * Chris's own bank, built from the textures he generated himself.
+ *
+ * It lives on MIDI bank 42 rather than bank 0. GeneralUser GS already occupies
+ * banks 0 to 9, 11 to 13, 16, 24 to 26 and 120 with its variation presets, so
+ * anything in that range would fight it for the same address and whichever bank
+ * loaded last would win, silently. 42 is empty in GeneralUser, and it is the
+ * version number, which is as good a reason as any.
+ */
+const SF2_CFUNKY_URL = 'sf2/CFunky-Quantum.sf2';
+const CFUNKY_BANK = 42;
+
+/**
  * General MIDI instruments, grouped for the picker. `program` is the GM program
  * number the bank is addressed by. Same ids as before, so a saved project that
  * stored an instrument id still resolves.
@@ -107,12 +119,52 @@ export const INSTRUMENT_GROUPS = [
       { id: 'timpani', name: 'Timpani', program: 47 },
     ],
   },
+  {
+    // Chris's own textures, generated for this app and shipped with it. These
+    // are not General MIDI, so they carry an explicit bank number; everything
+    // above is bank 0 by default.
+    group: 'CFunky Quantum',
+    items: [
+      { id: 'cfq_glass_pad', name: 'Glass Pad', program: 19, bank: CFUNKY_BANK },
+      { id: 'cfq_dark_drone', name: 'Dark Drone', program: 27, bank: CFUNKY_BANK },
+      { id: 'cfq_aurora_choir_1', name: 'Aurora Choir', program: 2, bank: CFUNKY_BANK },
+      { id: 'cfq_aurora_choir_2', name: 'Aurora Choir Low', program: 15, bank: CFUNKY_BANK },
+      { id: 'cfq_granular_cloud', name: 'Granular Cloud', program: 22, bank: CFUNKY_BANK },
+      { id: 'cfq_breathing_pad_1', name: 'Breathing Pad', program: 16, bank: CFUNKY_BANK },
+      { id: 'cfq_breathing_pad_2', name: 'Breathing Strings', program: 29, bank: CFUNKY_BANK },
+      { id: 'cfq_underwater_1', name: 'Underwater', program: 0, bank: CFUNKY_BANK },
+      { id: 'cfq_underwater_2', name: 'Underwater Deep', program: 13, bank: CFUNKY_BANK },
+      { id: 'cfq_underwater_3', name: 'Underwater High', program: 28, bank: CFUNKY_BANK },
+      { id: 'cfq_cathedral_1', name: 'Cathedral', program: 1, bank: CFUNKY_BANK },
+      { id: 'cfq_cathedral_2', name: 'Cathedral High', program: 4, bank: CFUNKY_BANK },
+      { id: 'cfq_cathedral_3', name: 'Cathedral Low', program: 14, bank: CFUNKY_BANK },
+      { id: 'cfq_cathedral_4', name: 'Cathedral Choir', program: 17, bank: CFUNKY_BANK },
+      { id: 'cfq_cosmic_space_1', name: 'Cosmic Space', program: 5, bank: CFUNKY_BANK },
+      { id: 'cfq_cosmic_space_2', name: 'Cosmic Space High', program: 18, bank: CFUNKY_BANK },
+      { id: 'cfq_cosmic_space_3', name: 'Cosmic Drift', program: 20, bank: CFUNKY_BANK },
+      { id: 'cfq_cosmic_space_4', name: 'Cosmic Wide', program: 21, bank: CFUNKY_BANK },
+      { id: 'cfq_metallic_drone_1', name: 'Metallic Drone', program: 6, bank: CFUNKY_BANK },
+      { id: 'cfq_metallic_drone_2', name: 'Bowed Cymbal', program: 7, bank: CFUNKY_BANK },
+      { id: 'cfq_metallic_drone_3', name: 'Singing Bowls', program: 23, bank: CFUNKY_BANK },
+      { id: 'cfq_metallic_drone_4', name: 'Bowed Metal Low', program: 26, bank: CFUNKY_BANK },
+      { id: 'cfq_quantum_shimmer_1', name: 'Quantum Shimmer', program: 24, bank: CFUNKY_BANK },
+      { id: 'cfq_quantum_shimmer_2', name: 'Quantum Shimmer 2', program: 25, bank: CFUNKY_BANK },
+      { id: 'cfq_braam', name: 'Braam', program: 3, bank: CFUNKY_BANK },
+      { id: 'cfq_reverse_riser_1', name: 'Reverse Riser', program: 8, bank: CFUNKY_BANK },
+      { id: 'cfq_reverse_riser_2', name: 'Reverse Riser 2', program: 9, bank: CFUNKY_BANK },
+      { id: 'cfq_reverse_riser_3', name: 'Reverse Riser 3', program: 10, bank: CFUNKY_BANK },
+      { id: 'cfq_reverse_riser_4', name: 'Reverse Riser 4', program: 11, bank: CFUNKY_BANK },
+      { id: 'cfq_reverse_riser_5', name: 'Reverse Riser 5', program: 12, bank: CFUNKY_BANK },
+    ],
+  },
 ];
 
 export const ALL_INSTRUMENTS = INSTRUMENT_GROUPS.flatMap((g) => g.items);
 export const DEFAULT_INSTRUMENT = 'acoustic_grand_piano';
 
-const PROGRAM_BY_ID = new Map(ALL_INSTRUMENTS.map((i) => [i.id, i.program]));
+// Address is (bank, program), not program alone. Anything without an explicit
+// bank is General MIDI, which is bank 0.
+const ADDRESS_BY_ID = new Map(ALL_INSTRUMENTS.map((i) => [i.id, { program: i.program, bank: i.bank || 0 }]));
 
 export function midiToNoteName(midi, useSharps = true) {
   const flat = NOTES[((midi % 12) + 12) % 12];
@@ -130,13 +182,29 @@ export function isBlackKey(midi) {
 
 let bankPromise = null;
 
-/** Fetch and parse the SF2 once; every instrument shares it. */
+/**
+ * Fetch and parse both banks once; every instrument shares them.
+ *
+ * General MIDI is required. The CFunky bank is not: if it ever fails to load,
+ * the app keeps every GM instrument working and only Chris's textures go
+ * missing. A decorative bank must never be able to take the piano roll down.
+ */
 function loadBank() {
   if (!bankPromise) {
     bankPromise = (async () => {
       const res = await fetch(SF2_URL);
       if (!res.ok) throw new Error(`Could not load the instrument bank (${res.status})`);
-      return SoundBankLoader.fromArrayBuffer(await res.arrayBuffer());
+      const main = SoundBankLoader.fromArrayBuffer(await res.arrayBuffer());
+
+      let cfunky = null;
+      try {
+        const r2 = await fetch(SF2_CFUNKY_URL);
+        if (r2.ok) cfunky = SoundBankLoader.fromArrayBuffer(await r2.arrayBuffer());
+        else console.warn(`[Lyricist] CFunky Quantum bank missing (${r2.status}); GM instruments still work.`);
+      } catch (e) {
+        console.warn('[Lyricist] CFunky Quantum bank failed to load; GM instruments still work.', e);
+      }
+      return { main, cfunky };
     })();
     bankPromise.catch(() => { bankPromise = null; });   // let a failed load retry
   }
@@ -150,11 +218,12 @@ let processor = null;
 let processorRate = 0;
 
 async function getProcessor(sampleRate) {
-  const bank = await loadBank();
+  const banks = await loadBank();
   if (!processor || processorRate !== sampleRate) {
     processor = new SpessaSynthProcessor(sampleRate, { enableEffects: false });
     await processor.processorInitialized;
-    processor.soundBankManager.addSoundBank(bank, 'main');
+    processor.soundBankManager.addSoundBank(banks.main, 'main');
+    if (banks.cfunky) processor.soundBankManager.addSoundBank(banks.cfunky, 'cfunky');
     processorRate = sampleRate;
   }
   return processor;
@@ -166,7 +235,7 @@ async function getProcessor(sampleRate) {
  * Renders are serialized through `renderQueue` because a single processor
  * instance is shared — two renders interleaved would bleed into each other.
  */
-function renderNote(ctx, program, midi, velocity127, holdSec) {
+function renderNote(ctx, program, bank, midi, velocity127, holdSec) {
   return (async () => {
     const proc = await getProcessor(ctx.sampleRate);
     const rate = ctx.sampleRate;
@@ -175,6 +244,9 @@ function renderNote(ctx, program, midi, velocity127, holdSec) {
 
     // Clean slate: a previous note must not leak into this one.
     proc.stopAllChannels?.(true);
+    // Bank select MSB before the program change, or a bank 42 program number
+    // resolves against General MIDI and you get the wrong instrument.
+    proc.controllerChange(0, 0, bank || 0);
     proc.programChange(0, program);
 
     const left = new Float32Array(total);
@@ -227,14 +299,14 @@ const CACHE_LIMIT = 320;    // rendered notes kept in memory (LRU)
 
 const noteCache = new Map();   // key -> Promise<AudioBuffer>
 
-function cacheKey(program, midi, velBucket, holdQ) {
-  return `${program}:${midi}:${velBucket}:${holdQ}`;
+function cacheKey(program, bank, midi, velBucket, holdQ) {
+  return `${bank}:${program}:${midi}:${velBucket}:${holdQ}`;
 }
 
-function getRenderedNote(ctx, program, midi, velocity, duration) {
+function getRenderedNote(ctx, program, bank, midi, velocity, duration) {
   const velBucket = Math.max(1, Math.min(VEL_BUCKETS, Math.ceil(velocity * VEL_BUCKETS)));
   const holdQ = Math.min(MAX_HOLD, Math.max(HOLD_STEP, Math.ceil(duration / HOLD_STEP) * HOLD_STEP));
-  const key = cacheKey(program, midi, velBucket, holdQ);
+  const key = cacheKey(program, bank, midi, velBucket, holdQ);
 
   const hit = noteCache.get(key);
   if (hit) {
@@ -244,7 +316,7 @@ function getRenderedNote(ctx, program, midi, velocity, duration) {
   }
 
   const velocity127 = Math.round((velBucket / VEL_BUCKETS) * 126) + 1;
-  const promise = queueRender(() => renderNote(ctx, program, midi, velocity127, holdQ));
+  const promise = queueRender(() => renderNote(ctx, program, bank, midi, velocity127, holdQ));
   noteCache.set(key, promise);
   promise.catch(() => noteCache.delete(key));
 
@@ -260,11 +332,11 @@ function getRenderedNote(ctx, program, midi, velocity, duration) {
  * Safe to call repeatedly.
  */
 export async function loadInstrument(ctx, instrumentId) {
-  const program = PROGRAM_BY_ID.get(instrumentId);
-  if (program == null) throw new Error(`Unknown instrument: ${instrumentId}`);
+  const addr = ADDRESS_BY_ID.get(instrumentId);
+  if (!addr) throw new Error(`Unknown instrument: ${instrumentId}`);
   await loadBank();
-  await getRenderedNote(ctx, program, 60, 0.8, 0.5);
-  return { kind: 'sf2', id: instrumentId, program };
+  await getRenderedNote(ctx, addr.program, addr.bank, 60, 0.8, 0.5);
+  return { kind: 'sf2', id: instrumentId, program: addr.program, bank: addr.bank };
 }
 
 /**
@@ -343,7 +415,7 @@ export function playNote(ctx, destination, instrument, midi, {
   let cancelled = false;
   let stopAtRequested = null;
 
-  getRenderedNote(ctx, instrument.program, midi, velocity, duration)
+  getRenderedNote(ctx, instrument.program, instrument.bank || 0, midi, velocity, duration)
     .then((buffer) => {
       if (cancelled) return;
       src = ctx.createBufferSource();
