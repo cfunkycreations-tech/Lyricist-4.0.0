@@ -20,7 +20,13 @@
   }
   #wrap {
     position: absolute;
-    inset: 0;
+    /* Inset off the literal window edge, not flush with it. Flush-to-edge
+       rounding on a transparent Electron window anti-aliases against the
+       window's own boundary and can leave a sliver of square corner showing
+       — the "round tabs" artifact. A couple pixels of real transparent
+       margin around the rounded shape gives the OS compositor room to blend
+       cleanly instead. */
+    inset: 3px;
     border-radius: 14px;
     overflow: hidden;
     background: #07050f;
@@ -31,6 +37,11 @@
     height: 100%;
     object-fit: cover;
     display: block;
+    /* Hardware-decoded <video> can promote to its own compositor layer and
+       bypass an ancestor's overflow:hidden clip on some Chromium builds —
+       the other known cause of square corners poking past a rounded parent.
+       Clip the element itself too, not just the wrapper. */
+    border-radius: inherit;
   }
   /* A quiet line so a slow first boot does not read as a hung window. It sits
      over the clip rather than adding height, so the window stays exactly the

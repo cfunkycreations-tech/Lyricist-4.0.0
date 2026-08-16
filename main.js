@@ -701,9 +701,17 @@ function failurePage(title, detail) {
  * title sequence. The clip is there to cover a load, not to be watched.
  */
 let splashWin = null;
+let splashCreatedAt = 0;
+// Floor on how long the splash stays up before a healthy launch is allowed to
+// replace it. Build 093 closed the splash the instant `ready-to-show` fired —
+// as little as ~0.5s after creation — so the title clip never painted a
+// visible frame and Chris saw no splash at all. This never touches the
+// failure paths (`force`) or the 12s stall failsafe, only the fast/happy path.
+const MIN_SPLASH_VISIBLE_MS = 2500;
 
 function createSplash() {
   try {
+    splashCreatedAt = Date.now();
     const page = path.join(__dirname, 'splash', 'splash.html');
     if (!fs.existsSync(page)) { bootLog('splash: page missing, skipping'); return; }
 
@@ -871,15 +879,26 @@ function createWindow() {
   });
 
   let shown = false;
-  // `force` is vestigial: nothing delays the reveal any more. It is kept so the
-  // failure paths still read as "show this NOW" at the call site.
-  const reveal = (why, force = false) => {   // eslint-disable-line no-unused-vars
+  // THE APP SHOWS THE INSTANT IT IS READY. Build 091/092 held the window back
+  // until the 25-second opener finished playing, so launching Lyricist put
+  // nothing on screen for 22 seconds and Chris reported the app as empty —
+  // no window, no wizard, nothing. A splash covers the load; it does not get
+  // to BE the load. Never gate `win.show()` on a video again.
+  //
+  // `force` skips the floor below entirely — failure paths must show NOW.
+  const reveal = (why, force = false) => {
     if (shown || win.isDestroyed()) return;
-    // THE APP SHOWS THE INSTANT IT IS READY. Build 091/092 held the window back
-    // until the 25-second opener finished playing, so launching Lyricist put
-    // nothing on screen for 22 seconds and Chris reported the app as empty —
-    // no window, no wizard, nothing. A splash covers the load; it does not get
-    // to BE the load. Never gate `win.show()` on a video again.
+    // Give the splash a short, bounded floor to actually be seen. This is NOT
+    // the 091/092 mistake: that held the window for the full ~25s clip with no
+    // ceiling. This caps at 2.5s, only runs while the splash still exists, and
+    // is bypassed entirely by `force` (crash/failure paths never wait).
+    if (!force && splashWin && !splashWin.isDestroyed()) {
+      const elapsed = Date.now() - splashCreatedAt;
+      if (elapsed < MIN_SPLASH_VISIBLE_MS) {
+        setTimeout(() => reveal(why, force), MIN_SPLASH_VISIBLE_MS - elapsed);
+        return;
+      }
+    }
     shown = true;
     bootLog(`window shown (${why})`);
     // Order matters: drop the always-on-top splash BEFORE showing the real
