@@ -86,6 +86,17 @@
 
     clip.play().catch(() => { /* a still first frame is fine */ });
 
+    // The app waits for this clip to actually finish before it takes the
+    // screen — Chris asked for the splash to run its whole length. If the
+    // clip can't play at all, say so immediately rather than let main.js's
+    // 40s stall failsafe be the only way out.
+    clip.addEventListener('ended', () => {
+      try { window.splash?.done('ended'); } catch { /* main closes us anyway */ }
+    });
+    clip.addEventListener('error', () => {
+      try { window.splash?.done('clip error'); } catch { /* main closes us anyway */ }
+    });
+
     // Click to swat it off the screen early. The main window is already loading
     // behind this, so dismissing it never cancels anything.
     addEventListener('click', () => {

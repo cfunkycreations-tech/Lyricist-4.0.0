@@ -694,24 +694,18 @@ function failurePage(title, detail) {
  * It is a pure sibling — it owns no state, and closing it can never cancel the
  * load happening behind it.
  *
- * **The splash NEVER delays the app.** It is closed by `reveal()` the moment the
- * main window is ready. An earlier version held the window back until the
- * 25-second opener had played out; that meant double-clicking Lyricist put
- * nothing on screen for 22 seconds, which reads as a broken install, not as a
- * title sequence. The clip is there to cover a load, not to be watched.
+ * **The splash runs its whole length on a healthy launch.** `maybeReveal()` in
+ * `createWindow()` waits for BOTH the main window's `ready-to-show` and the
+ * clip finishing (or a click to skip) before it shows the app. A much earlier
+ * version held the window back with no ceiling and no way out on failure,
+ * which meant double-clicking Lyricist put nothing on screen for 22 seconds on
+ * a crash path — that is what `forceReveal()` and the stall failsafe exist to
+ * prevent, not something this waiting is allowed to reintroduce.
  */
 let splashWin = null;
-let splashCreatedAt = 0;
-// Floor on how long the splash stays up before a healthy launch is allowed to
-// replace it. Build 093 closed the splash the instant `ready-to-show` fired —
-// as little as ~0.5s after creation — so the title clip never painted a
-// visible frame and Chris saw no splash at all. This never touches the
-// failure paths (`force`) or the 12s stall failsafe, only the fast/happy path.
-const MIN_SPLASH_VISIBLE_MS = 2500;
 
 function createSplash() {
   try {
-    splashCreatedAt = Date.now();
     const page = path.join(__dirname, 'splash', 'splash.html');
     if (!fs.existsSync(page)) { bootLog('splash: page missing, skipping'); return; }
 
@@ -770,15 +764,6 @@ function closeSplash(why) {
   try { splashWin.close(); } catch { /* already gone */ }
   splashWin = null;
 }
-
-// Clicking the splash dismisses it early. It cannot delay anything — the main
-// window closes it on its own as soon as it is ready — so this is just a way to
-// swat it off the screen. Only the splash window is allowed to ask.
-ipcMain.on('splash-done', (event, why) => {
-  if (!splashWin || splashWin.isDestroyed()) return;
-  if (event.sender !== splashWin.webContents) return;
-  closeSplash(String(why || 'clicked'));
-});
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -879,26 +864,26 @@ function createWindow() {
   });
 
   let shown = false;
-  // THE APP SHOWS THE INSTANT IT IS READY. Build 091/092 held the window back
-  // until the 25-second opener finished playing, so launching Lyricist put
-  // nothing on screen for 22 seconds and Chris reported the app as empty —
-  // no window, no wizard, nothing. A splash covers the load; it does not get
-  // to BE the load. Never gate `win.show()` on a video again.
+  // The splash needs to run its whole length — Chris, 2026-08-16, after 094's
+  // 2.5s floor still cut it off early and he sent a screen recording proving
+  // it: "the Splash scene needs to run the whole full length. I barely saw
+  // it." So the app now waits for BOTH sides: the main window's own
+  // `ready-to-show` AND the splash clip actually finishing (`ended`, or the
+  // user clicking to skip). Whichever finishes second is what triggers
+  // `maybeReveal`.
   //
-  // `force` skips the floor below entirely — failure paths must show NOW.
-  const reveal = (why, force = false) => {
+  // This is NOT the 091/092 mistake — that held the window for the full clip
+  // with no ceiling and no way out on failure. `forceReveal` bypasses all of
+  // this for real failure paths (crash, load failure, missing files — those
+  // must show NOW). `revealTimer` below is a hang failsafe sized to the
+  // clip's own runtime plus a generous cushion, not an arbitrary short cap —
+  // it only fires if something is actually stuck.
+  let mainReady = false;
+  let splashFinished = !splashWin; // nothing to wait for if splash never created
+
+  const maybeReveal = (why) => {
     if (shown || win.isDestroyed()) return;
-    // Give the splash a short, bounded floor to actually be seen. This is NOT
-    // the 091/092 mistake: that held the window for the full ~25s clip with no
-    // ceiling. This caps at 2.5s, only runs while the splash still exists, and
-    // is bypassed entirely by `force` (crash/failure paths never wait).
-    if (!force && splashWin && !splashWin.isDestroyed()) {
-      const elapsed = Date.now() - splashCreatedAt;
-      if (elapsed < MIN_SPLASH_VISIBLE_MS) {
-        setTimeout(() => reveal(why, force), MIN_SPLASH_VISIBLE_MS - elapsed);
-        return;
-      }
-    }
+    if (!mainReady || !splashFinished) return;
     shown = true;
     bootLog(`window shown (${why})`);
     // Order matters: drop the always-on-top splash BEFORE showing the real
@@ -909,13 +894,38 @@ function createWindow() {
     // the one holding focus — otherwise the first keystroke goes nowhere.
     win.focus();
   };
+  const forceReveal = (why) => {
+    if (shown || win.isDestroyed()) return;
+    shown = true;
+    bootLog(`window shown (${why})`);
+    closeSplash(why);
+    win.show();
+    win.focus();
+  };
   // Whatever happens to the main window, the splash does not outlive it.
   win.on('closed', () => closeSplash('main window closed'));
 
-  win.once('ready-to-show', () => reveal('ready-to-show'));
-  // If the content stalls, show the window anyway — never leave the user
-  // staring at a taskbar icon that opens nothing.
-  const revealTimer = setTimeout(() => reveal('timeout after 12s'), 12_000);
+  win.once('ready-to-show', () => {
+    mainReady = true;
+    bootLog('main: ready-to-show');
+    maybeReveal('ready-to-show');
+  });
+
+  // The splash tells us it's done via `splash.done()` — either the clip's
+  // `ended` event or a click to skip early. Only the splash window itself is
+  // allowed to say this.
+  ipcMain.on('splash-done', (event, why) => {
+    if (!splashWin || splashWin.isDestroyed()) return;
+    if (event.sender !== splashWin.webContents) return;
+    bootLog(`splash: finished (${why})`);
+    splashFinished = true;
+    maybeReveal(String(why || 'clip'));
+  });
+
+  // Hang failsafe: splash.mp4 runs ~25s, so this is sized well past that —
+  // it exists only to catch a genuinely stuck renderer or a clip that never
+  // fires `ended`, never to cut a healthy playthrough short.
+  const revealTimer = setTimeout(() => forceReveal('stall failsafe'), 40_000);
   win.on('closed', () => clearTimeout(revealTimer));
 
   win.webContents.on('did-finish-load', () => bootLog('did-finish-load'));
@@ -924,7 +934,7 @@ function createWindow() {
     if (!isMainFrame) return;                   // a missing image is not a dead app
     bootLog(`did-fail-load ${code} ${desc} ${url}`);
     win.loadURL(failurePage('Lyricist could not load', `${desc} (${code})\n${url}`));
-    reveal('load failure', true);
+    forceReveal('load failure');
   });
 
   // A dead renderer or GPU process is the other way this ends up black. Say so,
@@ -935,7 +945,7 @@ function createWindow() {
     if (!reloadedAfterCrash && !win.isDestroyed()) {
       reloadedAfterCrash = true;
       win.reload();
-      reveal('renderer crash retry', true);
+      forceReveal('renderer crash retry');
       return;
     }
     if (!win.isDestroyed()) {
@@ -948,7 +958,7 @@ function createWindow() {
             + 'usually clears it. Send over %APPDATA%\\Lyricist\\boot.log either way.'
           : `Renderer process gone: ${details.reason}`,
       ));
-      reveal('renderer crash', true);
+      forceReveal('renderer crash');
     }
   });
 
@@ -1010,7 +1020,7 @@ function createWindow() {
     if (!fs.existsSync(index)) {
       bootLog(`MISSING ${index}`);
       win.loadURL(failurePage('Lyricist is missing its app files', `Not found:\n${index}\n\nReinstall over the top of this copy.`));
-      reveal('missing index.html', true);
+      forceReveal('missing index.html');
       return;
     }
     // LYRICIST_START_TAB=loopstation opens straight onto that tab, so a crash
