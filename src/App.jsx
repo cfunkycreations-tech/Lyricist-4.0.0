@@ -215,6 +215,15 @@ function MainLayout() {
 
   // Auto-launch the guided tour the very first time the app is opened.
   useEffect(() => {
+    // One-time reset: 'lyricistOnboarded' got stuck true on his machine from
+    // repeat same-day test installs, so the tour stopped auto-launching on
+    // every build after — reported 2026-08-16. This runs once per install
+    // (guarded by its own marker) and never touches anything else in
+    // localStorage (his lyrics, config, etc. are untouched).
+    if (localStorage.getItem('lyricistOnboardedResetV2') !== 'true') {
+      localStorage.removeItem('lyricistOnboarded');
+      localStorage.setItem('lyricistOnboardedResetV2', 'true');
+    }
     if (localStorage.getItem('lyricistOnboarded') !== 'true') {
       setShowWizard(true);
     }

@@ -3,7 +3,8 @@ node_modules/
 
 # Build / bundler output
 dist/
-build/
+build/*
+!build/installer.nsh
 release/
 .vite/
 *.asar
