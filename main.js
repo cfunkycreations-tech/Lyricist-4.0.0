@@ -694,31 +694,13 @@ function failurePage(title, detail) {
  * It is a pure sibling — it owns no state, and closing it can never cancel the
  * load happening behind it.
  *
- * The opener is a title card with a voice-over, so it is NOT cut short the
- * instant the renderer is ready: `splashHeld()` keeps the reveal waiting until
- * the clip has played out, the user clicks, or SPLASH_CEILING_MS passes —
- * whichever comes first. Cutting to the app mid-sentence is worse than a couple
- * of seconds of wait, and clicking always skips it.
+ * **The splash NEVER delays the app.** It is closed by `reveal()` the moment the
+ * main window is ready. An earlier version held the window back until the
+ * 25-second opener had played out; that meant double-clicking Lyricist put
+ * nothing on screen for 22 seconds, which reads as a broken install, not as a
+ * title sequence. The clip is there to cover a load, not to be watched.
  */
 let splashWin = null;
-let splashDone = false;               // clip ended, was clicked, or timed out
-let onSplashDone = null;              // set by createWindow when it is waiting
-const SPLASH_CEILING_MS = 30_000;     // absolute cap: a broken clip can't hang the app
-
-/** True while the splash still has the floor and the app should wait for it. */
-function splashHeld() {
-  return splashWin !== null && !splashWin.isDestroyed() && !splashDone;
-}
-
-/** The splash is finished with the screen. Idempotent. */
-function finishSplash(why) {
-  if (splashDone) return;
-  splashDone = true;
-  bootLog(`splash: done (${why})`);
-  const cb = onSplashDone;
-  onSplashDone = null;
-  if (cb) cb();
-}
 
 function createSplash() {
   try {
@@ -754,9 +736,7 @@ function createSplash() {
     splashWin.once('ready-to-show', () => {
       if (splashWin && !splashWin.isDestroyed()) splashWin.show();
     });
-    // A closed splash is a finished splash — otherwise closing it by hand would
-    // leave the main window waiting on a signal that can never arrive.
-    splashWin.on('closed', () => { splashWin = null; finishSplash('splash closed'); });
+    splashWin.on('closed', () => { splashWin = null; });
 
     // His own recording, if he has made one. The video itself carries no audio
     // track at all, so this is the only sound the splash can ever make.
@@ -767,9 +747,6 @@ function createSplash() {
     if (voice) bootLog(`splash: voice-over found (${path.basename(voice)})`);
 
     splashWin.loadFile(page, search ? { search } : undefined);
-    // Hard ceiling. A clip that never fires 'ended' — a decode failure, a
-    // corrupt file — must not hold the app hostage.
-    setTimeout(() => finishSplash(`ceiling ${SPLASH_CEILING_MS / 1000}s`), SPLASH_CEILING_MS).unref?.();
     bootLog('splash: shown');
   } catch (e) {
     // A splash is decoration. It must never be the reason the app fails to
@@ -786,12 +763,13 @@ function closeSplash(why) {
   splashWin = null;
 }
 
-// The splash page reporting that the clip played out or the user clicked
-// through it. Only the splash window is allowed to say so.
+// Clicking the splash dismisses it early. It cannot delay anything — the main
+// window closes it on its own as soon as it is ready — so this is just a way to
+// swat it off the screen. Only the splash window is allowed to ask.
 ipcMain.on('splash-done', (event, why) => {
   if (!splashWin || splashWin.isDestroyed()) return;
   if (event.sender !== splashWin.webContents) return;
-  finishSplash(String(why || 'clip'));
+  closeSplash(String(why || 'clicked'));
 });
 
 function createWindow() {
@@ -893,19 +871,15 @@ function createWindow() {
   });
 
   let shown = false;
-  // `force` skips the wait for anything the user needs to see NOW — a failure
-  // card is not worth sitting through a title video for.
-  const reveal = (why, force = false) => {
+  // `force` is vestigial: nothing delays the reveal any more. It is kept so the
+  // failure paths still read as "show this NOW" at the call site.
+  const reveal = (why, force = false) => {   // eslint-disable-line no-unused-vars
     if (shown || win.isDestroyed()) return;
-    // The renderer being ready is not a reason to cut the opener off. Wait for
-    // the splash to finish (clip ended / clicked / ceiling), then come back
-    // here. `onSplashDone` is a single slot, which is all we need — reveal is
-    // the only caller and it latches with `shown` the moment it runs.
-    if (!force && splashHeld()) {
-      bootLog(`window ready (${why}) — waiting for the opener`);
-      onSplashDone = () => reveal(why);
-      return;
-    }
+    // THE APP SHOWS THE INSTANT IT IS READY. Build 091/092 held the window back
+    // until the 25-second opener finished playing, so launching Lyricist put
+    // nothing on screen for 22 seconds and Chris reported the app as empty —
+    // no window, no wizard, nothing. A splash covers the load; it does not get
+    // to BE the load. Never gate `win.show()` on a video again.
     shown = true;
     bootLog(`window shown (${why})`);
     // Order matters: drop the always-on-top splash BEFORE showing the real
