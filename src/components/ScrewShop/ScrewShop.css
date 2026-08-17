@@ -1,0 +1,181 @@
+/* CHOPPED & SCREWED
+   Same chrome-and-glass language as One Man Band, driven by the same Prism
+   variables so this tab rotates with the rest of the app. */
+
+.screw {
+  --sc-line: var(--lx-line, hsla(158 60% 70% / .16));
+  --sc-line-hot: var(--lx-line-hot, hsla(262 70% 70% / .30));
+  --sc-emerald: var(--lx-emerald, hsl(158 84% 40%));
+  --sc-emerald-lit: var(--lx-emerald-lit, hsl(158 80% 58%));
+  --sc-green2: var(--lx-green2, hsl(152 79% 44%));
+  --sc-violet: var(--lx-violet, hsl(262 85% 71%));
+  --sc-magenta: var(--lx-magenta, hsl(305 75% 66%));
+  --sc-text: #EAF2FF;
+  --sc-dim: #9FB2D4;
+  --sc-faint: #64789B;
+  --sc-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  position: relative;
+  min-height: 100%;
+  color: var(--sc-text);
+  overflow: auto;
+}
+
+.screw-veil {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 40%,
+    rgba(5, 7, 12, .28) 20%, rgba(5, 7, 12, .56) 70%, rgba(5, 7, 12, .84) 100%);
+}
+.screw-wrap { position: relative; z-index: 2; max-width: 1240px; margin: 0 auto; padding: 24px 22px 60px; }
+
+.screw-top { border-bottom: 1px solid var(--sc-line); padding-bottom: 14px; }
+.screw-brand {
+  font-family: var(--sc-mono); font-size: 10.5px; letter-spacing: .24em;
+  text-transform: uppercase; color: var(--sc-faint);
+}
+.screw-title {
+  font-family: "Haettenschweiler", "Arial Narrow Bold", Impact, system-ui, sans-serif;
+  font-weight: 400; margin: 2px 0 0; font-size: clamp(38px, 6.5vw, 70px); line-height: .88;
+  text-transform: uppercase; color: #fff;
+  text-shadow: 0 0 1px var(--sc-emerald-lit), 0 0 3px var(--sc-emerald-lit),
+               0 0 18px hsla(262 85% 71% / .45), 0 0 44px hsla(262 85% 71% / .18);
+}
+.screw-tag { color: var(--sc-dim); font-size: 14px; margin-top: 8px; max-width: 60ch; }
+.screw-tag b { color: var(--sc-emerald-lit); font-weight: 600; }
+
+.screw-cols {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  align-items: start; margin-top: 20px;
+}
+@media (max-width: 1040px) { .screw-cols { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 720px) { .screw-cols { grid-template-columns: 1fr; } }
+
+.screw-card {
+  background: rgba(12, 17, 26, .58); border: 1px solid var(--sc-line); border-radius: 12px;
+  overflow: hidden; backdrop-filter: blur(18px) saturate(1.2);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .05) inset, 0 16px 40px rgba(0, 0, 0, .45);
+}
+.screw-card > header {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  padding: 11px 15px; border-bottom: 1px solid var(--sc-line);
+  background: linear-gradient(180deg, rgba(160, 200, 255, .07), transparent);
+}
+.screw-card h2 {
+  margin: 0; font-family: var(--sc-mono); font-size: 11px; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--sc-dim); font-weight: 600;
+}
+.screw-sub {
+  font-family: var(--sc-mono); font-size: 9.5px; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--sc-emerald-lit);
+}
+.screw-body { padding: 14px; }
+
+.screw-drop {
+  display: block; text-align: center; cursor: pointer; padding: 18px 12px; border-radius: 10px;
+  border: 1px dashed var(--sc-line-hot); background: rgba(3, 5, 9, .5);
+  color: var(--sc-dim); font-size: 13px;
+}
+.screw-drop:hover { border-color: var(--sc-emerald); color: var(--sc-emerald-lit); }
+.screw-drop input { display: none; }
+
+.screw-field { display: block; margin-top: 12px; }
+.screw-field > span {
+  display: block; font-family: var(--sc-mono); font-size: 10px; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--sc-faint); margin-bottom: 5px;
+}
+.screw select {
+  width: 100%; background: rgba(3, 5, 9, .66); border: 1px solid var(--sc-line-hot);
+  color: var(--sc-text); border-radius: 7px; padding: 8px 10px;
+  font-family: inherit; font-size: 13.5px;
+}
+.screw-note { margin: 12px 0 0; font-size: 12px; color: var(--sc-emerald-lit); line-height: 1.5; }
+
+.screw-knob {
+  display: grid; grid-template-columns: 1fr auto; gap: 3px 12px; align-items: center;
+  padding: 10px 0; border-bottom: 1px dashed var(--sc-line);
+}
+.screw-knob:last-child { border-bottom: 0; }
+.screw-knob .nm { font-size: 13px; color: var(--sc-text); }
+.screw-knob .val {
+  font-family: var(--sc-mono); font-size: 13px; color: var(--sc-emerald-lit);
+  font-variant-numeric: tabular-nums; text-align: right;
+}
+.screw-knob .sub { grid-column: 1 / -1; font-size: 11.5px; color: var(--sc-faint); line-height: 1.45; }
+.screw-knob input[type=range] {
+  grid-column: 1 / -1; width: 100%; accent-color: var(--sc-emerald); margin-top: 6px;
+}
+.screw-knob select { grid-column: 1 / -1; margin-top: 6px; }
+
+.screw-pre { grid-column: 1 / -1; display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+.screw-pre button {
+  flex: 1; min-width: 60px; cursor: pointer; font-family: var(--sc-mono); font-size: 10px;
+  padding: 6px 5px; border-radius: 6px; color: var(--sc-dim);
+  border: 1px solid var(--sc-line-hot);
+  background: linear-gradient(180deg, rgba(160, 200, 255, .09), rgba(5, 7, 12, .4));
+}
+.screw-pre button:hover { border-color: var(--sc-emerald); color: var(--sc-emerald-lit); }
+.screw-pre button[aria-pressed="true"] {
+  color: #03070A; border-color: transparent;
+  background: linear-gradient(96deg, var(--sc-emerald), var(--sc-green2));
+}
+
+.screw-go { margin-top: 20px; }
+.screw-make {
+  width: 100%; border: 0; cursor: pointer; border-radius: 10px; padding: 16px; color: #03070A;
+  font-family: "Haettenschweiler", "Arial Narrow Bold", Impact, system-ui, sans-serif;
+  font-size: 26px; letter-spacing: .05em; text-transform: uppercase;
+  background: linear-gradient(96deg, var(--sc-violet), var(--sc-magenta) 45%, var(--sc-emerald));
+  box-shadow: 0 0 30px hsla(262 85% 71% / .3), 0 1px 0 rgba(255, 255, 255, .45) inset;
+}
+.screw-make:hover:not(:disabled) { filter: brightness(1.1); }
+.screw-make:disabled { opacity: .45; cursor: not-allowed; }
+
+.screw-bar {
+  height: 44px; border-radius: 10px; overflow: hidden;
+  border: 1px solid var(--sc-line-hot); background: rgba(3, 5, 9, .6);
+}
+.screw-bar span {
+  display: block; height: 100%; transition: width .25s ease;
+  background: linear-gradient(96deg, var(--sc-violet), var(--sc-emerald));
+}
+.screw-error { margin: 10px 0 0; font-size: 12.5px; color: #FF9BB0; }
+
+.screw-out {
+  margin-top: 18px; padding: 14px; border-radius: 12px;
+  border: 1px solid hsla(158 84% 45% / .45); background: rgba(12, 17, 26, .6);
+  backdrop-filter: blur(18px) saturate(1.2);
+}
+.screw-out .hd { margin-bottom: 10px; }
+.screw-out .id {
+  font-family: var(--sc-mono); font-size: 11px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--sc-emerald-lit);
+}
+.screw-out audio { width: 100%; margin-bottom: 10px; }
+.screw-out .row { display: flex; gap: 8px; flex-wrap: wrap; }
+.screw-mini {
+  background: linear-gradient(180deg, rgba(160, 200, 255, .1), transparent);
+  border: 1px solid var(--sc-line-hot); color: var(--sc-dim);
+  font-family: var(--sc-mono); font-size: 10.5px; letter-spacing: .1em;
+  text-transform: uppercase; padding: 6px 12px; border-radius: 6px; cursor: pointer;
+  text-decoration: none; display: inline-block;
+}
+.screw-mini:hover { border-color: var(--sc-emerald); color: var(--sc-emerald-lit); }
+
+/* the slicer */
+.screw-slicerwrap { grid-column: 1 / -1; margin-top: 16px; }
+.slicer { width: 100%; }
+.slicer canvas {
+  display: block; width: 100%; border-radius: 8px; cursor: crosshair;
+  background: rgba(3, 5, 9, .55); border: 1px solid var(--sc-line);
+}
+.slicer-key {
+  display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 8px;
+  font-family: var(--sc-mono); font-size: 10px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--sc-faint);
+}
+.slicer-key span { display: flex; align-items: center; gap: 5px; }
+.slicer-key i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.slicer-key .k-chop { background: var(--sc-emerald-lit); }
+.slicer-key .k-drag { background: var(--sc-magenta); }
+.slicer-key .k-manual { border: 1.5px solid var(--sc-violet); }
+.slicer-hint { margin-left: auto; opacity: .7; text-transform: none; letter-spacing: .04em; }

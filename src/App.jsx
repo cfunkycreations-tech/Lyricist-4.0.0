@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { LyricStoreProvider, useLyricStore } from './context/LyricStore.jsx';
 import SongwriterHub from './components/SongwriterHub/SongwriterHub.jsx';
 import OneManBand from './components/OneManBand/OneManBand.jsx';
+import ScrewShop from './components/ScrewShop/ScrewShop.jsx';
 import PrismBackground from './components/common/PrismBackground.jsx';
 import ArtistAnalyzer from './components/ArtistAnalyzer/ArtistAnalyzer.jsx';
 import SongForge from './components/SongForge/SongForge.jsx';
@@ -30,6 +31,7 @@ import bgImg from './assets/cfunky-bg-new.jpg';   // new Austin street-scene bac
 // These replace the flat emoji: every icon is his own 3D render.
 import icoSongwriter from './assets/icons/icon-songwriter.png';
 import icoOneManBand from './assets/icons/icon-onemanband.png';
+import icoScrew from './assets/icons/icon-screw.png';
 import icoAnalyzer from './assets/icons/icon-analyzer.png';
 import icoSongforge from './assets/icons/icon-songforge.png';
 import icoQuantum from './assets/icons/icon-quantum.png';
@@ -79,6 +81,8 @@ const tabs = [
   { id: 'booth', icon: '🎤', img: icoBooth, label: 'Recording Booth', help: 'Record harmonica, guitar, or vocals straight into the app (or upload takes) and keep them in a saved library. Play them in the persistent player while you write, convert them to MIDI, or export them as WAV.' },
   { id: 'midistudio', icon: '🎹', img: icoMidistudio, label: 'MIDI Studio', help: 'Turn any audio into editable MIDI, tweak it on a piano-roll with a stronger multi-voice synth, and pick from dozens of Milkdrop-class visualizer presets. Runs fully offline.' },
   { id: 'mastering', icon: '💽', img: icoMastering, label: 'Mastering Studio', help: 'The finish line: pull your songs together into an album, master each track with a real EQ/compression/limiter chain (all offline), add cover art (upload or AI-generated), and export the finished album — WAVs, cover, and tracklist.' },
+  // Sits after Mastering because it is something you do TO a finished track.
+  { id: 'screw', icon: '🍇', img: icoScrew, label: 'Chopped & Screwed', help: 'Slow a song down until the voice sinks with it, then chop it back up on the beat. The sound DJ Screw invented in Houston. Works on any audio file or any of your own recordings, runs entirely on your computer, and saves straight back to Recordings.' },
   { id: 'rhyme', icon: '📖', img: icoRhyme, label: 'Rhyme Helper', help: 'A rhyming dictionary and rhyme finder. Look up words that rhyme, and check the rhymes inside lines you have already written.' },
   { id: 'thesaurus', icon: '📚', img: icoThesaurus, label: 'Thesaurus', help: 'A word finder: type a word to get other words that mean the same, words that mean the opposite, and related ideas. Free, no AI key needed.' },
   { id: 'dictionary', icon: '📕', img: icoDictionary, label: 'Dictionary', help: 'Look up what a word means, how to say it, and example sentences — in English or Spanish. Free, no AI key needed.' },
@@ -489,6 +493,9 @@ function MainLayout() {
           </TabPane>
           <TabPane id="onemanband" active={activeTab} opened={openedTabs}>
             <OneManBand />
+          </TabPane>
+          <TabPane id="screw" active={activeTab} opened={openedTabs}>
+            <ScrewShop />
           </TabPane>
           <TabPane id="quantum" active={activeTab} opened={openedTabs}>
             <QuantumLab
