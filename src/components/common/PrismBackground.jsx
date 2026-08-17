@@ -117,7 +117,16 @@ export default function PrismBackground({ hue = 0, scale = 0.5, fps = 30, classN
     };
     size();
 
-    const ro = new ResizeObserver(size);
+    // Resize on the NEXT frame, never inside the observer callback.
+    // Writing to the canvas during the callback makes the observer fire again,
+    // and Chromium reports that as "ResizeObserver loop completed with
+    // undelivered notifications" — harmless in itself, but it filled boot.log
+    // with errors, and a log full of noise is where a real error goes to hide.
+    let resizePending = 0;
+    const ro = new ResizeObserver(() => {
+      if (resizePending) return;
+      resizePending = requestAnimationFrame(() => { resizePending = 0; size(); });
+    });
     ro.observe(cv);
 
     // Only draw when it can actually be seen. Off-screen tabs and a hidden
@@ -152,6 +161,7 @@ export default function PrismBackground({ hue = 0, scale = 0.5, fps = 30, classN
     return () => {
       alive = false;
       cancelAnimationFrame(raf);
+      if (resizePending) cancelAnimationFrame(resizePending);
       ro.disconnect();
       io.disconnect();
       document.removeEventListener('visibilitychange', onVis);
