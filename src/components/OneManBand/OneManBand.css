@@ -6,17 +6,17 @@
 .omb {
   --omb-ground: #05070C;
   --omb-panel: rgba(12, 17, 26, .62);
-  --omb-line: hsla(158 60% 70% / .16);
-  --omb-line-hot: hsla(262 70% 70% / .30);
+  --omb-line: var(--lx-line, hsla(158 60% 70% / .16));
+  --omb-line-hot: var(--lx-line-hot, hsla(262 70% 70% / .30));
   --omb-text: #EAF2FF;
   --omb-dim: #9FB2D4;
   --omb-faint: #64789B;
-  --omb-emerald: hsl(158 84% 40%);
-  --omb-emerald-lit: hsl(158 80% 58%);
-  --omb-green2: hsl(152 79% 44%);
-  --omb-blue: hsl(222 100% 65%);
-  --omb-violet: hsl(262 85% 71%);
-  --omb-magenta: hsl(305 75% 66%);
+  --omb-emerald: var(--lx-emerald, hsl(158 84% 40%));
+  --omb-emerald-lit: var(--lx-emerald-lit, hsl(158 80% 58%));
+  --omb-green2: var(--lx-green2, hsl(152 79% 44%));
+  --omb-blue: var(--lx-blue, hsl(222 100% 65%));
+  --omb-violet: var(--lx-violet, hsl(262 85% 71%));
+  --omb-magenta: var(--lx-magenta, hsl(305 75% 66%));
   --omb-amber: #FFC53D;
   --omb-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
 

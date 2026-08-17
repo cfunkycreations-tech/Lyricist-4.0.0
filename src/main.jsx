@@ -1,4 +1,5 @@
 import React from 'react';
+import { startPrism } from './services/prismTheme.js';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
@@ -36,6 +37,8 @@ class BootErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+
+startPrism();
 
 const rootEl = document.getElementById('root');
 try {

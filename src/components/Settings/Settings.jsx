@@ -5,6 +5,16 @@ import { Save, RefreshCw, Key, Shield, HelpCircle } from 'lucide-react';
 import { normalizeApiKey } from '../../services/AIService.js';
 import { IMAGE_MODELS, DEFAULT_IMAGE_MODEL } from '../../services/GeminiService.js';
 
+/**
+ * Checked against the hues they actually produce. The lead starts at 158 and
+ * its partner at 262, both rotating together, so the pair stays about a
+ * hundred degrees apart on the wheel wherever you put the slider.
+ */
+const PRISM_NAMES = [
+  'Emerald & Violet', 'Blue & Magenta', 'Violet & Ember',
+  'Rose & Lime', 'Amber & Green', 'Lime & Cyan', 'Emerald & Violet',
+];
+
 const MODELS_CACHE_KEY = 'openrouter-models-cache';
 const MODELS_CACHE_TTL = 60 * 60 * 1000; // refresh from OpenRouter at most hourly
 
@@ -319,8 +329,22 @@ export default function Settings() {
     // around it, or "Bearer " on the front more often than not — all truthy, so
     // the app happily stored one and then failed every request with OpenRouter's
     // "Missing Authentication header", which names nothing the user can act on.
-    const next = field === 'openRouterApiKey' ? normalizeApiKey(val) : val;
+    // The Hugging Face token is pasted from a web page by the same hands and
+    // picks up exactly the same junk, so it gets cleaned the same way. It has a
+    // different prefix (hf_) so the OpenRouter range check must not apply.
+    const next = field === 'openRouterApiKey'
+      ? normalizeApiKey(val)
+      : (field === 'huggingFaceToken' ? String(val ?? '').trim().replace(/^["'“”]|["'“”]$/g, '').replace(/^Bearer\s+/i, '') : val);
+
     store.setConfig({ ...store.config, [field]: next });
+
+    // The prism drives a WebGL canvas on every tab that is nowhere near this
+    // component in the tree. Mirroring it to localStorage and firing one event
+    // is far simpler than threading it through, and it survives a restart.
+    if (field === 'prism') {
+      localStorage.setItem('lyricistPrism', String(next));
+      window.dispatchEvent(new Event('lyricist-prism'));
+    }
     setSaved(false);
   };
 
@@ -413,6 +437,83 @@ export default function Settings() {
           <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" style={{ color: '#c084fc', textDecoration: 'underline' }}>
             openrouter.ai/keys
           </a>. Buy or load credits on OpenRouter to use premium models.
+        </p>
+      </div>
+
+      {/* ---- One Man Band: free song quota ---------------------------------
+          The free music server gives anonymous users only a few minutes of GPU
+          a day. Its own error message says the fix: "Authenticate with a
+          Hugging Face token for more quota." A free account is enough, and the
+          tab works without it — just fewer songs before it stops. */}
+      <div style={{ marginBottom: 18 }} data-help="Optional. A free Hugging Face account gives One Man Band a much bigger daily allowance for making songs. Without it you still get songs, just fewer per day. The token stays on your machine.">
+        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(43,232,160,0.75)', marginBottom: 5, display: 'block' }}>
+          One Man Band — Hugging Face token (optional, free)
+        </label>
+        <input
+          type={showGoogleKey ? 'text' : 'password'}
+          value={store.config.huggingFaceToken || ''}
+          onChange={(e) => handleUpdate('huggingFaceToken', e.target.value)}
+          placeholder="hf_… (more free songs per day)"
+          style={{
+            width: '100%',
+            background: 'rgba(13,8,28,0.7)',
+            border: '1px solid rgba(43,232,160,0.3)',
+            borderRadius: 8,
+            padding: '8px 11px',
+            fontSize: '0.84rem',
+            color: '#e8e0ff',
+            outline: 'none',
+            fontFamily: "'Space Grotesk', sans-serif"
+          }}
+        />
+        <p style={{ fontSize: '0.65rem', color: 'rgba(148,130,200,0.45)', marginTop: 5, lineHeight: 1.5 }}>
+          Making songs is free either way. A free account at{' '}
+          <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" style={{ color: '#2BE8A0', textDecoration: 'underline' }}>
+            huggingface.co/settings/tokens
+          </a>{' '}
+          raises how many you can make in a day. Nothing to pay, and the token never leaves your computer.
+        </p>
+      </div>
+
+      {/* ---- PRISM ---------------------------------------------------------
+          One control, every colour in the app. It has to reach a WebGL canvas
+          on every tab, so handleUpdate mirrors it to localStorage and fires an
+          event rather than threading it through the React tree. */}
+      <div style={{ marginBottom: 18 }} data-help="Shifts every colour in Lyricist at once — the moving background and the interface together. Drag it anywhere you like; it is remembered.">
+        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(43,232,160,0.75)', marginBottom: 5, display: 'block' }}>
+          Prism — the colour of the whole app
+        </label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={Math.round((store.config.prism ?? 0) * 100)}
+            onChange={(e) => handleUpdate('prism', Number(e.target.value) / 100)}
+            style={{ flex: 1, accentColor: '#2BE8A0' }}
+          />
+          <button
+            type="button"
+            onClick={() => handleUpdate('prism', (((store.config.prism ?? 0) * 100 + 17) % 101) / 100)}
+            style={{
+              padding: '6px 14px',
+              borderRadius: 999,
+              border: '1px solid rgba(43,232,160,0.5)',
+              background: 'rgba(43,232,160,0.12)',
+              color: '#2BE8A0',
+              fontSize: '0.7rem',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              fontFamily: "'Space Grotesk', sans-serif"
+            }}
+          >
+            Shift
+          </button>
+        </div>
+        <p style={{ fontSize: '0.65rem', color: 'rgba(148,130,200,0.45)', marginTop: 5, lineHeight: 1.5 }}>
+          {PRISM_NAMES[Math.round((store.config.prism ?? 0) * (PRISM_NAMES.length - 1))]}
+          {' — '}moves the background and the interface together. Left is home.
         </p>
       </div>
 

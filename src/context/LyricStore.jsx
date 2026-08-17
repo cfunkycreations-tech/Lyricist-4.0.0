@@ -183,6 +183,20 @@ export const MAX_TEMPERATURE = 1.1;
 // — it reset the model to 'openrouter/free' and the stemmer to 'offline'.
 export const DEFAULT_CONFIG = {
   openRouterApiKey: '',
+
+  // One Man Band. The free music server gives anonymous users only a few
+  // minutes of GPU a day, and its own error message says the fix outright:
+  // "Authenticate with a Hugging Face token for more quota". A free account is
+  // enough. Entirely optional — songs still get made without it, just fewer.
+  huggingFaceToken: '',
+  // Where songs get made: 'cloud' | 'local'. Cloud is the default because it is
+  // both the fastest AND the free one, which is not the usual trade.
+  musicEngine: 'cloud',
+
+  // PRISM: rotates every colour in the app, the moving background and the
+  // interface together. 0 is emerald and violet, which is home.
+  prism: 0,
+
   // A specific instruction-tuned text model, NOT `openrouter/free`. That router
   // picks whichever free model is available, and the free pool includes coding
   // agents, a content-safety classifier, and audio/vision models — none of which
