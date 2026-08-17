@@ -4,6 +4,9 @@ import {
   buildState, composeCaption, detectComfy, estimateSeconds, generateSong, sectionBudget,
 } from '../../services/MusicService.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
+import {
+  GENRE_GROUPS, MOOD_GROUPS, VOICE_GROUPS, COUNTS, kitFor,
+} from '../../services/musicTaxonomy.js';
 import { saveRecording } from '../../services/RecordingsStore.js';
 import './OneManBand.css';
 
@@ -27,18 +30,6 @@ import './OneManBand.css';
  *     the app is broken.
  */
 
-const GENRES = [
-  'Blues rock', 'Country ballad', 'Outlaw country', 'Folk', 'Soul',
-  'Gospel', 'Hip hop', 'Rock', 'Jazz', 'Reggae',
-];
-const MOODS = [
-  'Gritty and driving', 'Warm and slow', 'Defiant', 'Lonesome',
-  'Joyful', 'Haunted', 'Weary',
-];
-const VOICES = [
-  'Gravelly male', 'Smooth male', 'Powerful female', 'Warm female',
-  'Instrumental, no vocals',
-];
 const LENGTHS = [
   { s: 30, label: '30s' }, { s: 60, label: '1 min' }, { s: 120, label: '2 min' },
   { s: 180, label: '3 min' }, { s: 300, label: '5 min' },
@@ -90,10 +81,13 @@ function draftCaption({ genre, mood, voice, seconds }) {
         + `motif at the end of each line. `
         + `Harmony/Backing Vocals: sparse, only where the song lifts. `
         + `Vocal FX: light slapback delay, dry otherwise.`,
+    // The genre's own instruments, not a generic band. This is the single
+    // biggest thing that makes a world-music pick sound like that music
+    // instead of like pop with a different label on it.
     arrangement:
-      `Instrument Lifecycle Description (Primary/Secondary Layering): Primary: guitar and a `
-      + `real drum kit carry the whole song from the first bar. Secondary: bass joins early and `
-      + `stays; a lead line answers the vocal only where the song opens up. `
+      `Instrument Lifecycle Description (Primary/Secondary Layering): Primary: ${kitFor(genre)} `
+      + `carry the song from the first bar. Secondary: supporting parts join early and stay; a `
+      + `lead line answers the vocal only where the song opens up. `
       + `Groove & Foundation Progression: thumping kick with snare on 2 and 4, brushes where it `
       + `is quiet and sticks where it is not. `
       + `Embellishments, Textures & Spatial FX: string noise and room tone left in, ending on a `
@@ -108,9 +102,9 @@ export default function OneManBand() {
     + 'Sparks on the deck of a nameless town\n\n[Chorus]\nSo I sing it loud, I sing it free\n'
     + 'Every road out here belongs to me\n'
   );
-  const [genre, setGenre] = useState(GENRES[0]);
-  const [mood, setMood] = useState(MOODS[0]);
-  const [voice, setVoice] = useState(VOICES[0]);
+  const [genre, setGenre] = useState('Blues rock');
+  const [mood, setMood] = useState('Gritty and driving');
+  const [voice, setVoice] = useState('Gravelly male');
 
   const [seconds, setSeconds] = useState(30);
   const [takeCount, setTakeCount] = useState(2);
@@ -125,7 +119,7 @@ export default function OneManBand() {
   const [comfy, setComfy] = useState(null);
 
   const [caption, setCaption] = useState(() => draftCaption({
-    genre: GENRES[0], mood: MOODS[0], voice: VOICES[0], seconds: 30,
+    genre: 'Blues rock', mood: 'Gritty and driving', voice: 'Gravelly male', seconds: 30,
   }));
   const [captionEdited, setCaptionEdited] = useState(false);
   const [rewriting, setRewriting] = useState(false);
@@ -333,6 +327,7 @@ export default function OneManBand() {
               </button>
             </header>
             <div className="omb-body">
+              <p className="omb-hint omb-counts">{COUNTS.genres} genres, {COUNTS.moods} moods, {COUNTS.voices} voices. Every genre brings its own instruments to the description.</p>
               <p className="omb-hint">
                 <b>The bracket tags are the song structure.</b> The words set the mood, but these
                 decide the shape.
@@ -360,17 +355,29 @@ export default function OneManBand() {
               <div className="omb-picks">
                 <label>Genre
                   <select value={genre} onChange={(e) => setGenre(e.target.value)}>
-                    {GENRES.map((g) => <option key={g}>{g}</option>)}
+                    {Object.entries(GENRE_GROUPS).map(([grp, list]) => (
+                      <optgroup key={grp} label={grp}>
+                        {list.map((g) => <option key={g.name} value={g.name}>{g.name}</option>)}
+                      </optgroup>
+                    ))}
                   </select>
                 </label>
                 <label>Mood
                   <select value={mood} onChange={(e) => setMood(e.target.value)}>
-                    {MOODS.map((m) => <option key={m}>{m}</option>)}
+                    {Object.entries(MOOD_GROUPS).map(([grp, list]) => (
+                      <optgroup key={grp} label={grp}>
+                        {list.map((m) => <option key={m}>{m}</option>)}
+                      </optgroup>
+                    ))}
                   </select>
                 </label>
                 <label>Voice
                   <select value={voice} onChange={(e) => setVoice(e.target.value)}>
-                    {VOICES.map((v) => <option key={v}>{v}</option>)}
+                    {Object.entries(VOICE_GROUPS).map(([grp, list]) => (
+                      <optgroup key={grp} label={grp}>
+                        {list.map((v) => <option key={v}>{v}</option>)}
+                      </optgroup>
+                    ))}
                   </select>
                 </label>
               </div>
