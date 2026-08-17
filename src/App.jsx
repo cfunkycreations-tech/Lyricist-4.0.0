@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LyricStoreProvider, useLyricStore } from './context/LyricStore.jsx';
 import SongwriterHub from './components/SongwriterHub/SongwriterHub.jsx';
+import OneManBand from './components/OneManBand/OneManBand.jsx';
+import PrismBackground from './components/common/PrismBackground.jsx';
 import ArtistAnalyzer from './components/ArtistAnalyzer/ArtistAnalyzer.jsx';
 import SongForge from './components/SongForge/SongForge.jsx';
 import RhymeHelper from './components/RhymeHelper/RhymeHelper.jsx';
@@ -52,7 +54,10 @@ import footerMedallionImg from './assets/footer-medallion-new.png'; // Chris's b
 // Header banner clip. Imported, NOT read out of public/ at runtime — see the note
 // in components/common/TabVideoBg.jsx. Everything else in this app that plays a
 // background video goes through a Vite import, so this does too.
-import headerVideo from './assets/bg/header.mp4';
+// header.mp4 import removed with the header video. Vite emits an imported
+// asset whether or not anything renders it, so leaving it would have kept
+// 16 MB in every installer for nothing. Same trap as the 8 dead image
+// imports in 087 and the Scratchpad clip in 092.
 
 // Footer medallion sizing. The whole image has to be visible — no crop at the
 // top, no crop at the bottom. An earlier version hung it past the bar and
@@ -62,6 +67,8 @@ const FOOTER_MEDALLION_H = 112;
 const tabs = [
   // Write / story tools first, then Quantum Lab
   { id: 'songwriter', icon: '🎵', img: icoSongwriter, label: 'Songwriter', help: 'The main workspace. Set up the kind of song you want (style, mood, topic), then write and polish the lyrics line by line.' },
+  // Straight after Songwriter on purpose: write the words, then hear them.
+  { id: 'onemanband', icon: '🎸', img: icoSongwriter, label: 'One Man Band', help: 'Turns your lyrics into a real song with vocals and a full band. Pick a genre, a mood and a voice, and it writes the sound description for you. Free on the cloud engine, no key needed. Longer songs take longer, and it tells you how long before you start.' },
   { id: 'analyzer', icon: '👻', img: icoAnalyzer, label: 'Ghost Rider', help: 'Studies any artist you name and breaks down how they write, then helps you write a NEW song in that same style. (It does not copy their actual lyrics.)' },
   { id: 'songforge', icon: '🪄', img: icoSongforge, label: 'Song Forge', help: 'Auto-generate a full song and cover art using your single OpenRouter key (lyrics + Nano Banana image models on OpenRouter). Song First or Art First. No Google AI Studio key.' },
   { id: 'quantum', icon: '⚛️', img: icoQuantum, label: 'Quantum Lab', help: 'Build a verse by playing with a grid of word tiles (the lattice). Heat words up, let energy spread, lock rhymes with Crystallize, then Generate Neural Lyrics for a real 4-line verse. Send to Songwriter or Song Forge in one click. Needs your OpenRouter key for generate.' },
@@ -302,30 +309,17 @@ function MainLayout() {
             so nothing underneath is compressed to make room. */}
         <div className="header-cosmic" style={{ flexShrink: 0, position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center', background: '#020516', height: 'min(calc(100vw * 0.5625), 62vh)', overflow: 'hidden', width: '100%' }}>
 
-          {/* Backdrop — same clip, blurred and over-scaled, purely to fill the
-              side margins when the 62vh cap makes the bar wider than 16:9. */}
-          <video
-            src={headerVideo}
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            aria-hidden="true"
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, filter: 'blur(34px) saturate(1.15) brightness(0.7)', transform: 'scale(1.15)' }}
-          />
+          {/* THE HEADER VIDEO IS OUT. Chris's call, 2026-08-16, reversing the
+              earlier "whole uncropped video" decision: "I do want that video of
+              mine taken down... I want people to see that whole background
+              moving like it is."
 
-          {/* The banner itself — the entire frame, never cropped. */}
-          <video
-            src={headerVideo}
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            aria-hidden="true"
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', zIndex: 1, opacity: 1 }}
-          />
+              The living prism runs here instead, so the motion that used to be
+              trapped in one 16 MB clip now runs the full width of the app and
+              costs a few KB of maths. New artwork is coming from him to sit on
+              top of it. Until it lands this is deliberately just the moving
+              background and the controls. */}
+          <PrismBackground hue={0} scale={0.45} />
 
           {/* Controls — stacked vertically on the right */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)', zIndex: 2 }}>
@@ -491,6 +485,9 @@ function MainLayout() {
         <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <TabPane id="songwriter" active={activeTab} opened={openedTabs}>
             <SongwriterHub ghostRiderData={ghostRiderData} />
+          </TabPane>
+          <TabPane id="onemanband" active={activeTab} opened={openedTabs}>
+            <OneManBand />
           </TabPane>
           <TabPane id="quantum" active={activeTab} opened={openedTabs}>
             <QuantumLab
