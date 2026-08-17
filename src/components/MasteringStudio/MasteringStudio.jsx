@@ -258,7 +258,10 @@ export default function MasteringStudio() {
     <div className="tab-video-shell">
       <TabBackground name="mastering" />
       <div className="tab-video-content">
-    <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden', background: '#000' }}>
+    {/* Transparent, not black. This wrapper sits ON TOP of the tab's prism
+        background, so painting it solid hid the motion behind the whole tab —
+        the last flat black region left in the app. */}
+    <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden', background: 'transparent' }}>
       <audio ref={previewRef} style={{ display: 'none' }} />
       <div className="album-shell">
         {/* Sidebar: metadata, cover, mastering chain */}

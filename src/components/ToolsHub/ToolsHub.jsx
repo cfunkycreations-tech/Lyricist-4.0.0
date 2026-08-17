@@ -102,7 +102,9 @@ export default function ToolsHub() {
     <div className="tab-video-shell">
       <TabBackground name="toolshub" />
       <div className="tab-video-content">
-    <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#000' }}>
+    {/* Transparent so the tab's prism shows through. Solid black here painted
+        over the whole moving background. */}
+    <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'transparent' }}>
       <div className="toolshub-main">
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
           <div style={{ marginRight: 'auto' }}>

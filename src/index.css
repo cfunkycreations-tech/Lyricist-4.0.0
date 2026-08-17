@@ -1182,3 +1182,57 @@ input.lyric-line-input {
 }
 
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ══ THE PRISM ══════════════════════════════════════════════════════════
+   The living background, on every tab and in the header.
+
+   This lives HERE and not in a component stylesheet on purpose. It was
+   originally written inside OneManBand.css, so the canvas only knew how to
+   fill itself on that one tab — everywhere else it fell back to a browser
+   default 300x150 static box and left most of the panel black. That is the
+   "real big gap with just blackness".
+
+   Any container holding one needs position other than static; every tab shell
+   in this app already sets position: relative for the old video. */
+.prism-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* The shell is translucent so the motion carries all the way through instead
+   of stopping at the edge of each panel. Dark enough that text stays readable,
+   which is the only reason these are not fully clear. */
+.sidebar-cosmic {
+  background: rgba(6, 10, 22, 0.72) !important;
+  backdrop-filter: blur(14px) saturate(1.15);
+}
+
+.header-cosmic {
+  background: #05070C !important;
+}
+
+.output-cosmic {
+  background: rgba(4, 8, 18, 0.55);
+  backdrop-filter: blur(12px);
+}
+
+/* The panels let the motion through too. "I want it inside of all the boxes
+   where the videos used to be." Frosted rather than clear: the glass keeps
+   text readable while the wavy stuff still moves behind it, which is the same
+   treatment One Man Band already uses. */
+.card-cosmic {
+  background: rgba(10, 16, 32, 0.58) !important;
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+}
+
+/* The tab shells were pure black behind the old video. With a canvas they no
+   longer need to be, and the flat black was the biggest dead area on screen. */
+.tab-video-shell {
+  background: transparent !important;
+}
