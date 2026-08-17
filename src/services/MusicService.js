@@ -145,7 +145,7 @@ async function pickHost(hosts, signal) {
  * read a server-sent event stream until the file url appears.
  */
 async function generateCloud(opts) {
-  const { state, duration, seed, steps, guidance, onProgress, signal } = opts;
+  const { state, duration, seed, steps, guidance, onProgress, signal, hfToken } = opts;
   const host = await pickHost(CLOUD_HOSTS, signal);
   onProgress?.({ phase: 'queued', host });
 
@@ -153,11 +153,13 @@ async function generateCloud(opts) {
     data: [JSON.stringify(state), duration, seed, false, 0, steps, guidance],
   });
 
+  // A free Hugging Face token buys a much bigger daily allowance. Optional:
+  // without one the call still works, there is just less of it per day.
+  const headers = { 'Content-Type': 'application/json' };
+  if (hfToken) headers.Authorization = `Bearer ${hfToken}`;
+
   const post = await fetch(`${host}/gradio_api/call/studio_generate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body,
-    signal,
+    method: 'POST', headers, body, signal,
   });
   if (!post.ok) throw new Error(`The music server refused the job (${post.status}).`);
   const { event_id: eventId } = await post.json();
@@ -228,6 +230,51 @@ async function generateCloud(opts) {
 /* a ComfyUI, local or rented                                          */
 /* ------------------------------------------------------------------ */
 
+
+/* ------------------------------------------------------------------ */
+/* reaching a ComfyUI                                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * ComfyUI sends no CORS headers, so the renderer cannot call it directly and
+ * the engine picker reported "not running" while it plainly was. In the
+ * packaged app we go through the main process, which has no CORS. In a plain
+ * browser (dev) we fall back to fetch and accept that local mode will not work
+ * there — that is a dev-only limitation, not something a user ever meets.
+ */
+const bridge = () => (typeof window !== 'undefined' ? window.lyricistAPI?.musicFetch : null);
+
+async function comfyJson(url, { method = 'GET', body = null } = {}) {
+  const via = bridge();
+  if (via) {
+    const r = await via({ url, method, body });
+    if (!r.ok) throw new Error(r.error || `HTTP ${r.status}`);
+    return JSON.parse(r.text);
+  }
+  const res = await fetch(url, {
+    method,
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function comfyBlob(url) {
+  const via = bridge();
+  if (via) {
+    const r = await via({ url, binary: true });
+    if (!r.ok) throw new Error(r.error || `HTTP ${r.status}`);
+    const bin = atob(r.base64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type: r.contentType });
+  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.blob();
+}
+
 /**
  * Is there a ComfyUI on this machine right now? Drives the engine picker.
  *
@@ -238,18 +285,15 @@ async function generateCloud(opts) {
  * --enable-cors-header, which is a setting no beginner will ever find. Until
  * that lands, the local engine only works in the packaged app.
  */
-export async function detectComfy(base = 'http://127.0.0.1:8188', timeoutMs = 1500) {
-  const ac = new AbortController();
-  const t = setTimeout(() => ac.abort(), timeoutMs);
+export async function detectComfy(base = 'http://127.0.0.1:8188', timeoutMs = 2500) {
   try {
-    const r = await fetch(`${base}/system_stats`, { signal: ac.signal });
-    if (!r.ok) return null;
-    const s = await r.json();
+    const s = await Promise.race([
+      comfyJson(`${base}/system_stats`),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), timeoutMs)),
+    ]);
     return { base, version: s?.system?.comfyui_version ?? 'unknown' };
   } catch {
     return null;
-  } finally {
-    clearTimeout(t);
   }
 }
 
@@ -289,17 +333,14 @@ async function generateComfy(opts) {
     );
   }
 
-  const post = await fetch(`${base}/prompt`, {
+  const posted = await comfyJson(`${base}/prompt`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+    body: {
       prompt: comfyGraph({ state, duration, seed, steps, guidance, dit }),
       client_id: `lyricist-${Date.now()}`,
-    }),
-    signal,
+    },
   });
-  if (!post.ok) throw new Error(`ComfyUI rejected the job (${post.status}).`);
-  const { prompt_id: promptId } = await post.json();
+  const promptId = posted.prompt_id;
   onProgress?.({ phase: 'generating', host: base });
 
   // Poll. There is no push here, and the job can run for hours on a small card.
@@ -309,7 +350,7 @@ async function generateComfy(opts) {
 
     let hist;
     try {
-      hist = await (await fetch(`${base}/history/${promptId}`, { signal })).json();
+      hist = await comfyJson(`${base}/history/${promptId}`);
     } catch { continue; }          // a blip is not a failure
     const entry = hist?.[promptId];
     if (!entry) { onProgress?.({ phase: 'generating', host: base }); continue; }
@@ -324,9 +365,7 @@ async function generateComfy(opts) {
         const url = `${base}/view?filename=${encodeURIComponent(a.filename)}`
           + `&subfolder=${encodeURIComponent(a.subfolder ?? '')}&type=${a.type ?? 'output'}`;
         onProgress?.({ phase: 'downloading', host: base });
-        const r = await fetch(url, { signal });
-        if (!r.ok) throw new Error('The song was made but could not be read back.');
-        return { blob: await r.blob(), host: base };
+        return { blob: await comfyBlob(url), host: base };
       }
     }
     throw new Error('ComfyUI finished but produced no audio.');
@@ -354,6 +393,7 @@ export async function generateSong({
   steps = 30,
   guidance = 1.7,
   dit,
+  hfToken = '',
   onProgress,
   signal,
 } = {}) {
@@ -364,7 +404,7 @@ export async function generateSong({
 
   const started = Date.now();
   const run = engine === 'cloud'
-    ? generateCloud({ state, duration, seed, steps, guidance, onProgress, signal })
+    ? generateCloud({ state, duration, seed, steps, guidance, onProgress, signal, hfToken })
     : generateComfy({ base, state, duration, seed, steps, guidance, dit, onProgress, signal });
 
   const { blob, host } = await run;
@@ -376,4 +416,104 @@ export async function generateSong({
   lastRun.at = new Date().toISOString();
 
   return { blob, seed, engine, host, ms: lastRun.ms, duration };
+}
+
+
+/**
+ * MiniMax's own caption writer, running free on their server.
+ *
+ * Their skill ships 1,000 templates and reads them off disk as it works — 5.7 MB
+ * that Lyricist cannot carry and would not want to. This endpoint is the same
+ * logic hosted, so the Rewrite button costs the user nothing and does not spend
+ * their OpenRouter credits either.
+ *
+ * UNVERIFIED as of 2026-08-16: the free quota was exhausted while measuring the
+ * generation limits, so this has not been round-tripped against a live server.
+ * The shape follows their published API. Anything it returns that cannot be
+ * parsed into the three blocks is handed back whole rather than thrown away,
+ * and the caller keeps its offline draft if this fails.
+ */
+export async function composeCaption({ state, duration = 30, hfToken = '', signal } = {}) {
+  const host = await pickHost(CLOUD_HOSTS, signal);
+  const headers = { 'Content-Type': 'application/json' };
+  if (hfToken) headers.Authorization = `Bearer ${hfToken}`;
+
+  const post = await fetch(`${host}/gradio_api/call/compose_assist`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ data: [JSON.stringify(state), duration] }),
+    signal,
+  });
+  if (!post.ok) throw new Error(`The caption writer refused the job (${post.status}).`);
+  const { event_id: eventId } = await post.json();
+  if (!eventId) throw new Error('The caption writer did not start.');
+
+  const res = await fetch(`${host}/gradio_api/call/compose_assist/${eventId}`, { signal });
+  const text = await res.text();
+
+  let sawError = false;
+  let payload = null;
+  for (const line of text.split(/\r?\n/)) {
+    const t = line.trim();
+    if (t.startsWith('event:')) {
+      sawError = ['error', 'unexpected_error'].includes(t.slice(6).trim());
+    } else if (t.startsWith('data:')) {
+      const d = t.slice(5).trim();
+      if (!d || d === 'null') continue;
+      if (sawError) throw new Error(explainCloudError(d));
+      payload = d;
+    }
+  }
+  if (!payload) throw new Error('The caption writer sent nothing back.');
+
+  let blob = payload;
+  try {
+    const arr = JSON.parse(payload);
+    blob = Array.isArray(arr)
+      ? arr.filter((x) => typeof x === 'string').join(`${'\n'}${'\n'}`)
+      : String(arr);
+  } catch { /* already plain text */ }
+
+  return splitCaption(blob);
+}
+
+/**
+ * Cut a returned caption into MiniMax's three blocks.
+ *
+ * Their headings are stable ("Global Metadata", "Vocal Details", "Arrangement")
+ * but the surrounding formatting is not — markdown hashes, bold, colons. Match
+ * loosely on the heading words and keep whatever fell before the first one, so
+ * an unexpected shape degrades into something editable instead of vanishing.
+ */
+export function splitCaption(text) {
+  const src = String(text || '').replace(/\r/g, '');
+
+  // Each heading needs TWO positions: where the heading itself starts, which is
+  // where the PREVIOUS block has to stop, and where its content starts. Using
+  // one for both is why the first pass had every block swallowing the next
+  // heading.
+  const find = (label) => {
+    const m = src.match(new RegExp(String.raw`(?:^|\n)[#*\s]*${label}[:*\s]*\n?`, 'i'));
+    return m ? { head: m.index, body: m.index + m[0].length } : null;
+  };
+
+  const marks = [
+    ['globalMeta', find('Global Metadata')],
+    ['vocals', find('Vocal Details')],
+    ['arrangement', find('Arrangement')],
+  ].filter(([, m]) => m);
+
+  if (!marks.length) {
+    // An unexpected shape is still the user's caption. Hand it back whole and
+    // editable rather than throwing their words away.
+    return { globalMeta: src.trim(), vocals: '', arrangement: '' };
+  }
+
+  marks.sort((a, b) => a[1].head - b[1].head);
+  const out = { globalMeta: '', vocals: '', arrangement: '' };
+  marks.forEach(([key, mark], i) => {
+    const stop = i + 1 < marks.length ? marks[i + 1][1].head : src.length;
+    out[key] = src.slice(mark.body, stop).trim();
+  });
+  return out;
 }

@@ -20,6 +20,10 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   // provable after the fact — "did the library actually get emptied" — instead
   // of relying on console events, whose shape changes between Electron versions.
   log: (message) => ipcRenderer.invoke('app-log', { message: String(message) }),
+  // One Man Band -> a ComfyUI on this machine or a rented one. Goes through the
+  // main process because ComfyUI sends no CORS headers, so the renderer cannot
+  // reach it directly. See the 'music-fetch' handler in main.js.
+  musicFetch: (opts) => ipcRenderer.invoke('music-fetch', opts),
   // His own recorded narration, kept in <userData>\voice as loose files.
   // voicePack() -> { ok, dir, found: { splash, 'card-01', ... } } where each
   // value is a file:// URL ready to hand to an <audio>. Only the recordings he

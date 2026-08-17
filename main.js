@@ -137,6 +137,46 @@ ipcMain.handle('app-log', async (event, { message }) => {
   return { ok: true };
 });
 
+/**
+ * One Man Band talking to a ComfyUI, local or rented.
+ *
+ * ComfyUI sends no CORS headers, so a browser page cannot call it at all — the
+ * engine picker reported "not running" while ComfyUI was plainly running on
+ * this machine. The alternative was telling people to launch ComfyUI with
+ * --enable-cors-header, a flag no beginner will ever find, so the request goes
+ * through here instead. The main process has no CORS.
+ *
+ * Deliberately narrow: http(s) only. This is not a general purpose proxy and
+ * must not become one.
+ */
+ipcMain.handle('music-fetch', async (event, { url, method = 'GET', body = null, binary = false }) => {
+  try {
+    const target = new URL(String(url));
+    if (target.protocol !== 'http:' && target.protocol !== 'https:') {
+      return { ok: false, error: `Refusing to fetch a ${target.protocol} address.` };
+    }
+    const res = await fetch(target.toString(), {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined,
+    });
+    if (binary) {
+      const buf = Buffer.from(await res.arrayBuffer());
+      return {
+        ok: res.ok,
+        status: res.status,
+        contentType: res.headers.get('content-type') || 'application/octet-stream',
+        base64: buf.toString('base64'),
+      };
+    }
+    return { ok: res.ok, status: res.status, text: await res.text() };
+  } catch (e) {
+    // A refused connection is the normal answer when ComfyUI is not running,
+    // so this is information rather than a crash.
+    return { ok: false, error: String(e && e.message ? e.message : e) };
+  }
+});
+
 // Monitors attached right now, so the visualizer can be thrown onto whichever
 // one you want. `screen` can only be read once the app is ready, hence the lazy
 // require. Windows leaves `label` empty on most monitors, so fall back to a

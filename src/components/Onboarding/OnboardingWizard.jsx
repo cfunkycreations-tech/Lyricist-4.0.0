@@ -54,6 +54,13 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
     if (!a) return;
     setHasAudio(false);
     setPlaying(false);
+    // A card is allowed to have no narration yet. One Man Band shipped before
+    // its clip was recorded, and a card whose script is written but whose audio
+    // is not must read silently rather than throw on a null.
+    if (!current.audio) {
+      a.removeAttribute('src');
+      return undefined;
+    }
     // His recording wins when there is one. `current.audio` is 'card-NN.mp3',
     // and the pack is keyed on the stem, so drop the extension to look it up.
     const stem = current.audio.replace(/\.[^.]+$/, '');
@@ -130,8 +137,12 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
           {current.title}
         </h2>
 
-        {/* Narration controls (only shown when this card's MP3 loaded) */}
-        {hasAudio && (
+        {/* Narration controls (only shown when this card's MP3 loaded).
+            `current.audio` is checked here as well as in the effect: on the
+            render right after a card change, hasAudio is still true from the
+            PREVIOUS card while current has already moved on. A card with no
+            narration yet crashed the whole wizard on exactly that one frame. */}
+        {hasAudio && current.audio && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, margin: '0 0 14px' }}>
             <button onClick={togglePlay} title={playing ? 'Pause' : 'Play'} style={narrBtn}>{playing ? '⏸' : '▶'}</button>
             <button onClick={replay} title="Replay" style={narrBtn}>🔁</button>

@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import PrismBackground from '../common/PrismBackground.jsx';
 import {
-  buildState, detectComfy, estimateSeconds, generateSong, sectionBudget,
+  buildState, composeCaption, detectComfy, estimateSeconds, generateSong, sectionBudget,
 } from '../../services/MusicService.js';
+import { useLyricStore } from '../../context/LyricStore.jsx';
 import { saveRecording } from '../../services/RecordingsStore.js';
 import './OneManBand.css';
 
@@ -101,6 +102,7 @@ function draftCaption({ genre, mood, voice, seconds }) {
 }
 
 export default function OneManBand() {
+  const store = useLyricStore();
   const [lyrics, setLyrics] = useState(
     '[Verse]\nSteel in my hands and the sun going down\n'
     + 'Sparks on the deck of a nameless town\n\n[Chorus]\nSo I sing it loud, I sing it free\n'
@@ -126,6 +128,7 @@ export default function OneManBand() {
     genre: GENRES[0], mood: MOODS[0], voice: VOICES[0], seconds: 30,
   }));
   const [captionEdited, setCaptionEdited] = useState(false);
+  const [rewriting, setRewriting] = useState(false);
 
   const [takes, setTakes] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -157,6 +160,53 @@ export default function OneManBand() {
   const budget = sectionBudget(seconds);
   const tooManyParts = tags.length > budget;
   const estimate = estimateSeconds(engine, seconds) * (engine === 'cloud' ? 1 : takeCount);
+
+  /** Songwriter already stores lyrics as [SECTION] + lines, which is exactly
+      the shape this tab wants, so nothing has to be reformatted. */
+  const pullFromSongwriter = () => {
+    const text = store.getFullText?.() || '';
+    if (!text.trim()) {
+      setError('Songwriter is empty. Write something there first.');
+      return;
+    }
+    setLyrics(text);
+    setError('');
+  };
+
+  /**
+   * Rewrite the sound description using MiniMax's own caption writer, free on
+   * their server. If it fails for any reason the offline draft is kept — the
+   * button is an upgrade, never a dependency.
+   */
+  const rewriteWithAI = async () => {
+    setRewriting(true);
+    setError('');
+    try {
+      const better = await composeCaption({
+        state: buildState({
+          lyrics,
+          globalMeta: caption.globalMeta,
+          vocals: caption.vocals,
+          arrangement: caption.arrangement,
+          instrumental: voice.startsWith('Instrumental'),
+        }),
+        duration: seconds,
+        hfToken: store.config?.huggingFaceToken || '',
+      });
+      if (better.globalMeta || better.vocals || better.arrangement) {
+        setCaption((c) => ({
+          globalMeta: better.globalMeta || c.globalMeta,
+          vocals: better.vocals || c.vocals,
+          arrangement: better.arrangement || c.arrangement,
+        }));
+        setCaptionEdited(true);
+      }
+    } catch (e) {
+      setError(`${e.message} Your description was left as it was.`);
+    } finally {
+      setRewriting(false);
+    }
+  };
 
   const roll = () => {
     setRolling(true);
@@ -198,6 +248,7 @@ export default function OneManBand() {
           seed: s,
           steps,
           guidance,
+          hfToken: store.config?.huggingFaceToken || '',
           signal: ac.signal,
           onProgress: (p) => setPhase(p.phase),
         });
@@ -275,7 +326,12 @@ export default function OneManBand() {
         <div className="omb-cols">
 
           <section className="omb-card">
-            <header><h2>The song</h2></header>
+            <header>
+              <h2>The song</h2>
+              <button type="button" className="omb-mini" onClick={pullFromSongwriter}>
+                Pull from Songwriter
+              </button>
+            </header>
             <div className="omb-body">
               <p className="omb-hint">
                 <b>The bracket tags are the song structure.</b> The words set the mood, but these
@@ -322,11 +378,17 @@ export default function OneManBand() {
               <div className="omb-drafted">
                 <div className="omb-cap">
                   <span>Sound description, written for you, edit freely</span>
-                  <button type="button" className="omb-mini" onClick={() => {
-                    setCaptionEdited(false);
-                    setCaption(draftCaption({ genre, mood, voice, seconds }));
-                  }}>Rewrite
-                  </button>
+                  <span style={{ display: 'flex', gap: 6 }}>
+                    <button type="button" className="omb-mini" disabled={rewriting}
+                            onClick={rewriteWithAI}>
+                      {rewriting ? 'Writing…' : 'Rewrite with AI'}
+                    </button>
+                    <button type="button" className="omb-mini" onClick={() => {
+                      setCaptionEdited(false);
+                      setCaption(draftCaption({ genre, mood, voice, seconds }));
+                    }}>Start over
+                    </button>
+                  </span>
                 </div>
                 {['globalMeta', 'vocals', 'arrangement'].map((k) => (
                   <textarea key={k} rows={k === 'globalMeta' ? 4 : 3} value={caption[k]}
