@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import dictionaryBg from '../../assets/dictionary.mp4';
+import TabBackground from '../common/TabBackground.jsx';
 
 /**
  * Dictionary tab (new in 4.0.5) — English & Spanish word definitions.
@@ -54,15 +54,7 @@ export default function Dictionary() {
 
   return (
     <div style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#000' }}>
-      <video
-        src={dictionaryBg}
-        autoPlay
-        loop
-        muted
-        playsInline
-        onCanPlay={(e) => { e.target.playbackRate = 0.67; }}
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, opacity: 0.75 }}
-      />
+      <TabBackground name="dictionary" />
       <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Search header */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(139,92,246,0.2)', background: 'rgba(8,5,18,0.85)', display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>

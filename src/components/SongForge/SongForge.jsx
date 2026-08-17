@@ -10,7 +10,7 @@ import {
 import { Wand2, Download, Send, Copy, RefreshCw, Upload, Shuffle, Sparkles, Image as ImageIcon, X } from 'lucide-react';
 import { registerDemoSnapshot } from '../../services/demoSafety.js';
 
-import TabVideoBg from '../common/TabVideoBg.jsx';
+import TabBackground from '../common/TabBackground.jsx';
 const SURPRISE_TOPICS = [
   'a rainy drive at 2am with the radio off',
   'burning the recipe your mom left you',
@@ -301,7 +301,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
 
   return (
     <div className="tab-video-shell">
-      <TabVideoBg name="songforge" />
+      <TabBackground name="songforge" />
       <div className="tab-video-content">
     <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden' }}>
       <div className="songforge-shell">

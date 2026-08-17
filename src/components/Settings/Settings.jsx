@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
+import TabBackground from '../common/TabBackground.jsx';
 import { useLyricStore, DEFAULT_CONFIG } from '../../context/LyricStore.jsx';
 import { Save, RefreshCw, Key, Shield, HelpCircle } from 'lucide-react';
 import { normalizeApiKey } from '../../services/AIService.js';
 import { IMAGE_MODELS, DEFAULT_IMAGE_MODEL } from '../../services/GeminiService.js';
-import settingsBg from '../../assets/settings.mp4';
 
 const MODELS_CACHE_KEY = 'openrouter-models-cache';
 const MODELS_CACHE_TTL = 60 * 60 * 1000; // refresh from OpenRouter at most hourly
@@ -346,15 +346,7 @@ export default function Settings() {
 
   return (
     <div style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#000' }}>
-      <video
-        src={settingsBg}
-        autoPlay
-        loop
-        muted
-        playsInline
-        onCanPlay={(e) => { e.target.playbackRate = 0.67; }}
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, opacity: 0.75 }}
-      />
+      <TabBackground name="settings" />
       <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, overflowY: 'auto', background: 'rgba(0,0,0,0.62)', width: '100%' }}>
     <div style={{ padding: 28, maxWidth: 680, margin: '0 auto', boxSizing: 'border-box' }}>
       <h2

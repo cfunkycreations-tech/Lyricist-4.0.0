@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
+import TabBackground from '../common/TabBackground.jsx';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { Sparkles, Search, Clipboard, Check, BookOpen, Layers } from 'lucide-react';
 import { assertApiKey } from '../../services/AIService.js';
-import rhymeBg from '../../assets/rhyme04.mp4';
 
 export default function RhymeHelper() {
   const store = useLyricStore();
@@ -179,15 +179,7 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
 
   return (
     <div style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden', background: '#000' }}>
-      <video
-        src={rhymeBg}
-        autoPlay
-        loop
-        muted
-        playsInline
-        onCanPlay={(e) => { e.target.playbackRate = 0.67; }}
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, opacity: 0.75 }}
-      />
+      <TabBackground name="rhyme" />
       <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
       {/* Rhyme Finder panel */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid rgba(139,92,246,0.18)', overflow: 'hidden' }}>

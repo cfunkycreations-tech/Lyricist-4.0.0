@@ -13,7 +13,7 @@ import { available as localAvailable, localStatus, localSetup, separateStemsLoca
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import './Stemmer.css';
 
-import TabVideoBg from '../common/TabVideoBg.jsx';
+import TabBackground from '../common/TabBackground.jsx';
 /**
  * Stemmer tab — Offline (default, light CPU, no key) OR Cloud Demucs (optional API key).
  */
@@ -364,7 +364,7 @@ export default function Stemmer() {
           nothing about what this tab does. This one is his
           Light_thread_splitting_into_colors render: one white thread separating
           into its coloured strands, which is the tab in one image. */}
-      <TabVideoBg name="stemmer" />
+      <TabBackground name="stemmer" />
       <div className="tab-video-content">
     <div
       className="stemmer-root"

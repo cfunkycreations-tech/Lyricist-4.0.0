@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import TabBackground from '../common/TabBackground.jsx';
 import { useLyricStore, genres, subgenres, moods, rhymeSchemes, rapFlowPatterns } from '../../context/LyricStore.jsx';
 import SectionEditor from './SectionEditor.jsx';
 import StructureBuilder from './StructureBuilder.jsx';
@@ -8,7 +9,6 @@ import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCir
 // The logo and the founder photo were imported here but never rendered — a
 // leftover from the old in-tab header. Vite emits an imported asset whether or
 // not it is used, so both were being copied into every build for nothing.
-import songwriterBg from '../../assets/songwriter.mp4';
 
 export default function SongwriterHub({ ghostRiderData }) {
   const store = useLyricStore();
@@ -245,7 +245,7 @@ export default function SongwriterHub({ ghostRiderData }) {
 
   return (
     <div style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'radial-gradient(70% 50% at 20% 0%, rgba(0,229,255,0.08) 0%, transparent 55%), radial-gradient(60% 45% at 85% 100%, rgba(168,85,247,0.08) 0%, transparent 50%), #04060f' }}>
-      <video src={songwriterBg} autoPlay loop muted playsInline onCanPlay={(e) => { e.target.playbackRate = 0.67; }} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, opacity: 0.75 }} />
+      <TabBackground name="songwriter" />
       <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
 

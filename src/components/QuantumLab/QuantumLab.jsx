@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
+import TabBackground from '../common/TabBackground.jsx';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { callAI } from '../../services/AIService.js';
 import EnergyField from './EnergyField.jsx';
@@ -159,8 +160,6 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     return () => mq.removeEventListener('change', on);
   }, []);
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
-  const bgBase = import.meta.env.BASE_URL || './';
-  const videoSrc = `${bgBase}${isNarrow ? 'quantum_bg_mobile.mp4' : 'quantum_bg.mp4'}`;
 
   const wrapRef = useRef(null);
   const gridRef = useRef(null);
@@ -658,17 +657,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       >
         {!vidFailed && (
           <div className="ql-bgvid-clip">
-            <video
-              className="ql-bgvid"
-              src={videoSrc}
-              key={videoSrc}
-              autoPlay
-              loop
-              muted
-              playsInline
-              preload="auto"
-              onError={() => setVidFailed(true)}
-            />
+            <TabBackground name="quantum" />
             <div className="ql-bgscrim" />
           </div>
         )}

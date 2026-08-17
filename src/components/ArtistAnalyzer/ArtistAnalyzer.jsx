@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import TabBackground from '../common/TabBackground.jsx';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { callAI, refineLyrics, analyzeClichés, checkSimilarity, checkThemeConsistency } from '../../services/AIService.js';
 import { Search, Sparkles, BookOpen, AlertTriangle, ShieldCheck, Check, Copy, Save, Heart, Send } from 'lucide-react';
-import ghostRiderVideo from '../../assets/quantum_reaper.mp4'; // 4.2.0 reaper (old 4.0.7 kept at ghost_rider.mp4)
 
 const analysisTabs = [
   { id: 'style', label: 'Lyrical Style' },
@@ -254,26 +254,9 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
 
   return (
     <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden', position: 'relative', background: '#000000' }}>
-      {/* Ghost Rider background video — full cover, no other bg visible */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        onCanPlay={(e) => { e.target.playbackRate = 0.67; }}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          zIndex: 0,
-          opacity: 0.75
-        }}
-      >
-        <source src={ghostRiderVideo} type="video/mp4" />
-      </video>
-      {/* Content sits above the video */}
+      {/* Ghost Rider background — the living prism, no clip */}
+      <TabBackground name="analyzer" />
+      {/* Content sits above the background */}
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flex: 1, width: '100%', overflow: 'hidden' }}>
       {/* Sidebar for parameters and saved reports */}
       <div
