@@ -1,5 +1,44 @@
 # AI HANDOFF — Lyricist 4.2.0 "Goes Quantum"
 
+> **2026-08-16/17 — TWO NEW TABS AND EVERY BACKGROUND VIDEO IS GONE. Shipped 4.2.0.102.**
+> Builds 098 to 102. Installer **381.9 MB -> 187.5 MB.**
+>
+> **ONE MAN BAND** (tab 2, after Songwriter) turns lyrics into a real song with vocals, on
+> MiniMax Music 3. Three engines behind one `generateSong()` in `src/services/MusicService.js`.
+> Measured on the same 30 seconds of music: **free cloud ~35 s, Kaggle free T4 ~17 min, a 4 GB
+> Pascal card ~3 hours.** So cloud is the DEFAULT — it is the fastest AND the free one.
+> **The free cloud has two hard limits, found by hitting them: ~45 s of music per call, and only a
+> few minutes of GPU a day anonymously.** A free Hugging Face token raises the quota and there is a
+> field for it in Settings. Kaggle is NOT redundant — it is the only free path to a full 3-5
+> minute song. `V:\minimax_music3\MakeASong.ipynb` is the notebook.
+> **`Rewrite with AI` is UNVERIFIED** — the quota ran out before it could be round-tripped. It
+> fails soft and keeps the offline draft.
+>
+> **CHOPPED & SCREWED** (after Mastering) slows a track until the pitch sinks and chops it on the
+> beat, credited to DJ Screw on the tab. Has a canvas **slicer** you click to place your own chops,
+> and a **subterranean sub** that follows the track's own low end rather than droning under it.
+> All local, `OfflineAudioContext`.
+>
+> **241 genres / 82 moods / 66 voices** in `src/services/musicTaxonomy.js`, grouped. Every genre
+> carries its real instrumentation and the caption writes it in — that is the whole point, because
+> "Afrobeats" alone produces generic pop while "log drum bass, shakers" produces Afrobeats.
+>
+> **NO TAB HAS A BACKGROUND VIDEO ANY MORE.** Fifteen clips removed, including the header one at
+> Chris's request. `PrismBackground.jsx` is a live WebGL shader on all 18 tabs; `TabBackground.jsx`
+> wraps it and takes an optional still-art layer for hero tabs. Retired clips are kept at
+> `V:ssets\lyricist-retired-video`, nothing destroyed.
+> **The `.prism-bg` fill rule MUST stay in `index.css`.** It started life in `OneManBand.css` and
+> so applied on exactly one tab; the other seventeen fell back to a default 300x150 canvas and
+> looked black. A rule every component needs cannot live in one component's stylesheet.
+>
+> **PRISM** (`src/services/prismTheme.js`, started in `main.jsx`) rotates the whole interface AND
+> the shader from one number. Settings writes `lyricistPrism` and fires `lyricist-prism`.
+>
+> **THREE BUGS A GREEN BUILD DID NOT CATCH, all found by opening the app and clicking:**
+> a dead-on-boot ReferenceError (vite build passed happily), a stray `</video>`, and a wizard card
+> with `audio: null` that killed the tour on card 3 because `hasAudio` is still true from the
+> previous card for one frame. **A green build is not a working app.**
+
 > **2026-08-15 — NO VIDEO IN THIS APP HAS AN AUDIO TRACK. Keep it that way.**
 > Chris: *"NO SOUND ON ANY BACK GROUND VIDEO."* Muting the element is not enough — the tracks are
 > stripped from the files (`ffmpeg -i in.mp4 -an -c:v copy out.mp4`). Eleven shipped clips still
