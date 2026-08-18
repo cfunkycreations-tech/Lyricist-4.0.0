@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import PrismBackground from '../common/PrismBackground.jsx';
+import TabBackground from '../common/TabBackground.jsx';
 import {
   buildState, composeCaption, detectComfy, estimateSeconds, generateSong, sectionBudget,
 } from '../../services/MusicService.js';
@@ -285,7 +285,7 @@ export default function OneManBand() {
 
   return (
     <div className="omb">
-      <PrismBackground hue={0.02} />
+      <TabBackground name="onemanband" />
       <div className="omb-veil" aria-hidden="true" />
 
       <div className="omb-wrap">

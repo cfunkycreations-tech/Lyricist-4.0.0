@@ -4,6 +4,7 @@ import SongwriterHub from './components/SongwriterHub/SongwriterHub.jsx';
 import OneManBand from './components/OneManBand/OneManBand.jsx';
 import ScrewShop from './components/ScrewShop/ScrewShop.jsx';
 import PrismBackground from './components/common/PrismBackground.jsx';
+import headerArt from './assets/bg-art/header.webp';
 import ArtistAnalyzer from './components/ArtistAnalyzer/ArtistAnalyzer.jsx';
 import SongForge from './components/SongForge/SongForge.jsx';
 import RhymeHelper from './components/RhymeHelper/RhymeHelper.jsx';
@@ -321,10 +322,30 @@ function MainLayout() {
 
               The living prism runs here instead, so the motion that used to be
               trapped in one 16 MB clip now runs the full width of the app and
-              costs a few KB of maths. New artwork is coming from him to sit on
-              top of it. Until it lands this is deliberately just the moving
-              background and the controls. */}
+              costs a few KB of maths.
+
+              THE ARTWORK LANDED 2026-08-18. His own render, the wordmark and
+              "GOES QUANTUM" set in it, sitting on the prism rather than
+              replacing it. `contain`, never `cover` — the lesson from the old
+              header fight is that when art gets cropped to fit a box you change
+              the box, and this piece is 16:9 going into a wide bar, so cover
+              would eat the lettering. Letterboxing it keeps every word. */}
           <PrismBackground hue={0} scale={0.45} />
+          <img
+            src={headerArt}
+            alt=""
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              zIndex: 1,
+              opacity: 0.92,
+              pointerEvents: 'none',
+            }}
+          />
 
           {/* Controls — stacked vertically on the right */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)', zIndex: 2 }}>
