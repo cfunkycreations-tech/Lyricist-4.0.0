@@ -86,11 +86,24 @@ export function buildState({
  * minute. Cut sections, never compress them.
  */
 export function sectionBudget(seconds) {
-  if (seconds <= 30) return 1;
-  if (seconds <= 60) return 3;
-  if (seconds <= 120) return 5;
-  if (seconds <= 240) return 7;
-  return 9;
+  // Arithmetic from the 15-second floor above, not a hand-written ladder. The
+  // ladder said a 30 second song holds ONE section, which called a Verse plus a
+  // Chorus "more than will fit" when that is 15 seconds each and completely
+  // ordinary. Chris hit exactly that and sent a screenshot of the warning.
+  // A warning has to fire on impossible, never on merely tight, or people stop
+  // reading it.
+  return Math.max(1, Math.floor(seconds / SECONDS_PER_SECTION));
+}
+
+/** The shortest stretch that can exist as music: eight bars at 96 BPM is ~20s,
+ *  and 15 is the floor below which a section is a fragment. */
+export const SECONDS_PER_SECTION = 15;
+
+/** What to SUGGEST rather than what will fit. `sectionBudget` is a ceiling, and
+ *  at five minutes it is twenty, which is not a song shape anybody wants — an
+ *  intro, two verses, two choruses, a bridge and an outro is seven. */
+export function suggestedSections(seconds) {
+  return Math.min(7, sectionBudget(seconds));
 }
 
 /** Honest estimate in seconds, so the tab can warn before it spends an hour. */
@@ -149,8 +162,13 @@ async function generateCloud(opts) {
   const host = await pickHost(CLOUD_HOSTS, signal);
   onProgress?.({ phase: 'queued', host });
 
+  // SEND THE OBJECT, NOT A STRING. Their `studio_generate` runs the state
+  // through `_normalize_state`, which is `if isinstance(state, dict)` and
+  // nothing else — a JSON string fails that test silently and every field
+  // falls back to their built-in demo song. It does not error, it just sings
+  // somebody else's lyrics. Same fault, same day, as `composeCaption` below.
   const body = JSON.stringify({
-    data: [JSON.stringify(state), duration, seed, false, 0, steps, guidance],
+    data: [state, duration, seed, false, 0, steps, guidance],
   });
 
   // A free Hugging Face token buys a much bigger daily allowance. Optional:
@@ -427,21 +445,40 @@ export async function generateSong({
  * logic hosted, so the Rewrite button costs the user nothing and does not spend
  * their OpenRouter credits either.
  *
- * UNVERIFIED as of 2026-08-16: the free quota was exhausted while measuring the
- * generation limits, so this has not been round-tripped against a live server.
- * The shape follows their published API. Anything it returns that cannot be
- * parsed into the three blocks is handed back whole rather than thrown away,
- * and the caller keeps its offline draft if this fails.
+ * VERIFIED against the live server 2026-08-17, and it was broken two ways.
+ *
+ * 1. The state went out as `JSON.stringify(state)`. Their `compose_assist` does
+ *    `isinstance(raw_state, dict)` and a string is not one, so every field fell
+ *    back to their defaults and the call died with "Describe the song you want
+ *    first." **Send the object, never a string.**
+ * 2. Left alone it runs their `all` target, which rewrites the LYRICS as well.
+ *    This button is only supposed to rewrite the sound, so it asks for their
+ *    `prompt` target, which reads his lyrics as context and returns the three
+ *    caption blocks with the words untouched.
+ *
+ * It answers with the whole state object plus a status line, NOT prose, so the
+ * three blocks are read off the object. `splitCaption` stays as the fallback for
+ * a plain-text shape, and the caller keeps its offline draft if this fails.
  */
-export async function composeCaption({ state, duration = 30, hfToken = '', signal } = {}) {
+export async function composeCaption({
+  state, duration = 30, hfToken = '', instruction = '', signal,
+} = {}) {
   const host = await pickHost(CLOUD_HOSTS, signal);
   const headers = { 'Content-Type': 'application/json' };
   if (hfToken) headers.Authorization = `Bearer ${hfToken}`;
 
+  // Their assist bar sends the typed instruction; ours has no text box, so the
+  // draft caption he already has IS the instruction. Without it their prompt
+  // writer only sees the lyrics and drops the genre he picked.
+  const ask = instruction.trim() || [state.global_meta, state.vocals, state.arrangement]
+    .filter(Boolean).join('. ');
+
   const post = await fetch(`${host}/gradio_api/call/compose_assist`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ data: [JSON.stringify(state), duration] }),
+    body: JSON.stringify({
+      data: [{ ...state, assist: 'prompt', assist_prompt: ask }, duration],
+    }),
     signal,
   });
   if (!post.ok) throw new Error(`The caption writer refused the job (${post.status}).`);
@@ -466,9 +503,20 @@ export async function composeCaption({ state, duration = 30, hfToken = '', signa
   }
   if (!payload) throw new Error('The caption writer sent nothing back.');
 
+  // `[stateObject, "status line"]` is the shape it really returns. Reading the
+  // three blocks off the object is exact, so no parsing of prose is involved.
   let blob = payload;
   try {
     const arr = JSON.parse(payload);
+    const back = Array.isArray(arr) ? arr[0] : arr;
+    if (back && typeof back === 'object') {
+      const out = {
+        globalMeta: String(back.global_meta || '').trim(),
+        vocals: String(back.vocals || '').trim(),
+        arrangement: String(back.arrangement || '').trim(),
+      };
+      if (out.globalMeta || out.vocals || out.arrangement) return out;
+    }
     blob = Array.isArray(arr)
       ? arr.filter((x) => typeof x === 'string').join(`${'\n'}${'\n'}`)
       : String(arr);

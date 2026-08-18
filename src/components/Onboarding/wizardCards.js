@@ -1,7 +1,7 @@
 // ============================================================
 // Wizard narration cards (Lyricist 4.2.0 Goes Quantum)
 // Companion narrator — Ava (en-US-AvaNeural).
-// MP3s: public/wizard-audio/card-01.mp3 … card-17.mp3
+// MP3s: public/wizard-audio/card-01.mp3 … card-20.mp3
 //
 // The clip a card plays is whatever its own `audio:` field names — the order of
 // the cards and the numbering of the files are NOT the same thing (Collaboration
@@ -33,10 +33,7 @@ So let's write.`
   {
     // One Man Band sits straight after Songwriter in the tab bar for the same
     // reason it sits here: you write the words, then you hear them.
-    // NOTE: no audio file yet. The narration has to be recorded and QA'd for
-    // word error rate before this gets an `audio:` field — a card that points
-    // at a clip which does not exist plays silence and looks broken.
-    id: 3, icon: '🎸', title: 'One Man Band — hear your words sung', tab: 'onemanband', audio: null,
+    id: 3, icon: '🎸', title: 'One Man Band — hear your words sung', tab: 'onemanband', audio: 'card-18.mp3',
     script: `One Man Band. Where your words become a real song.
 
 Write your lyrics, pick three things — a genre, a mood, and a voice — and it writes the sound description for you. Then it sings it back with a full band behind it.
@@ -100,7 +97,17 @@ Master effects sit on the whole mix: Delay, Reverb, and Dub FX — each with on-
 Need to pull a finished mix apart? Open Stemmer next door — vocals, drums, bass, guitar, keys, and other, each soloable and exportable as WAV.`
   },
   {
-    id: 9, icon: '🎤', title: 'Recording Booth — capture the performance', tab: 'booth', audio: 'card-07.mp3',
+    id: 9, icon: '🎛️', title: 'Stemmer — pull a mix apart', tab: 'stemmer', audio: 'card-19.mp3',
+    script: `Stemmer. For taking a finished song back apart.
+
+Load any mix and it separates into vocals, drums, bass, guitar, keys and other. Mute them, solo them, and export whichever ones you want as WAV files for your own projects.
+
+Offline mode is the default. It is free, it is light on your computer, it needs no key and no graphics card, and nothing ever leaves your machine.
+
+If you want the pro quality separation instead, Cloud mode uses your own Replicate key. That one is optional, and it is the only part of this tab that costs anything.`
+  },
+  {
+    id: 10, icon: '🎤', title: 'Recording Booth — capture the performance', tab: 'booth', audio: 'card-07.mp3',
     script: `Recording Booth. Capture the performance.
 
 Do not let an idea slip away. Guitar, harmonica, vocals — record here or import takes into your library. Keep a take playing in the persistent player while you write in other tabs.
@@ -108,7 +115,7 @@ Do not let an idea slip away. Guitar, harmonica, vocals — record here or impor
 Export WAV. Or send audio into MIDI Studio to turn a hum into editable notes. Ready the moment inspiration hits.`
   },
   {
-    id: 10, icon: '🎹', title: 'MIDI Studio — stronger synth & vizzes', tab: 'midistudio', audio: 'card-08.mp3',
+    id: 11, icon: '🎹', title: 'MIDI Studio — stronger synth & vizzes', tab: 'midistudio', audio: 'card-08.mp3',
     script: `MIDI Studio. Convert audio, edit notes, watch the room move.
 
 Take a hummed melody, a Suno export, any take — convert it to MIDI offline. Edit on the piano roll with a thicker multi-voice synth, not a thin toy tone.
@@ -116,43 +123,55 @@ Take a hummed melody, a Suno export, any take — convert it to MIDI offline. Ed
 The visualizer is MilkDrop-class Butterchurn with a full preset pack — dozens of visualizations, search, shuffle, previous and next. Let the picture match the groove while you shape the line.`
   },
   {
-    id: 11, icon: '💽', title: 'Mastering Studio — polish & export', tab: 'mastering', audio: 'card-09.mp3',
+    id: 12, icon: '💽', title: 'Mastering Studio — polish & export', tab: 'mastering', audio: 'card-09.mp3',
     script: `Mastering Studio. Polish and export.
 
 The finish line. EQ, compression, limiter — offline. Cover art upload or generate. Export high-quality WAVs with a track list. Ready for the world.`
   },
   {
-    id: 12, icon: '📖', title: 'Rhyme Helper — never stuck on a rhyme', tab: 'rhyme', audio: 'card-10.mp3',
+    id: 13, icon: '🍇', title: 'Chopped & Screwed — the Houston treatment', tab: 'screw', audio: 'card-20.mp3',
+    script: `Chopped and Screwed. The sound DJ Screw invented in Houston.
+
+It is two separate things that people say as one word, so this tab keeps them on separate controls. Screwed is the speed. The whole track slows down and the voice sinks with it, because nothing corrects the pitch. That sinking is the whole point.
+
+Chopped is the edit. A chop lays the same slice down two or three times while the song only moves forward once, and that stutter is what makes it a chop instead of a fast cut.
+
+There is a slicer that draws the waveform with the beat grid over it, so you can click and put your own chops exactly where you want them. And the sub bass follows the track instead of droning underneath it, so a quiet part stays quiet.
+
+Feed it any audio file, or any recording you have already made in here. It all runs on your own computer, and it saves straight back to your recordings.`
+  },
+  {
+    id: 14, icon: '📖', title: 'Rhyme Helper — never stuck on a rhyme', tab: 'rhyme', audio: 'card-10.mp3',
     script: `Rhyme Helper. You will never get stuck on a rhyme again.
 
 Type any word — perfect rhymes, slant rhymes, surprises. Paste lyrics and highlight rhymes already hiding in your lines. Free. No AI key required.`
   },
   {
-    id: 13, icon: '📚', title: 'Thesaurus — find a better word', tab: 'thesaurus', audio: 'card-11.mp3',
+    id: 15, icon: '📚', title: 'Thesaurus — find a better word', tab: 'thesaurus', audio: 'card-11.mp3',
     script: `Thesaurus. Find a better word.
 
 Stuck on something flat? Get synonyms, opposites, and related sparks. Free. No AI key needed. You are welcome.`
   },
   {
-    id: 14, icon: '📕', title: 'Dictionary — what does it mean?', tab: 'dictionary', audio: 'card-12.mp3',
+    id: 16, icon: '📕', title: 'Dictionary — what does it mean?', tab: 'dictionary', audio: 'card-12.mp3',
     script: `Dictionary. What does it mean?
 
 Meaning, pronunciation, example sentence — English or Spanish. Free. No AI key needed.`
   },
   {
-    id: 15, icon: '🧰', title: 'AI Tools Hub — community helpers', tab: 'toolshub', audio: 'card-13.mp3',
+    id: 17, icon: '🧰', title: 'AI Tools Hub — community helpers', tab: 'toolshub', audio: 'card-13.mp3',
     script: `AI Tools Hub. A community shelf of helpers.
 
 Search, filter, upvote, and add specialized tools to your session. Built to grow with the people who use it.`
   },
   {
-    id: 16, icon: '📝', title: 'Scratch Pad — your blank notebook', tab: 'scratchpad', audio: 'card-14.mp3',
+    id: 18, icon: '📝', title: 'Scratch Pad — your blank notebook', tab: 'scratchpad', audio: 'card-14.mp3',
     script: `Scratch Pad. Your blank notebook.
 
 Dump hooks, bars, stray lines — no AI, no rules. Saves automatically on your computer so nothing disappears at three in the morning.`
   },
   {
-    id: 17, icon: '⚙️', title: 'Settings — set this up first', tab: 'settings', audio: 'card-15.mp3',
+    id: 19, icon: '⚙️', title: 'Settings — set this up first', tab: 'settings', audio: 'card-15.mp3',
     script: `Settings. Set this up first.
 
 You need an OpenRouter key for the AI writing features. Free models exist. Paid models go further. Paste the key, pick a model, save.
@@ -162,7 +181,7 @@ That same OpenRouter key also powers Song Forge lyrics and Nano Banana cover art
 Now let's make music.`
   },
   {
-    id: 18, icon: '🤠', title: 'A note from the AI', tab: null, audio: 'card-16.mp3', maker: true,
+    id: 20, icon: '🤠', title: 'A note from the AI', tab: null, audio: 'card-16.mp3', maker: true,
     script: `One more thing. About the person who built this.
 
 He would never put this on the screen himself, so I will.

@@ -42,7 +42,7 @@ try {
  *
  *     <userData>/voice/splash.mp3     plays over the opener
  *     <userData>/voice/card-01.mp3    replaces wizard card 1's narration
- *     ...                             through card-17
+ *     ...                             through card-20
  *
  * Anything present wins over the baked clip; anything missing falls back. Any
  * of mp3 / m4a / wav / ogg works, so he can drop in whatever his recorder makes
@@ -85,7 +85,7 @@ function ensureVoiceDir() {
         '  splash.mp3    plays over the opening title video (about 25 seconds)',
         '  card-01.mp3   Tour card 1',
         '  card-02.mp3   Tour card 2',
-        '  ... through card-17.mp3  (17 cards in all)',
+        '  ... through card-20.mp3  (20 cards in all)',
         '',
         'Only the ones you record get replaced. Anything you leave out keeps the',
         'built-in voice, so you can do them a few at a time.',
@@ -108,7 +108,11 @@ ipcMain.handle('voice-pack', async () => {
   try {
     const dir = ensureVoiceDir();
     const found = {};
-    const stems = ['splash', ...Array.from({ length: 17 }, (_, i) => `card-${String(i + 1).padStart(2, '0')}`)];
+    // 20 cards now: One Man Band, Stemmer and Chopped & Screwed added clips 18,
+    // 19 and 20. This number is the CEILING on which of his own recordings get
+    // found at all, so it has to move every time a card is added — a card past
+    // the ceiling silently keeps the baked TTS no matter what he records.
+    const stems = ['splash', ...Array.from({ length: 20 }, (_, i) => `card-${String(i + 1).padStart(2, '0')}`)];
     for (const stem of stems) {
       const p = voiceFile(stem);
       if (p) found[stem] = require('url').pathToFileURL(p).href;

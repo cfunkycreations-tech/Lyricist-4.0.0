@@ -1,22 +1,46 @@
 {
-  "mastering-0-say": {
-    "text": "Mastering Studio is the finish line. Mastering means putting every track through the same final polish so they all sit at the same loudness and tone, that is what stops track four sounding thin and quiet next to track five. All of it runs offline on your machine.",
-    "words": 48
+  "screw-0-say": {
+    "text": "Remote session on Chopped and Screwed. This is the sound DJ Screw invented in Houston, and it is two separate ideas that people say as one word.",
+    "words": 27
   },
-  "mastering-1-say": {
-    "text": "This is the chain, and it runs on every track. In order: a three-band EQ for bass, mids and treble; a compressor to glue it together; a limiter to stop it clipping; and loudness normalisation capped just under maximum so nothing distorts. Start with a preset, you do not have to understand any of these to use it.",
-    "words": 58
+  "screw-1-say": {
+    "text": "Drop any audio file here to start. It never leaves your machine, all of this runs on your own computer.",
+    "words": 20
   },
-  "mastering-1-then": {
-    "text": "Change anything here and every track is automatically re-mastered with the new settings. You do not have to redo them one by one.",
-    "words": 23
+  "screw-2-say": {
+    "text": "Or pull one of your own recordings straight out of the app. A song you just made in One Man Band lands in this list.",
+    "words": 25
   },
-  "mastering-2-say": {
-    "text": "Export Album writes the finished record out: every track as a numbered mastered WAV, the cover art as a PNG, and a tracklist text file, all into a folder in your Documents. This button stays greyed out until every track has actually been mastered, so you cannot ship a half-finished record by accident.",
+  "screw-2-whenMissing": {
+    "text": "There is also a picker for your own recordings, and it is not on screen because you have not made any yet. As soon as you keep a take from One Man Band or the Recording Booth, it turns up right here and you can screw your own song without leaving the app.",
     "words": 53
   },
-  "mastering-3-say": {
-    "text": "That folder is a real release package, the files you would hand to a distributor, upload, or burn. That is the whole trip, from the Songwriter tab to a finished record.",
-    "words": 31
+  "screw-3-say": {
+    "text": "Screwed is the speed. The whole track slows down and the pitch sinks with it, because nothing corrects it. That sinking voice is the entire point.",
+    "words": 26
+  },
+  "screw-4-say": {
+    "text": "Presets run from barely touched all the way down to sunk. Start in the middle and take it down until it feels right.",
+    "words": 23
+  },
+  "screw-5-say": {
+    "text": "Chopped is the edit, and it is a different thing. A chop lays the same slice down two or three times while the song only moves forward once. That stutter is what makes it a chop and not a fast cut.",
+    "words": 41
+  },
+  "screw-6-say": {
+    "text": "The slicer draws the waveform with the beat grid over it. Click any slice to force a chop where the pattern did not put one, or to take one out where it did. Your edits win.",
+    "words": 36
+  },
+  "screw-6-whenMissing": {
+    "text": "The slicer is not on screen yet because nothing is loaded. Once you pick a song it draws the whole waveform with the beat grid over the top of it, and every slice is clickable. Click one to force a chop where the pattern did not put one, or to take one out where it did. Your edits always win over the pattern.",
+    "words": 63
+  },
+  "screw-7-say": {
+    "text": "Then render it. I am leaving that to you. It saves straight back to your Recordings when it is done.",
+    "words": 20
+  },
+  "screw-8-say": {
+    "text": "That is Chopped and Screwed. Slow it down, chop it up, and the sub follows the track instead of droning underneath it.",
+    "words": 22
   }
 }

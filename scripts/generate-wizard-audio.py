@@ -82,7 +82,10 @@ def normalize(text: str) -> str:
 
 def extract_cards(js_text: str):
     cards = []
-    parts = re.split(r"\{\s*id:\s*(\d+)", js_text)
+    # A card may carry `//` comment lines between its opening brace and its
+    # id, and one does. Anchoring on brace-then-id skipped that card, and the
+    # run died with "no cards parsed" when it was the only one selected.
+    parts = re.split(r"\{(?:\s*//.*)*\s*id:\s*(\d+)", js_text)
     i = 1
     while i < len(parts) - 1:
         card_id, body = int(parts[i]), parts[i + 1]

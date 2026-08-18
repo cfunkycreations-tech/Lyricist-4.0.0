@@ -7,6 +7,7 @@
 
 export const GHOST_DEMO_TABS = new Set([
   'songwriter',
+  'onemanband',
   'analyzer',
   'songforge',
   'quantum',
@@ -15,11 +16,99 @@ export const GHOST_DEMO_TABS = new Set([
   'booth',
   'midistudio',
   'mastering',
+  'screw',
   'settings',
 ]);
 
 /** @type {Record<string, { title: string, steps: object[] }>} */
 export const GHOST_DEMOS = {
+  onemanband: {
+    title: 'One Man Band',
+    steps: [
+      {
+        say: 'Remote session on One Man Band. This is the tab that takes the words you wrote and sings them back to you, with a full band behind them.',
+        wait: 3600,
+      },
+      {
+        target: '.omb-tier',
+        say: 'Simple hides the deep knobs. Full Control shows every one of them. Nothing is buried behind a menu either way.',
+        action: 'point',
+        wait: 3600,
+      },
+      {
+        target: '.omb-engine',
+        say: 'Where it runs. Free cloud costs nothing and is also the fastest, so it is the default. This computer only lights up when ComfyUI is actually running.',
+        action: 'point',
+        wait: 4200,
+      },
+      {
+        target: '.omb-card header .omb-mini',
+        say: 'Pull from Songwriter drops the lyrics you already wrote straight in, sections and all. You never retype anything.',
+        action: 'point',
+        wait: 3600,
+      },
+      {
+        target: '.omb-tags',
+        say: 'These bracket tags are the real structure. Verse, Chorus, Bridge. The words carry the mood, but these decide the shape of the song. Tap one to add it.',
+        action: 'point',
+        wait: 4400,
+      },
+      {
+        target: '.omb-sheet',
+        say: 'Your lyrics live here. Read them back before you start, because a typo costs you the whole run.',
+        action: 'point',
+        wait: 3600,
+      },
+      {
+        target: '.omb-picks',
+        say: 'Genre, mood and voice. Two hundred and forty one genres, and each one brings its own real instruments into the description.',
+        action: 'point',
+        wait: 4000,
+      },
+      {
+        target: '.omb-drafted',
+        say: 'This is the sound description, and it is the single biggest lever on how the song comes out. It gets written for you from your three picks, and you can edit every word of it.',
+        action: 'point',
+        wait: 4800,
+      },
+      {
+        target: '.omb-drafted .omb-mini',
+        say: 'Rewrite with AI hands it to the music model’s own caption writer, free, on their server. It rewrites the sound and leaves your lyrics alone.',
+        action: 'point',
+        wait: 4200,
+      },
+      {
+        target: '.omb-dice',
+        say: 'The take number is the roll of the dice. Same words, new number, a different performance every time. It gets saved with the song so you can find your way back to one you liked.',
+        action: 'point',
+        wait: 4600,
+      },
+      {
+        target: '.omb-est',
+        say: 'It tells you how long before you commit, not after. A long song on free hardware is a real wait, and you should know that going in.',
+        action: 'point',
+        wait: 4000,
+      },
+      {
+        target: '.omb-make',
+        say: 'Make the song starts it. I am not pressing it for you, because that spends real time on the free servers, and this is your quota not mine.',
+        action: 'point',
+        skipClick: true,
+        wait: 4400,
+      },
+      {
+        target: '.omb-credit',
+        say: 'Music by MiniMax Music 3, credited right here, because their licence asks for it and that is only fair.',
+        action: 'point',
+        wait: 3400,
+      },
+      {
+        say: 'That is One Man Band. Write the words in Songwriter, sing them here, then polish in Mastering Studio.',
+        wait: 3400,
+      },
+    ],
+  },
+
   quantum: {
     title: 'Quantum Lab',
     steps: [
@@ -402,6 +491,69 @@ export const GHOST_DEMOS = {
         // what the recogniser hears, not by how it reads on the page.
         say: 'That folder is a real release package, the files you would hand to a distributor, upload, or burn. That is the whole trip, from the Songwriter tab to a finished record.',
         wait: 3200,
+      },
+    ],
+  },
+
+  screw: {
+    title: 'Chopped & Screwed',
+    steps: [
+      {
+        say: 'Remote session on Chopped and Screwed. This is the sound DJ Screw invented in Houston, and it is two separate ideas that people say as one word.',
+        wait: 4200,
+      },
+      {
+        target: '.screw-drop',
+        say: 'Drop any audio file here to start. It never leaves your machine, all of this runs on your own computer.',
+        action: 'point',
+        wait: 3800,
+      },
+      {
+        target: '.screw-field',
+        say: 'Or pull one of your own recordings straight out of the app. A song you just made in One Man Band lands in this list.',
+        action: 'point',
+        optional: true,
+        whenMissing:
+          'There is also a picker for your own recordings, and it is not on screen because you have not made any yet. As soon as you keep a take from One Man Band or the Recording Booth, it turns up right here and you can screw your own song without leaving the app.',
+        wait: 3800,
+      },
+      {
+        target: '.screw-cols .screw-card:nth-of-type(2)',
+        say: 'Screwed is the speed. The whole track slows down and the pitch sinks with it, because nothing corrects it. That sinking voice is the entire point.',
+        action: 'point',
+        wait: 4600,
+      },
+      {
+        target: '.screw-pre',
+        say: 'Presets run from barely touched all the way down to sunk. Start in the middle and take it down until it feels right.',
+        action: 'point',
+        wait: 3800,
+      },
+      {
+        target: '.screw-cols .screw-card:nth-of-type(3)',
+        say: 'Chopped is the edit, and it is a different thing. A chop lays the same slice down two or three times while the song only moves forward once. That stutter is what makes it a chop and not a fast cut.',
+        action: 'point',
+        wait: 5200,
+      },
+      {
+        target: '.screw-slicerwrap',
+        say: 'The slicer draws the waveform with the beat grid over it. Click any slice to force a chop where the pattern did not put one, or to take one out where it did. Your edits win.',
+        action: 'point',
+        optional: true,
+        whenMissing:
+          'The slicer is not on screen yet because nothing is loaded. Once you pick a song it draws the whole waveform with the beat grid over the top of it, and every slice is clickable. Click one to force a chop where the pattern did not put one, or to take one out where it did. Your edits always win over the pattern.',
+        wait: 4800,
+      },
+      {
+        target: '.screw-make',
+        say: 'Then render it. I am leaving that to you. It saves straight back to your Recordings when it is done.',
+        action: 'point',
+        skipClick: true,
+        wait: 4000,
+      },
+      {
+        say: 'That is Chopped and Screwed. Slow it down, chop it up, and the sub follows the track instead of droning underneath it.',
+        wait: 3800,
       },
     ],
   },

@@ -11,9 +11,49 @@
 > few minutes of GPU a day anonymously.** A free Hugging Face token raises the quota and there is a
 > field for it in Settings. Kaggle is NOT redundant — it is the only free path to a full 3-5
 > minute song. `V:\minimax_music3\MakeASong.ipynb` is the notebook.
-> **`Rewrite with AI` is UNVERIFIED** — the quota ran out before it could be round-tripped. It
-> fails soft and keeps the offline draft.
+> **`Rewrite with AI` WAS BROKEN AND IS NOW FIXED AND PROVEN (2026-08-17, build 103).** It could
+> never have worked on any install, and it was not the quota. Two faults in `composeCaption`:
+> the state went out as `JSON.stringify(state)` while their `compose_assist` does
+> `isinstance(raw_state, dict)`, so a string fell through to their defaults and the call died with
+> "Describe the song you want first."; and it ran their `all` target, which rewrites the LYRICS
+> too. It now sends the object with `assist: 'prompt'`, which keeps his words and rewrites only
+> the sound. The reply is `[stateObject, "status"]`, not prose, so the three blocks are read off
+> the object. Round-tripped live: 14.3 s, 668 / 568 / 1621 chars back, lyrics untouched.
+> **Lesson: "the quota ran out" was a guess. The server said exactly what was wrong and nobody
+> read it.** Proof harness: import `composeCaption` straight into Node, no UI needed.
 >
+> **2026-08-18 — THE CLOUD ENGINE WAS SINGING THEIR DEMO SONG, NOT HIS LYRICS.**
+> `generateCloud` posted `JSON.stringify(state)`. Their `studio_generate` runs the argument
+> through `_normalize_state`, whose entire test is `isinstance(state, dict)` — a JSON string
+> fails it in silence and **every field falls back to `_COMPOSER_DEFAULTS`, which holds their
+> built-in synth-pop demo song.** No error, no warning, a real song comes back; it is just not
+> yours. Proved by posting both shapes with the same seed 42 and the same everything else: the
+> returned PCM differs, so the conditioning differed. Now posts the object.
+> **The identical fault was in `composeCaption` (Rewrite with AI) and both were fixed the same
+> day. If a Gradio Space takes a state object, send the OBJECT.** Grep before claiming this class
+> of bug is gone: `grep -n "JSON.stringify(state)" src/services/MusicService.js` must return only
+> prose.
+>
+> **The "too many parts" warning was firing on ordinary songs.** `sectionBudget` was a hand-written
+> ladder that allowed ONE section for a 30 second song, so a Verse plus a Chorus — 15 seconds each,
+> the most normal thing there is — was called "more than will fit". Chris sent a screenshot. It is
+> now arithmetic from the 15-second floor the comment already stated. It also fed `draftCaption`,
+> so the same bug was telling the model "a single section, no intro or outro" while he had written
+> two. **A warning that fires on merely tight instead of on impossible trains people to ignore it.**
+>
+> **Ghost Demo and the wizard had never been extended to the new tabs.** Ghost Demo covered 10 of
+> 18 tabs — One Man Band and Chopped & Screwed, the two newest and hardest, answered "this tab uses
+> Tips hover, no remote demo needed". Both now have full scripts (14 and 9 steps) with baked
+> `am_adam` voice, and the two conditional targets in Screwed (the recordings picker, the slicer)
+> are marked `optional` with `whenMissing` lines. The wizard covered 16 of 18 — **Stemmer and
+> Chopped & Screwed had no card at all**, and One Man Band's card was `audio: null`, the one silent
+> stop on the tour. Now 20 cards, every tab, clips 18/19/20 baked at 0.0 / 0.0 / 1.8% word error.
+> **`main.js`'s voice-pack stem list was hardcoded to 17** — a card past that ceiling silently keeps
+> the baked TTS no matter what he records, so it moves every time a card is added.
+>
+> **When a tab is added, four things need it, not one:** `App.jsx`, a wizard card + baked clip, a
+> Ghost Demo script + baked voice, and the voice-pack ceiling in `main.js`.
+
 > **CHOPPED & SCREWED** (after Mastering) slows a track until the pitch sinks and chops it on the
 > beat, credited to DJ Screw on the tab. Has a canvas **slicer** you click to place your own chops,
 > and a **subterranean sub** that follows the track's own low end rather than droning under it.
