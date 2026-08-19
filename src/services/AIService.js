@@ -3,6 +3,7 @@
 
 import { cleanRefineOutput } from '../utils/refineClean.js';
 import { inspectGenerated, truncateAtCollapse } from '../utils/lyricSanity.js';
+import { stripReasoning, isMostlyReasoning } from '../utils/stripReasoning.js';
 
 /**
  * The model that answered last, and what shape the answer was in.
@@ -99,6 +100,15 @@ async function singleCall(messages, config, modelId, customTemp, customMax) {
       quantizations: ['fp32', 'bf16', 'fp16', 'fp8', 'unknown'],
       allow_fallbacks: true,
     },
+    // A REASONING MODEL'S SCRATCHPAD IS NOT A LYRIC.
+    // Ask OpenRouter to keep the thinking pass out of the reply entirely. The
+    // model still reasons; we just don't get handed the notes. Without this,
+    // reasoning arrives in `message.content` on any provider that doesn't split
+    // it out, and 29 lines of "Let's count syllables" / "Midnight(2) kitchen(2)"
+    // land in the workspace as Verse 1, which is exactly what shipped.
+    // `stripReasoning` below is the second line of defence, because this flag is
+    // honoured by the router, not by every upstream host.
+    reasoning: { exclude: true },
     messages
   };
 
@@ -121,7 +131,11 @@ async function singleCall(messages, config, modelId, customTemp, customMax) {
   // like a song that stops mid-thought, and it is worth naming as that rather
   // than leaving it to look like the model lost the plot.
   const finish = result.choices?.[0]?.finish_reason || null;
-  return { text: result.choices?.[0]?.message?.content || "", model: served, provider, finish, unfiltered };
+  // Cut the thinking out before ANYTHING downstream sees the reply. The sanity
+  // check, the fusion synthesiser and the section parser all read this string.
+  const raw = result.choices?.[0]?.message?.content || "";
+  const text = stripReasoning(raw, { aggressive: true });
+  return { text, raw, model: served, provider, finish, unfiltered };
 }
 
 /**
@@ -133,8 +147,25 @@ async function singleCall(messages, config, modelId, customTemp, customMax) {
  * that the request was handed to a model with no business writing lyrics.
  */
 async function guardedCall(messages, config, modelId, customTemp, customMax) {
-  const { text, model, provider, finish, unfiltered } = await singleCall(messages, config, modelId, customTemp, customMax);
+  const { text, raw, model, provider, finish, unfiltered } = await singleCall(messages, config, modelId, customTemp, customMax);
   const verdict = inspectGenerated(text);
+  // Stripping the scratchpad left nothing, or what survived is still notes about
+  // writing a song rather than a song. Fail it here so the retry below runs.
+  // The alternative is saving the model's planning pass into his lyrics.
+  const rawLines = raw.split('\n').filter((l) => l.trim()).length;
+  const keptLines = text.split('\n').filter((l) => l.trim()).length;
+  // A long reply that shrank to almost nothing was almost all scratchpad, even if
+  // the few survivors read clean on their own.
+  const gutted = rawLines >= 12 && keptLines < 4;
+  if (!text.trim() || isMostlyReasoning(text) || gutted) {
+    verdict.ok = false;
+    verdict.reasons = [
+      ...verdict.reasons,
+      raw.trim()
+        ? 'returned its own thinking instead of lyrics'
+        : 'returned nothing but a thinking pass',
+    ];
+  }
   Object.assign(lastGeneration, {
     model, provider, ok: verdict.ok, reasons: verdict.reasons, dropped: 0, at: Date.now(), unfiltered,
   });
@@ -158,6 +189,10 @@ async function guardedCall(messages, config, modelId, customTemp, customMax) {
   if (modelId !== FALLBACK_MODEL) {
     const retry = await singleCall(messages, config, FALLBACK_MODEL, customTemp, customMax);
     const rv = inspectGenerated(retry.text);
+    if (!retry.text.trim() || isMostlyReasoning(retry.text)) {
+      rv.ok = false;
+      rv.reasons = [...rv.reasons, 'returned its own thinking instead of lyrics'];
+    }
     Object.assign(lastGeneration, {
       model: retry.model, ok: rv.ok, reasons: rv.reasons, dropped: 0, at: Date.now(),
     });
@@ -169,7 +204,8 @@ async function guardedCall(messages, config, modelId, customTemp, customMax) {
 
   throw new Error(
     `"${model}" returned unusable text (${verdict.reasons.join('; ')}). `
-    + `Pick a different model in Settings — avoid the coding and safety models on the free router.`
+    + `Pick a different model in Settings. Avoid the coding and safety models on the free router, `
+    + `and avoid the "thinking"/"reasoning" variants, which spend the whole reply planning.`
   );
 }
 
@@ -285,6 +321,9 @@ Ensure every section is clearly labeled, and that the lyrics are highly authenti
       allModels.map(modelId =>
         singleCall(messages, store.config, modelId, store.config.temperature, store.config.maxTokens)
           .then(({ text }) => {
+            // A draft that is all scratchpad poisons the synthesiser exactly the
+            // way collapsed rubble does. It has no way to know the notes aren't lyrics.
+            if (!text.trim() || isMostlyReasoning(text)) return null;
             if (inspectGenerated(text).ok) return text;
             const cut = truncateAtCollapse(text);
             return cut.text.split('\n').filter((l) => l.trim()).length >= 6 ? cut.text : null;
@@ -571,7 +610,10 @@ function parseBridgeVariations(text) {
 
 // Parses raw lyric text into structured section blocks
 export function parseSectionsFromText(text, store) {
-  const lines = text.split("\n");
+  // Last line of defence. Anything reaching here with a thinking pass still on it
+  // would open an implicit "Verse 1" and be saved as lyrics. Tag-stripping only:
+  // this also runs on text the user typed or pasted, and their words are theirs.
+  const lines = stripReasoning(text).split("\n");
   const parsed = [];
   let currentSection = null;
   let sectionIndex = 1;

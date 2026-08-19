@@ -109,6 +109,9 @@ async function openRouterChat({ apiKey, model, messages, temperature = 0.75, max
   };
   // Some image models want modalities: ["image","text"]
   if (modalities) body.modalities = modalities;
+  // Keep a reasoning model's planning pass out of the reply. On the text path a
+  // scratchpad reads as lyrics; see stripReasoning.js.
+  else body.reasoning = { exclude: true };
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',

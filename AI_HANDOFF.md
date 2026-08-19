@@ -1,4 +1,38 @@
-# AI HANDOFF — Lyricist 4.2.0 "Goes Quantum"
+# AI HANDOFF - Lyricist 4.2.0 "Goes Quantum"
+
+> **2026-08-19 - THE MODEL'S SCRATCHPAD WAS BEING SAVED AS VERSE 1. Build 105.**
+> He opened the Songwriter workspace and the first section read "Verse 1 - 29 lines", starting
+> with *"We need to output lyrics with labels for each section: [Intro], [Verse 1], [Chorus]"*,
+> then *"Let's count syllables."*, then *"Midnight(2) kitchen(2) lights(1) flicker(2)"*. That is a
+> reasoning model's planning pass, stored in his song as lyrics.
+>
+> **Cause, in two halves.** (1) Reasoning arrives in `message.content` on any provider that does
+> not split it into `message.reasoning` - and it arrives in four different shapes: fenced
+> `<think>...</think>`; a lone `</think>` because streaming reassembly lost the opening tag;
+> gpt-oss harmony channels `<|channel|>analysis<|message|>...<|channel|>final<|message|>`; and
+> plain untagged prose with no marker at all. (2) `parseSectionsFromText` opens an **implicit
+> "Verse 1" for any text appearing before the first [Label]** - so every one of those shapes lands
+> in the song.
+>
+> **Fix, three layers.** `reasoning: { exclude: true }` on every OpenRouter request (AIService,
+> GeminiService text path, RhymeHelper) so the router drops the thinking pass; a new
+> `src/utils/stripReasoning.js` that `singleCall` runs over every reply before anything downstream
+> sees it; and `guardedCall` now FAILS a reply that is mostly scratchpad, or that shrank from 12+
+> lines to under 4, so it retries on the fallback model instead of saving notes.
+> `parseSectionsFromText` strips tags as a last line of defence (tags only there - it also runs on
+> text the user pasted, and their words are theirs).
+>
+> **The trap in the heuristic, and it is a real one.** The first draft keyed on opening phrases -
+> "We need to", "Let's", "Better to", "Actually," - and **ate 11 of 18 real lyric lines** in
+> testing: *"We need to talk but the radio is louder"*, *"Let's count the cracks in the ceiling
+> again"*. Songwriters open lines exactly the way a model opens a thought. So an opener alone is
+> never enough: it must appear WITH craft talk (syllables, line count, section labels, the user,
+> the prompt). Only mechanical tells fire unconditionally - `word(2) word(2) word(1)` tallies,
+> `Mid-night ki-tchen` hyphen splits, `Count:`, `Line 1:`, `e.g.`/`etc.`. Final score: **0/18
+> false positives, and his exact dump reduces to a clean [Verse 1] + [Chorus].**
+> Regression check lives in the module's comments; re-run it by importing
+> `stripReasoning`/`looksLikeReasoning` straight into Node.
+>
 
 > **2026-08-16/17 — TWO NEW TABS AND EVERY BACKGROUND VIDEO IS GONE. Shipped 4.2.0.102.**
 > Builds 098 to 102. Installer **381.9 MB -> 187.5 MB.**

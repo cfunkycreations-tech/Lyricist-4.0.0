@@ -3,6 +3,7 @@ import TabBackground from '../common/TabBackground.jsx';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { Sparkles, Search, Clipboard, Check, BookOpen, Layers } from 'lucide-react';
 import { assertApiKey } from '../../services/AIService.js';
+import { stripReasoning } from '../../utils/stripReasoning.js';
 
 export default function RhymeHelper() {
   const store = useLyricStore();
@@ -80,6 +81,9 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
           model: store.config.model,
           temperature: store.config.temperature,
           max_tokens: 800,
+          // A reasoning model would otherwise spend this whole budget planning,
+          // and hand back its notes instead of the rhymes.
+          reasoning: { exclude: true },
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt }
@@ -91,7 +95,7 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
         throw new Error(`API Status: ${response.status}`);
       }
       const data = await response.json();
-      setAiSuggestions(data.choices?.[0]?.message?.content || '');
+      setAiSuggestions(stripReasoning(data.choices?.[0]?.message?.content || ''));
     } catch (e) {
       setErrorMsg(e.message);
     } finally {
