@@ -1,0 +1,73 @@
+/* MultiPick — pick up to five and blend them.
+   Deliberately neutral: this drops into the Songwriter sidebar and into One Man
+   Band's chrome-and-glass panel, so it borrows the app's variables rather than
+   bringing a look of its own. */
+
+.mpick { display: flex; flex-direction: column; gap: 6px; }
+
+.mpick-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+
+.mpick-label {
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: rgba(167, 139, 250, 0.7);
+}
+.mpick-count {
+  font-size: 0.6rem; letter-spacing: 0.08em; color: rgba(167, 139, 250, 0.55);
+  font-variant-numeric: tabular-nums;
+}
+.mpick-count.at-max { color: hsl(158 80% 58%); }
+
+.mpick-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+
+.mpick-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 4px 3px 8px; border-radius: 999px;
+  background: rgba(124, 58, 237, 0.20);
+  border: 1px solid rgba(139, 92, 246, 0.40);
+  max-width: 100%;
+}
+.mpick-chip.is-lead {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: hsla(158 80% 58% / 0.55);
+  box-shadow: 0 0 10px hsla(158 80% 58% / 0.18);
+}
+
+.mpick-lead {
+  font-size: 0.5rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+  color: hsl(158 80% 62%); padding-right: 2px;
+}
+
+.mpick-name {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font: inherit; font-size: 0.74rem; color: #e8e0ff;
+  max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mpick-name:hover { color: #fff; text-decoration: underline; }
+
+.mpick-x {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: rgba(0, 0, 0, 0.28); border: 0; cursor: pointer;
+  color: rgba(255, 180, 200, 0.9); font-size: 12px; line-height: 1;
+}
+.mpick-x:hover { background: rgba(255, 90, 130, 0.30); color: #fff; }
+
+.mpick-add {
+  width: 100%;
+  background: rgba(13, 8, 28, 0.7);
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.82rem;
+  color: #e8e0ff;
+  outline: none;
+  font-family: 'Space Grotesk', sans-serif;
+}
+.mpick-add:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.mpick-note {
+  margin: 0; font-size: 0.63rem; line-height: 1.4;
+  color: rgba(200, 190, 230, 0.72);
+}
+.mpick-note b { color: hsl(158 80% 62%); font-weight: 700; }
+.mpick-note i { color: #e8e0ff; font-style: normal; font-weight: 600; }

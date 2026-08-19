@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import TabBackground from '../common/TabBackground.jsx';
+import MultiPick from '../common/MultiPick.jsx';
 import { useLyricStore, genres, subgenres, moods, rhymeSchemes, rapFlowPatterns } from '../../context/LyricStore.jsx';
 import SectionEditor from './SectionEditor.jsx';
 import StructureBuilder from './StructureBuilder.jsx';
@@ -9,6 +10,12 @@ import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCir
 // The logo and the founder photo were imported here but never rendered — a
 // leftover from the old in-tab header. Vite emits an imported asset whether or
 // not it is used, so both were being copied into every build for nothing.
+
+/** The genres people actually rap in. Any of these in the blend shows the flow control. */
+const RAPPED_GENRES = [
+  'Hip-Hop / Rap', 'Trap', 'Drill', 'Lo-Fi / Boom Bap', 'Gospel / Gospel Rap',
+  'Phonk', 'Conscious / Spoken Word', 'Hyperpop / Glitchcore', 'Latin / Reggaeton',
+];
 
 export default function SongwriterHub({ ghostRiderData }) {
   const store = useLyricStore();
@@ -264,57 +271,38 @@ export default function SongwriterHub({ ghostRiderData }) {
           gap: 16
         }}
       >
-        {/* Genre Selector */}
-        <div data-help="Genre is the style of music — like Hip-Hop, Pop, or Country. It shapes the whole vibe of the words. Pick the one that fits the song you hear in your head.">
-          <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
-            Genre
-          </label>
-          <select
-            value={store.genre}
-            onChange={(e) => store.setGenre(e.target.value)}
-            style={{
-              width: '100%',
-              background: 'rgba(13,8,28,0.7)',
-              border: '1px solid rgba(139,92,246,0.22)',
-              borderRadius: 8,
-              padding: '7px 10px',
-              fontSize: '0.82rem',
-              color: '#e8e0ff',
-              outline: 'none',
-              fontFamily: "'Space Grotesk', sans-serif"
-            }}
-          >
-            {genres.map(g => (
-              <option key={g} value={g}>{g}</option>
-            ))}
-          </select>
-        </div>
+        {/* GENRE, SUBGENRE AND MOOD ARE BLENDS NOW — up to five each, mixed into
+            one song, lead pick first. See MultiPick for why this is chips and a
+            dropdown rather than a ctrl-click multi-select. */}
+        <MultiPick
+          label="Genre"
+          help="Genre is the style of music — like Hip-Hop, Pop, or Country. Pick up to five and they get blended into one song. The first one is the lead; tap another chip to make that one lead instead."
+          value={store.genreList}
+          onChange={store.setGenreList}
+          options={genres}
+          addLabel="Add a genre"
+        />
 
-        {/* Mood Selector */}
-        <div data-help="Mood is the feeling of the song — happy, heartbroken, angry, hopeful, and so on. It tells the AI what emotion the lyrics should carry.">
-          <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
-            Mood
-          </label>
-          <select
-            value={store.mood}
-            onChange={(e) => store.setMood(e.target.value)}
-            style={{
-              width: '100%',
-              background: 'rgba(13,8,28,0.7)',
-              border: '1px solid rgba(139,92,246,0.22)',
-              borderRadius: 8,
-              padding: '7px 10px',
-              fontSize: '0.82rem',
-              color: '#e8e0ff',
-              outline: 'none',
-              fontFamily: "'Space Grotesk', sans-serif"
-            }}
-          >
-            {moods.map(m => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
-        </div>
+        {store.subgenrePool.length > 0 && (
+          <MultiPick
+            label="Subgenre"
+            help="The narrower corner of the genres you picked — the list is drawn from all of them. Up to five, and the first is the lead."
+            value={store.subgenreList}
+            onChange={store.setSubgenreList}
+            options={store.subgenrePool}
+            min={0}
+            addLabel="Add a subgenre"
+          />
+        )}
+
+        <MultiPick
+          label="Mood"
+          help="Mood is the feeling of the song — happy, heartbroken, angry, hopeful. Pick up to five and they get layered; the first one is the dominant feeling."
+          value={store.moodList}
+          onChange={store.setMoodList}
+          options={moods}
+          addLabel="Add a mood"
+        />
 
         {/* Topic Input (Keywords) */}
         <div data-help="What the song is about, plus any words or images you want woven in. Type freely — separate ideas with commas, spaces, dashes, periods, or new lines, whatever feels natural. Example: city lights, midnight, running late.">
@@ -427,8 +415,12 @@ export default function SongwriterHub({ ghostRiderData }) {
               </div>
             </div>
 
-            {store.genre === 'Hip-Hop / Rap' && (
-              <div data-help="Flow is the RHYTHM of how the words are rapped over the beat — fast, slow, choppy, smooth, triplets, and so on. It's like the heartbeat of the verse. (Shows up for Hip-Hop / Rap.)">
+            {/* ANY rapped genre in the blend brings the flow control out, not just a
+                lead of Hip-Hop / Rap. Someone blending Country with Trap is
+                writing bars and needs this; gating it on the lead pick alone
+                would hide it from exactly the people who went looking for it. */}
+            {store.genreList.some((g) => RAPPED_GENRES.includes(g)) && (
+              <div data-help="Flow is the RHYTHM of how the words are rapped over the beat — fast, slow, choppy, smooth, triplets, and so on. It's like the heartbeat of the verse. (Shows up whenever a rapped genre is in your blend.)">
                 <label style={{ fontSize: '0.6rem', color: 'rgba(167,139,250,0.6)', display: 'block', marginBottom: 3 }}>Rap Flow Pattern</label>
                 <select
                   value={store.flowPattern}

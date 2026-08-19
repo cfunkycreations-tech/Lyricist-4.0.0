@@ -336,10 +336,29 @@ export const LyricStoreProvider = ({ children }) => {
     return saved === null ? true : saved === 'true';
   });
 
-  // Form selections
-  const [genre, setGenre] = useState(genres[0]);
-  const [subgenre, setSubgenre] = useState(subgenres[genres[0]][0]);
-  const [mood, setMood] = useState(moods[0]);
+  // Form selections.
+  //
+  // GENRE, SUBGENRE AND MOOD ARE LISTS NOW, up to five each, blended into one
+  // song. Chris, 2026-08-19: *"I wanna be able to choose more than one genre. I
+  // want it to go up to five genres mixed into one... and moods, by the way."*
+  //
+  // They are stored as arrays and ALSO read back as single values, because
+  // `store.genre` is used all over the app — Song Forge's summary and its
+  // Surprise Me, the Artist Analyzer, the demo snapshot, every prompt builder.
+  // Turning those into a breaking change to add a feature is how you spend a
+  // build fixing things that were not broken. So the array is the truth,
+  // `genre` is its LEAD (the first pick), and `setGenre(x)` still means "make it
+  // just x". Anything that wants the whole blend asks for `genreList`.
+  const [genreList, setGenreList] = useState([genres[0]]);
+  const [subgenreList, setSubgenreList] = useState([subgenres[genres[0]][0]]);
+  const [moodList, setMoodList] = useState([moods[0]]);
+
+  const genre = genreList[0] || genres[0];
+  const subgenre = subgenreList[0] || '';
+  const mood = moodList[0] || moods[0];
+  const setGenre = (g) => setGenreList([g]);
+  const setSubgenre = (g) => setSubgenreList(g ? [g] : []);
+  const setMood = (m) => setMoodList([m]);
   const [structureTemplate, setStructureTemplate] = useState(prebuiltTemplates[0].id);
   const [customStructure, setCustomStructure] = useState(prebuiltTemplates[0].structure);
   const [topic, setTopic] = useState('');
@@ -356,12 +375,22 @@ export const LyricStoreProvider = ({ children }) => {
   // Line counts per section
   const [sectionLineCounts, setSectionLineCounts] = useState({});
 
+  // The subgenres that are legal for whatever genres are picked. With five
+  // genres in play the pool is the union of all of them, in pick order, so the
+  // lead genre's subgenres come first.
+  const subgenrePool = genreList.flatMap((g) => subgenres[g] || []);
+
   useEffect(() => {
-    // Sync subgenre when genre changes
-    if (subgenres[genre]) {
-      setSubgenre(subgenres[genre][0]);
-    }
-  }, [genre]);
+    // Drop any subgenre whose genre is no longer picked, and never leave the
+    // list empty. This used to hard-reset to the first subgenre of the one
+    // genre; with a blend, throwing away a still-valid pick because a DIFFERENT
+    // genre changed would be maddening.
+    setSubgenreList((prev) => {
+      const kept = prev.filter((sg) => subgenrePool.includes(sg));
+      if (kept.length) return kept.length === prev.length ? prev : kept;
+      return subgenrePool.length ? [subgenrePool[0]] : [];
+    });
+  }, [genreList]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     localStorage.setItem('lyricistConfig', JSON.stringify(config));
@@ -385,6 +414,7 @@ export const LyricStoreProvider = ({ children }) => {
   const demoRef = useRef(null);
   demoRef.current = {
     lyrics, undoStack, redoStack,
+    genreList, subgenreList, moodList,
     genre, subgenre, mood, structureTemplate, customStructure,
     topic, artistRef, notes,
     rhymeScheme, rhymeDensity, flowPattern, cadenceNotes, hookFirstMode,
@@ -397,10 +427,12 @@ export const LyricStoreProvider = ({ children }) => {
       setLyricsState(s.lyrics);
       setUndoStack(s.undoStack);
       setRedoStack(s.redoStack);
-      setGenre(s.genre);
-      // Genre drives a subgenre reset on the next tick, so put subgenre back after it.
-      setTimeout(() => setSubgenre(s.subgenre), 0);
-      setMood(s.mood);
+      // Lists where a newer snapshot has them, single values where it does not,
+      // so a session saved before the blend still restores.
+      setGenreList(s.genreList || [s.genre].filter(Boolean));
+      // Genre drives a subgenre prune on the next tick, so put subgenres back after it.
+      setTimeout(() => setSubgenreList(s.subgenreList || [s.subgenre].filter(Boolean)), 0);
+      setMoodList(s.moodList || [s.mood].filter(Boolean));
       setStructureTemplate(s.structureTemplate);
       setCustomStructure(s.customStructure);
       setTopic(s.topic);
@@ -569,6 +601,11 @@ export const LyricStoreProvider = ({ children }) => {
       genre, setGenre,
       subgenre, setSubgenre,
       mood, setMood,
+      // The blends. `genre`/`subgenre`/`mood` above stay the LEAD of each.
+      genreList, setGenreList,
+      subgenreList, setSubgenreList,
+      moodList, setMoodList,
+      subgenrePool,
       structureTemplate, setStructureTemplate,
       customStructure, setCustomStructure,
       topic, setTopic,

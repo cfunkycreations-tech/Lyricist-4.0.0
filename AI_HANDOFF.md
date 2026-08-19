@@ -1,5 +1,44 @@
 # AI HANDOFF - Lyricist 4.2.0 "Goes Quantum"
 
+> **2026-08-19 - FIVE GENRES, FIVE MOODS, FIVE OF EVERYTHING, BLENDED INTO ONE. Build 108.**
+> Chris: *"I wanna be able to choose more than one genre. I want it to go up to five genres mixed
+> into one... and moods, by the way, and everything else... Make it funky."*
+>
+> **`src/components/common/MultiPick.jsx`** is the one control, used in both tabs. Chips for what
+> you picked (each with an x), a normal dropdown to add another, a live "3 of 5", and the dropdown
+> disables itself at five saying so in plain English. **NOT a `<select multiple>`** - ctrl-click is
+> invisible to anyone who does not already know it exists, and this app has no hidden controls.
+> **The first pick is the LEAD and it is labelled**, because Country + Trap and Trap + Country are
+> two different songs; tap any chip to promote it.
+>
+> **A BARE LIST DOES NOT PRODUCE A BLEND.** Handed "Country, Trap, Gospel" a model picks the first
+> and writes a country song, because a list reads as a menu. `src/utils/blend.js` names the lead and
+> says the word FUSION out loud. Verified against the real `buildPromptContext`: a blend comes out as
+> *"Country + Hip-Hop / Rap + Trap (a real fusion, not a list: Country leads the sound, with ...
+> woven through it)"*, and a single pick still comes out as bare `- Genre: Country` - nobody who
+> picks one thing pays for this feature.
+>
+> **Nothing became a breaking change.** `store.genre` / `.mood` / `.subgenre` still exist and now
+> return the LEAD of each list, and `setGenre(x)` still means "make it just x", so Song Forge, the
+> Artist Analyzer, the demo snapshot and the cover-art prompt all kept working. The blend is
+> `store.genreList` / `moodList` / `subgenreList`. Old saved sessions restore through
+> `s.genreList || [s.genre]`.
+>
+> Also changed because the blend made them wrong:
+> - **Subgenres are the UNION** of every picked genre's subgenres, lead first (22 options across
+>   five genres), and changing one genre no longer hard-resets a still-valid subgenre pick.
+> - **One Man Band merges the KITS.** The whole point of `musicTaxonomy` is that each genre carries
+>   its instruments; blending genres without blending kits would hand MiniMax a genre list with one
+>   band behind it. `mergedKit()` dedupes and caps at twelve - five kits is a forty-piece orchestra.
+>   Verified: Blues rock + Afrobeats + Gospel + Bluegrass produced *"dirty guitar, walking bass,
+>   slide, tambourine, log drum bass, shakers, ... Hammond organ, piano, full choir"*.
+> - **Voices blend as lead plus harmony**, and a song is only instrumental if EVERY voice pick is.
+> - **The Rap Flow control shows when ANY picked genre is rapped**, not just when the lead is
+>   Hip-Hop / Rap. Verified: hidden for Country alone, shown with Trap in the blend behind Country.
+> - **Surprise Me now rolls 2-3 genres and 1-3 moods.** One random genre is a dice roll;
+>   "Folk / Americana + Trap + Hyperpop" is a song nobody would have thought to ask for.
+>
+
 > **2026-08-19 - THE BACKGROUNDS DIED AS YOU WALKED BACK THROUGH THE TABS. Build 107.**
 > Chris: *"the background animations work one through seventeen tabs. But as you go through them and
 > you come back through them, they stop working."* He described the mechanism exactly.

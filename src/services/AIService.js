@@ -4,6 +4,7 @@
 import { cleanRefineOutput } from '../utils/refineClean.js';
 import { inspectGenerated, truncateAtCollapse } from '../utils/lyricSanity.js';
 import { stripReasoning, isMostlyReasoning } from '../utils/stripReasoning.js';
+import { blendPhrase } from '../utils/blend.js';
 
 /**
  * The model that answered last, and what shape the answer was in.
@@ -243,11 +244,16 @@ export async function callAI(messages, config, customTemp = null, customMax = nu
 
 // Builds the global context block describing all active songwriting parameters
 export function buildPromptContext(store) {
+  // A blend has to be ASKED for as a blend; see utils/blend.js for why a bare
+  // list gets you the first item and nothing else.
+  const genreLine = blendPhrase(store.genreList || [store.genre], 'sound');
+  const subLine = blendPhrase(store.subgenreList || [store.subgenre].filter(Boolean), 'sound');
+  const moodLine = blendPhrase(store.moodList || [store.mood], 'feeling');
   return `
 SONGWRITING CONFIGURATION:
-- Genre: ${store.genre}
-- Subgenre: ${store.subgenre || "none"}
-- Mood: ${store.mood}
+- Genre: ${genreLine}
+- Subgenre: ${subLine || "none"}
+- Mood: ${moodLine}
 - Rhyme Scheme: ${store.rhymeScheme}
 - Rhyme Density: ${store.rhymeDensity}
 - Flow Pattern: ${store.flowPattern}

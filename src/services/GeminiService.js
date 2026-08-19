@@ -5,6 +5,7 @@
 // NO Google AI Studio key. NO @google/genai client.
 
 import { callAI, buildPromptContext, parseSectionsFromText, assertApiKey, normalizeApiKey } from './AIService.js';
+import { blendLabel } from '../utils/blend.js';
 
 // OpenRouter image-model slugs (Nano Banana family exposed through OpenRouter).
 // User can change these in Settings; defaults target Nano Banana 2 Lite/class.
@@ -371,8 +372,8 @@ export async function generateImageToImage(store, { referenceBase64, referenceMi
 export async function generateCoverArtFromReference(store, { referenceBase64, referenceMimeType, title, topic, styleOverride } = {}) {
   const subject =
     `Using the attached image as the primary visual reference and base layer, create new album cover art ` +
-    `for a ${store.genre || 'genre-blending'} song titled "${title || 'Untitled'}"` +
-    `${topic ? `, about ${topic}` : ''}, evoking a ${store.mood || 'striking'} mood. ` +
+    `for a ${blendLabel(store.genreList) || store.genre || 'genre-blending'} song titled "${title || 'Untitled'}"` +
+    `${topic ? `, about ${topic}` : ''}, evoking a ${blendLabel(store.moodList) || store.mood || 'striking'} mood. ` +
     `Preserve the reference image's key subject, composition and palette cues, reinterpreted as polished cover art.`;
   const style = styleOverride && styleOverride.trim() ? `Style notes: ${styleOverride.trim()}` : `Style notes: ${BRAND_ART_STYLE}`;
   const prompt = `${subject}\n\n${style}\n\n${MANDATORY_MEDALLION_FRAME}`;
@@ -382,8 +383,8 @@ export async function generateCoverArtFromReference(store, { referenceBase64, re
 export async function generateCoverArt(store, { title, topic, styleOverride } = {}) {
   const prompt = buildArtPrompt({
     title,
-    genre: store.genre,
-    mood: store.mood,
+    genre: blendLabel(store.genreList) || store.genre,
+    mood: blendLabel(store.moodList) || store.mood,
     topic: topic || store.topic,
     styleOverride: styleOverride ?? store.config.customArtStyle,
   });

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import TabBackground from '../common/TabBackground.jsx';
+import MultiPick from '../common/MultiPick.jsx';
 import {
   buildState, composeCaption, detectComfy, estimateSeconds, generateSong, sectionBudget,
 } from '../../services/MusicService.js';
@@ -7,6 +8,7 @@ import { useLyricStore } from '../../context/LyricStore.jsx';
 import {
   GENRE_GROUPS, MOOD_GROUPS, VOICE_GROUPS, COUNTS, kitFor,
 } from '../../services/musicTaxonomy.js';
+import { blendLabel } from '../../utils/blend.js';
 import { saveRecording } from '../../services/RecordingsStore.js';
 import './OneManBand.css';
 
@@ -52,13 +54,46 @@ function prettyTime(totalSeconds) {
 }
 
 /**
+ * Every picked genre's instruments in one band, deduped, lead genre first.
+ *
+ * The kit is the whole reason musicTaxonomy exists: "Afrobeats" alone gives you
+ * generic pop, "Afrobeats, talking drum, shekere, log drum bass" gives you
+ * Afrobeats. Blending genres without blending their kits would have thrown that
+ * away and handed MiniMax a genre list with one band behind it. Capped at twelve
+ * instruments because five kits is a forty-piece orchestra and the caption stops
+ * meaning anything.
+ */
+function mergedKit(genreNames) {
+  const seen = new Set();
+  const parts = [];
+  for (const g of genreNames) {
+    for (const piece of kitFor(g).split(',').map((x) => x.trim()).filter(Boolean)) {
+      const key = piece.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      parts.push(piece);
+    }
+  }
+  return parts.slice(0, 12).join(', ') || 'guitar, bass and a live drum kit';
+}
+
+/**
  * Draft MiniMax's three caption blocks from the three simple picks.
  *
  * Deliberately plain and offline. The AI rewrite is an upgrade on top of this,
  * never a dependency — somebody with no key and no internet still gets a song.
  */
-function draftCaption({ genre, mood, voice, seconds }) {
-  const instrumental = voice.startsWith('Instrumental');
+function draftCaption({ genres, moods, voices, seconds }) {
+  // Up to five of each now, mixed into one piece of music.
+  const gs = (genres || []).filter(Boolean);
+  const ms = (moods || []).filter(Boolean);
+  const vs = (voices || []).filter(Boolean);
+  const genre = blendLabel(gs);
+  const mood = blendLabel(ms);
+  const voice = blendLabel(vs);
+  // Instrumental only if EVERY voice pick is instrumental. One real voice in the
+  // list means the piece has singing in it.
+  const instrumental = vs.length > 0 && vs.every((v) => v.startsWith('Instrumental'));
   const budget = sectionBudget(seconds);
   const shape = budget <= 1
     ? `A ${seconds} second excerpt: a single section, no intro or outro.`
@@ -66,9 +101,16 @@ function draftCaption({ genre, mood, voice, seconds }) {
 
   return {
     globalMeta:
-      `Basic Attributes: ${genre}. ${shape} `
-      + `Global Emotional Progression: ${mood.toLowerCase()} from the opening bar, holding that `
-      + `character through to the end. `
+      `Basic Attributes: ${gs.length > 1
+        ? `${genre} — a genuine fusion, with ${gs[0]} leading and ${gs.slice(1).join(', ')} `
+          + `folded into the same arrangement rather than taking turns`
+        : genre}. ${shape} `
+      + (ms.length > 1
+        ? `Global Emotional Progression: ${ms[0].toLowerCase()} at the core from the opening bar, `
+          + `shaded with ${ms.slice(1).map((m) => m.toLowerCase()).join(' and ')}, all of it present `
+          + `at once rather than section by section. `
+        : `Global Emotional Progression: ${mood.toLowerCase()} from the opening bar, holding that `
+          + `character through to the end. `)
       + `Application Scenarios & Imagery: a small room, a worn instrument, someone playing for `
       + `the sake of it. `
       + `Sonics & Production Profile: dark and earthy, close-miked, analog warmth, sharp `
@@ -76,7 +118,9 @@ function draftCaption({ genre, mood, voice, seconds }) {
     vocals: instrumental
       ? 'This piece is instrumental with no vocals. The lead melodic role is carried by the '
         + 'main instrument of the arrangement.'
-      : `Vocal Gender & Timbre: ${voice}, weathered and full-throated with real grain. `
+      : `Vocal Gender & Timbre: ${vs.length > 1
+        ? `${vs[0]} on lead, with ${vs.slice(1).join(' and ')} in support and in harmony`
+        : voice}, weathered and full-throated with real grain. `
         + `Vocal Style: sung slightly ahead of the beat, conversational phrasing, a falling `
         + `motif at the end of each line. `
         + `Harmony/Backing Vocals: sparse, only where the song lifts. `
@@ -85,7 +129,7 @@ function draftCaption({ genre, mood, voice, seconds }) {
     // biggest thing that makes a world-music pick sound like that music
     // instead of like pop with a different label on it.
     arrangement:
-      `Instrument Lifecycle Description (Primary/Secondary Layering): Primary: ${kitFor(genre)} `
+      `Instrument Lifecycle Description (Primary/Secondary Layering): Primary: ${mergedKit(gs)} `
       + `carry the song from the first bar. Secondary: supporting parts join early and stay; a `
       + `lead line answers the vocal only where the song opens up. `
       + `Groove & Foundation Progression: thumping kick with snare on 2 and 4, brushes where it `
@@ -102,9 +146,15 @@ export default function OneManBand() {
     + 'Sparks on the deck of a nameless town\n\n[Chorus]\nSo I sing it loud, I sing it free\n'
     + 'Every road out here belongs to me\n'
   );
-  const [genre, setGenre] = useState('Blues rock');
-  const [mood, setMood] = useState('Gritty and driving');
-  const [voice, setVoice] = useState('Gravelly male');
+  // Lists, up to five each, blended into one song. `genre`/`mood`/`voice` stay
+  // as the lead of each so the recipe saved with a take and the instrumental
+  // check keep reading the way they always did.
+  const [genres, setGenres] = useState(['Blues rock']);
+  const [moods, setMoods] = useState(['Gritty and driving']);
+  const [voices, setVoices] = useState(['Gravelly male']);
+  const genre = genres[0];
+  const mood = moods[0];
+  const voice = voices[0];
 
   const [seconds, setSeconds] = useState(30);
   const [takeCount, setTakeCount] = useState(2);
@@ -119,7 +169,7 @@ export default function OneManBand() {
   const [comfy, setComfy] = useState(null);
 
   const [caption, setCaption] = useState(() => draftCaption({
-    genre: 'Blues rock', mood: 'Gritty and driving', voice: 'Gravelly male', seconds: 30,
+    genres: ['Blues rock'], moods: ['Gritty and driving'], voices: ['Gravelly male'], seconds: 30,
   }));
   const [captionEdited, setCaptionEdited] = useState(false);
   const [rewriting, setRewriting] = useState(false);
@@ -141,8 +191,10 @@ export default function OneManBand() {
   // Redraft the caption when the picks change, unless he has taken it over.
   useEffect(() => {
     if (captionEdited) return;
-    setCaption(draftCaption({ genre, mood, voice, seconds }));
-  }, [genre, mood, voice, seconds, captionEdited]);
+    setCaption(draftCaption({ genres, moods, voices, seconds }));
+    // Joined rather than the arrays themselves: a new array every render would
+    // redraft the caption on every keystroke elsewhere in the tab.
+  }, [genres.join('|'), moods.join('|'), voices.join('|'), seconds, captionEdited]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!busy) return undefined;
@@ -182,7 +234,7 @@ export default function OneManBand() {
           globalMeta: caption.globalMeta,
           vocals: caption.vocals,
           arrangement: caption.arrangement,
-          instrumental: voice.startsWith('Instrumental'),
+          instrumental: voices.every((v) => v.startsWith('Instrumental')),
         }),
         duration: seconds,
         hfToken: store.config?.huggingFaceToken || '',
@@ -226,7 +278,7 @@ export default function OneManBand() {
       globalMeta: caption.globalMeta,
       vocals: caption.vocals,
       arrangement: caption.arrangement,
-      instrumental: voice.startsWith('Instrumental'),
+      instrumental: voices.every((v) => v.startsWith('Instrumental')),
     });
 
     // Every take gets its own seed so they are genuinely different performances.
@@ -255,7 +307,7 @@ export default function OneManBand() {
           seconds,
           ms: res.ms,
           // The seed alone does NOT reproduce a take. Keep the whole recipe.
-          recipe: { lyrics, caption, genre, mood, voice, seconds, steps, guidance, engine },
+          recipe: { lyrics, caption, genres, moods, voices, genre, mood, voice, seconds, steps, guidance, engine },
         }, ...prev]);
       }
       setPhase('');
@@ -352,34 +404,33 @@ export default function OneManBand() {
               <textarea className="omb-sheet" rows={12} value={lyrics} spellCheck
                         onChange={(e) => setLyrics(e.target.value)} />
 
+              {/* Five of each, blended. The instruments of every genre picked go
+                  into the caption together — see mergedKit. */}
               <div className="omb-picks">
-                <label>Genre
-                  <select value={genre} onChange={(e) => setGenre(e.target.value)}>
-                    {Object.entries(GENRE_GROUPS).map(([grp, list]) => (
-                      <optgroup key={grp} label={grp}>
-                        {list.map((g) => <option key={g.name} value={g.name}>{g.name}</option>)}
-                      </optgroup>
-                    ))}
-                  </select>
-                </label>
-                <label>Mood
-                  <select value={mood} onChange={(e) => setMood(e.target.value)}>
-                    {Object.entries(MOOD_GROUPS).map(([grp, list]) => (
-                      <optgroup key={grp} label={grp}>
-                        {list.map((m) => <option key={m}>{m}</option>)}
-                      </optgroup>
-                    ))}
-                  </select>
-                </label>
-                <label>Voice
-                  <select value={voice} onChange={(e) => setVoice(e.target.value)}>
-                    {Object.entries(VOICE_GROUPS).map(([grp, list]) => (
-                      <optgroup key={grp} label={grp}>
-                        {list.map((v) => <option key={v}>{v}</option>)}
-                      </optgroup>
-                    ))}
-                  </select>
-                </label>
+                <MultiPick
+                  label="Genre"
+                  help="Pick up to five and they are fused into one arrangement, not played in turn. Every genre brings its own instruments to the description, and all of them end up in the band."
+                  value={genres}
+                  onChange={setGenres}
+                  options={GENRE_GROUPS}
+                  addLabel="Add a genre"
+                />
+                <MultiPick
+                  label="Mood"
+                  help="Up to five feelings, layered at once rather than section by section. The first is the core of the piece."
+                  value={moods}
+                  onChange={setMoods}
+                  options={MOOD_GROUPS}
+                  addLabel="Add a mood"
+                />
+                <MultiPick
+                  label="Voice"
+                  help="Up to five. The first sings lead and the rest come in as support and harmony. Pick only Instrumental voices to get a song with no singing at all."
+                  value={voices}
+                  onChange={setVoices}
+                  options={VOICE_GROUPS}
+                  addLabel="Add a voice"
+                />
               </div>
 
               <div className="omb-drafted">
@@ -392,7 +443,7 @@ export default function OneManBand() {
                     </button>
                     <button type="button" className="omb-mini" onClick={() => {
                       setCaptionEdited(false);
-                      setCaption(draftCaption({ genre, mood, voice, seconds }));
+                      setCaption(draftCaption({ genres, moods, voices, seconds }));
                     }}>Start over
                     </button>
                   </span>

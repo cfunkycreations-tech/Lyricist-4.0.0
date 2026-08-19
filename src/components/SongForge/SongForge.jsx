@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLyricStore, genres, moods } from '../../context/LyricStore.jsx';
+import { blendLabel } from '../../utils/blend.js';
 import {
   generateSongWithGemini,
   generateCoverArt,
@@ -267,11 +268,21 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
   };
 
   const handleSurpriseMe = () => {
-    const genre = genres[Math.floor(Math.random() * genres.length)];
-    const mood = moods[Math.floor(Math.random() * moods.length)];
+    // Surprise Me BLENDS now. Two or three genres is where this got fun: one
+    // random genre is a dice roll, "Corridos + Phonk + Gospel" is a song nobody
+    // would have thought to ask for, which is the entire point of the button.
+    const pickSome = (pool, min, max) => {
+      const n = min + Math.floor(Math.random() * (max - min + 1));
+      const left = [...pool];
+      const out = [];
+      while (out.length < n && left.length) {
+        out.push(...left.splice(Math.floor(Math.random() * left.length), 1));
+      }
+      return out;
+    };
     const topic = SURPRISE_TOPICS[Math.floor(Math.random() * SURPRISE_TOPICS.length)];
-    store.setGenre(genre);
-    store.setMood(mood);
+    store.setGenreList(pickSome(genres, 2, 3));
+    store.setMoodList(pickSome(moods, 1, 3));
     store.setTopic(topic);
   };
 
@@ -355,8 +366,8 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
               Using current Songwriter setup
             </label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.74rem', color: '#e8e0ff' }}>
-              <div><strong>Genre:</strong> {store.genre}{store.subgenre ? ` — ${store.subgenre}` : ''}</div>
-              <div><strong>Mood:</strong> {store.mood}</div>
+              <div><strong>Genre:</strong> {blendLabel(store.genreList)}{store.subgenreList.length ? ` — ${blendLabel(store.subgenreList)}` : ''}</div>
+              <div><strong>Mood:</strong> {blendLabel(store.moodList)}</div>
               <div><strong>Topic:</strong> {store.topic || 'Not set'}</div>
               {mode === 'songFirst' && <div><strong>Structure:</strong> {store.customStructure.join(' → ')}</div>}
             </div>
