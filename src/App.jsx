@@ -170,7 +170,16 @@ function MainLayout() {
 
   // main.js reads this when it samples memory, so boot.log records which tab
   // was open while the renderer was growing.
-  useEffect(() => { window.__lyricistActiveTab = activeTab; }, [activeTab]);
+  useEffect(() => {
+    window.__lyricistActiveTab = activeTab;
+    // Every prism listens for this. A hidden tab has to RELEASE its WebGL
+    // context and the new one has to take it, and both have to happen on the
+    // switch itself, not whenever an observer gets round to it. See
+    // PrismBackground: Chromium allows sixteen contexts and this app has
+    // eighteen canvases, so a slow release means the limit is still hit and the
+    // oldest background dies.
+    window.dispatchEvent(new Event('lyricist-tab'));
+  }, [activeTab]);
 
   // The header banner clip lives outside every TabPane, so the per-tab video
   // sync never touches it — but Chromium suspends it on occlusion just the same,

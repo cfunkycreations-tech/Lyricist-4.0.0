@@ -1,5 +1,40 @@
 # AI HANDOFF - Lyricist 4.2.0 "Goes Quantum"
 
+> **2026-08-19 - THE BACKGROUNDS DIED AS YOU WALKED BACK THROUGH THE TABS. Build 107.**
+> Chris: *"the background animations work one through seventeen tabs. But as you go through them and
+> you come back through them, they stop working."* He described the mechanism exactly.
+>
+> **CHROMIUM ALLOWS SIXTEEN WEBGL CONTEXTS PER RENDERER AND THIS APP HAD EIGHTEEN.** A tab stays
+> MOUNTED once opened (TabPane hides it with `display:none` so its work is not lost), so every tab
+> visited left a live prism behind it: seventeen tabs plus the header. Creating the seventeenth
+> force-loses the OLDEST. Nothing throws and nothing logs - the canvas just stops. Measured before
+> the fix: **18 canvases, 18 reporting `gl.isContextLost() === true`.**
+>
+> The canvas is now mounted only while it is on screen, which caps the app at two contexts. Four
+> things had to be got right and each one was found by measuring, not by reasoning:
+> 1. **A released context cannot be revived.** `getContext` on a canvas whose context was killed
+>    with `loseContext()` hands the DEAD one straight back. The first version released contexts
+>    perfectly and still left every tab frozen: 1 of 17 alive going forward, 17 of 17 dead coming
+>    back. **The canvas ELEMENT has to be new**, so it is built with `document.createElement` inside
+>    the effect - React 18 StrictMode runs effects twice in dev and would otherwise reuse the
+>    element and hand back the corpse.
+> 2. **On-screen means "has a layout box", not IntersectionObserver and not `document.hidden`.**
+>    Electron reports a merely COVERED window as hidden and nothing intersects the viewport in that
+>    state; TabPane carries the same warning about the videos. With an IntersectionObserver here,
+>    thirty-four tab switches created **ZERO** contexts.
+> 3. **The tab switch is the signal.** App dispatches `lyricist-tab`; React runs every cleanup
+>    before any effect in a commit, so the tab being left gives its context up before the tab being
+>    opened asks for one. Waiting on an observer let them pile up faster than they were released.
+> 4. **`live` starts FALSE.** Starting true had all eighteen build a canvas on first render, over
+>    the limit immediately, and the browser killed the oldest - the header, which never unmounts, so
+>    nothing ever rebuilt it. And the `webglcontextlost` handler must be detached BEFORE the
+>    deliberate `loseContext()`, or an ordinary tab switch reads as "the context died, rebuild it"
+>    and loops: 679 contexts across three laps, and the page locked up.
+>
+> **Verified: 85 tab switches** - forward, back, three fast laps with no wait, then a slow lap -
+> **zero failures**, both visible prisms live throughout, 2 canvases mounted out of 18 wrappers.
+>
+
 > **2026-08-19 - THE BACKGROUNDS WERE TOO DARK TO SEE, AND CHOPPED & SCREWED HAD NO ART AT ALL.
 > Build 106.**
 > Chris: *"lighten all of the backgrounds in each tab because you can barely fucking see the image
