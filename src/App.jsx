@@ -27,8 +27,6 @@ import LoopStation from './components/LoopStation/LoopStation.jsx';
 import Stemmer from './components/Stemmer/Stemmer.jsx';
 import { APP_VERSION } from './buildInfo.js';
 
-import bgImg from './assets/cfunky-bg-new.jpg';   // new Austin street-scene background (4.0.2)
-
 // Tab icons — Chris's dichroic-glass artwork, keyed off its dark background.
 // These replace the flat emoji: every icon is his own 3D render.
 import icoSongwriter from './assets/icons/icon-songwriter.png';
@@ -275,28 +273,23 @@ function MainLayout() {
         />
       )}
 
-      {/* Background — new Austin street-scene art (4.0.2). */}
+      {/* THE APP'S FLOOR. One flat colour, nothing photographic.
+          A fixed full-screen photo used to live here — an Austin street scene
+          from 4.0.2 — with a dark gradient on top whose only job was to hold it
+          down enough to read text over. Both are gone.
+          Every tab paints its own prism and its own artwork now, so the photo
+          was covered on every tab and showed through nowhere... until something
+          rendered OUTSIDE a tab pane, and then it was suddenly a photograph of a
+          street with faces and old branding in it sitting behind the UI. That is
+          not a background this app has wanted since the prism landed, and it was
+          costing 400 KB in every build to be invisible. */}
       <div
         style={{
           position: 'fixed',
           inset: 0,
           zIndex: 0,
           pointerEvents: 'none',
-          backgroundImage: `url(${bgImg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center top',
-          backgroundRepeat: 'no-repeat'
-        }}
-      />
-      {/* Lighter overlay (4.0.5) — lets the Austin street-scene art show through
-          while keeping just enough darkness that on-screen text stays readable. */}
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 1,
-          pointerEvents: 'none',
-          background: 'linear-gradient(180deg, rgba(4,8,20,0.52) 0%, rgba(6,10,24,0.58) 45%, rgba(2,4,12,0.78) 100%)'
+          background: '#05070C',
         }}
       />
 

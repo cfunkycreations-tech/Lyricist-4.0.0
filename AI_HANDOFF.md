@@ -1,5 +1,33 @@
 # AI HANDOFF - Lyricist 4.2.0 "Goes Quantum"
 
+> **2026-08-19 - THE AUSTIN STREET PHOTO BEHIND THE WHOLE APP IS GONE. Build 111.**
+> He screenshotted the new Start Here card with a **photograph of a street, faces and old
+> "cfunkycre..." branding showing behind it** and said it should have been dealt with long ago.
+> He was right, and it had been sitting there since 4.0.2.
+>
+> **`src/assets/cfunky-bg-new.jpg` was a FIXED, FULL-SCREEN layer behind the entire app**
+> (`position: fixed; inset: 0` at z-index 0), with a second full-screen dark gradient over it whose
+> only purpose was to hold it down far enough to read text on top. Once the prism landed, every tab
+> painted its own background over both, so the photo was invisible on every tab - and stayed in the
+> tree, and stayed in the bundle at ~400 KB, doing nothing.
+>
+> **Then something finally rendered OUTSIDE a tab pane.** The Start Here card from build 110 sits in
+> the app shell rather than inside a `TabPane`, and there was the photo, full width, behind the UI.
+>
+> Both layers are replaced by one flat `#05070C` floor, and the import is deleted so Vite stops
+> emitting the file (an imported asset is emitted whether or not anything renders it).
+> **Verified: zero elements anywhere in the app paint a raster background-image now**, and the only
+> `<img>` tags outside the tabs are the header art, the tab art, the footer medallion and the Buy Me
+> A Coffee button.
+>
+> `cfunky-bg-new.jpg` and `cfunky-bg.jpeg` (1.1 MB between them) are now referenced by nothing and
+> can be deleted from the repo whenever he wants - they are his art, so that is his call, but
+> nothing breaks either way.
+>
+> **Lesson: a background that is covered everywhere is not a background that is gone.** When a
+> layer's replacement lands, delete the layer, do not leave it under the new one.
+>
+
 > **2026-08-19 - THE SETUP CARD COMES FIRST NOW. Build 110.**
 > Chris: *"you have this fucking shit backwards. You gotta tell people upfront that they need an API
 > key first, not at the last fucking minute or the last card... If you have to set it up first, you
