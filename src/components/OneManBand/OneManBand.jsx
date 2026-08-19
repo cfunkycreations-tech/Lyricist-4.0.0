@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import TabBackground from '../common/TabBackground.jsx';
 import MultiPick from '../common/MultiPick.jsx';
+import EngineSetup from './EngineSetup.jsx';
 import {
   buildState, composeCaption, detectComfy, estimateSeconds, generateSong, sectionBudget,
 } from '../../services/MusicService.js';
@@ -167,6 +168,8 @@ export default function OneManBand() {
 
   const [engine, setEngine] = useState('cloud');
   const [comfy, setComfy] = useState(null);
+  const [kaggle, setKaggle] = useState(null);
+  const [showSetup, setShowSetup] = useState(false);
 
   const [caption, setCaption] = useState(() => draftCaption({
     genres: ['Blues rock'], moods: ['Gritty and driving'], voices: ['Gravelly male'], seconds: 30,
@@ -185,6 +188,9 @@ export default function OneManBand() {
   useEffect(() => {
     let dead = false;
     detectComfy().then((c) => { if (!dead) setComfy(c); });
+    window.lyricistAPI?.kaggleStatus?.(false)
+      .then((k) => { if (!dead && k?.connected) setKaggle(k); })
+      .catch(() => {});
     return () => { dead = true; };
   }, []);
 
@@ -362,12 +368,31 @@ export default function OneManBand() {
                   onClick={() => setEngine('cloud')}>
             <span className="omb-dot" />Free cloud <span className="omb-cost free">$0</span>
           </button>
+          {/* KAGGLE IS A REAL ENGINE NOW, not a line of advice in a warning.
+              It is the only free route to a full length song. */}
+          <button type="button" className="omb-eng" aria-pressed={engine === 'kaggle'}
+                  disabled={!kaggle?.connected} onClick={() => setEngine('kaggle')}>
+            <span className="omb-dot" />Kaggle{' '}
+            <span className={`omb-cost${kaggle?.connected ? ' free' : ''}`}>
+              {kaggle?.connected ? `$0 · as ${kaggle.username}` : 'not set up'}
+            </span>
+          </button>
           <button type="button" className="omb-eng" aria-pressed={engine === 'local'}
                   disabled={!comfy} onClick={() => setEngine('local')}>
             <span className="omb-dot" />This computer{' '}
-            <span className="omb-cost">{comfy ? `ComfyUI ${comfy.version}` : 'not running'}</span>
+            <span className="omb-cost">{comfy ? `ready` : 'not set up'}</span>
+          </button>
+          <button type="button" className="omb-setup-link" onClick={() => setShowSetup((v) => !v)}>
+            {showSetup ? 'Hide setup' : (kaggle?.connected || comfy) ? 'Set-up' : 'Set up longer songs, free'}
           </button>
         </div>
+
+        {showSetup && (
+          <EngineSetup
+            onKaggleReady={(username) => { setKaggle({ connected: true, username }); setEngine('kaggle'); }}
+            onLocalReady={(base) => { setComfy({ base, version: 'local' }); setEngine('local'); }}
+          />
+        )}
 
         <div className="omb-cols">
 

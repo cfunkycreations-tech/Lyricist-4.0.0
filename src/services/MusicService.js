@@ -23,9 +23,18 @@
 // saying "we do not know yet".
 const REALTIME_FACTOR = {
   cloud: 1.2,     // measured 2026-08-16: 12 s of music in 13.8 s
+  // Kaggle's free T4: about 17 minutes for 30 s of music, measured, PLUS a fixed
+  // ~6 minutes at the start of a cold session to fetch the program and the
+  // 11.9 GB of weights. The fixed part is added separately in estimateSeconds,
+  // because on a three minute song it is noise and on a short one it is most of
+  // the wait, and a single multiplier cannot say both.
+  kaggle: 34,
   local: 34,      // a T4 class card. Slower cards are far worse, see above.
   server: 3,      // a rented 4090 class card. Nobody has measured one yet.
 };
+
+/** Kaggle spends this long before it plays a note: queue, fetch, load. */
+const KAGGLE_WARMUP_S = 360;
 
 /**
  * Spaces get renamed, made private, or deleted by their owners at any time.
@@ -108,7 +117,8 @@ export function suggestedSections(seconds) {
 
 /** Honest estimate in seconds, so the tab can warn before it spends an hour. */
 export function estimateSeconds(engine, duration) {
-  return Math.round((REALTIME_FACTOR[engine] ?? 2) * duration);
+  const base = Math.round((REALTIME_FACTOR[engine] ?? 2) * duration);
+  return engine === 'kaggle' ? base + KAGGLE_WARMUP_S : base;
 }
 
 /* ------------------------------------------------------------------ */
@@ -402,6 +412,54 @@ async function generateComfy(opts) {
  * seed gives you something else. So whatever saves the song must save the whole
  * recipe alongside it, not just the number.
  */
+/* ------------------------------------------------------------------ */
+/* Kaggle (their free T4, driven through Kaggle's own API)             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Send the song to the person's own Kaggle account and wait for it.
+ *
+ * All of the work is in the main process (see kaggleCloud.js) because this needs
+ * real HTTP with basic auth and a file on disk, neither of which the renderer
+ * has. From here it is one call and a stream of progress messages.
+ *
+ * This is the only free way to get a full three-to-five minute song: the cloud
+ * demo caps a single call at about 45 seconds of music, and Kaggle hands out 30
+ * hours of graphics card a week.
+ */
+async function generateKaggle({ state, duration, seed, steps, guidance, onProgress, signal }) {
+  const api = typeof window !== 'undefined' ? window.lyricistAPI : null;
+  if (!api?.kaggleRender) {
+    throw new Error('Kaggle needs the desktop app. In the browser preview only the free cloud runs.');
+  }
+
+  const off = api.onSetupProgress?.(({ job, msg }) => {
+    if (job === 'kaggle' && msg && onProgress) onProgress({ phase: msg });
+  });
+  const abort = () => { api.kaggleRenderStop?.(); };
+  signal?.addEventListener?.('abort', abort);
+
+  try {
+    const res = await api.kaggleRender({
+      caption: [state.globalMeta, state.vocals, state.arrangement].filter(Boolean).join('\n\n'),
+      lyrics: state.instrumental ? '' : (state.lyrics || ''),
+      seconds: duration,
+      seed,
+      steps,
+      guidance,
+    });
+    if (res?.stopped) throw new Error('Stopped.');
+    if (!res?.ok) throw new Error(res?.error || 'Kaggle did not produce a song.');
+    const bytes = new Uint8Array(res.bytes);
+    const type = /\.wav$/i.test(res.fileName) ? 'audio/wav'
+      : /\.mp3$/i.test(res.fileName) ? 'audio/mpeg' : 'audio/flac';
+    return { blob: new Blob([bytes], { type }), host: 'kaggle.com' };
+  } finally {
+    off?.();
+    signal?.removeEventListener?.('abort', abort);
+  }
+}
+
 export async function generateSong({
   engine = 'cloud',
   base = 'http://127.0.0.1:8188',
@@ -423,7 +481,9 @@ export async function generateSong({
   const started = Date.now();
   const run = engine === 'cloud'
     ? generateCloud({ state, duration, seed, steps, guidance, onProgress, signal, hfToken })
-    : generateComfy({ base, state, duration, seed, steps, guidance, dit, onProgress, signal });
+    : engine === 'kaggle'
+      ? generateKaggle({ state, duration, seed, steps, guidance, onProgress, signal })
+      : generateComfy({ base, state, duration, seed, steps, guidance, dit, onProgress, signal });
 
   const { blob, host } = await run;
 

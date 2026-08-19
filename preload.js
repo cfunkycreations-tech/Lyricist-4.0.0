@@ -24,6 +24,26 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   // main process because ComfyUI sends no CORS headers, so the renderer cannot
   // reach it directly. See the 'music-fetch' handler in main.js.
   musicFetch: (opts) => ipcRenderer.invoke('music-fetch', opts),
+
+  // ONE-BUTTON SETUP for the two engines that used to need a tutorial.
+  // Both report progress on the single 'setup-progress' channel, tagged with a
+  // job name, so one listener in the UI covers both.
+  comfyStatus: () => ipcRenderer.invoke('comfy-status'),
+  comfyInstall: () => ipcRenderer.invoke('comfy-install'),
+  comfyStart: () => ipcRenderer.invoke('comfy-start'),
+  comfyStop: () => ipcRenderer.invoke('comfy-stop'),
+  kaggleStatus: (verify) => ipcRenderer.invoke('kaggle-status', { verify }),
+  // Opens a file picker on the Downloads folder so the token is PICKED, never
+  // typed. A 40-character key retyped by hand is a support ticket waiting.
+  kaggleConnectFile: () => ipcRenderer.invoke('kaggle-connect-file'),
+  kaggleDisconnect: () => ipcRenderer.invoke('kaggle-disconnect'),
+  kaggleRender: (song) => ipcRenderer.invoke('kaggle-render', song),
+  kaggleRenderStop: () => ipcRenderer.invoke('kaggle-render-stop'),
+  onSetupProgress: (cb) => {
+    const h = (_e, payload) => cb(payload);
+    ipcRenderer.on('setup-progress', h);
+    return () => ipcRenderer.removeListener('setup-progress', h);
+  },
   // His own recorded narration, kept in <userData>\voice as loose files.
   // voicePack() -> { ok, dir, found: { splash, 'card-01', ... } } where each
   // value is a file:// URL ready to hand to an <audio>. Only the recordings he

@@ -29,9 +29,14 @@
       "main.js",
       "preload.js",
       "demucsLocal.js",
+      "comfySetup.js",
+      "kaggleCloud.js",
       "splash/**/*",
       "src/assets/icon.ico",
       "!node_modules/**/*"
+    ],
+    "extraResources": [
+      { "from": "resources/kaggle-minimax-music3.ipynb", "to": "kaggle-minimax-music3.ipynb" }
     ],
     "win": {
       "target": "nsis",

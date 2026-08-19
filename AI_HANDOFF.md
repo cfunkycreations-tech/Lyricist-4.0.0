@@ -1,5 +1,47 @@
 # AI HANDOFF - Lyricist 4.2.0 "Goes Quantum"
 
+> **2026-08-19 - ONE BUTTON SETS UP KAGGLE AND COMFYUI. Build 109.**
+> Chris: *"we have to figure out a way to tell people how to install ComfyUI and use Kaggle because
+> the instructions are very vague. No one's gonna know how to do that except people like me and
+> you. So we have to figure out how to push one button that sets it up for them."* And, on the
+> hardware advice: *"remember, this is for the fucking world. Don't worry about my Pascal chip."*
+>
+> **KAGGLE IS NOW A REAL ENGINE**, not a line of advice inside a warning. It is the only free route
+> to a full three-to-five minute song (30 GPU hours a week, against the cloud demo's few minutes a
+> day). New `kaggleCloud.js` in the main process drives **Kaggle's own API**: it pushes the shipped
+> notebook with the person's caption and lyrics injected, runs it on a T4, polls, and downloads the
+> audio back into the tab.
+> **The API is not guessed.** Every endpoint, field name and enum was read out of Kaggle's own
+> published SDK (`kagglesdk` 0.1.37): `POST https://api.kaggle.com/v1/kernels.KernelsApiService/
+> {SaveKernel,GetKernelSessionStatus,ListKernelSessionOutput}`, HTTP Basic auth, camelCase JSON.
+> `machineShape` is pinned to **NvidiaTeslaT4** because Kaggle's own docs warn the P100 is Pascal
+> and the default image's torch has no sm_60 kernels - it reports a working GPU and dies on the
+> first real operation.
+> **What the user does: click "Open Kaggle", click Create New Token, click "Pick my kaggle.json".**
+> The token is PICKED with a file dialog on the Downloads folder, never typed.
+>
+> **"THIS COMPUTER" IS NOW ONE BUTTON TOO.** New `comfySetup.js`: source zip (not the 7z - Windows
+> cannot extract those without help), private venv, **the torch build chosen by the card's compute
+> capability**, ComfyUI's requirements, the three int8 weight files (11.9 GB, resumable - stop it
+> and press it again and it carries on), and the workflow written for them.
+> It **proves the card with a real matmul before spending 12 GB**, because below sm_75 the current
+> wheels report a working GPU and only fail once real work starts.
+> The verdict is written for whatever card it finds, not for one machine: 12 GB+ and sm_75+ is
+> "will run properly", 8-12 GB is "will work and be slow", older is "expect hours", none is "the
+> free cloud and Kaggle need no card at all". **The honest number comes BEFORE the download.**
+>
+> **Packaging:** `comfySetup.js`, `kaggleCloud.js` and `resources/kaggle-minimax-music3.ipynb` are
+> all in `build.files` / `extraResources`. `npm run preflight` confirms: 29 ipc channels, 29
+> bridged, 5 main modules packaged, 2 runtime assets packaged.
+>
+> **Verified offline** (no Kaggle account needed for any of it): token errors name the actual
+> problem; the built notebook is valid JSON with all 16 cells flattened to single strings, which is
+> what Kaggle's own pusher does; a caption containing `"""` and a backslash is neutralised and stays
+> valid; the GPU probe reads the real card on this machine correctly. **The one thing NOT yet proved
+> end to end is a real push to a real Kaggle account** - that needs a token, so it is the first
+> thing to check when one exists.
+>
+
 > **2026-08-19 - FIVE GENRES, FIVE MOODS, FIVE OF EVERYTHING, BLENDED INTO ONE. Build 108.**
 > Chris: *"I wanna be able to choose more than one genre. I want it to go up to five genres mixed
 > into one... and moods, by the way, and everything else... Make it funky."*

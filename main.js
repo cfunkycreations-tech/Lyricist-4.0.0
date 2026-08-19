@@ -2,6 +2,8 @@ const { app, BrowserWindow, session, ipcMain, Menu, MenuItem, clipboard, shell }
 const path = require('path');
 const fs = require('fs');
 const demucsLocal = require('./demucsLocal');
+const comfySetup = require('./comfySetup');
+const kaggleCloud = require('./kaggleCloud');
 
 // One copy at a time. A second instance can't take the profile lock the first
 // one holds, so its storage comes up broken and the window can land black —
@@ -361,6 +363,81 @@ ipcMain.handle('demucs-separate', async (event, { bytes, fileName, device }) => 
     });
   } catch (e) { return { ok: false, error: e.message }; }
 });
+
+/* ---------------------------------------------------------------------------
+ * ONE-BUTTON SETUP FOR THE TWO ENGINES THAT USED TO NEED A TUTORIAL.
+ * "No one's gonna know how to do that except people like me and you." Both of
+ * these run in the main process because both need the disk, real sockets and
+ * child processes, none of which the renderer has.
+ * ------------------------------------------------------------------------- */
+
+/** A cancel flag per job. The renderer sets it by calling the -stop handler. */
+const setupStops = { comfy: false, kaggle: false };
+
+ipcMain.handle('comfy-status', async () => {
+  try { return { ok: true, ...(await comfySetup.status()) }; }
+  catch (e) { return { ok: false, error: e.message }; }
+});
+
+ipcMain.handle('comfy-install', async (event) => {
+  setupStops.comfy = false;
+  try {
+    return await comfySetup.install(
+      (p, msg) => { try { event.sender.send('setup-progress', { job: 'comfy', p, msg }); } catch { /* window gone */ } },
+      () => setupStops.comfy,
+    );
+  } catch (e) {
+    return { ok: false, error: e.message === 'stopped' ? 'Stopped. Nothing downloaded so far was lost.' : e.message };
+  }
+});
+
+ipcMain.handle('comfy-start', async (event) => {
+  try {
+    return await comfySetup.start((line) => {
+      try { event.sender.send('setup-progress', { job: 'comfy', p: null, msg: String(line).slice(0, 200) }); } catch { /* gone */ }
+    });
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+
+ipcMain.handle('comfy-stop', async () => { setupStops.comfy = true; return comfySetup.stop(); });
+
+ipcMain.handle('kaggle-status', async (event, { verify } = {}) => {
+  try { return { ok: true, ...(await kaggleCloud.status(!!verify)) }; }
+  catch (e) { return { ok: false, error: e.message }; }
+});
+
+/** Let them PICK the kaggle.json their browser just downloaded. No typing. */
+ipcMain.handle('kaggle-connect-file', async () => {
+  try {
+    const res = await require('electron').dialog.showOpenDialog({
+      title: 'Pick the kaggle.json file you just downloaded',
+      defaultPath: app.getPath('downloads'),
+      filters: [{ name: 'Kaggle token', extensions: ['json'] }],
+      properties: ['openFile'],
+    });
+    if (res.canceled || !res.filePaths[0]) return { ok: false, canceled: true };
+    const text = fs.readFileSync(res.filePaths[0], 'utf8');
+    return { ok: true, ...(await kaggleCloud.connect(text)) };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+
+ipcMain.handle('kaggle-disconnect', async () => {
+  try { return kaggleCloud.disconnect(); }
+  catch (e) { return { ok: false, error: e.message }; }
+});
+
+ipcMain.handle('kaggle-render', async (event, song) => {
+  setupStops.kaggle = false;
+  try {
+    return await kaggleCloud.render(
+      song,
+      (p, msg) => { try { event.sender.send('setup-progress', { job: 'kaggle', p, msg }); } catch { /* gone */ } },
+      () => setupStops.kaggle,
+    );
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+
+ipcMain.handle('kaggle-render-stop', async () => { setupStops.kaggle = true; return { ok: true }; });
 
 /** Reveal a folder in Explorer — "where did my stems go" should be one click. */
 ipcMain.handle('show-folder', async (event, { folderPath }) => {

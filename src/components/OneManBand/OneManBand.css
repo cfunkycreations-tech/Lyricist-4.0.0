@@ -282,3 +282,14 @@
   .omb .prism-bg { display: none; }
   .omb-dice.rolling { animation: none; }
 }
+
+/* The way in to the one-button setup. Deliberately a visible control sitting
+   with the engines rather than a link buried in help text: the whole point of
+   this feature is that nobody should have to go looking for it. */
+.omb-setup-link {
+  margin-left: auto;
+  background: none; border: 0; padding: 6px 2px; cursor: pointer;
+  font-family: inherit; font-size: 12px; font-weight: 600;
+  color: hsl(158 80% 62%); text-decoration: underline; text-underline-offset: 3px;
+}
+.omb-setup-link:hover { color: #fff; }
