@@ -327,8 +327,8 @@
 .ql-bgscrim {
   position: absolute; inset: 0; pointer-events: none;
   background:
-    radial-gradient(130% 120% at 22% 42%, rgba(6,3,14,0.82) 0%, rgba(6,3,14,0.55) 42%, rgba(6,3,14,0.35) 100%),
-    linear-gradient(180deg, rgba(6,3,14,0.55) 0%, rgba(6,3,14,0.4) 50%, rgba(6,3,14,0.72) 100%);
+    radial-gradient(130% 120% at 22% 42%, rgba(6,3,14,0.52) 0%, rgba(6,3,14,0.28) 42%, rgba(6,3,14,0.14) 100%),
+    linear-gradient(180deg, rgba(6,3,14,0.28) 0%, rgba(6,3,14,0.16) 50%, rgba(6,3,14,0.44) 100%);
 }
 .ql-lattice {
   position: relative;

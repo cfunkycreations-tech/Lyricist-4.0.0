@@ -24,11 +24,92 @@
 .screw-veil {
   position: absolute; inset: 0; z-index: 1; pointer-events: none;
   background: radial-gradient(120% 90% at 50% 40%,
-    rgba(5, 7, 12, .28) 20%, rgba(5, 7, 12, .56) 70%, rgba(5, 7, 12, .84) 100%);
+    rgba(5, 7, 12, .10) 20%, rgba(5, 7, 12, .28) 70%, rgba(5, 7, 12, .58) 100%);
 }
 .screw-wrap { position: relative; z-index: 2; max-width: 1240px; margin: 0 auto; padding: 24px 22px 60px; }
 
-.screw-top { border-bottom: 1px solid var(--sc-line); padding-bottom: 14px; }
+/* THE TOP OF THIS TAB HAD NOTHING MOVING IN IT.
+
+   Chris, 2026-08-19: *"you need to fix the chopped and screwed, the top of it
+   where there's no animations."* He was right and it is worse than it looks:
+   this is the ONE tab with no `bg-art/screw.webp`, so where every other tab
+   layers his artwork over the prism, this one had the prism and a heavy veil and
+   that is all. The veil is thinner now (see .screw-veil) and the hero carries its
+   own motion, so the top of the tab is alive whether or not art ever lands here.
+
+   The motion is the tab's own idea rather than decoration: a record turning slow
+   enough to hear it sink, and a sheen dragging across the band the way tape does
+   when the speed comes down. */
+.screw-top {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--sc-line);
+  padding-bottom: 14px;
+}
+.screw-top > * { position: relative; z-index: 2; }
+
+/* The record. Grooves are circular, so rotating them alone would show nothing;
+   the conic glint is what you actually see going round. */
+.screw-top::before {
+  content: '';
+  position: absolute;
+  right: -70px;
+  top: 50%;
+  width: 320px;
+  height: 320px;
+  margin-top: -160px;
+  border-radius: 50%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: .34;
+  background:
+    conic-gradient(from 0deg,
+      hsla(262 85% 71% / 0) 0deg,
+      hsla(262 85% 71% / .40) 55deg,
+      hsla(158 80% 58% / .10) 140deg,
+      hsla(305 75% 66% / .34) 250deg,
+      hsla(262 85% 71% / 0) 360deg),
+    repeating-radial-gradient(circle at 50% 50%,
+      hsla(158 80% 58% / 0) 0 3px,
+      hsla(158 80% 58% / .20) 3px 4px);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 0 9%, #000 12% 88%, transparent 100%);
+  mask-image: radial-gradient(circle at 50% 50%, transparent 0 9%, #000 12% 88%, transparent 100%);
+  animation: screw-spin 22s linear infinite;
+}
+
+/* The drag across the band. Slow on purpose, this tab is about slow. */
+.screw-top::after {
+  content: '';
+  position: absolute;
+  inset: -30% -70% -30% -70%;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(100deg,
+    transparent 38%,
+    hsla(158 80% 58% / .09) 47%,
+    hsla(262 85% 71% / .15) 52%,
+    hsla(305 75% 66% / .07) 57%,
+    transparent 64%);
+  animation: screw-drag 13s ease-in-out infinite;
+}
+
+@keyframes screw-spin { to { transform: rotate(360deg); } }
+@keyframes screw-drag {
+  0%   { transform: translateX(-36%); }
+  50%  { transform: translateX(36%); }
+  100% { transform: translateX(-36%); }
+}
+/* The glow breathing under the title, at the speed of a screwed record. */
+@keyframes screw-sink {
+  0%, 100% { text-shadow: 0 0 1px var(--sc-emerald-lit), 0 0 3px var(--sc-emerald-lit),
+                          0 0 18px hsla(262 85% 71% / .45), 0 0 44px hsla(262 85% 71% / .18); }
+  50%      { text-shadow: 0 0 1px var(--sc-emerald-lit), 0 0 5px var(--sc-emerald-lit),
+                          0 0 30px hsla(262 85% 71% / .62), 0 0 68px hsla(305 75% 66% / .30); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screw-top::before, .screw-top::after, .screw-title { animation: none; }
+}
 .screw-brand {
   font-family: var(--sc-mono); font-size: 10.5px; letter-spacing: .24em;
   text-transform: uppercase; color: var(--sc-faint);
@@ -39,6 +120,7 @@
   text-transform: uppercase; color: #fff;
   text-shadow: 0 0 1px var(--sc-emerald-lit), 0 0 3px var(--sc-emerald-lit),
                0 0 18px hsla(262 85% 71% / .45), 0 0 44px hsla(262 85% 71% / .18);
+  animation: screw-sink 9s ease-in-out infinite;
 }
 .screw-tag { color: var(--sc-dim); font-size: 14px; margin-top: 8px; max-width: 60ch; }
 .screw-tag b { color: var(--sc-emerald-lit); font-weight: 600; }
@@ -51,7 +133,7 @@
 @media (max-width: 720px) { .screw-cols { grid-template-columns: 1fr; } }
 
 .screw-card {
-  background: rgba(12, 17, 26, .58); border: 1px solid var(--sc-line); border-radius: 12px;
+  background: rgba(12, 17, 26, .42); border: 1px solid var(--sc-line); border-radius: 12px;
   overflow: hidden; backdrop-filter: blur(18px) saturate(1.2);
   box-shadow: 0 1px 0 rgba(255, 255, 255, .05) inset, 0 16px 40px rgba(0, 0, 0, .45);
 }
@@ -142,7 +224,7 @@
 
 .screw-out {
   margin-top: 18px; padding: 14px; border-radius: 12px;
-  border: 1px solid hsla(158 84% 45% / .45); background: rgba(12, 17, 26, .6);
+  border: 1px solid hsla(158 84% 45% / .45); background: rgba(12, 17, 26, .44);
   backdrop-filter: blur(18px) saturate(1.2);
 }
 .screw-out .hd { margin-bottom: 10px; }

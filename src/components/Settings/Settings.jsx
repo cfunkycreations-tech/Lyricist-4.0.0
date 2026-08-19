@@ -371,7 +371,7 @@ export default function Settings() {
   return (
     <div style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#000' }}>
       <TabBackground name="settings" />
-      <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, overflowY: 'auto', background: 'rgba(0,0,0,0.62)', width: '100%' }}>
+      <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, overflowY: 'auto', background: 'rgba(0,0,0,0.38)', width: '100%' }}>
     <div style={{ padding: 28, maxWidth: 680, margin: '0 auto', boxSizing: 'border-box' }}>
       <h2
         style={{

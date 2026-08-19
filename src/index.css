@@ -1208,7 +1208,7 @@ input.lyric-line-input {
    of stopping at the edge of each panel. Dark enough that text stays readable,
    which is the only reason these are not fully clear. */
 .sidebar-cosmic {
-  background: rgba(6, 10, 22, 0.72) !important;
+  background: rgba(6, 10, 22, 0.58) !important;
   backdrop-filter: blur(14px) saturate(1.15);
 }
 
@@ -1217,7 +1217,7 @@ input.lyric-line-input {
 }
 
 .output-cosmic {
-  background: rgba(4, 8, 18, 0.55);
+  background: rgba(4, 8, 18, 0.40);
   backdrop-filter: blur(12px);
 }
 
@@ -1226,7 +1226,7 @@ input.lyric-line-input {
    text readable while the wavy stuff still moves behind it, which is the same
    treatment One Man Band already uses. */
 .card-cosmic {
-  background: rgba(10, 16, 32, 0.58) !important;
+  background: rgba(10, 16, 32, 0.42) !important;
   backdrop-filter: blur(16px) saturate(1.2);
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
 }

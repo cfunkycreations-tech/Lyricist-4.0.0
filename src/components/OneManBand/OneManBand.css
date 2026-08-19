@@ -5,7 +5,7 @@
 
 .omb {
   --omb-ground: #05070C;
-  --omb-panel: rgba(12, 17, 26, .62);
+  --omb-panel: rgba(12, 17, 26, .44);
   --omb-line: var(--lx-line, hsla(158 60% 70% / .16));
   --omb-line-hot: var(--lx-line-hot, hsla(262 70% 70% / .30));
   --omb-text: #EAF2FF;
@@ -32,7 +32,7 @@
 .omb-veil {
   position: absolute; inset: 0; z-index: 1; pointer-events: none;
   background: radial-gradient(120% 90% at 50% 40%,
-    rgba(5, 7, 12, .30) 20%, rgba(5, 7, 12, .58) 70%, rgba(5, 7, 12, .86) 100%);
+    rgba(5, 7, 12, .10) 20%, rgba(5, 7, 12, .30) 70%, rgba(5, 7, 12, .60) 100%);
 }
 .omb-wrap { position: relative; z-index: 2; max-width: 1220px; margin: 0 auto; padding: 26px 22px 70px; }
 

@@ -1,5 +1,32 @@
 # AI HANDOFF - Lyricist 4.2.0 "Goes Quantum"
 
+> **2026-08-19 - THE BACKGROUNDS WERE TOO DARK TO SEE, AND CHOPPED & SCREWED HAD NO ART AT ALL.
+> Build 106.**
+> Chris: *"lighten all of the backgrounds in each tab because you can barely fucking see the image
+> behind it. I want people to see the goddamn image."* And: *"fix the chopped and screwed, the top
+> of it where there's no animations."*
+>
+> **Four things were stacked against his artwork at once and every one had to move.**
+> (1) `TabBackground` drew the art at **opacity 0.22** and called it "atmosphere". (2) It used
+> **`mix-blend-mode: screen`**, which drops every dark pixel to nothing, so a moody render showed
+> only its highlights no matter how far the opacity went; raising the number alone would not have
+> fixed it. It is `normal` at 0.72 now, and the prism still reads through the remaining quarter and
+> all around it. (3) Each tab painted its own **radial veil** over the top (Screw, One Man Band,
+> Quantum Lab) at up to 0.86 black at the rim. (4) Four tabs put a **full-tab dark scroller** on top
+> of that: Artist Analyzer (0.55 / 0.45), Settings (0.62), Song Forge (0.55), Songwriter (0.40).
+> Panels went from 0.58 to 0.42, the sidebar 0.72 to 0.58, the output rail 0.55 to 0.40.
+>
+> **CHOPPED & SCREWED IS THE ONE TAB WITH NO `bg-art/screw.webp`.** Sixteen files for seventeen
+> names, and nothing anywhere said so - the tab just rendered the prism under a heavy veil and read
+> as a dead area. `TabBackground` now warns in dev naming the exact file to drop in, so the next
+> missing one is caught the first time the tab is opened. **Dropping `src/assets/bg-art/screw.webp`
+> in is still the whole job** - it is picked up by name, no import, no component edit.
+> Until then the hero carries its own motion: a record turning on a 22 s rotation (the grooves are
+> circular, so the conic glint is what you actually see going round), a 13 s sheen dragging across
+> the band the way tape does when the speed comes down, and a 9 s breath under the title's glow.
+> All three verified running via `document.getAnimations()`.
+>
+
 > **2026-08-19 - THE MODEL'S SCRATCHPAD WAS BEING SAVED AS VERSE 1. Build 105.**
 > He opened the Songwriter workspace and the first section read "Verse 1 - 29 lines", starting
 > with *"We need to output lyrics with labels for each section: [Intro], [Verse 1], [Chorus]"*,

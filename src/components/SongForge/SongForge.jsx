@@ -306,7 +306,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
     <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden' }}>
       <div className="songforge-shell">
         {/* Controls sidebar */}
-        <div className="songforge-sidebar" style={{ background: 'rgba(0,0,0,0.55)', borderRight: '1px solid rgba(34,211,238,0.2)' }}>
+        <div className="songforge-sidebar" style={{ background: 'rgba(0,0,0,0.34)', borderRight: '1px solid rgba(34,211,238,0.2)' }}>
           <div>
             <h3 style={{ fontSize: '1rem', marginBottom: 4 }}>🪄 Song Forge</h3>
             <p style={{ fontSize: '0.72rem', color: 'rgba(196,181,253,0.7)', lineHeight: 1.5 }}>

@@ -631,7 +631,7 @@ export default function SongwriterHub({ ghostRiderData }) {
                   placeholder={'Paste your lyrics here.\n\n[Verse 1]\nyour line\nyour next line\n\n[Chorus]\n...'}
                   style={{
                     width: '100%', minHeight: 130, borderRadius: 8, padding: 10,
-                    background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.15)',
+                    background: 'rgba(0,0,0,0.26)', border: '1px solid rgba(255,255,255,0.15)',
                     color: '#f3ecff', fontSize: '0.8rem', lineHeight: 1.6, resize: 'vertical',
                     fontFamily: "'Space Grotesk', sans-serif",
                   }}

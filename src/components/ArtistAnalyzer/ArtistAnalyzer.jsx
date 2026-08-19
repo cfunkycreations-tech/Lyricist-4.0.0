@@ -268,7 +268,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
           display: 'flex',
           flexDirection: 'column',
           gap: 16,
-          background: 'rgba(0,0,0,0.55)',
+          background: 'rgba(0,0,0,0.34)',
           borderRight: '1px solid rgba(255,45,149,0.2)'
         }}
       >
@@ -441,7 +441,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
         )}
 
         {/* Workspace Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20, background: 'rgba(0,0,0,0.45)' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20, background: 'rgba(0,0,0,0.26)' }}>
           {analysis && (
             <div style={{ background: 'rgba(13,8,28,0.7)', border: '1px solid rgba(139,92,246,0.22)', borderRadius: 10, padding: 18 }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#c4b5fd', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>

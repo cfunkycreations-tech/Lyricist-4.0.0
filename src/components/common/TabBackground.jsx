@@ -41,8 +41,15 @@ const ART = Object.fromEntries(
  * room without leaving the family. Deliberately small — a big spread would make
  * seventeen unrelated tabs rather than one app.
  *
- * ART: hero tabs can layer a still on top of the motion. Kept dim and behind
- * the content on purpose; the art is atmosphere, not a picture to look at.
+ * ART: every tab layers his own still on top of the motion.
+ *
+ * IT USED TO BE SET AT 0.22 AND HE COULD NOT SEE IT. 2026-08-19: *"lighten
+ * all of the backgrounds in each tab because you can barely fucking see the
+ * image behind it. I want people to see the goddamn image."* Three things were
+ * stacked against the art at once and all three had to move: this opacity, the
+ * radial veils each tab paints over the top, and the frosted panels sitting on
+ * it. Treating the art as faint atmosphere was the wrong call; it is his work
+ * and it is meant to be looked at.
  */
 
 /** Stable small offset from the tab name. Same tab, same colour, every launch. */
@@ -54,10 +61,18 @@ function hueFor(name) {
   return ((h % 1000) / 1000) * 0.16;   // 0 .. 0.16, one sixth of the wheel
 }
 
-export default function TabBackground({ name, art = null, artOpacity = 0.22 }) {
+export default function TabBackground({ name, art = null, artOpacity = 0.72 }) {
   // An explicit `art` prop still wins; the name lookup is just the default so
   // every tab gets its own piece without touching sixteen files.
   const src = art || ART[name] || null;
+  // A MISSING PIECE USED TO BE SILENT, AND THAT IS HOW CHOPPED & SCREWED SHIPPED
+  // WITH A BARE TAB. Seventeen names, sixteen files, and nothing anywhere said
+  // so: the tab just rendered the prism and a veil and looked like a dead area.
+  // Say it out loud in dev so the next missing one is caught the first time it
+  // is opened rather than in a screenshot.
+  if (import.meta.env.DEV && !src) {
+    console.warn(`[TabBackground] no artwork for "${name}". Drop src/assets/bg-art/${name}.webp in and it is picked up by name.`);
+  }
   return (
     <>
       <PrismBackground hue={hueFor(name)} />
@@ -74,7 +89,13 @@ export default function TabBackground({ name, art = null, artOpacity = 0.22 }) {
             objectFit: 'cover',
             zIndex: 0,
             opacity: artOpacity,
-            mixBlendMode: 'screen',
+            // NORMAL, NOT SCREEN. Screen blending drops every dark pixel in the
+            // art to nothing, so a moody render shows only its highlights no
+            // matter how far the opacity is raised. Raising the number alone
+            // would not have answered "I want people to see the goddamn image".
+            // Normal shows the picture as the picture; the prism reads through
+            // the remaining quarter and all around it, so nothing goes still.
+            mixBlendMode: 'normal',
             pointerEvents: 'none',
           }}
         />
