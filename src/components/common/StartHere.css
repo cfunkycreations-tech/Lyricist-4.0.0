@@ -1,0 +1,62 @@
+/* StartHere — the setup card that comes FIRST.
+   Sits above the tab content on every tab until the key exists. Loud enough to
+   be the first thing read, calm enough that it is not an error. */
+
+.sh {
+  display: flex; gap: 14px; align-items: flex-start;
+  margin: 12px 16px 0; padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(10, 16, 32, .62);
+  border: 1px solid hsla(158 80% 58% / .45);
+  box-shadow: 0 0 26px hsla(158 80% 58% / .12), inset 0 1px 0 rgba(255,255,255,.05);
+  backdrop-filter: blur(16px) saturate(1.2);
+  flex-shrink: 0;
+}
+
+.sh-mark {
+  flex-shrink: 0;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 15px;
+  color: #041b12; background: hsl(158 80% 58%);
+  box-shadow: 0 0 16px hsla(158 80% 58% / .5);
+}
+
+.sh-body { flex: 1; min-width: 0; }
+
+.sh h2 {
+  margin: 2px 0 5px; font-size: 15.5px; letter-spacing: .01em;
+  color: #fff;
+  text-shadow: 0 0 1px hsl(158 80% 58%), 0 0 10px hsla(158 80% 58% / .35);
+}
+
+.sh-lead { margin: 0 0 10px; font-size: 12.8px; line-height: 1.6; color: #C9D6EF; max-width: 88ch; }
+.sh-lead b { color: #fff; }
+
+.sh-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+@media (max-width: 820px) { .sh-two { grid-template-columns: 1fr; } }
+
+.sh-h {
+  display: block; margin-bottom: 3px;
+  font-size: 9.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+}
+.sh-h.waiting { color: hsl(35 90% 66%); }
+.sh-h.ready { color: hsl(158 80% 62%); }
+.sh-two p { margin: 0; font-size: 11.8px; line-height: 1.5; color: #93A6C6; }
+
+.sh-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.sh-go {
+  border-radius: 9px; padding: 8px 14px; cursor: pointer;
+  font-family: 'Space Grotesk', sans-serif; font-size: 12.5px; font-weight: 700;
+  background: rgba(3, 5, 9, .55); color: #EAF2FF;
+  border: 1px solid rgba(139, 92, 246, .45);
+}
+.sh-go:hover { border-color: hsla(158 80% 58% / .7); color: #fff; }
+.sh-go.primary {
+  background: hsla(158 84% 40% / .28);
+  border-color: hsla(158 80% 58% / .6);
+  box-shadow: 0 0 16px hsla(158 80% 58% / .2);
+}
+
+.sh-fine { margin: 9px 0 0; font-size: 11px; line-height: 1.5; color: #6C7F9E; }

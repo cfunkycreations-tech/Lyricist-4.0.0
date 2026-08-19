@@ -4,6 +4,7 @@ import SongwriterHub from './components/SongwriterHub/SongwriterHub.jsx';
 import OneManBand from './components/OneManBand/OneManBand.jsx';
 import ScrewShop from './components/ScrewShop/ScrewShop.jsx';
 import PrismBackground from './components/common/PrismBackground.jsx';
+import StartHere from './components/common/StartHere.jsx';
 import headerArt from './assets/bg-art/header.webp';
 import ArtistAnalyzer from './components/ArtistAnalyzer/ArtistAnalyzer.jsx';
 import SongForge from './components/SongForge/SongForge.jsx';
@@ -507,6 +508,13 @@ function MainLayout() {
             );
           })}
         </div>
+
+        {/* WHAT YOU NEED, BEFORE YOU NEED IT.
+            The setup card comes FIRST now, above every tab, from the first
+            second, until the key exists. It used to be fourteen separate
+            "you need a key" errors behind fourteen buttons, plus a tour card
+            titled "set this up first" sitting at nineteen of twenty. */}
+        <StartHere onGoToSettings={() => setActiveTab('settings')} />
 
         {/* Tab Workspace content.
 

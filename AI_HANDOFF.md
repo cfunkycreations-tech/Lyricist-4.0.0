@@ -1,5 +1,36 @@
 # AI HANDOFF - Lyricist 4.2.0 "Goes Quantum"
 
+> **2026-08-19 - THE SETUP CARD COMES FIRST NOW. Build 110.**
+> Chris: *"you have this fucking shit backwards. You gotta tell people upfront that they need an API
+> key first, not at the last fucking minute or the last card... If you have to set it up first, you
+> should have that card first."*
+>
+> **He was describing something literally true in three places.**
+> 1. The guided tour's card was titled **"Settings - set this up first"** and it was **card 19 of
+>    20.** You could hear eighteen tabs described and only then learn half of them do nothing
+>    without a key. It is **card 2** now, straight after hello, retitled "First: your free key",
+>    and it is the only card in the tour that asks you to go and do something.
+>    **The narration was re-baked** (`generate-wizard-audio.py --cards 2 --qa`, 1.8% WER) because
+>    the clip would otherwise still read the old script.
+> 2. There are **fourteen separate `if (!openRouterApiKey)` checks** in the components, every one
+>    behind a button. The app's answer to "what do I need?" was: press something, get refused, go
+>    find Settings, come back, press it again. New **`src/components/common/StartHere.jsx`** sits
+>    ABOVE the tab content, on every tab, from the first second, until the key exists. Two numbered
+>    buttons: get the key, paste it in. It disappears the moment the key is saved.
+>    **It also says what already works without a key** - ten tabs do - because implying the app is
+>    locked would be a lie by omission.
+> 3. **One Man Band's setup card was behind a link at the END of the engine row.** It is above the
+>    row now and open on arrival. It starts OPEN rather than waiting on the status checks: deciding
+>    from them meant a 2.5 s wait on `detectComfy`'s timeout, so a new user watched the card pop in
+>    after the fact. It folds itself away once something is actually connected, and stops moving
+>    once the person touches the toggle.
+>
+> Verified in the browser against a wiped config: card renders top-of-content with no key and is
+> gone the moment one is saved; tour order is Welcome, First-your-free-key, Songwriter; One Man
+> Band's setup card is present within 400 ms and sits above the engine row; with Kaggle already
+> connected it folds away and the engine button reads "$0 · as <username>".
+>
+
 > **2026-08-19 - ONE BUTTON SETS UP KAGGLE AND COMFYUI. Build 109.**
 > Chris: *"we have to figure out a way to tell people how to install ComfyUI and use Kaggle because
 > the instructions are very vague. No one's gonna know how to do that except people like me and

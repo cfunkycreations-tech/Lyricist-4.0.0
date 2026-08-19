@@ -169,7 +169,18 @@ export default function OneManBand() {
   const [engine, setEngine] = useState('cloud');
   const [comfy, setComfy] = useState(null);
   const [kaggle, setKaggle] = useState(null);
-  const [showSetup, setShowSetup] = useState(false);
+  // OPEN BY DEFAULT WHEN NOTHING IS SET UP, and it sits ABOVE the engine row
+  // rather than behind a link under it. Chris, 2026-08-19: *"if you have to set
+  // it up first, you should have that card first."* Hiding the one thing that
+  // unlocks full-length songs behind a link at the bottom is the same mistake as
+  // putting "set this up first" on card nineteen of twenty.
+  // STARTS OPEN. Deciding from the status check instead meant a two and a half
+  // second wait (detectComfy's timeout) before the card appeared, so a new user
+  // saw the tab with no setup on it and then watched it pop in. Shown first,
+  // folded away once we learn something is already connected, and never moved
+  // again after the person touches the toggle themselves.
+  const [showSetup, setShowSetup] = useState(true);
+  const setupTouched = useRef(false);
 
   const [caption, setCaption] = useState(() => draftCaption({
     genres: ['Blues rock'], moods: ['Gritty and driving'], voices: ['Gravelly male'], seconds: 30,
@@ -191,6 +202,14 @@ export default function OneManBand() {
     window.lyricistAPI?.kaggleStatus?.(false)
       .then((k) => { if (!dead && k?.connected) setKaggle(k); })
       .catch(() => {});
+    // Decide once, from what is actually connected: nothing set up means the
+    // setup card is what you see first.
+    Promise.all([
+      window.lyricistAPI?.kaggleStatus?.(false).catch(() => null),
+      detectComfy().catch(() => null),
+    ]).then(([k, c]) => {
+      if (!dead && !setupTouched.current && (k?.connected || c)) setShowSetup(false);
+    });
     return () => { dead = true; };
   }, []);
 
@@ -362,6 +381,13 @@ export default function OneManBand() {
           </div>
         </header>
 
+        {showSetup && (
+          <EngineSetup
+            onKaggleReady={(username) => { setKaggle({ connected: true, username }); setEngine('kaggle'); }}
+            onLocalReady={(base) => { setComfy({ base, version: 'local' }); setEngine('local'); }}
+          />
+        )}
+
         <div className="omb-engine">
           <span className="omb-lbl">Where it runs</span>
           <button type="button" className="omb-eng" aria-pressed={engine === 'cloud'}
@@ -382,17 +408,10 @@ export default function OneManBand() {
             <span className="omb-dot" />This computer{' '}
             <span className="omb-cost">{comfy ? `ready` : 'not set up'}</span>
           </button>
-          <button type="button" className="omb-setup-link" onClick={() => setShowSetup((v) => !v)}>
-            {showSetup ? 'Hide setup' : (kaggle?.connected || comfy) ? 'Set-up' : 'Set up longer songs, free'}
+          <button type="button" className="omb-setup-link" onClick={() => { setupTouched.current = true; setShowSetup((v) => !v); }}>
+            {showSetup ? 'Hide setup' : 'Set-up'}
           </button>
         </div>
-
-        {showSetup && (
-          <EngineSetup
-            onKaggleReady={(username) => { setKaggle({ connected: true, username }); setEngine('kaggle'); }}
-            onLocalReady={(base) => { setComfy({ base, version: 'local' }); setEngine('local'); }}
-          />
-        )}
 
         <div className="omb-cols">
 
