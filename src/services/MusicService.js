@@ -116,9 +116,16 @@ export function suggestedSections(seconds) {
 }
 
 /** Honest estimate in seconds, so the tab can warn before it spends an hour. */
-export function estimateSeconds(engine, duration) {
+export function estimateSeconds(engine, duration, takes = 1) {
   const base = Math.round((REALTIME_FACTOR[engine] ?? 2) * duration);
-  return engine === 'kaggle' ? base + KAGGLE_WARMUP_S : base;
+  const n = Math.max(1, Math.min(4, Math.round(takes)));
+  // Kaggle's free machine is a T4 x2 and the notebook drives both cards, so two
+  // takes are made side by side and cost one take's time. Four is two rounds.
+  // The warm-up (queue, fetch, load) is paid once no matter how many takes.
+  if (engine === 'kaggle') return base * Math.ceil(n / 2) + KAGGLE_WARMUP_S;
+  // The cloud demo hands back one song per call and the local card is one card,
+  // so there every take really is another full wait.
+  return base * n;
 }
 
 /* ------------------------------------------------------------------ */
@@ -427,7 +434,7 @@ async function generateComfy(opts) {
  * demo caps a single call at about 45 seconds of music, and Kaggle hands out 30
  * hours of graphics card a week.
  */
-async function generateKaggle({ state, duration, seed, steps, guidance, onProgress, signal }) {
+async function generateKaggle({ state, duration, seed, seeds, steps, guidance, onProgress, signal }) {
   const api = typeof window !== 'undefined' ? window.lyricistAPI : null;
   if (!api?.kaggleRender) {
     throw new Error('Kaggle needs the desktop app. In the browser preview only the free cloud runs.');
@@ -440,20 +447,35 @@ async function generateKaggle({ state, duration, seed, steps, guidance, onProgre
   signal?.addEventListener?.('abort', abort);
 
   try {
+    const wanted = (Array.isArray(seeds) && seeds.length ? seeds : [seed]).slice(0, 4);
     const res = await api.kaggleRender({
       caption: [state.globalMeta, state.vocals, state.arrangement].filter(Boolean).join('\n\n'),
       lyrics: state.instrumental ? '' : (state.lyrics || ''),
       seconds: duration,
-      seed,
+      seed: wanted[0],
+      seeds: wanted,
       steps,
       guidance,
     });
     if (res?.stopped) throw new Error('Stopped.');
     if (!res?.ok) throw new Error(res?.error || 'Kaggle did not produce a song.');
-    const bytes = new Uint8Array(res.bytes);
-    const type = /\.wav$/i.test(res.fileName) ? 'audio/wav'
-      : /\.mp3$/i.test(res.fileName) ? 'audio/mpeg' : 'audio/flac';
-    return { blob: new Blob([bytes], { type }), host: 'kaggle.com' };
+
+    // One run, every take. Older builds of the main process answer with a single
+    // fileName and bytes, so that shape is still accepted.
+    const raw = Array.isArray(res.takes) && res.takes.length
+      ? res.takes
+      : [{ fileName: res.fileName, bytes: res.bytes }];
+    const takes = raw.map((t, i) => {
+      const type = /\.wav$/i.test(t.fileName) ? 'audio/wav'
+        : /\.mp3$/i.test(t.fileName) ? 'audio/mpeg' : 'audio/flac';
+      return {
+        blob: new Blob([new Uint8Array(t.bytes)], { type }),
+        // The notebook puts the seed in the filename, so a take always knows
+        // which number made it even if Kaggle hands them back out of order.
+        seed: Number((/seed(\d+)/i.exec(t.fileName || '') || [])[1]) || wanted[i] || wanted[0],
+      };
+    });
+    return { blob: takes[0].blob, takes, host: 'kaggle.com' };
   } finally {
     off?.();
     signal?.removeEventListener?.('abort', abort);
@@ -466,6 +488,7 @@ export async function generateSong({
   state,
   duration = 30,
   seed = 0,
+  seeds,
   steps = 30,
   guidance = 1.7,
   dit,
@@ -482,10 +505,10 @@ export async function generateSong({
   const run = engine === 'cloud'
     ? generateCloud({ state, duration, seed, steps, guidance, onProgress, signal, hfToken })
     : engine === 'kaggle'
-      ? generateKaggle({ state, duration, seed, steps, guidance, onProgress, signal })
+      ? generateKaggle({ state, duration, seed, seeds, steps, guidance, onProgress, signal })
       : generateComfy({ base, state, duration, seed, steps, guidance, dit, onProgress, signal });
 
-  const { blob, host } = await run;
+  const { blob, takes, host } = await run;
 
   lastRun.engine = engine;
   lastRun.host = host;
@@ -493,7 +516,52 @@ export async function generateSong({
   lastRun.ms = Date.now() - started;
   lastRun.at = new Date().toISOString();
 
-  return { blob, seed, engine, host, ms: lastRun.ms, duration };
+  return {
+    blob,
+    // Kaggle can hand back several performances from one run. Everything else
+    // makes one, so this is always at least a list of one.
+    takes: takes && takes.length ? takes : [{ blob, seed }],
+    seed,
+    engine,
+    host,
+    ms: lastRun.ms,
+    duration,
+  };
+}
+
+/**
+ * MAKE SEVERAL TAKES, AND ON KAGGLE MAKE THEM AT THE SAME TIME.
+ *
+ * Chris, 2026-08-21: *"you need to make it so that kaggle makes two diff
+ * versions at once."* It did not. The tab said "Takes at once" and then ran the
+ * whole Kaggle job once per take: a fresh queue, a fresh 12 GB fetch and a
+ * fresh ten minute warm-up for the second version of the same song. Two takes
+ * cost twice seventeen minutes instead of seventeen.
+ *
+ * Kaggle's free machine is a T4 x2, two whole graphics cards, and the notebook
+ * now runs one ComfyUI on each. So Kaggle takes every seed in a single push and
+ * the takes come back together. The other engines have one card between them,
+ * so they still go one after another, and `onTake` fires as each one lands so
+ * the first take is playable while the next is still cooking.
+ */
+export async function generateTakes({ seeds = [0], onTake, ...opts } = {}) {
+  const list = (Array.isArray(seeds) && seeds.length ? seeds : [0]).slice(0, 4);
+
+  if (opts.engine === 'kaggle' && list.length > 1) {
+    const res = await generateSong({ ...opts, seed: list[0], seeds: list });
+    const made = res.takes.map((t) => ({ ...res, ...t }));
+    made.forEach((t) => onTake?.(t));
+    return made;
+  }
+
+  const made = [];
+  for (const seed of list) {
+    const res = await generateSong({ ...opts, seed, seeds: [seed] });
+    const one = { ...res, blob: res.blob, seed };
+    made.push(one);
+    onTake?.(one);
+  }
+  return made;
 }
 
 

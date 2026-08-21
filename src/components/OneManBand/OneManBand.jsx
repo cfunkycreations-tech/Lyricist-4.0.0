@@ -3,7 +3,7 @@ import TabBackground from '../common/TabBackground.jsx';
 import MultiPick from '../common/MultiPick.jsx';
 import EngineSetup from './EngineSetup.jsx';
 import {
-  buildState, composeCaption, detectComfy, estimateSeconds, generateSong, sectionBudget,
+  buildState, composeCaption, detectComfy, estimateSeconds, generateTakes, sectionBudget,
 } from '../../services/MusicService.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import {
@@ -230,7 +230,7 @@ export default function OneManBand() {
   const tags = useMemo(() => readSections(lyrics), [lyrics]);
   const budget = sectionBudget(seconds);
   const tooManyParts = tags.length > budget;
-  const estimate = estimateSeconds(engine, seconds) * (engine === 'cloud' ? 1 : takeCount);
+  const estimate = estimateSeconds(engine, seconds, engine === 'cloud' ? 1 : takeCount);
 
   /** Songwriter already stores lyrics as [SECTION] + lines, which is exactly
       the shape this tab wants, so nothing has to be reformatted. */
@@ -310,31 +310,37 @@ export default function OneManBand() {
     const seeds = Array.from({ length: takeCount }, (_, i) => seed + i * 1013904223);
 
     try {
-      for (const s of seeds) {
-        const res = await generateSong({
-          engine,
-          base: comfy?.base,
-          state,
-          duration: seconds,
-          seed: s,
-          steps,
-          guidance,
-          hfToken: store.config?.huggingFaceToken || '',
-          signal: ac.signal,
-          onProgress: (p) => setPhase(p.phase),
-        });
-        const url = URL.createObjectURL(res.blob);
-        setTakes((prev) => [{
-          id: `${Date.now()}-${s}`,
-          seed: s,
-          url,
-          blob: res.blob,
-          seconds,
-          ms: res.ms,
-          // The seed alone does NOT reproduce a take. Keep the whole recipe.
-          recipe: { lyrics, caption, genres, moods, voices, genre, mood, voice, seconds, steps, guidance, engine },
-        }, ...prev]);
-      }
+      // ONE call for all of them. On Kaggle that is one push, one queue and one
+      // warm-up with the takes split across its two graphics cards, instead of
+      // the whole seventeen minute round trip again for the second version of
+      // the same song. Everything else still goes one at a time inside here,
+      // and onTake fires the moment each one lands so the first is playable
+      // while the next is still cooking.
+      await generateTakes({
+        engine,
+        base: comfy?.base,
+        state,
+        duration: seconds,
+        seeds,
+        steps,
+        guidance,
+        hfToken: store.config?.huggingFaceToken || '',
+        signal: ac.signal,
+        onProgress: (p) => setPhase(p.phase),
+        onTake: (res) => {
+          const url = URL.createObjectURL(res.blob);
+          setTakes((prev) => [{
+            id: `${Date.now()}-${res.seed}-${prev.length}`,
+            seed: res.seed,
+            url,
+            blob: res.blob,
+            seconds,
+            ms: res.ms,
+            // The seed alone does NOT reproduce a take. Keep the whole recipe.
+            recipe: { lyrics, caption, genres, moods, voices, genre, mood, voice, seconds, steps, guidance, engine },
+          }, ...prev]);
+        },
+      });
       setPhase('');
     } catch (e) {
       setError(e.message || 'Something went wrong.');
@@ -408,7 +414,8 @@ export default function OneManBand() {
             <span className="omb-dot" />This computer{' '}
             <span className="omb-cost">{comfy ? `ready` : 'not set up'}</span>
           </button>
-          <button type="button" className="omb-setup-link" onClick={() => { setupTouched.current = true; setShowSetup((v) => !v); }}>
+          <button type="button" className="omb-setup-link" data-demo="omb-setup"
+                  onClick={() => { setupTouched.current = true; setShowSetup((v) => !v); }}>
             {showSetup ? 'Hide setup' : 'Set-up'}
           </button>
         </div>
@@ -523,9 +530,13 @@ export default function OneManBand() {
                   </div>
                 </div>
 
-                <div className="omb-knob">
+                <div className="omb-knob" data-demo="omb-takes">
                   <div className="nm">Takes at once</div><div className="val">{takeCount}</div>
-                  <div className="sub">Different versions, pick the one you like</div>
+                  <div className="sub">
+                    {engine === 'kaggle'
+                      ? 'Different versions of the same song. Kaggle has two graphics cards, so two of them take about as long as one.'
+                      : 'Different versions, pick the one you like'}
+                  </div>
                   <input type="range" min="1" max="4" value={takeCount}
                          onChange={(e) => setTakeCount(Number(e.target.value))} />
                 </div>

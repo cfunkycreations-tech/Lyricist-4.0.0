@@ -42,6 +42,27 @@ throws('an email address', 'funkchristo@gmail.com', 'not a Kaggle token');
 throws('a truncated file', '{"username":"chris"', 'not complete');
 throws('a file with no key', '{"username":"chris"}', 'no key');
 
+console.log('\n--- the song going into the notebook ---');
+const build = kaggle.__test_build;
+const nbText = (opts) => {
+  const nb = JSON.parse(build(opts));
+  return String(nb.cells.find((c) => String(c.source).includes('CAPTION =')).source);
+};
+const TRIPLE = '"'.repeat(3);
+const four = nbText({
+  caption: `a ${TRIPLE} triple and a back\\slash`,
+  lyrics: '[Verse]\nwords',
+  seconds: 75,
+  seeds: [222, 777, 3, 4, 5],
+});
+ok('every seed goes into ONE notebook', /SEEDS\s+= \[222, 777, 3, 4\]/.test(four), 'a fifth is capped away');
+ok('a lone seed still works', /SEEDS\s+= \[9\]/.test(nbText({ caption: 'x', lyrics: 'y', seconds: 60, seed: 9 })));
+ok('a triple quote cannot break the python', four.includes('\\"\\"\\"'));
+ok('nor can a backslash', four.includes('back\\\\slash'));
+ok('the length goes in', /DURATION = 75/.test(four));
+ok('every cell is one string, as Kaggle wants',
+   JSON.parse(build({ caption: 'x', lyrics: 'y', seconds: 60, seed: 1 })).cells.every((c) => typeof c.source === 'string'));
+
 const CODE = process.env.KAGGLE_CODE;
 if (!CODE) {
   console.log(`\n${bad ? `${bad} FAILED` : 'offline checks all passed'}. No KAGGLE_CODE given, so the live half was skipped.`);

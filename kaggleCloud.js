@@ -295,26 +295,38 @@ function notebookPath() {
 /**
  * Put their song into the notebook.
  *
- * The notebook has one cell that holds CAPTION / LYRICS / DURATION / SEED /
+ * The notebook has one cell that holds CAPTION / LYRICS / DURATION / SEEDS /
  * STEPS / CFG and every other cell is plumbing, which is exactly why it can be
  * driven from here: rewrite that one cell and the rest is unchanged and proven.
  * Python triple-quoted strings, so the only thing that can break it is a stray
  * backslash or a triple quote in his words. Both get neutralised.
+ *
+ * SEEDS, plural. Kaggle hands out a T4 x2, two whole graphics cards, and the
+ * notebook now runs a ComfyUI on each of them, so asking for two takes costs
+ * about what one used to instead of a second queue, a second 12 GB fetch and a
+ * second ten minute warm-up.
  */
-function buildNotebook({ caption, lyrics, seconds, seed, steps, guidance }) {
+function buildNotebook({ caption, lyrics, seconds, seed, seeds, steps, guidance }) {
   const nb = JSON.parse(fs.readFileSync(notebookPath(), 'utf8'));
   const safe = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/"""/g, '\\"\\"\\"');
+  const list = (Array.isArray(seeds) && seeds.length ? seeds : [seed ?? 222])
+    .slice(0, 4)
+    .map((n) => Math.round(Number(n) || 0));
   const cell = [
     `CAPTION = """${safe(caption)}"""\n`,
     '\n',
     `LYRICS = """${safe(lyrics)}"""\n`,
     '\n',
     `DURATION = ${Math.max(10, Math.min(300, Math.round(seconds || 60)))}\n`,
-    `SEED     = ${Math.round(seed ?? 222)}\n`,
+    `SEEDS    = [${list.join(', ')}]\n`,
     `STEPS    = ${Math.round(steps ?? 30)}\n`,
     `CFG      = ${Number(guidance ?? 1.7)}\n`,
   ];
-  const songCell = nb.cells.findIndex((c) => c.cell_type === 'code' && String(c.source.join('')).includes('CAPTION ='));
+  // A cell's source is a list of lines in some notebooks and one string in
+  // others, and the shipped one has been both. Read it either way rather than
+  // assuming: guessing wrong here throws before a single note is made.
+  const text = (c) => (Array.isArray(c.source) ? c.source.join('') : String(c.source || ''));
+  const songCell = nb.cells.findIndex((c) => c.cell_type === 'code' && text(c).includes('CAPTION ='));
   if (songCell < 0) throw new Error('The shipped notebook has no CAPTION cell. This is a bug in Lyricist, not in your song.');
   nb.cells[songCell].source = cell;
   // Kaggle's own pusher flattens every cell's source to ONE string before
@@ -411,10 +423,36 @@ async function render(song, onProgress, shouldStop = () => false) {
   if (!files.length) {
     return { ok: false, url, error: `Kaggle finished but produced no audio file. Open the notebook to see why: ${url}` };
   }
-  const pick = files[files.length - 1];
-  const bytes = await download(pick.url);
+
+  // EVERY take comes home, not just the last file in the list. The notebook
+  // names them take1_seed222, take2_seed777 and so on, so sorting by that number
+  // keeps take one first no matter which graphics card finished first.
+  const order = (name) => {
+    const m = /take(\d+)/i.exec(name || '');
+    return m ? Number(m[1]) : 999;
+  };
+  files.sort((a, b) => order(a.fileName) - order(b.fileName));
+
+  const takes = [];
+  for (let i = 0; i < files.length; i += 1) {
+    say(0.9 + (0.1 * i) / files.length, files.length > 1
+      ? `Fetching take ${i + 1} of ${files.length}`
+      : 'Fetching the audio');
+    try {
+      const bytes = await download(files[i].url);
+      takes.push({ fileName: files[i].fileName, bytes: Array.from(bytes) });
+    } catch (e) {
+      // One take failing to download must not throw away the ones that worked.
+      if (!takes.length && i === files.length - 1) throw e;
+    }
+  }
+  if (!takes.length) {
+    return { ok: false, url, error: `Kaggle made the song but the download failed. It is still on the notebook: ${url}` };
+  }
+
   say(1, 'Done');
-  return { ok: true, url, fileName: pick.fileName, bytes: Array.from(bytes) };
+  // fileName and bytes stay on the result for anything still expecting one song.
+  return { ok: true, url, takes, fileName: takes[0].fileName, bytes: takes[0].bytes };
 }
 
 module.exports = {

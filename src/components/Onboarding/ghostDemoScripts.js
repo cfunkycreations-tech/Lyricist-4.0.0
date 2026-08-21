@@ -37,9 +37,15 @@ export const GHOST_DEMOS = {
       },
       {
         target: '.omb-engine',
-        say: 'Where it runs. Free cloud costs nothing and is also the fastest, so it is the default. This computer only lights up when ComfyUI is actually running.',
+        say: 'Where it runs. Free cloud costs nothing and is also the fastest, so it is the default. It tops out around forty five seconds of music. Kaggle and this computer both make full length songs, and both are free as well.',
         action: 'point',
-        wait: 4200,
+        wait: 5200,
+      },
+      {
+        target: '[data-demo="omb-setup"]',
+        say: 'Set-up is how you switch Kaggle on, and it is worth doing before anything else. It is three steps. Open Kaggle, click Create New Token, and paste the long code they show you into the box. Once, and it stays done.',
+        action: 'point',
+        wait: 5600,
       },
       {
         target: '.omb-card header .omb-mini',
@@ -78,6 +84,12 @@ export const GHOST_DEMOS = {
         wait: 4200,
       },
       {
+        target: '[data-demo="omb-takes"]',
+        say: 'Takes at once. Two is the default, because two versions of the same song give you something to choose between. On Kaggle they are made side by side on its two graphics cards, so asking for two costs about what one costs.',
+        action: 'point',
+        wait: 5400,
+      },
+      {
         target: '.omb-dice',
         say: 'The take number is the roll of the dice. Same words, new number, a different performance every time. It gets saved with the song so you can find your way back to one you liked.',
         action: 'point',
@@ -85,9 +97,9 @@ export const GHOST_DEMOS = {
       },
       {
         target: '.omb-est',
-        say: 'It tells you how long before you commit, not after. A long song on free hardware is a real wait, and you should know that going in.',
+        say: 'It tells you how long before you commit, not after. A long song on free hardware is a real wait. Kaggle is honest rather than quick: about seventeen minutes for thirty seconds of music. You should know that going in.',
         action: 'point',
-        wait: 4000,
+        wait: 5200,
       },
       {
         target: '.omb-make',

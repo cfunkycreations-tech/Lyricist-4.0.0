@@ -1,46 +1,66 @@
 {
-  "screw-0-say": {
-    "text": "Remote session on Chopped and Screwed. This is the sound DJ Screw invented in Houston, and it is two separate ideas that people say as one word.",
-    "words": 27
+  "onemanband-0-say": {
+    "text": "Remote session on One Man Band. This is the tab that takes the words you wrote and sings them back to you, with a full band behind them.",
+    "words": 28
   },
-  "screw-1-say": {
-    "text": "Drop any audio file here to start. It never leaves your machine, all of this runs on your own computer.",
+  "onemanband-1-say": {
+    "text": "Simple hides the deep knobs. Full Control shows every one of them. Nothing is buried behind a menu either way.",
     "words": 20
   },
-  "screw-2-say": {
-    "text": "Or pull one of your own recordings straight out of the app. A song you just made in One Man Band lands in this list.",
-    "words": 25
-  },
-  "screw-2-whenMissing": {
-    "text": "There is also a picker for your own recordings, and it is not on screen because you have not made any yet. As soon as you keep a take from One Man Band or the Recording Booth, it turns up right here and you can screw your own song without leaving the app.",
-    "words": 53
-  },
-  "screw-3-say": {
-    "text": "Screwed is the speed. The whole track slows down and the pitch sinks with it, because nothing corrects it. That sinking voice is the entire point.",
-    "words": 26
-  },
-  "screw-4-say": {
-    "text": "Presets run from barely touched all the way down to sunk. Start in the middle and take it down until it feels right.",
-    "words": 23
-  },
-  "screw-5-say": {
-    "text": "Chopped is the edit, and it is a different thing. A chop lays the same slice down two or three times while the song only moves forward once. That stutter is what makes it a chop and not a fast cut.",
+  "onemanband-2-say": {
+    "text": "Where it runs. Free cloud costs nothing and is also the fastest, so it is the default. It tops out around forty five seconds of music. Kaggle and this computer both make full length songs, and both are free as well.",
     "words": 41
   },
-  "screw-6-say": {
-    "text": "The slicer draws the waveform with the beat grid over it. Click any slice to force a chop where the pattern did not put one, or to take one out where it did. Your edits win.",
-    "words": 36
+  "onemanband-3-say": {
+    "text": "Set-up is how you switch Kaggle on, and it is worth doing before anything else. It is three steps. Open Kaggle, click Create New Token, and paste the long code they show you into the box. Once, and it stays done.",
+    "words": 41
   },
-  "screw-6-whenMissing": {
-    "text": "The slicer is not on screen yet because nothing is loaded. Once you pick a song it draws the whole waveform with the beat grid over the top of it, and every slice is clickable. Click one to force a chop where the pattern did not put one, or to take one out where it did. Your edits always win over the pattern.",
-    "words": 63
+  "onemanband-4-say": {
+    "text": "Pull from Songwriter drops the lyrics you already wrote straight in, sections and all. You never retype anything.",
+    "words": 18
   },
-  "screw-7-say": {
-    "text": "Then render it. I am leaving that to you. It saves straight back to your Recordings when it is done.",
-    "words": 20
+  "onemanband-5-say": {
+    "text": "These bracket tags are the real structure. Verse, Chorus, Bridge. The words carry the mood, but these decide the shape of the song. Tap one to add it.",
+    "words": 28
   },
-  "screw-8-say": {
-    "text": "That is Chopped and Screwed. Slow it down, chop it up, and the sub follows the track instead of droning underneath it.",
-    "words": 22
+  "onemanband-6-say": {
+    "text": "Your lyrics live here. Read them back before you start, because a typo costs you the whole run.",
+    "words": 18
+  },
+  "onemanband-7-say": {
+    "text": "Genre, mood and voice. Two hundred and forty one genres, and each one brings its own real instruments into the description.",
+    "words": 21
+  },
+  "onemanband-8-say": {
+    "text": "This is the sound description, and it is the single biggest lever on how the song comes out. It gets written for you from your three picks, and you can edit every word of it.",
+    "words": 35
+  },
+  "onemanband-9-say": {
+    "text": "Rewrite with AI hands it to the music model\u2019s own caption writer, free, on their server. It rewrites the sound and leaves your lyrics alone.",
+    "words": 25
+  },
+  "onemanband-10-say": {
+    "text": "Takes at once. Two is the default, because two versions of the same song give you something to choose between. On Kaggle they are made side by side on its two graphics cards, so asking for two costs about what one costs.",
+    "words": 42
+  },
+  "onemanband-11-say": {
+    "text": "The take number is the roll of the dice. Same words, new number, a different performance every time. It gets saved with the song so you can find your way back to one you liked.",
+    "words": 35
+  },
+  "onemanband-12-say": {
+    "text": "It tells you how long before you commit, not after. A long song on free hardware is a real wait. Kaggle is honest rather than quick: about seventeen minutes for thirty seconds of music. You should know that going in.",
+    "words": 40
+  },
+  "onemanband-13-say": {
+    "text": "Make the song starts it. I am not pressing it for you, because that spends real time on the free servers, and this is your quota not mine.",
+    "words": 28
+  },
+  "onemanband-14-say": {
+    "text": "Music by MiniMax Music 3, credited right here, because their licence asks for it and that is only fair.",
+    "words": 19
+  },
+  "onemanband-15-say": {
+    "text": "That is One Man Band. Write the words in Songwriter, sing them here, then polish in Mastering Studio.",
+    "words": 18
   }
 }

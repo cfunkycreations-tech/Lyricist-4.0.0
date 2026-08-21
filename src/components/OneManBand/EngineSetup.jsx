@@ -172,8 +172,10 @@ export default function EngineSetup({ onKaggleReady, onLocalReady }) {
           </header>
           <p className="es-what">
             Kaggle is Google-owned and gives away <b>30 hours a week</b> of a fast graphics card.
-            Your song is made on their machine. A full three minute song takes about 17 minutes and
-            costs nothing, ever.
+            Your song is made on their machine, and it costs nothing, ever. Their card is honest
+            rather than quick: about <b>17 minutes</b> for 30 seconds of music, and the best part of
+            two hours for a full three minute song. It has <b>two</b> graphics cards though, so
+            asking for two takes costs about what one does.
           </p>
 
           {kaggle?.connected ? (
