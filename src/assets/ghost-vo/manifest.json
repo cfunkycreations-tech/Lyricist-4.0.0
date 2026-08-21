@@ -40,26 +40,30 @@
     "words": 25
   },
   "onemanband-10-say": {
+    "text": "And this is the whole prompt, exactly as it gets sent. The sound description and your words, together, nothing hidden from you. Copy it puts the lot on your clipboard, which is also what you paste into anything else.",
+    "words": 39
+  },
+  "onemanband-11-say": {
     "text": "Takes at once. Two is the default, because two versions of the same song give you something to choose between. On Kaggle they are made side by side on its two graphics cards, so asking for two costs about what one costs.",
     "words": 42
   },
-  "onemanband-11-say": {
+  "onemanband-12-say": {
     "text": "The take number is the roll of the dice. Same words, new number, a different performance every time. It gets saved with the song so you can find your way back to one you liked.",
     "words": 35
   },
-  "onemanband-12-say": {
+  "onemanband-13-say": {
     "text": "It tells you how long before you commit, not after. A long song on free hardware is a real wait. Kaggle is honest rather than quick: about seventeen minutes for thirty seconds of music. You should know that going in.",
     "words": 40
   },
-  "onemanband-13-say": {
+  "onemanband-14-say": {
     "text": "Make the song starts it. I am not pressing it for you, because that spends real time on the free servers, and this is your quota not mine.",
     "words": 28
   },
-  "onemanband-14-say": {
+  "onemanband-15-say": {
     "text": "Music by MiniMax Music 3, credited right here, because their licence asks for it and that is only fair.",
     "words": 19
   },
-  "onemanband-15-say": {
+  "onemanband-16-say": {
     "text": "That is One Man Band. Write the words in Songwriter, sing them here, then polish in Mastering Studio.",
     "words": 18
   }

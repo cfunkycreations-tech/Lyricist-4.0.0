@@ -84,6 +84,12 @@ export const GHOST_DEMOS = {
         wait: 4200,
       },
       {
+        target: '.omb-whole',
+        say: 'And this is the whole prompt, exactly as it gets sent. The sound description and your words, together, nothing hidden from you. Copy it puts the lot on your clipboard, which is also what you paste into anything else.',
+        action: 'point',
+        wait: 5400,
+      },
+      {
         target: '[data-demo="omb-takes"]',
         say: 'Takes at once. Two is the default, because two versions of the same song give you something to choose between. On Kaggle they are made side by side on its two graphics cards, so asking for two costs about what one costs.',
         action: 'point',

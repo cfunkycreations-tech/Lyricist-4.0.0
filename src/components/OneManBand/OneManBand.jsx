@@ -2,8 +2,94 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import TabBackground from '../common/TabBackground.jsx';
 import MultiPick from '../common/MultiPick.jsx';
 import EngineSetup from './EngineSetup.jsx';
+
+/**
+ * THE SHAPE OF A SONG, IN ONE PRESS.
+ *
+ * Chris, 2026-08-21: *"make it so that it will write the verse chorus intro,
+ * verse chorus, verse chorus bridge, verse chorus outro."*
+ *
+ * That is the standard pop and rock arrangement and it is nine tags. Adding them
+ * one at a time from the row of plus buttons is nine clicks before a single word
+ * gets written, and you have to already know the running order to get it right.
+ * One button now lays the whole thing out and you fill in the blanks.
+ *
+ * It APPENDS rather than replaces, always. Anything that can silently eat a
+ * verse somebody already wrote is not worth the convenience.
+ */
+const SONG_SHAPE = ['Intro', 'Verse', 'Chorus', 'Verse', 'Chorus', 'Bridge', 'Verse', 'Chorus', 'Outro'];
+
+/**
+ * What each part of the sound description is FOR.
+ *
+ * These three boxes are MiniMax's own caption format, and they were shipped as
+ * three unlabelled rectangles. The model reads them as one block, but a person
+ * has to know that the tempo goes in the first and the singer goes in the
+ * second, and nothing on screen said so.
+ */
+const CAPTION_PARTS = [
+  {
+    key: 'globalMeta',
+    label: 'The style',
+    hint: 'Genre, speed, key, and the overall feel. This one does the most work.',
+  },
+  {
+    key: 'vocals',
+    label: 'The singer',
+    hint: 'Who is singing and how. Age, grain, delivery, harmonies.',
+  },
+  {
+    key: 'arrangement',
+    label: 'The band',
+    hint: 'The instruments you actually want to hear, and what each one is doing.',
+  },
+];
+
+/**
+ * A box that grows with what you put in it.
+ *
+ * Chris, 2026-08-21: *"it needs to be able to write out the whole fucking words,
+ * like the whole global prompt, basically, and write out the lyrics because
+ * there's no place for lyrics."*
+ *
+ * He is right and the numbers were embarrassing: the lyrics box was twelve rows
+ * in a half-width column, 280 pixels tall for a three minute song, and the three
+ * sound-description boxes were four, three and three rows with no labels on any
+ * of them. You wrote a verse and started scrolling inside a slot. A song you
+ * cannot see all of is a song you cannot edit.
+ *
+ * So every writing box here sizes itself to its content. It still has a floor so
+ * an empty one does not collapse, and the drag handle still works, because
+ * taking away a control to add a convenience is not a trade anybody asked for.
+ */
+function GrowBox({ value, minRows = 3, className = '', ...rest }) {
+  const ref = useRef(null);
+  const fit = () => {
+    const el = ref.current;
+    if (!el) return;
+    // Measured, not guessed: collapse first or it can only ever grow.
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight + 2}px`;
+  };
+  useEffect(fit, [value]);
+  useEffect(() => {
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, []);
+  return (
+    <textarea
+      ref={ref}
+      className={className}
+      rows={minRows}
+      value={value}
+      onInput={fit}
+      {...rest}
+    />
+  );
+}
 import {
   buildState, composeCaption, detectComfy, estimateSeconds, generateTakes, sectionBudget,
+  SECONDS_PER_SECTION,
 } from '../../services/MusicService.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import {
@@ -38,7 +124,19 @@ const LENGTHS = [
   { s: 180, label: '3 min' }, { s: 300, label: '5 min' },
 ];
 
-const SECTIONS = ['Intro', 'Verse', 'Chorus', 'Bridge', 'Instrumental', 'Outro'];
+/**
+ * EVERY part of a song is pickable, not just the six obvious ones.
+ *
+ * Chris, 2026-08-21: *"just make it so that you can pick all of those, intro,
+ * chorus, verse, blah blah blah."* Pre-Chorus, Post-Chorus, Hook, Breakdown and
+ * Solo were all missing, so writing any of them meant typing the brackets by
+ * hand and hoping the spelling matched what the model reads. They are buttons
+ * now, in the order they usually turn up in a song.
+ */
+const SECTIONS = [
+  'Intro', 'Verse', 'Pre-Chorus', 'Chorus', 'Post-Chorus', 'Hook',
+  'Bridge', 'Breakdown', 'Solo', 'Instrumental', 'Outro',
+];
 
 /** Pull the [bracket] tags out of the lyric sheet, in order. */
 function readSections(lyrics) {
@@ -228,6 +326,38 @@ export default function OneManBand() {
   }, [busy]);
 
   const tags = useMemo(() => readSections(lyrics), [lyrics]);
+  const lineCount = useMemo(
+    () => lyrics.split('\n').filter((l) => l.trim() && !/^\s*\[/.test(l)).length,
+    [lyrics],
+  );
+
+  /**
+   * The prompt as the engine will actually receive it.
+   *
+   * Built the same way generateKaggle and generateCloud build it, from the same
+   * three fields joined by blank lines, so what he reads here is what goes out.
+   * If that join ever changes in MusicService this has to change with it.
+   */
+  const wholePrompt = useMemo(() => {
+    const sound = [caption.globalMeta, caption.vocals, caption.arrangement]
+      .map((t) => String(t || '').trim())
+      .filter(Boolean)
+      .join('\n\n');
+    const instrumental = voices.every((v) => v.startsWith('Instrumental'));
+    const words = instrumental ? '(instrumental, no vocals)' : (lyrics.trim() || '(no words yet)');
+    return `${sound}\n\n----- LYRICS -----\n\n${words}`;
+  }, [caption, lyrics, voices]);
+
+  const [copied, setCopied] = useState(false);
+  const copyWholePrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(wholePrompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setError('Could not reach the clipboard. Select the text and copy it by hand.');
+    }
+  };
   const budget = sectionBudget(seconds);
   const tooManyParts = tags.length > budget;
   const estimate = estimateSeconds(engine, seconds, engine === 'cloud' ? 1 : takeCount);
@@ -288,7 +418,41 @@ export default function OneManBand() {
     }, 60);
   };
 
-  const addSection = (name) => setLyrics((l) => `${l.replace(/\s*$/, '')}\n\n[${name}]\n`);
+  /**
+   * Make the song long enough to hold the parts it now has.
+   *
+   * A part needs fifteen seconds to be music, so nine of them need a hundred and
+   * thirty five. Adding parts used to leave the length where it was and then
+   * warn that they do not fit, which is being told a whole song is too long
+   * after asking for a whole song. Adding a part is a clear enough statement of
+   * intent to grow the song, so it grows, on the slider where you can see it and
+   * drag it back. The warning is left for what it was written for: an
+   * arrangement that cannot fit in the five minute ceiling no matter what.
+   */
+  const fitLength = (nextLyrics) => {
+    const parts = readSections(nextLyrics).length;
+    const needs = Math.min(300, parts * SECONDS_PER_SECTION);
+    setSeconds((cur) => {
+      if (cur >= needs) return cur;
+      setPhase(`Length raised to ${needs} seconds so all ${parts} parts fit`);
+      setTimeout(() => setPhase((p) => (p.startsWith('Length raised') ? '' : p)), 4000);
+      return needs;
+    });
+  };
+
+  const addSection = (name) => setLyrics((l) => {
+    const next = `${l.replace(/\s*$/, '')}\n\n[${name}]\n`;
+    fitLength(next);
+    return next;
+  });
+
+  /** Lay the whole standard arrangement out, ready to write into. */
+  const addWholeShape = () => setLyrics((l) => {
+    const skeleton = SONG_SHAPE.map((p) => `[${p}]\n`).join('\n');
+    const next = l.trim() ? `${l.replace(/\s*$/, '')}\n\n${skeleton}` : skeleton;
+    fitLength(next);
+    return next;
+  });
 
   const make = async () => {
     setError('');
@@ -420,43 +584,70 @@ export default function OneManBand() {
           </button>
         </div>
 
+        {/* THE WORDS COME FIRST AND THEY GET THE WHOLE WIDTH.
+            This used to be the top half of a 1.15fr column with the knobs
+            beside it, which left a three minute song a 280 pixel slot to live
+            in. Writing is what this tab is for, so writing gets the room and
+            the knobs move underneath. */}
+        <section className="omb-card omb-write">
+          <header>
+            <h2>The words</h2>
+            <div className="omb-writehd">
+              <span className="omb-lines">
+                {lineCount} {lineCount === 1 ? 'line' : 'lines'} · {tags.length} {tags.length === 1 ? 'part' : 'parts'}
+              </span>
+              <button type="button" className="omb-mini" onClick={pullFromSongwriter}>
+                Pull from Songwriter
+              </button>
+            </div>
+          </header>
+          <div className="omb-body">
+            <p className="omb-hint">
+              <b>The bracket tags are the song structure.</b> The words set the mood, but these
+              decide the shape. Tap one to add it.
+            </p>
+            <div className="omb-tags">
+              {tags.map((t, i) => (
+                <span key={`${t}-${i}`} className={`omb-tag ${t.toLowerCase().slice(0, 1)}`}>{t}</span>
+              ))}
+              {SECTIONS.map((s) => (
+                <button key={s} type="button" className="omb-tag add"
+                        onClick={() => addSection(s)}>+ {s}</button>
+              ))}
+            </div>
+
+            <button type="button" className="omb-shape" onClick={addWholeShape}>
+              <b>Lay out a whole song</b>
+              <span>{SONG_SHAPE.join(' · ').toLowerCase()}</span>
+            </button>
+
+            {tooManyParts && (
+              <p className="omb-warn">
+                {tags.length} parts in {seconds} seconds is more than will fit. A part needs
+                15 to 20 seconds to be music. Either make it longer or cut parts.
+              </p>
+            )}
+
+            <GrowBox className="omb-sheet" minRows={18} value={lyrics} spellCheck
+                     placeholder={'[Verse]\nWrite your words here, or pull them in from Songwriter.'}
+                     onChange={(e) => setLyrics(e.target.value)} />
+          </div>
+        </section>
+
         <div className="omb-cols">
 
           <section className="omb-card">
             <header>
-              <h2>The song</h2>
-              <button type="button" className="omb-mini" onClick={pullFromSongwriter}>
-                Pull from Songwriter
-              </button>
+              <h2>The sound</h2>
+              <span className="omb-cost">{COUNTS.genres} genres · {COUNTS.moods} moods · {COUNTS.voices} voices</span>
             </header>
             <div className="omb-body">
-              <p className="omb-hint omb-counts">{COUNTS.genres} genres, {COUNTS.moods} moods, {COUNTS.voices} voices. Every genre brings its own instruments to the description.</p>
-              <p className="omb-hint">
-                <b>The bracket tags are the song structure.</b> The words set the mood, but these
-                decide the shape.
+              <p className="omb-hint omb-counts">
+                Every genre you pick brings its own real instruments into the description below.
               </p>
-              <div className="omb-tags">
-                {tags.map((t, i) => (
-                  <span key={`${t}-${i}`} className={`omb-tag ${t.toLowerCase().slice(0, 1)}`}>{t}</span>
-                ))}
-                {SECTIONS.map((s) => (
-                  <button key={s} type="button" className="omb-tag add"
-                          onClick={() => addSection(s)}>+ {s}</button>
-                ))}
-              </div>
-
-              {tooManyParts && (
-                <p className="omb-warn">
-                  {tags.length} parts in {seconds} seconds is more than will fit. A part needs
-                  15 to 20 seconds to be music. Either make it longer or cut parts.
-                </p>
-              )}
-
-              <textarea className="omb-sheet" rows={12} value={lyrics} spellCheck
-                        onChange={(e) => setLyrics(e.target.value)} />
 
               {/* Five of each, blended. The instruments of every genre picked go
-                  into the caption together — see mergedKit. */}
+                  into the caption together, see mergedKit. */}
               <div className="omb-picks">
                 <MultiPick
                   label="Genre"
@@ -499,14 +690,42 @@ export default function OneManBand() {
                     </button>
                   </span>
                 </div>
-                {['globalMeta', 'vocals', 'arrangement'].map((k) => (
-                  <textarea key={k} rows={k === 'globalMeta' ? 4 : 3} value={caption[k]}
-                            spellCheck={false}
-                            onChange={(e) => {
-                              setCaptionEdited(true);
-                              setCaption((c) => ({ ...c, [k]: e.target.value }));
-                            }} />
+
+                {/* Three anonymous grey boxes before this: you could not tell
+                    which one wanted the tempo and which one wanted the singer.
+                    They are named now, and each one says what belongs in it. */}
+                {CAPTION_PARTS.map(({ key, label, hint }) => (
+                  <label key={key} className="omb-capfield">
+                    <span className="nm">{label}</span>
+                    <span className="sub">{hint}</span>
+                    <GrowBox
+                      minRows={key === 'globalMeta' ? 4 : 3}
+                      value={caption[key]}
+                      spellCheck={false}
+                      onChange={(e) => {
+                        setCaptionEdited(true);
+                        setCaption((c) => ({ ...c, [key]: e.target.value }));
+                      }}
+                    />
+                  </label>
                 ))}
+              </div>
+
+              {/* THE WHOLE THING, EXACTLY AS IT GOES OUT.
+                  He asked to see the whole prompt written out, and until now no
+                  screen in the app showed what actually gets sent: the three
+                  boxes are joined by blank lines and the lyrics ride along
+                  beside them. Read-only on purpose, because the editable copy is
+                  right above it, and one Copy button because this is also what
+                  you paste into Suno or anywhere else. */}
+              <div className="omb-whole">
+                <div className="omb-cap">
+                  <span>The whole prompt, exactly as it is sent</span>
+                  <button type="button" className="omb-mini" onClick={copyWholePrompt}>
+                    {copied ? 'Copied' : 'Copy it'}
+                  </button>
+                </div>
+                <pre className="omb-wholetext">{wholePrompt}</pre>
               </div>
             </div>
           </section>
