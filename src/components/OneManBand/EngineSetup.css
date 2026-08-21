@@ -66,6 +66,30 @@
   box-shadow: 0 0 16px hsla(158 80% 58% / .16);
 }
 
+/* The paste box. Kaggle shows the code on screen now instead of downloading a
+   file, so this is the main way in and it is sized to look like it. */
+.es-paste { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.es-input {
+  flex: 1 1 200px; min-width: 0;
+  border-radius: 9px; padding: 9px 12px;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 12.5px; letter-spacing: .2px;
+  color: #EAF2FF; background: rgba(3, 5, 9, .72);
+  border: 1px solid var(--omb-line-hot, hsla(262 70% 70% / .30));
+}
+.es-input::placeholder { color: var(--omb-faint, #64789B); }
+.es-input:focus {
+  outline: none;
+  border-color: hsla(158 80% 58% / .65);
+  box-shadow: 0 0 14px hsla(158 80% 58% / .18);
+}
+
+.es-link {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font: inherit; color: hsl(158 80% 62%); text-decoration: underline;
+}
+.es-link:hover { color: #fff; }
+
 .es-plain {
   background: none; border: 0; padding: 4px 0; cursor: pointer;
   font: inherit; font-size: 11.5px; color: var(--omb-faint, #64789B); text-decoration: underline;

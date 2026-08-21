@@ -33,8 +33,10 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   comfyStart: () => ipcRenderer.invoke('comfy-start'),
   comfyStop: () => ipcRenderer.invoke('comfy-stop'),
   kaggleStatus: (verify) => ipcRenderer.invoke('kaggle-status', { verify }),
-  // Opens a file picker on the Downloads folder so the token is PICKED, never
-  // typed. A 40-character key retyped by hand is a support ticket waiting.
+  // Kaggle shows the code on screen now instead of downloading a file, so the
+  // normal path is a paste. The file picker stays for accounts that still get a
+  // kaggle.json, and for anyone who set this up on an earlier build.
+  kaggleConnectText: (text) => ipcRenderer.invoke('kaggle-connect-text', { text }),
   kaggleConnectFile: () => ipcRenderer.invoke('kaggle-connect-file'),
   kaggleDisconnect: () => ipcRenderer.invoke('kaggle-disconnect'),
   kaggleRender: (song) => ipcRenderer.invoke('kaggle-render', song),

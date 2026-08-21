@@ -72,12 +72,27 @@
 > audio back into the tab.
 > **The API is not guessed.** Every endpoint, field name and enum was read out of Kaggle's own
 > published SDK (`kagglesdk` 0.1.37): `POST https://api.kaggle.com/v1/kernels.KernelsApiService/
-> {SaveKernel,GetKernelSessionStatus,ListKernelSessionOutput}`, HTTP Basic auth, camelCase JSON.
+> {SaveKernel,GetKernelSessionStatus,ListKernelSessionOutput}`, camelCase JSON.
 > `machineShape` is pinned to **NvidiaTeslaT4** because Kaggle's own docs warn the P100 is Pascal
 > and the default image's torch has no sm_60 kernels - it reports a working GPU and dies on the
 > first real operation.
-> **What the user does: click "Open Kaggle", click Create New Token, click "Pick my kaggle.json".**
-> The token is PICKED with a file dialog on the Downloads folder, never typed.
+>
+> **KAGGLE CHANGED THE LOGIN (build 113, 2026-08-21).** "Create New Token" no longer downloads a
+> `kaggle.json`. It shows a dialog holding one long code that starts with `KGAT_`, once, and the
+> app was still telling people to go and find a file their browser never saved. Chris hit that and
+> said the instructions were confusing - they were describing a page that no longer exists.
+> **What the user does now: click "Open Kaggle", click Create New Token, copy the code, paste it in
+> the box.** A pasted code goes out as `Authorization: Bearer KGAT_...`; an old kaggle.json still
+> works and still goes out as `Basic base64(username:key)`. A code carries no username, so the
+> username is fetched by name: `POST security.OAuthService/IntrospectToken` with `{"token"}` answers
+> `{"active","username","userId","scope"}`, and that call is also the real test of the code.
+> **403 IS NOT A BAD KEY** - Kaggle answers 403 "Permission 'kernels.get' was denied" for a private
+> notebook that does not exist yet, which is every new account, and the old code read that as a
+> rejected key. Only 401 means unauthenticated. Both verified live.
+> **PROVEN END TO END for the first time** with `node scripts/kaggle-check.mjs` (a code in
+> `KAGGLE_CODE` runs the live half): sign in, upload, run, poll, list the output, download the file.
+> It pushes a tiny CPU-only notebook to a throwaway `lyricist-connection-test` slug, so it exercises
+> every wire call `render()` makes without spending a graphics card hour.
 >
 > **"THIS COMPUTER" IS NOW ONE BUTTON TOO.** New `comfySetup.js`: source zip (not the 7z - Windows
 > cannot extract those without help), private venv, **the torch build chosen by the card's compute

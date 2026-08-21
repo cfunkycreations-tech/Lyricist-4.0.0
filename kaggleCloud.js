@@ -15,17 +15,36 @@
  * a week against the cloud demo's few minutes a day. So it has to stay, and it
  * has to become one button.
  *
- * WHAT THE PERSON ACTUALLY DOES NOW: click a button that opens Kaggle's token
- * page, click "Create New Token" (their browser downloads kaggle.json), then
- * click a button and pick that file. That is it, once, forever. After that
- * "Render on Kaggle" uploads the notebook with their words in it, runs it on
- * Kaggle's T4, and brings the audio back into the app.
+ * WHAT THE PERSON ACTUALLY DOES NOW: click a button that opens Kaggle's API
+ * page, click "Create New Token", copy the one long code Kaggle shows them, and
+ * paste it into the box here. Once, forever. After that "Render on Kaggle"
+ * uploads the notebook with their words in it, runs it on Kaggle's T4, and
+ * brings the audio back into the app.
+ *
+ * 2026-08-21: KAGGLE CHANGED THE LOGIN AND THE OLD SETUP BECAME IMPOSSIBLE TO
+ * FOLLOW. "Create New Token" no longer downloads a kaggle.json file. It shows a
+ * dialog with a single long code that starts with `KGAT_`, shown once, and the
+ * app was still telling people to go and find a file that their browser never
+ * saved. Both work now:
+ *   - a pasted `KGAT_...` code  ->  Authorization: Bearer KGAT_...
+ *   - an old kaggle.json file   ->  Authorization: Basic base64(username:key)
+ * A pasted code carries no username, so the username is asked for by name:
+ * POST security.OAuthService/IntrospectToken with {"token"} answers
+ * {"active","username","userId","scope"}. That call is also the honest test of
+ * whether the code works, which matters because of the next paragraph.
+ *
+ * 403 IS NOT A BAD KEY. Kaggle answers 403 "Permission 'kernels.get' was denied"
+ * for a private notebook that does not exist yet, which is every brand new
+ * account. The old code read that as a rejected key and refused to connect, so
+ * connecting would have failed for everybody. Only 401 means unauthenticated.
+ * Both are verified against the live API, not assumed.
  *
  * THE API IS NOT GUESSED. Every field name, endpoint and enum below was read out
- * of Kaggle's own published SDK (`kagglesdk` 0.1.37, `kernels_api_service.py`)
- * rather than from memory or a blog post:
+ * of Kaggle's own published SDK (`kagglesdk` 0.1.37, `kernels_api_service.py`,
+ * `kaggle_http_client.py`, `security/types/oauth_service.py`) rather than from
+ * memory or a blog post:
  *   - endpoint  https://api.kaggle.com/v1/{Service}/{Method}, always POST
- *   - auth      HTTP Basic, username : key, straight out of kaggle.json
+ *   - auth      Bearer access token, or HTTP Basic username : key
  *   - body      JSON, camelCase field names
  *   - status    QUEUED 0, RUNNING 1, COMPLETE 2, ERROR 3, CANCEL_REQUESTED 4,
  *               CANCEL_ACKNOWLEDGED 5, NEW_SCRIPT 6 (sent back as the NAME)
@@ -38,35 +57,63 @@ const https = require('https');
 
 const API = 'https://api.kaggle.com/v1';
 const SERVICE = 'kernels.KernelsApiService';
+/** Where a pasted code gets checked, and where its username comes from. */
+const OAUTH_SERVICE = 'security.OAuthService';
 /** The slug we own inside the user's own account. Same notebook, updated each run. */
 const SLUG = 'lyricist-one-man-band';
 const TITLE = 'Lyricist One Man Band';
 
-function tokenPath() {
+function credDir() {
   const dir = path.join(app.getPath('userData'), 'kaggle');
   fs.mkdirSync(dir, { recursive: true });
-  return path.join(dir, 'kaggle.json');
+  return dir;
 }
+
+/** Where we keep it now: either a pasted code or an old username and key. */
+function authPath() { return path.join(credDir(), 'kaggle-auth.json'); }
+/** Where builds 109 to 112 kept it. Still read, so nobody reconnects for free. */
+function legacyPath() { return path.join(credDir(), 'kaggle.json'); }
 
 function readToken() {
   try {
-    const raw = JSON.parse(fs.readFileSync(tokenPath(), 'utf8'));
-    if (raw && raw.username && raw.key) return { username: String(raw.username), key: String(raw.key) };
+    const raw = JSON.parse(fs.readFileSync(authPath(), 'utf8'));
+    if (raw && raw.token) {
+      return { mode: 'token', token: String(raw.token), username: String(raw.username || '') };
+    }
+    if (raw && raw.username && raw.key) {
+      return { mode: 'basic', username: String(raw.username), key: String(raw.key) };
+    }
+  } catch { /* fall through to the old file */ }
+  try {
+    const raw = JSON.parse(fs.readFileSync(legacyPath(), 'utf8'));
+    if (raw && raw.username && raw.key) {
+      return { mode: 'basic', username: String(raw.username), key: String(raw.key) };
+    }
   } catch { /* not connected yet */ }
   return null;
 }
 
+function writeToken(cred) {
+  fs.writeFileSync(authPath(), JSON.stringify(cred), { mode: 0o600 });
+  try { fs.unlinkSync(legacyPath()); } catch { /* nothing to clean up */ }
+}
+
+/** One header for both ways in. */
+function authHeader(cred) {
+  if (cred.mode === 'token') return `Bearer ${cred.token}`;
+  return `Basic ${Buffer.from(`${cred.username}:${cred.key}`, 'utf8').toString('base64')}`;
+}
+
 /** POST one of Kaggle's RPC methods. Resolves { status, json, text }. */
-function call(method, body, cred, timeoutMs = 60000) {
+function call(method, body, cred, timeoutMs = 60000, service = SERVICE) {
   return new Promise((resolve, reject) => {
     const payload = Buffer.from(JSON.stringify(body || {}), 'utf8');
-    const auth = Buffer.from(`${cred.username}:${cred.key}`, 'utf8').toString('base64');
-    const req = https.request(`${API}/${SERVICE}/${method}`, {
+    const req = https.request(`${API}/${service}/${method}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': payload.length,
-        Authorization: `Basic ${auth}`,
+        Authorization: authHeader(cred),
         'User-Agent': 'Lyricist/4.2.0',
       },
       timeout: timeoutMs,
@@ -107,38 +154,103 @@ function download(url, timeoutMs = 300000, hops = 0) {
 }
 
 /**
- * Turn whatever they picked into credentials.
+ * Turn whatever they pasted or picked into credentials.
  *
- * Takes the CONTENTS of kaggle.json. Kaggle's own download is exactly
- * `{"username":"...","key":"..."}`, so the happy path is a straight parse, but
- * people paste all sorts of things into boxes and the error has to say which
- * thing went wrong rather than "invalid".
+ * Two shapes arrive here and a third one gets pasted by mistake:
+ *   1. `KGAT_f6b2...` - the code Kaggle shows in the dialog now.
+ *   2. `{"username":"...","key":"..."}` - the old kaggle.json, still valid.
+ *   3. `export KAGGLE_API_TOKEN=KGAT_f6b2...` - the whole line off the same
+ *      dialog, because Kaggle prints that line right under the code and it is
+ *      the easiest thing on the page to select.
+ * Quotes, smart quotes, newlines and stray spaces come along for the ride
+ * whenever a credential is pasted, so they are stripped before anything is
+ * tested. Same lesson as the OpenRouter key: a value can be truthy and still be
+ * unusable as a header.
  */
 function parseToken(text) {
-  const s = String(text || '').trim();
-  if (!s) throw new Error('That file was empty.');
-  let obj;
-  try { obj = JSON.parse(s); } catch {
-    throw new Error('That is not the kaggle.json file. It should be a small file starting with {"username".');
+  let s = String(text || '').trim();
+  if (!s) throw new Error('That was empty. Copy the code Kaggle showed you and paste it in the box.');
+
+  s = s.replace(/^export\s+/i, '').replace(/^set\s+/i, '');
+  s = s.replace(/^KAGGLE_API_TOKEN\s*[=:]\s*/i, '');
+  s = s.replace(/^["'‘“]+/, '').replace(/["'’”]+$/, '').trim();
+
+  if (s.startsWith('{')) {
+    let obj;
+    try { obj = JSON.parse(s); } catch {
+      throw new Error('That file is not complete. Pick the whole kaggle.json, or paste the code that starts with KGAT_ instead.');
+    }
+    const token = obj.token || obj.access_token || obj.apiToken;
+    if (token) return { mode: 'token', token: String(token).trim(), username: String(obj.username || '') };
+    if (obj.username && obj.key) return { mode: 'basic', username: String(obj.username), key: String(obj.key) };
+    if (obj.username) throw new Error('That file has a username but no key in it. Make a new token on Kaggle and try again.');
+    throw new Error('That is not a Kaggle token. Paste the long code that starts with KGAT_.');
   }
-  if (!obj.username) throw new Error('That file has no "username" in it, so it is not a Kaggle token.');
-  if (!obj.key) throw new Error('That file has a username but no "key". Create a new token on Kaggle and try again.');
-  return { username: String(obj.username), key: String(obj.key) };
+
+  const token = s.replace(/\s+/g, '');
+  if (/^KGAT_[A-Za-z0-9_.\-]{8,}$/.test(token)) return { mode: 'token', token, username: '' };
+  // A bare 32-character hex string is the OLD kind of key, the one that used to
+  // sit next to a username inside kaggle.json. On its own it cannot sign in,
+  // because there is no username to sign in as. Say that, rather than "invalid".
+  if (/^[a-f0-9]{32}$/i.test(token)) {
+    throw new Error('That is only half of it. That kind of key needs your username with it. Go back to Kaggle, click Create New Token, and paste the long code that starts with KGAT_.');
+  }
+  // Kaggle has changed this prefix once already, so anything long enough and
+  // clean enough to be a credential gets tried rather than refused on a guess.
+  if (/^[A-Za-z0-9_.\-]{24,}$/.test(token)) return { mode: 'token', token, username: '' };
+  throw new Error('That is not a Kaggle token. It is one long code starting with KGAT_, from Create New Token on your Kaggle API page.');
 }
 
-/** Are we connected, and does the key still work? */
+/**
+ * Ask Kaggle who a pasted code belongs to.
+ *
+ * This is the only way to learn the username from a code, and the username is
+ * not optional: every notebook call below is addressed to `username/slug`. It
+ * doubles as the honest yes-or-no on whether the code works, which the notebook
+ * call cannot give us because a missing notebook also answers 403.
+ */
+async function whoAmI(token) {
+  let res;
+  try {
+    res = await call('IntrospectToken', { token }, { mode: 'token', token }, 20000, OAUTH_SERVICE);
+  } catch (e) {
+    return { ok: false, offline: true, error: `Could not reach Kaggle: ${e.message}` };
+  }
+  if (res.status === 401 || res.status === 403 || res.status === 400) {
+    return { ok: false, error: 'Kaggle would not accept that code. On your Kaggle API page click Create New Token again and paste the new code.' };
+  }
+  if (res.status >= 500) return { ok: false, offline: true, error: 'Kaggle is having trouble right now. Try again in a minute.' };
+  if (res.status !== 200) return { ok: false, error: `Kaggle answered ${res.status}. ${String(res.text || '').slice(0, 160)}` };
+  if (res.json && res.json.active === false) {
+    return { ok: false, error: 'That code has been expired or replaced. Create a new token on Kaggle and paste the new code.' };
+  }
+  const username = String(res.json?.username || '');
+  if (!username) return { ok: false, error: 'Kaggle accepted the code but did not say who it belongs to. Create a new token and try again.' };
+  return { ok: true, username };
+}
+
+/** Are we connected, and does it still work? */
 async function status(verify = false) {
   const cred = readToken();
   if (!cred) return { connected: false };
   if (!verify) return { connected: true, username: cred.username };
+
+  if (cred.mode === 'token') {
+    const who = await whoAmI(cred.token);
+    if (who.offline) return { connected: true, username: cred.username, offline: true, error: who.error };
+    if (!who.ok) return { connected: false, username: cred.username, error: who.error };
+    if (who.username !== cred.username) { cred.username = who.username; writeToken(cred); }
+    return { connected: true, username: who.username };
+  }
+
   try {
-    // Any authenticated call proves the key. Asking for our own notebook's
-    // status is the cheapest one and it also tells us whether it exists yet.
+    // For an old username-and-key there is nothing to introspect, so ask about
+    // our own notebook. 401 is the only answer that means the key is dead: 403
+    // and 404 both just mean the notebook has never been pushed.
     const res = await call('GetKernelSessionStatus', { userName: cred.username, kernelSlug: SLUG }, cred, 20000);
-    if (res.status === 401 || res.status === 403) {
+    if (res.status === 401) {
       return { connected: false, username: cred.username, error: 'Kaggle rejected that key. Create a new token and connect again.' };
     }
-    // 404 just means we have never pushed the notebook, which is fine.
     return { connected: true, username: cred.username, everRun: res.status === 200 };
   } catch (e) {
     return { connected: true, username: cred.username, offline: true, error: e.message };
@@ -147,17 +259,29 @@ async function status(verify = false) {
 
 async function connect(fileText) {
   const cred = parseToken(fileText);
+
+  if (cred.mode === 'token') {
+    const who = await whoAmI(cred.token);
+    if (!who.ok) throw new Error(who.error);
+    cred.username = who.username;
+    writeToken(cred);
+    return { ok: true, username: cred.username };
+  }
+
   const res = await call('GetKernelSessionStatus', { userName: cred.username, kernelSlug: SLUG }, cred, 20000);
-  if (res.status === 401 || res.status === 403) {
-    throw new Error('Kaggle would not accept that key. On Kaggle, click "Expire Token" then "Create New Token", and pick the file it downloads.');
+  if (res.status === 401) {
+    throw new Error('Kaggle would not accept that key. On Kaggle click Create New Token and paste the code it gives you.');
   }
   if (res.status >= 500) throw new Error('Kaggle is having trouble right now. Try again in a minute.');
-  fs.writeFileSync(tokenPath(), JSON.stringify(cred), { mode: 0o600 });
+  // 403 and 404 are what a brand new account answers about a notebook it has
+  // never had. That is not a bad key and it must not block the connection.
+  writeToken(cred);
   return { ok: true, username: cred.username };
 }
 
 function disconnect() {
-  try { fs.unlinkSync(tokenPath()); } catch { /* already gone */ }
+  try { fs.unlinkSync(authPath()); } catch { /* already gone */ }
+  try { fs.unlinkSync(legacyPath()); } catch { /* already gone */ }
   return { ok: true };
 }
 
@@ -238,8 +362,13 @@ async function render(song, onProgress, shouldStop = () => false) {
     categoryIds: [],
   }, cred, 120000);
 
-  if (push.status === 401 || push.status === 403) {
-    throw new Error('Kaggle rejected your key. Connect again with a fresh token.');
+  if (push.status === 401) {
+    throw new Error('Kaggle no longer accepts your code. Create a new token on Kaggle and connect again.');
+  }
+  if (push.status === 403) {
+    // On an upload, 403 is almost always the phone check rather than the code:
+    // Kaggle will not hand a free graphics card to an unverified account.
+    throw new Error('Kaggle would not let this account run a notebook. Open kaggle.com/settings and verify your phone number, then try again. It is free and it is once.');
   }
   if (push.status !== 200 || push.json?.error) {
     throw new Error(push.json?.error || `Kaggle refused the upload (${push.status}). ${push.text.slice(0, 200)}`);
@@ -264,8 +393,8 @@ async function render(song, onProgress, shouldStop = () => false) {
     const name = String(st.json?.status || '');
     if (name && name !== lastStatus) lastStatus = name;
     const mins = Math.floor((Date.now() - started) / 60000);
-    if (name === 'QUEUED' || name === 'NEW_SCRIPT') say(0.15, `Waiting in Kaggle's queue — ${mins} min`);
-    else if (name === 'RUNNING') say(0.5, `Kaggle is making the song — ${mins} min`);
+    if (name === 'QUEUED' || name === 'NEW_SCRIPT') say(0.15, `Waiting in Kaggle's queue, ${mins} min`);
+    else if (name === 'RUNNING') say(0.5, `Kaggle is making the song, ${mins} min`);
     if (name === 'ERROR') {
       throw new Error(st.json?.failureMessage
         || `Kaggle ran it and hit an error. Open the notebook to see what it said: ${url}`);
@@ -273,7 +402,7 @@ async function render(song, onProgress, shouldStop = () => false) {
     if (TERMINAL[name] && name !== 'ERROR') break;
   }
   if (!TERMINAL[lastStatus]) {
-    return { ok: false, timedOut: true, url, error: 'Kaggle is still going after an hour. It keeps running without the app — open the notebook to collect the song.' };
+    return { ok: false, timedOut: true, url, error: 'Kaggle is still going after an hour. It keeps running without the app, so open the notebook to collect the song.' };
   }
 
   say(0.9, 'Fetching the audio');
@@ -289,7 +418,7 @@ async function render(song, onProgress, shouldStop = () => false) {
 }
 
 module.exports = {
-  status, connect, disconnect, render, SLUG, TITLE,
+  status, connect, disconnect, render, whoAmI, SLUG, TITLE,
   // Exposed for the offline test harness: these are the two pieces that can be
   // proved without a Kaggle account, and both of them can silently ruin a run.
   __test_parse: parseToken,

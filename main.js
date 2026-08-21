@@ -406,11 +406,24 @@ ipcMain.handle('kaggle-status', async (event, { verify } = {}) => {
   catch (e) { return { ok: false, error: e.message }; }
 });
 
-/** Let them PICK the kaggle.json their browser just downloaded. No typing. */
+/**
+ * The normal way in since Kaggle changed it: they paste the code Kaggle showed
+ * them. Nothing is downloaded any more, so there is no file to pick.
+ */
+ipcMain.handle('kaggle-connect-text', async (event, { text } = {}) => {
+  try { return { ok: true, ...(await kaggleCloud.connect(text)) }; }
+  catch (e) { return { ok: false, error: e.message }; }
+});
+
+/**
+ * The way in for anybody whose Kaggle account still hands out a kaggle.json
+ * file. Kept because it still works and because taking it away would strand
+ * everybody who set this up on an earlier build.
+ */
 ipcMain.handle('kaggle-connect-file', async () => {
   try {
     const res = await require('electron').dialog.showOpenDialog({
-      title: 'Pick the kaggle.json file you just downloaded',
+      title: 'Pick the kaggle.json file you downloaded',
       defaultPath: app.getPath('downloads'),
       filters: [{ name: 'Kaggle token', extensions: ['json'] }],
       properties: ['openFile'],

@@ -17,9 +17,20 @@ import './EngineSetup.css';
  * "Accelerator" means GPU and set it to T4 x2, know that Internet is off by
  * default and turn it on, find the one cell that holds your words, paste them in
  * without breaking the Python, press Run All, wait, then find the Output panel.
- * Nine chances to get it wrong. It is now: click a button that opens the token
- * page, click Create New Token, click a button and pick the file that downloads.
- * Once, forever. Everything after that is the app talking to Kaggle's API.
+ * Nine chances to get it wrong. It is now: click a button that opens the right
+ * Kaggle page, click Create New Token, copy the code it shows you, paste it in
+ * the box. Once, forever, and everything after that is the app talking to
+ * Kaggle's API.
+ *
+ * 2026-08-21, and this is why the steps below are written the way they are:
+ * Kaggle changed it. Create New Token used to download a file called
+ * kaggle.json. It now opens a dialog with one long code starting KGAT_, shown
+ * once and never again, and this card was still telling people to go and find a
+ * file their browser never saved. Chris hit exactly that and said the
+ * instructions were confusing, and he was right, they were describing a page
+ * that no longer exists. The steps now say what is actually on the screen, the
+ * paste box is the main path, and the file picker has moved to one quiet line
+ * underneath for the accounts that still download a file.
  *
  * ON THIS COMPUTER is honest before it is eager. It reads the actual graphics
  * card and says what that card will really do, with numbers, BEFORE anybody
@@ -31,7 +42,7 @@ import './EngineSetup.css';
  * kernel. Those live in the code and in the log, where they belong.
  */
 
-const TOKEN_PAGE = 'https://www.kaggle.com/settings/account';
+const TOKEN_PAGE = 'https://www.kaggle.com/settings/api';
 
 function Bar({ p }) {
   return (
@@ -51,9 +62,21 @@ export default function EngineSetup({ onKaggleReady, onLocalReady }) {
   const [line, setLine] = useState('');
   const [err, setErr] = useState('');
   const [note, setNote] = useState('');
+  const [code, setCode] = useState('');       // the KGAT_ code, pasted
+  const [linking, setLinking] = useState(false);
   const mounted = useRef(true);
 
-  useEffect(() => () => { mounted.current = false; }, []);
+  // Set it back to true on the way IN, not just false on the way out. React's
+  // StrictMode mounts, unmounts and remounts every component once, so a ref that
+  // is only ever cleared stays cleared: the second mount inherits `false` and
+  // every "did this component survive the await" check below fails forever. The
+  // card then sits on "Checking" and nothing ever connects. That only bites in
+  // development, which is exactly what makes it worth killing, since this card
+  // is unverifiable there otherwise. Same shape of trap as the Ghost Demo one.
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   const refresh = async () => {
     if (!api) return;
@@ -98,6 +121,21 @@ export default function EngineSetup({ onKaggleReady, onLocalReady }) {
     await refresh();
   };
 
+  /** The paste box. This is the normal way in now. */
+  const connectKaggleCode = async () => {
+    if (!code.trim()) { setErr('Paste the code from Kaggle into the box first.'); return; }
+    setErr(''); setNote(''); setLinking(true);
+    const r = await api.kaggleConnectText?.(code);
+    if (!mounted.current) return;
+    setLinking(false);
+    if (!r?.ok) { setErr(r?.error || 'That did not work.'); return; }
+    setCode('');
+    setNote(`Connected as ${r.username}. "Kaggle" is switched on below.`);
+    onKaggleReady?.(r.username);
+    await refresh();
+  };
+
+  /** For accounts that still download a kaggle.json file. */
   const connectKaggle = async () => {
     setErr(''); setNote('');
     const r = await api.kaggleConnectFile();
@@ -153,24 +191,45 @@ export default function EngineSetup({ onKaggleReady, onLocalReady }) {
             <>
               <ol className="es-steps">
                 <li>
-                  <span>Open your Kaggle account page. Make a free account first if you need one.</span>
+                  <span>Open your Kaggle API page. Make a free account first if you need one.</span>
                   <button type="button" className="es-go" onClick={() => window.open(TOKEN_PAGE, '_blank', 'noopener')}>
                     Open Kaggle
                   </button>
                 </li>
                 <li>
                   <span>
-                    On that page scroll to <b>API</b> and click <b>Create New Token</b>. Your browser
-                    downloads a small file called <b>kaggle.json</b>. That file is the whole setup.
+                    Click <b>Create New Token</b>. A box opens with one long code in it that starts
+                    with <b>KGAT_</b>. Click the copy button next to it. Kaggle only shows that code
+                    once, so copy it before you close the box.
                   </span>
                 </li>
                 <li>
-                  <span>Come back here and point the app at it.</span>
-                  <button type="button" className="es-go primary" onClick={connectKaggle}>
-                    Pick my kaggle.json
-                  </button>
+                  <span>Paste it here.</span>
+                  <div className="es-paste">
+                    <input
+                      type="text"
+                      className="es-input"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') connectKaggleCode(); }}
+                      placeholder="KGAT_..."
+                      spellCheck={false}
+                      autoComplete="off"
+                      aria-label="Your Kaggle code"
+                    />
+                    <button type="button" className="es-go primary" disabled={linking} onClick={connectKaggleCode}>
+                      {linking ? 'Checking' : 'Connect'}
+                    </button>
+                  </div>
                 </li>
               </ol>
+              <p className="es-fine">
+                Did Kaggle download a file called <b>kaggle.json</b> instead of showing you a code?
+                Some accounts still do that.{' '}
+                <button type="button" className="es-link" onClick={connectKaggle}>
+                  Pick that file instead
+                </button>
+              </p>
               <p className="es-fine">
                 One thing worth knowing: Kaggle asks you to verify a phone number before it will
                 hand out graphics cards. That is on their side, it is free, and it is once.
