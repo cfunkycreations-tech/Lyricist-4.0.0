@@ -70,6 +70,18 @@ export function watchGhostActions(fn) {
  * Resolves { ok, said } either way rather than throwing: a bad action is
  * something the ghost has to be able to report and recover from mid-answer, not
  * an exception that eats the rest of the reply.
+ *
+ * A HANDLER MAY HAND BACK A WAY TO UNDO ITSELF, and one that overwrites work
+ * has to. Chris asked the Ghost for a song, said yes, and watched every line of
+ * lyrics vanish. Guarding the empty case stops that exact bug and nothing else:
+ * a full, confident, wrong replacement erases just as much work and passes
+ * every guard. So a handler can return
+ *
+ *   { said, undo: { action, args, label }, warn }
+ *
+ * instead of a bare sentence. `undo` puts a real button next to the tick in the
+ * conversation, `warn` says in plain words what does not look right about what
+ * it just did. A plain string still works and still means "no undo needed".
  */
 export async function runGhostAction(name, args = {}) {
   const fn = handlers.get(name);
@@ -77,8 +89,11 @@ export async function runGhostAction(name, args = {}) {
     return { ok: false, said: `I cannot do "${name}" from here. Open the tab it belongs to first.` };
   }
   try {
-    const said = await fn(args);
-    return { ok: true, said: said || null };
+    const out = await fn(args);
+    if (out && typeof out === 'object') {
+      return { ok: true, said: out.said || null, undo: out.undo || null, warn: out.warn || null };
+    }
+    return { ok: true, said: out || null };
   } catch (e) {
     return { ok: false, said: e?.message || `"${name}" did not work.` };
   }

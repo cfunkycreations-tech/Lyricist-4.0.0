@@ -59,7 +59,7 @@ So let's write.`
     id: 4, icon: '🎸', title: 'One Man Band, hear your words sung', tab: 'onemanband', audio: 'card-18.mp3',
     script: `One Man Band. Where your words become a real song.
 
-Write your lyrics, pick a genre, a mood and a voice, and it writes the sound description for you. Then it sings it back with a full band behind it.
+Write your Input Lyrics, pick a genre, a mood and a voice, and it writes the Input Caption for you. Then it sings it back with a full band behind it.
 
 The words in square brackets are the shape of the song. Verse, chorus, bridge. Those tags are what the music actually follows, so move them around and the song changes with them.
 

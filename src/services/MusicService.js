@@ -448,9 +448,47 @@ async function generateKaggle({ state, duration, seed, seeds, steps, guidance, h
 
   try {
     const wanted = (Array.isArray(seeds) && seeds.length ? seeds : [seed]).slice(0, 4);
+
+    /**
+     * `global_meta`, WITH THE UNDERSCORE. THIS LINE SENT KAGGLE NOTHING.
+     *
+     * `buildState` writes `global_meta`. This read `state.globalMeta`, which no
+     * state object has ever had, so the whole Input Caption came out as
+     * undefined, `filter(Boolean)` dropped it, and every Kaggle run this app has
+     * ever made pushed `CAPTION = """"""` to the notebook. Chris caught it from
+     * the outside: *"the fucking AI didn't send the whole goddamn input caption
+     * or the input lyrics over to Kaggle."* He was right, and it was not the AI.
+     * Proof: version 4 of his own notebook, read back off Kaggle, `CAPTION` an
+     * empty triple-quoted string.
+     *
+     * The local ComfyUI path four hundred lines up reads `state.global_meta`
+     * and always has, which is why local runs sounded right and Kaggle runs
+     * came back generic. One misspelled property, invisible in JavaScript,
+     * silently wrong for as long as Kaggle has been an engine.
+     */
+    const caption = [state.global_meta, state.vocals, state.arrangement]
+      .filter(Boolean).join('\n\n').trim();
+    const lyrics = state.instrumental ? '' : String(state.lyrics || '').trim();
+
+    /**
+     * NEVER SPEND A GRAPHICS CARD HOUR ON AN EMPTY SONG.
+     *
+     * A caption is what decides how the song comes out, and a run without one
+     * is fifteen minutes of Kaggle spent on nothing. The bug above went unseen
+     * for weeks because the run still "worked", so the check goes in beside the
+     * fix: if there is nothing to send, say so before the push, in words that
+     * name the box on screen.
+     */
+    if (!caption && !lyrics) {
+      throw new Error('There is nothing to make a song from: the Input Caption and the Input Lyrics are both empty. Fill at least one in and press it again.');
+    }
+    if (!caption) {
+      throw new Error('The Input Caption is empty, and it is what decides how the song sounds. Pick a genre, a mood and a voice and it writes one for you, or write your own, then press it again.');
+    }
+
     const res = await api.kaggleRender({
-      caption: [state.globalMeta, state.vocals, state.arrangement].filter(Boolean).join('\n\n'),
-      lyrics: state.instrumental ? '' : (state.lyrics || ''),
+      caption,
+      lyrics,
       seconds: duration,
       seed: wanted[0],
       seeds: wanted,

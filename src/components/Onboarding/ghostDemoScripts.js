@@ -73,7 +73,7 @@ export const GHOST_DEMOS = {
       },
       {
         target: '.omb-drafted',
-        say: 'This is the sound description, and it is the single biggest lever on how the song comes out. It gets written for you from your three picks, and you can edit every word of it.',
+        say: 'This is the Input Caption, and it is the single biggest lever on how the song comes out. It gets written for you from your three picks, and you can edit every word of it.',
         action: 'point',
         wait: 4800,
       },
@@ -85,7 +85,7 @@ export const GHOST_DEMOS = {
       },
       {
         target: '.omb-whole',
-        say: 'And this is the whole prompt, exactly as it gets sent. The sound description and your words, together, nothing hidden from you. Copy it puts the lot on your clipboard, which is also what you paste into anything else.',
+        say: 'And this is the whole prompt, exactly as it gets sent. The Input Caption and the Input Lyrics, together, nothing hidden from you. Copy it puts the lot on your clipboard, which is also what you paste into anything else.',
         action: 'point',
         wait: 5400,
       },

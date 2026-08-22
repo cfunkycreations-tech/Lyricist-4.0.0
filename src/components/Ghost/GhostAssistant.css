@@ -135,6 +135,24 @@
 .gha-did li.ok { color: #8FF0C4; border-left: 2px solid hsl(158 80% 55%); }
 .gha-did li.no { color: hsl(35 90% 72%); border-left: 2px solid hsl(35 90% 60%); }
 
+/* THE WAY BACK, ON THE LINE THAT SAYS WHAT HAPPENED.
+   It replaced his whole song once, so anything that overwrites work carries its
+   own undo here. Sized and coloured to be found without hunting: this is the
+   button somebody reaches for while their stomach drops. */
+.gha-undo {
+  margin-left: 9px; padding: 3px 9px; border-radius: 6px; cursor: pointer;
+  font-family: inherit; font-size: 11px; font-weight: 600; color: #EAF2FF;
+  background: hsla(262 70% 55% / .30); border: 1px solid hsla(262 75% 72% / .60);
+}
+.gha-undo:hover { background: hsla(262 70% 58% / .48); }
+
+/* What it did that does not match what he laid out. Checked in code, not asked
+   for politely in a prompt. */
+.gha-warn {
+  display: block; margin-top: 5px; font-family: inherit; font-size: 11.5px;
+  line-height: 1.5; color: hsl(35 92% 76%);
+}
+
 .gha-ask { display: flex; gap: 8px; padding: 12px 15px; border-top: 1px solid rgba(160, 200, 255, .14); }
 .gha-ask input {
   flex: 1 1 auto; min-width: 0; padding: 9px 12px; border-radius: 9px;

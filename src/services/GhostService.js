@@ -3,8 +3,8 @@
  *
  * The Ghost Demo could already walk you through a tab, but only along a script
  * somebody wrote in advance. Chris asked for the other thing: something always
- * there that answers questions, writes the words, writes the MiniMax sound
- * description, and presses the buttons.
+ * there that answers questions, writes the Input Lyrics, writes the Input
+ * Caption, and presses the buttons.
  *
  * WHY THIS DOES NOT GO THROUGH callAI. Every OpenRouter path in this app must
  * validate the key through `assertApiKey`, and this one does, because that is
@@ -85,9 +85,11 @@ export async function resolveGhostModel() {
 
 const TAB_NOTES = {
   songwriter: 'Songwriter: the main writing workspace. Sections, lines, style controls.',
-  onemanband: 'One Man Band: turns written words into a real sung song. Has the lyrics box, '
-    + 'the sound description (style / singer / band), genre-mood-voice pickers, length, takes, '
-    + 'take numbers, and where it runs (free cloud, Kaggle, this computer).',
+  onemanband: 'One Man Band: turns written words into a real sung song. It takes exactly two '
+    + 'things and calls them what MiniMax calls them: the INPUT LYRICS (the words, with '
+    + '[Verse] [Chorus] style tags for the shape) and the INPUT CAPTION (one single box of '
+    + 'text describing the sound, NOT three boxes). Also genre-mood-voice pickers, length, '
+    + 'takes, take numbers, and where it runs (free cloud, Kaggle, this computer).',
   analyzer: 'Ghost Rider: studies an artist’s style and gives you Style DNA to write with.',
   songforge: 'Song Forge: writes a whole song and paints cover art from a theme.',
   quantum: 'Quantum Lab: a lattice of your own keywords that generates lyric options.',
@@ -147,8 +149,18 @@ A section needs 15 to 20 seconds of song to exist as music.
 ${examplesForPrompt()}
 `;
 
+const HIDDEN_FROM_MODEL = new Set(['describe_song', 'restore_lyrics']);
+
 function systemPrompt(tab, context) {
-  const actions = availableGhostActions();
+  /**
+   * WHAT THE MODEL IS TOLD IT CAN PRESS.
+   *
+   * Two registered actions are the app's own plumbing and are deliberately not
+   * on this list. `describe_song` is how a tab answers a question, asked before
+   * every reply. `restore_lyrics` is HIS undo button: the Ghost put the old
+   * words at risk, so it does not also get to decide when they come back.
+   */
+  const actions = availableGhostActions().filter((n) => !HIDDEN_FROM_MODEL.has(n));
   return `You are the Ghost: the guide living inside Lyricist 4.2.0, a free songwriting studio
 made by Chris Funk of CFunky Creations. You are talking to the person using it.
 
@@ -172,23 +184,35 @@ physical detail and things left unsaid rather than naming the emotion. Avoid
 neon, shadows, whispers, echoes, sparks, cage, gravity, storm, wings, chains.
 Irregular line lengths. Slant rhymes over perfect ones. No neat moral endings.
 
-WRITING A WHOLE SONG. When they ask for a song, work out which of these they
-mean, and say in one line which you did:
+WRITING A WHOLE SONG.
+
+RULE ONE, ABOVE EVERY OTHER RULE HERE. IF THERE ARE TAGS IN THE INPUT LYRICS
+BOX, THOSE TAGS ARE THE SONG. They are listed above under what they have so far.
+Use exactly those tags, in exactly that order, spelled exactly as they are
+written. Add none. Drop none. Reorder none. They clicked those buttons on
+purpose and that is them telling you the shape of the song, so writing your own
+structure over the top of it is ignoring the only instruction they gave you.
+The app checks this after you answer and tells them when you got it wrong, so
+there is nothing to be gained by improvising.
+
+RULE TWO. NEVER SEND AN EMPTY <lyrics> TAG AND NEVER SEND set_lyrics WITH NO
+TEXT. That erases the song they wrote. If you have nothing to write, say so in
+one sentence and write nothing.
+
+RULE THREE. If they already have words in the box, extend or edit them rather
+than throwing them away, unless they say to start over.
+
+Now work out which of these they mean, and say in one line which you did:
 
   A. THEY GAVE YOU A THEME. "Write me a song about my brother moving away."
      Write the words from that, then write the Input Caption to match them.
-  B. THEY ALREADY LAID OUT A STRUCTURE. There are tags in the Input Lyrics box,
-     [Intro] [Verse] [Chorus] and so on. Fill in every one of those sections, in
-     that order, keeping every tag exactly as it is written. Do not add sections
-     they did not ask for and do not drop any.
+  B. THEY ALREADY LAID OUT A STRUCTURE. Tags in the Input Lyrics box and little
+     or nothing else. Fill in every one of those sections. See RULE ONE.
   C. THEY PICKED GENRE, MOOD AND VOICE and said nothing else. Use those picks as
      the whole brief. They are listed above under what they have so far.
   D. ANY MIX OF THOSE. A theme plus tags plus picks is the normal case. The
      picks decide the sound, the tags decide the shape, the theme decides what
-     it is about.
-
-If they already have words written, extend or edit them rather than throwing
-them away, unless they say to start over.
+     it is about. The tags still win on shape. See RULE ONE.
 
 ALWAYS SEND BOTH when they ask for a song: a <lyrics> tag and a <caption> tag,
 each complete. Lyrics with no caption gets a song that sounds like nothing in
@@ -262,6 +286,39 @@ const DO_TAG = /<do>\s*(\{[\s\S]*?\})\s*<\/do>/g;
 const CAPTION_TAG = /<caption>([\s\S]*?)<\/caption>/gi;
 const LYRICS_TAG = /<lyrics>([\s\S]*?)<\/lyrics>/gi;
 
+/**
+ * THE CAPTION ARRIVING INSIDE THE <lyrics> TAG, AND WHAT IT COST.
+ *
+ * Chris ran a song on Kaggle and the notebook came back with `CAPTION` empty
+ * and the LYRICS field holding his whole caption, headings and all, with the
+ * real words tacked on underneath. Two separate faults met there: the Kaggle
+ * payload was reading a property that did not exist (fixed in MusicService),
+ * and the Ghost had put both halves in one tag.
+ *
+ * The prompt already says which tag each half goes in. This is the same rule
+ * enforced afterwards, on the text, where it cannot be ignored: a lyric sheet
+ * that opens with the caption schema is not a lyric sheet, it is both, and the
+ * app can see exactly where one ends and the other starts. The split is the
+ * first section tag, because that is the line where the words begin.
+ *
+ * Only the schema headings trigger it. A song that happens to open with a line
+ * of prose before its first [Verse] is left exactly as written.
+ */
+const CAPTION_MARKS = /^(global metadata|vocal details|arrangement|basic attributes|global emotional progression|application scenarios|sonics & production|vocal gender)/i;
+const SECTION_LINE = /^\s*(\[[^\]\n]{1,24}\]|\([A-Za-z][^)\n]{0,23}\))\s*$/;
+
+function peelCaption(body) {
+  const lines = String(body).split('\n');
+  const at = lines.findIndex((l) => SECTION_LINE.test(l));
+  if (at <= 0) return { caption: '', lyrics: body };
+
+  const head = lines.slice(0, at).join('\n').trim();
+  if (!head || !head.split('\n').some((l) => CAPTION_MARKS.test(l.trim()))) {
+    return { caption: '', lyrics: body };
+  }
+  return { caption: head, lyrics: lines.slice(at).join('\n').trim() };
+}
+
 /** Anything that opened and never closed, because the reply was cut short. */
 const UNCLOSED = /<(do|caption|lyrics)>[\s\S]*$/i;
 
@@ -278,7 +335,15 @@ export function splitActions(reply) {
 
   text = text.replace(LYRICS_TAG, (_m, body) => {
     const value = String(body || '').trim();
-    if (value) actions.push({ name: 'set_lyrics', args: { text: value } });
+    if (!value) return '';
+    const split = peelCaption(value);
+    // Only when it did NOT also send a proper caption tag. If it sent both, the
+    // real one wins and the stray heading block is its problem, not ours.
+    if (split.caption && !actions.some((a) => a.name === 'set_caption')) {
+      actions.push({ name: 'set_caption', args: { text: split.caption } });
+    }
+    const words = split.caption ? split.lyrics : value;
+    if (words) actions.push({ name: 'set_lyrics', args: { text: words } });
     return '';
   });
 

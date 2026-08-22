@@ -27,7 +27,7 @@ import { speak, hush, loadVoice, voiceState, playSample, VOICES, getVoiceName, s
 const OPENERS = [
   { label: 'What is this tab for?', ask: 'What is this tab for, in two or three sentences?' },
   { label: 'Write me a verse', ask: 'Write me a verse that fits what I have so far. Just the verse.' },
-  { label: 'Fix my sound description', ask: 'Look at my sound description and rewrite it so it actually gets me the sound I want. Then set it.' },
+  { label: 'Fix my Input Caption', ask: 'Look at my Input Caption and rewrite it so it actually gets me the sound I want. Then set it.' },
   { label: 'Set up a full song', ask: 'Lay out a full song structure for me and set the length so it fits.' },
 ];
 
@@ -196,6 +196,26 @@ export default function GhostAssistant({ tab, config, getContext }) {
     })));
   };
 
+  /**
+   * PUT IT BACK.
+   *
+   * The Ghost replaced his lyrics with a tap and there was no way back short of
+   * retyping the song. Any action that overwrites work now hands back the way
+   * to reverse it, and that button lands on the very line that says what it
+   * did. Reversing is itself reported, so the conversation stays a true record
+   * of everything that happened to his song.
+   */
+  const putBack = async (msgIndex, didIndex, undo) => {
+    const r = await runGhostAction(undo.action, undo.args || {});
+    setMsgs((m) => m.map((msg, i) => (i !== msgIndex ? msg : {
+      ...msg,
+      did: [
+        ...msg.did.map((d, j) => (j === didIndex ? { ...d, undo: null, warn: null } : d)),
+        { name: undo.action, ...r },
+      ],
+    })));
+  };
+
   const decline = (msgIndex, action) => {
     setMsgs((m) => m.map((msg, i) => (i !== msgIndex ? msg : {
       ...msg,
@@ -267,8 +287,8 @@ export default function GhostAssistant({ tab, config, getContext }) {
             {!msgs.length && (
               <div className="gha-empty">
                 <p>
-                  I know every tab in here, I can write your words, and I can write the sound
-                  description that decides how the song comes out. Ask me in plain English.
+                  I know every tab in here, I can write your Input Lyrics, and I can write the
+                  Input Caption that decides how the song comes out. Ask me in plain English.
                 </p>
                 <div className="gha-openers">
                   {OPENERS.map((o) => (
@@ -303,6 +323,21 @@ export default function GhostAssistant({ tab, config, getContext }) {
                     {m.did.map((d, j) => (
                       <li key={j} className={d.ok ? 'ok' : 'no'}>
                         {d.ok ? '✓' : '✗'} {d.said || d.name.replace(/_/g, ' ')}
+                        {/* WHAT IT OVERWROTE IS ONE TAP FROM COMING BACK.
+                            It erased his whole song once. Everything it does is
+                            already written down here, so the way back belongs
+                            here too, on the line that says what happened, not
+                            in a menu somewhere. */}
+                        {d.undo && (
+                          <button
+                            type="button"
+                            className="gha-undo"
+                            onClick={() => putBack(i, j, d.undo)}
+                          >
+                            {d.undo.label || 'Undo that'}
+                          </button>
+                        )}
+                        {d.warn && <span className="gha-warn">{d.warn}</span>}
                       </li>
                     ))}
                   </ul>

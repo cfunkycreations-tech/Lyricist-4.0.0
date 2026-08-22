@@ -273,6 +273,17 @@ export default function OneManBand() {
   const mood = moods[0];
   const voice = voices[0];
 
+  /**
+   * EVERY pick instrumental means instrumental. NO picks at all does not.
+   *
+   * `[].every()` is true, so a bare `voices.every(...)` called an empty picker
+   * an instrumental and quietly sent Kaggle a song with no words in it. The
+   * caption composer already had this guard on line 213 and the five other
+   * places did not, which is exactly the kind of drift that comes from writing
+   * the same expression six times.
+   */
+  const instrumental = voices.length > 0 && voices.every((v) => v.startsWith('Instrumental'));
+
   const [seconds, setSeconds] = useState(30);
   const [takeCount, setTakeCount] = useState(2);
   const [seed, setSeed] = useState(222);
@@ -402,7 +413,7 @@ export default function OneManBand() {
         genres,
         moods,
         voices,
-        instrumental: voices.every((v) => v.startsWith('Instrumental')),
+        instrumental,
       }),
       lyrics.trim()
         ? `THE INPUT LYRICS RIGHT NOW:\n${lyrics.slice(0, 2000)}`
@@ -415,7 +426,6 @@ export default function OneManBand() {
 
   const wholePrompt = useMemo(() => {
     const sound = String(caption || '').trim();
-    const instrumental = voices.every((v) => v.startsWith('Instrumental'));
     const words = instrumental ? '(instrumental, no vocals)' : (lyrics.trim() || '(no words yet)');
     return `${sound}\n\n----- LYRICS -----\n\n${words}`;
   }, [caption, lyrics, voices]);
@@ -431,7 +441,7 @@ export default function OneManBand() {
   const captionProblems = useMemo(
     () => validateCaption(caption, {
       lyrics,
-      instrumental: voices.every((v) => v.startsWith('Instrumental')),
+      instrumental,
       tags,
     }),
     [caption, lyrics, voices, tags],
@@ -439,6 +449,9 @@ export default function OneManBand() {
 
   const [copied, setCopied] = useState(false);
   const [confirmExample, setConfirmExample] = useState(null);
+
+  /** The Input Lyrics as they were before the Ghost last replaced them. */
+  const undoLyrics = useRef(null);
 
   /**
    * Load a finished, professional-grade song into every box.
@@ -491,7 +504,7 @@ export default function OneManBand() {
   };
 
   /**
-   * Rewrite the sound description using MiniMax's own caption writer, free on
+   * Rewrite the Input Caption using MiniMax's own caption writer, free on
    * their server. If it fails for any reason the offline draft is kept — the
    * button is an upgrade, never a dependency.
    */
@@ -505,7 +518,7 @@ export default function OneManBand() {
           globalMeta: caption,
           vocals: '',
           arrangement: '',
-          instrumental: voices.every((v) => v.startsWith('Instrumental')),
+          instrumental,
         }),
         duration: seconds,
         hfToken: store.config?.huggingFaceToken || '',
@@ -583,7 +596,7 @@ export default function OneManBand() {
       globalMeta: caption,
       vocals: '',
       arrangement: '',
-      instrumental: voices.every((v) => v.startsWith('Instrumental')),
+      instrumental,
     });
 
 
@@ -655,11 +668,71 @@ export default function OneManBand() {
    * has to open a tab before it can touch it, the same as a person.
    */
   useEffect(() => registerGhostActions({
+    /**
+     * WRITING THE INPUT LYRICS. THIS ONE ERASED HIS SONG.
+     *
+     * Chris asked the Ghost for a song, tapped "Yes, make it", and every line
+     * he had written disappeared. The old body was `String(text ?? '')` with no
+     * guard of any kind, so a `<do>` line with missing or empty args wiped the
+     * box and then reported it in the conversation as work done.
+     *
+     * The empty guard is the small half of the fix. The real rule is the other
+     * one: **a write that replaces work he did has to be undoable.** A
+     * confident, complete, wrong replacement destroys just as much as an empty
+     * one and passes every guard you could write, so the words that were there
+     * are kept and "Put my words back" appears next to the tick. The Ghost is
+     * allowed to replace his work. It is not allowed to make that one way.
+     */
     set_lyrics: ({ text }) => {
-      const t = String(text ?? '');
+      const t = String(text ?? '').trim();
+      if (!t) throw new Error('there were no words in that, so I left your Input Lyrics alone');
+
+      const before = lyrics;
+      if (before.trim() === t) return 'those were already the Input Lyrics, so nothing changed';
+
+      undoLyrics.current = before;
       setLyrics(t);
       fitLength(t);
-      return `wrote ${t.split('\n').filter((l) => l.trim()).length} lines into the words`;
+
+      const lines = t.split('\n').filter((l) => l.trim()).length;
+      const said = `wrote ${lines} line${lines === 1 ? '' : 's'} into the Input Lyrics`;
+      if (!before.trim()) return said;
+
+      /**
+       * THE TAGS HE CLICKED ARE AN INSTRUCTION, AND IT IS CHECKED IN CODE.
+       *
+       * Chris lays out [Hook] [Pre-Chorus] [Chorus] with the buttons, says
+       * "write the lyrics", and gets the model's own structure back instead.
+       * The tags DO reach it through describe_song, so the prompt rule was
+       * being outranked rather than missed, and a rule a model can ignore is
+       * not a guarantee. Same lesson as CLAIMS in GhostAssistant: check it
+       * afterwards, on the result, where it cannot be argued with.
+       */
+      const wanted = readSections(before);
+      const got = readSections(t);
+      const same = wanted.length === got.length
+        && wanted.every((w, i) => w.toLowerCase() === String(got[i] || '').toLowerCase());
+      const warn = wanted.length && !same
+        ? `You had laid out ${wanted.join(', ')}. It wrote `
+          + `${got.length ? got.join(', ') : 'no sections at all'} instead, which is not the shape `
+          + 'you asked for. Put your words back if you want them.'
+        : null;
+
+      const had = before.split('\n').filter((l) => l.trim()).length;
+      return {
+        said: `${said}, over the ${had} that were there`,
+        undo: { action: 'restore_lyrics', label: 'Put my words back' },
+        warn,
+      };
+    },
+    /** The other half of the rule above. Nothing else registers this. */
+    restore_lyrics: () => {
+      const back = undoLyrics.current;
+      if (back == null) throw new Error('I do not have an older version of your words to put back');
+      undoLyrics.current = null;
+      setLyrics(back);
+      fitLength(back);
+      return 'put your words back the way they were';
     },
     append_lyrics: ({ text }) => {
       const add = String(text ?? '').trim();
@@ -669,7 +742,7 @@ export default function OneManBand() {
         fitLength(next);
         return next;
       });
-      return 'added that to the end of the words';
+      return 'added that to the end of the Input Lyrics';
     },
     set_caption: ({ text }) => {
       const value = String(text || '').trim();
@@ -789,8 +862,8 @@ export default function OneManBand() {
             {confirmExample && (
               <div className="omb-confirm">
                 <span>
-                  Loading <b>{confirmExample.title}</b> replaces the words and the sound
-                  description you have now.
+                  Loading <b>{confirmExample.title}</b> replaces the Input Lyrics and the Input
+                  Caption you have now.
                 </span>
                 <span className="omb-confirmbtns">
                   <button type="button" className="go" onClick={() => loadExample(confirmExample)}>
