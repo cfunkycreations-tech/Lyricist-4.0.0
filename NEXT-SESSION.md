@@ -1,93 +1,55 @@
-# Handoff, 2026-08-22, from build 4.2.0.131
+# Handoff, 2026-08-22, from build 4.2.0.132
 
-Paste this into the next conversation. Three bugs, one of them destructive.
+The three bugs from 131 are fixed, and a fourth and worse one turned up while
+fixing them. All shipped in 132, pushed as `4e16a36`.
 
----
+## Fixed in 132
 
-## 1. IT ERASED HIS LYRICS. Fix this first.
+1. **KAGGLE NEVER GOT THE INPUT CAPTION. Not once, in any build.**
+   `generateKaggle` in `src/services/MusicService.js` read `state.globalMeta`.
+   `buildState` writes `global_meta`. So the caption was `undefined`,
+   `filter(Boolean)` dropped it, and every Kaggle push carried
+   `CAPTION = """"""`. Read back off version 4 of his own notebook to prove it.
+   The local ComfyUI path four hundred lines up reads `state.global_meta` and
+   always has, which is why local sounded right and Kaggle came back generic.
+   A run with an empty caption is now refused before the push, by name.
+2. **The Ghost put the caption inside the `<lyrics>` tag.** That is how the
+   caption ended up in the LYRICS field with his real words underneath, and it
+   is also how his lyrics "disappeared": they were pushed down the box, not
+   deleted. `splitActions` peels a caption schema off the front of a lyric sheet
+   and sends each half to its own box. Prose before the first tag is left alone.
+3. **`set_lyrics` refused nothing.** Any `<do>` with missing args wiped the box
+   and reported it as work done. It refuses empty now, AND a replacement keeps
+   the old words with **Put my words back** next to the tick in the conversation.
+   `runGhostAction` grew `{ said, undo, warn }` for that.
+4. **The tags he clicked are checked in code** after every `set_lyrics`, the way
+   `CLAIMS` checks a false claim, and the rule is RULE ONE at the top of the
+   prompt instead of buried mid-block.
+5. **`voices.every()` called an empty picker instrumental**, which sends a song
+   with no words at all. One shared derivation with the length guard on it.
+6. **Input Caption / Input Lyrics everywhere**: tab note, Ghost openers, wizard
+   card, App help, and two Ghost Demo clips re-baked (0.0% and 2.5% WER).
 
-Chris asked the Ghost to write a song. It offered the "Yes, make it" tap. He said yes,
-**and it wiped every line of lyrics out of the box.**
+## How to check it without spending a graphics card hour
 
-**Strongest suspect, and it is a one-liner.** `set_lyrics` in
-`src/components/OneManBand/OneManBand.jsx` does:
-
-```js
-set_lyrics: ({ text }) => {
-  const t = String(text ?? '');   // <- undefined becomes '', and '' wipes the box
-  setLyrics(t);
 ```
-
-Any `<do>{"action":"set_lyrics"}` with missing or empty args erases the song. `append_lyrics`
-right below it already throws on empty; this one does not. Note `splitActions` refuses an
-empty `<lyrics></lyrics>` tag, so the empty almost certainly arrived through the `<do>` path.
-
-**Do not just add a guard.** Two things are needed:
-- `set_lyrics` refuses empty text, the way `append_lyrics` does.
-- **A write that replaces existing words has to be undoable.** Keep the previous lyrics and
-  offer "Put my words back" in the conversation next to the ✓ line. The Ghost is allowed to
-  replace work; it is not allowed to make that irreversible.
-
-Also worth checking: whether the tap itself re-ran anything, and whether `make_the_song`
-fired a second `set_lyrics` with an empty payload.
-
-## 2. When he asks for lyrics, it must obey the tags he clicked
-
-He clicks the section buttons (Hook, Pre-Chorus, Chorus, Verse, Bridge, Outro, Solo), then
-says "write the lyrics", and it writes its own structure instead of filling in his.
-
-The Ghost DOES already receive the tags: `describe_song` in OneManBand passes
-`captionBrief()`, which lists them in order, and `GhostAssistant.send()` calls it before
-every question. So the data is there and the instruction is being ignored or outranked.
-
-Likely fixes, in order of how much they would help:
-- The section-tag rule is buried in the middle of a long system prompt. Move it to the top
-  of the "WRITING A WHOLE SONG" block and make it absolute: **if there are tags in the box,
-  the lyrics MUST use exactly those tags, in that order, none added, none dropped.**
-- Better, make it checkable in code the way the false-claim check works
-  (`CLAIMS` in `GhostAssistant.jsx`): after a `set_lyrics`, compare the tags in the new
-  lyrics against the tags that were in the box. If they do not match, say so in the
-  conversation and offer to put the old words back. Same pattern as
-  `validateCaption()` in `src/services/minimaxCaption.js`.
-
-## 3. Call it Input Caption and Input Lyrics EVERYWHERE
-
-The two box headings were renamed in build 130, but his own words: *"I don't know why you
-won't call it that in the app so it matches what it actually does."* Something is still
-saying the old thing. Known leftovers:
-
-- `src/services/GhostService.js` -> `TAB_NOTES.onemanband` still says
-  "the sound description (style / singer / band)", which is both the old name AND the old
-  three-box shape that no longer exists.
-- `src/components/Ghost/GhostAssistant.jsx` -> `OPENERS` has "Fix my sound description".
-- Grep the whole repo for `sound description`, `the words`, `the sound`, `caption blocks`
-  and the three-part language, including the Ghost Demo script and the wizard cards.
-
----
-
-## What is working, do not break it
-
-- **MiniMax makes songs.** Proven end to end 2026-08-22: two takes, both T4s, 15.8 min
-  including the 12 GB of weights. He is running one right now, making two songs.
-- Kaggle needs a `KGAT_` code, not `kaggle.json`. **403 means the notebook does not exist
-  yet, not a bad key.** Phone verification was what blocked the GPU.
-- One Input Caption box, not three. The three-part split was this app's invention.
-- Long text uses `<caption>` / `<lyrics>` tags, not JSON. Reply budget is 7000.
-- The Ghost's voice model ships inside the installer, no network at all. Three voices.
-- The picker plays baked clips so it is instant; only real answers wait.
+node scripts/song-payload-check.mjs
+```
+Ten checks, one second, no network. It fails if `state.globalMeta` ever becomes
+a real property again.
 
 ## Still unproven
 
-- No full-length song has run. The end-to-end proof was 20 seconds. Three minutes is the
-  same path at roughly 1.7 hours.
-- The Ghost has never read a real AI answer aloud in the packaged app. Loading and all
-  three voices are proven there; that last hop is not.
+- **No full-length song has run.** The end-to-end proof was 20 seconds.
+- **No Kaggle run has ever finished WITH a caption**, because of bug 1. The next
+  real run is the first one that has ever had the whole song in it.
+- The Ghost has never read a real AI answer aloud in the packaged app.
 
-## How to work on this
+## Notes
 
-- Build: `LYRICIST_RELEASE_DIR="D:\lyricist-stage" npm run release`, then move to
-  `V:\Releases\Lyricist 4.2.0 Releases\`. Commit and push in the same turn, never ask.
-- The packaged app can be driven over its own DevTools port; see
-  `scratchpad/probe-voices.cjs` in the session temp dir for the pattern. **A green dev
-  build proves nothing about the installed app** and has now caught two bugs that way.
-- Offline checks: `node scripts/kaggle-check.mjs`, `python scripts/kaggle-takes-check.py`.
+- The Kaggle API token cannot cancel a run: `CancelKernelSession` answers 403
+  `kernelSessions.cancel denied`. The app's Stop only stops the polling on this
+  side, so **a run keeps burning Kaggle time after Stop**. Cancelling for real
+  means the Version History kebab menu on kaggle.com. Worth fixing.
+- Build: `LYRICIST_RELEASE_DIR="D:\lyricist-stage" npm run release`, move to
+  `V:\Releases\Lyricist 4.2.0 Releases\`, commit and push in the same turn.
