@@ -504,18 +504,43 @@ async function generateKaggle({ state, duration, seed, seeds, steps, guidance, h
     // fileName and bytes, so that shape is still accepted.
     const raw = Array.isArray(res.takes) && res.takes.length
       ? res.takes
-      : [{ fileName: res.fileName, bytes: res.bytes }];
-    const takes = raw.map((t, i) => {
+      : [{ fileName: res.fileName, bytes: res.bytes, filePath: res.filePath }];
+
+    /**
+     * THE SONG IS ON DISK BEFORE IT IS EVER IN THE WINDOW.
+     *
+     * The take now arrives as a path. The bytes are asked for one take at a
+     * time and come back as a single buffer, so nothing is ever held twice and
+     * a slow bridge cannot lose a song that Kaggle already finished.
+     *
+     * `bytes` is still read if it is there, because that is what an older main
+     * process answers with, and it can be a buffer, an array or an array
+     * buffer depending on which one.
+     */
+    const takes = [];
+    for (let i = 0; i < raw.length; i += 1) {
+      const t = raw[i];
       const type = /\.wav$/i.test(t.fileName) ? 'audio/wav'
         : /\.mp3$/i.test(t.fileName) ? 'audio/mpeg' : 'audio/flac';
-      return {
-        blob: new Blob([new Uint8Array(t.bytes)], { type }),
+
+      let data = t.bytes;
+      if (!data && t.filePath && api.songBytes) {
+        const got = await api.songBytes(t.filePath);
+        if (!got?.ok) throw new Error(got?.error || `Kaggle made "${t.fileName}" but it could not be read back.`);
+        data = got.bytes;
+      }
+      if (!data) throw new Error(`Kaggle made "${t.fileName}" but sent nothing to play.`);
+
+      takes.push({
+        blob: new Blob([data instanceof Uint8Array ? data : new Uint8Array(data)], { type }),
         // The notebook puts the seed in the filename, so a take always knows
         // which number made it even if Kaggle hands them back out of order.
         seed: Number((/seed(\d+)/i.exec(t.fileName || '') || [])[1]) || wanted[i] || wanted[0],
-      };
-    });
-    return { blob: takes[0].blob, takes, host: 'kaggle.com' };
+        fileName: t.fileName,
+        filePath: t.filePath || '',
+      });
+    }
+    return { blob: takes[0].blob, takes, folder: res.folder || '', host: 'kaggle.com' };
   } finally {
     off?.();
     signal?.removeEventListener?.('abort', abort);

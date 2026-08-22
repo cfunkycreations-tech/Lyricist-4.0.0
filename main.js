@@ -452,6 +452,53 @@ ipcMain.handle('kaggle-render', async (event, song) => {
 
 ipcMain.handle('kaggle-render-stop', async () => { setupStops.kaggle = true; return { ok: true }; });
 
+/**
+ * Hand a finished song's bytes to the window, once, as one buffer.
+ *
+ * A Buffer crosses the bridge as a Uint8Array with a straight copy. The old
+ * route turned every byte into a JavaScript number first, which is what put a
+ * quarter of a gigabyte through the bridge for two takes.
+ *
+ * Only files inside the songs folder are readable through here. A path from the
+ * window is never trusted to point wherever it likes.
+ */
+ipcMain.handle('song-bytes', async (event, { filePath } = {}) => {
+  try {
+    const dir = kaggleCloud.songsDir();
+    const wanted = path.resolve(String(filePath || ''));
+    if (path.dirname(wanted) !== path.resolve(dir)) {
+      return { ok: false, error: 'That file is not one of your songs.' };
+    }
+    return { ok: true, bytes: fs.readFileSync(wanted) };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+/** Every song already on disk, so one that never made it into the app can be
+    brought in later. A run that finished while the window was busy, reloading
+    or closed is still a finished song. */
+ipcMain.handle('songs-list', async () => {
+  try {
+    const dir = kaggleCloud.songsDir();
+    const files = fs.readdirSync(dir)
+      .filter((f) => /\.(flac|wav|mp3|ogg)$/i.test(f))
+      .map((f) => {
+        const filePath = path.join(dir, f);
+        return { fileName: f, filePath, size: fs.statSync(filePath).size };
+      });
+    return { ok: true, folder: dir, files };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+/** Where the finished songs are kept, so a button can open the folder. */
+ipcMain.handle('songs-folder', async () => {
+  try { return { ok: true, folder: kaggleCloud.songsDir() }; }
+  catch (e) { return { ok: false, error: e.message }; }
+});
+
 /** Reveal a folder in Explorer — "where did my stems go" should be one click. */
 ipcMain.handle('show-folder', async (event, { folderPath }) => {
   try {

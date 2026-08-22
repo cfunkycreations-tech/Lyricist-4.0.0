@@ -74,7 +74,7 @@ import {
   GENRE_GROUPS, MOOD_GROUPS, VOICE_GROUPS, COUNTS, kitFor,
 } from '../../services/musicTaxonomy.js';
 import { blendLabel } from '../../utils/blend.js';
-import { saveRecording } from '../../services/RecordingsStore.js';
+import { saveRecording, listRecordings } from '../../services/RecordingsStore.js';
 import './OneManBand.css';
 
 /**
@@ -450,6 +450,9 @@ export default function OneManBand() {
   const [copied, setCopied] = useState(false);
   const [confirmExample, setConfirmExample] = useState(null);
 
+  /** Where finished songs are written on disk, so a button can open it. */
+  const [songsFolder, setSongsFolder] = useState('');
+
   /** The Input Lyrics as they were before the Ghost last replaced them. */
   const undoLyrics = useRef(null);
 
@@ -620,16 +623,45 @@ export default function OneManBand() {
         onProgress: (p) => setPhase(p.phase),
         onTake: (res) => {
           const url = URL.createObjectURL(res.blob);
-          setTakes((prev) => [{
-            id: `${Date.now()}-${res.seed}-${prev.length}`,
+          const take = {
+            id: `${res.seed}-${res.fileName || ''}-${res.blob.size}`,
             seed: res.seed,
             url,
             blob: res.blob,
             seconds,
             ms: res.ms,
+            fileName: res.fileName || '',
+            filePath: res.filePath || '',
             // The seed alone does NOT reproduce a take. Keep the whole recipe.
             recipe: { lyrics, caption, genres, moods, voices, genre, mood, voice, seconds, steps, guidance, engine },
-          }, ...prev]);
+          };
+          setTakes((prev) => [take, ...prev]);
+          if (res.folder) setSongsFolder(res.folder);
+
+          /**
+           * A FINISHED SONG SAVES ITSELF. HE SHOULD NEVER HAVE TO ASK WHERE IT WENT.
+           *
+           * Chris waited out a real run, the app said it was done, and there was
+           * nothing to play: *"where are my songs? Shouldn't they be in the
+           * app?"* They should. Keep it was the only thing that ever filed a
+           * take, so anything he did not press was gone the moment he changed
+           * tabs, and a song that took twenty minutes of somebody else's
+           * graphics card is not something to hang on one more click.
+           *
+           * It saves quietly, and Keep it stays exactly where it is: it costs
+           * nothing to press twice and it is the button people look for.
+           */
+          saveRecording({
+            name: `One Man Band ${new Date().toLocaleString()} (take ${res.seed})`,
+            blob: res.blob,
+            duration: seconds,
+          }).then(() => {
+            setTakes((prev) => prev.map((t) => (t.id === take.id ? { ...t, saved: true } : t)));
+          }).catch((e) => {
+            // Never lose the take over a failed file. It is on disk and on
+            // screen either way, and the reason belongs on screen too.
+            setError(`The song is made and it is in your songs folder, but it could not be filed in Recordings: ${e.message}`);
+          });
         },
       });
       setPhase('');
@@ -642,6 +674,77 @@ export default function OneManBand() {
   };
 
   const stop = () => { abortRef.current?.abort(); setBusy(false); setPhase(''); };
+
+  /**
+   * BRING IN A SONG THAT NEVER MADE IT INTO THE APP.
+   *
+   * Chris finished a real two minute song, the app said it was done, and the
+   * Takes rack was empty: *"where are my songs? Shouldn't they be in the app?"*
+   *
+   * From 133 on a take saves itself, but a song already on disk from before
+   * that, or one that finished while the window was reloading, is still a
+   * finished song and it is still his. This reads the songs folder and files
+   * anything that is not in Recordings yet, by name, so pressing it twice does
+   * nothing the second time.
+   *
+   * It is a real button, under the takes, labelled with what it does. Nothing
+   * about getting your own work back should require knowing where to look.
+   */
+  const [recovering, setRecovering] = useState(false);
+  const [onDisk, setOnDisk] = useState([]);
+
+  useEffect(() => {
+    let alive = true;
+    window.lyricistAPI?.songsList?.().then((r) => {
+      if (!alive || !r?.ok) return;
+      setOnDisk(r.files || []);
+      if (r.folder) setSongsFolder(r.folder);
+    }).catch(() => { /* no folder yet is not an error */ });
+    return () => { alive = false; };
+  }, []);
+
+  const bringInFromDisk = async () => {
+    setRecovering(true);
+    setError('');
+    try {
+      const listed = await window.lyricistAPI?.songsList?.();
+      if (!listed?.ok) throw new Error(listed?.error || 'Could not read your songs folder.');
+      const already = new Set((await listRecordings()).map((r) => r.name));
+      let brought = 0;
+      for (const f of listed.files || []) {
+        const name = `One Man Band ${f.fileName.replace(/\.[^.]+$/, '')}`;
+        if (already.has(name)) continue;
+        const got = await window.lyricistAPI.songBytes(f.filePath);
+        if (!got?.ok) continue;
+        const bytes = got.bytes instanceof Uint8Array ? got.bytes : new Uint8Array(got.bytes);
+        const blob = new Blob([bytes], { type: /\.wav$/i.test(f.fileName) ? 'audio/wav' : 'audio/flac' });
+        await saveRecording({ name, blob });
+        setTakes((prev) => (prev.some((t) => t.fileName === f.fileName) ? prev : [{
+          id: `disk-${f.fileName}`,
+          seed: Number((/seed(\d+)/i.exec(f.fileName) || [])[1]) || 0,
+          url: URL.createObjectURL(blob),
+          blob,
+          seconds,
+          ms: 0,
+          fileName: f.fileName,
+          filePath: f.filePath,
+          saved: true,
+          recipe: { lyrics, caption, genres, moods, voices, genre, mood, voice, seconds, steps, guidance, engine },
+        }, ...prev]));
+        brought += 1;
+      }
+      setPhase(brought
+        ? `Brought ${brought} song${brought === 1 ? '' : 's'} in. They are in Recordings.`
+        : 'Every song in your folder is already in the app.');
+      setTimeout(() => setPhase((p) => (p.startsWith('Brought') || p.startsWith('Every song') ? '' : p)), 6000);
+    } catch (e) {
+      setError(e.message || 'Could not bring your songs in.');
+    } finally {
+      setRecovering(false);
+    }
+  };
+
+
 
   const keep = async (take) => {
     try {
@@ -1109,19 +1212,67 @@ export default function OneManBand() {
           </section>
         </div>
 
+        {/* HIS OWN FINISHED WORK, ONE BUTTON AWAY, EVEN WITH AN EMPTY RACK.
+            This is shown when there is something on disk and nothing on
+            screen, because that is precisely the state he was left in. */}
+        {!takes.length && onDisk.length > 0 && (
+          <section className="omb-takes">
+            <div className="omb-rackhd">
+              <h2>Songs on this computer</h2>
+              <span className="omb-rackwhere">
+                {onDisk.length} finished song{onDisk.length === 1 ? '' : 's'} in your songs folder
+                that {onDisk.length === 1 ? 'is' : 'are'} not in the app yet.
+                <button type="button" className="omb-mini" disabled={recovering} onClick={bringInFromDisk}>
+                  {recovering ? 'Bringing them in…' : 'Bring them into the app'}
+                </button>
+                {songsFolder && (
+                  <button type="button" className="omb-mini"
+                          onClick={() => window.lyricistAPI?.showFolder?.(songsFolder)}>
+                    Open my songs folder
+                  </button>
+                )}
+              </span>
+            </div>
+          </section>
+        )}
+
         {takes.length > 0 && (
           <section className="omb-takes">
-            <div className="omb-rackhd"><h2>Takes</h2></div>
+            <div className="omb-rackhd">
+              <h2>Takes</h2>
+              {/* WHERE THEY WENT, SAID OUT LOUD, WITH THE BUTTON RIGHT THERE.
+                  "Where are my songs" is not a question anybody should have to
+                  ask about their own finished work. Every take is already
+                  filed in Recordings and written to a folder; this says so and
+                  opens it. */}
+              <span className="omb-rackwhere">
+                Every take is saved in <b>Recordings</b> and kept as a file.
+                {songsFolder && (
+                  <button
+                    type="button"
+                    className="omb-mini"
+                    onClick={() => window.lyricistAPI?.showFolder?.(songsFolder)}
+                  >
+                    Open my songs folder
+                  </button>
+                )}
+              </span>
+            </div>
             <div className="omb-rack">
               {takes.map((t) => (
                 <article key={t.id} className="omb-take">
                   <div className="hd">
                     <span className="id">Take {t.seed.toLocaleString('en-US')}</span>
-                    <span className="badge">{Math.round(t.ms / 1000)}s to make</span>
+                    {/* A song brought back in off the disk was not timed here,
+                        and "0s to make" is a lie about a twenty minute run. */}
+                    {t.ms > 0 && <span className="badge">{Math.round(t.ms / 1000)}s to make</span>}
+                    {t.saved && <span className="badge saved">in Recordings</span>}
                   </div>
                   <audio controls src={t.url} />
                   <div className="row">
-                    <button type="button" className="omb-mini" onClick={() => keep(t)}>Keep it</button>
+                    <button type="button" className="omb-mini" onClick={() => keep(t)}>
+                      {t.saved ? 'Save another copy' : 'Keep it'}
+                    </button>
                     <a className="omb-mini" href={t.url} download={`one-man-band-${t.seed}.flac`}>Download</a>
                     <button type="button" className="omb-mini" onClick={() => {
                       setLyrics(t.recipe.lyrics); setCaption(joinCaption(t.recipe.caption));

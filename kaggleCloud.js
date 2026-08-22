@@ -70,6 +70,26 @@ function credDir() {
 }
 
 /** Where we keep it now: either a pasted code or an old username and key. */
+/**
+ * WHERE A FINISHED SONG LANDS ON DISK.
+ *
+ * Chris ran a full song, the app said it was done, and there was nothing to
+ * play: *"where are my songs? Shouldn't they be in the app?"*
+ *
+ * They should, and now they are twice over. Every take is written here as a
+ * real file the moment it comes off Kaggle, BEFORE anything has to cross into
+ * the window, so a song can never be lost to a slow bridge or a reload. The
+ * window then loads it from here and files it in Recordings by itself.
+ *
+ * It also gives a plain answer to "where is it": a folder, with a button that
+ * opens it.
+ */
+function songsDir() {
+  const dir = path.join(app.getPath('userData'), 'songs');
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
 function authPath() { return path.join(credDir(), 'kaggle-auth.json'); }
 /** Where builds 109 to 112 kept it. Still read, so nobody reconnects for free. */
 function legacyPath() { return path.join(credDir(), 'kaggle.json'); }
@@ -565,7 +585,22 @@ async function render(song, onProgress, shouldStop = () => false) {
       : 'Fetching the audio');
     try {
       const bytes = await download(files[i].url);
-      takes.push({ fileName: files[i].fileName, bytes: Array.from(bytes) });
+      /**
+       * A PATH, NOT FIFTEEN MILLION NUMBERS.
+       *
+       * This used to be `Array.from(bytes)`. A 20 second song is 3.5 MB and it
+       * survived that; a two minute song is 15 MB, and `Array.from` turns each
+       * byte into a JavaScript number, so two takes went over the bridge as
+       * thirty million elements, roughly a quarter of a gigabyte once cloned.
+       * That is the same shape of mistake as `listSamples()` reading 12 GB to
+       * return a list of names.
+       *
+       * The file is written here instead and only its path travels. The window
+       * asks for the bytes when it wants them, as one buffer.
+       */
+      const filePath = path.join(songsDir(), files[i].fileName);
+      fs.writeFileSync(filePath, bytes);
+      takes.push({ fileName: files[i].fileName, filePath, size: bytes.length });
     } catch (e) {
       // One take failing to download must not throw away the ones that worked.
       if (!takes.length && i === files.length - 1) throw e;
@@ -576,12 +611,12 @@ async function render(song, onProgress, shouldStop = () => false) {
   }
 
   say(1, 'Done');
-  // fileName and bytes stay on the result for anything still expecting one song.
-  return { ok: true, url, takes, fileName: takes[0].fileName, bytes: takes[0].bytes };
+  // fileName stays on the result for anything still expecting one song.
+  return { ok: true, url, folder: songsDir(), takes, fileName: takes[0].fileName, filePath: takes[0].filePath };
 }
 
 module.exports = {
-  status, connect, disconnect, render, whoAmI, SLUG, TITLE,
+  status, connect, disconnect, render, whoAmI, songsDir, SLUG, TITLE,
   // Exposed for the offline test harness: these are the two pieces that can be
   // proved without a Kaggle account, and both of them can silently ruin a run.
   __test_parse: parseToken,

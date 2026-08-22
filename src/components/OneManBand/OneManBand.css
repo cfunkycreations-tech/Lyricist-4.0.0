@@ -390,3 +390,13 @@
   color: hsl(158 80% 62%); text-decoration: underline; text-underline-offset: 3px;
 }
 .omb-setup-link:hover { color: #fff; }
+
+/* Where the songs went. It answers "where are my songs" before it is asked. */
+.omb-rackwhere {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  font-size: 12.5px; color: #A9C4E4;
+}
+.omb-rackwhere b { color: #8FF0C4; }
+.omb-take .badge.saved {
+  color: #8FF0C4; border-color: hsla(158 80% 55% / .55); background: hsla(158 84% 40% / .18);
+}

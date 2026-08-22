@@ -41,6 +41,9 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   kaggleDisconnect: () => ipcRenderer.invoke('kaggle-disconnect'),
   kaggleRender: (song) => ipcRenderer.invoke('kaggle-render', song),
   kaggleRenderStop: () => ipcRenderer.invoke('kaggle-render-stop'),
+  songBytes: (filePath) => ipcRenderer.invoke('song-bytes', { filePath }),
+  songsFolder: () => ipcRenderer.invoke('songs-folder'),
+  songsList: () => ipcRenderer.invoke('songs-list'),
   onSetupProgress: (cb) => {
     const h = (_e, payload) => cb(payload);
     ipcRenderer.on('setup-progress', h);
