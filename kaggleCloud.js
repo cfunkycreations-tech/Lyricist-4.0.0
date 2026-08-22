@@ -330,11 +330,24 @@ function buildNotebook({ caption, lyrics, seconds, seed, seeds, steps, guidance,
   if (songCell < 0) throw new Error('The shipped notebook has no CAPTION cell. This is a bug in Lyricist, not in your song.');
   nb.cells[songCell].source = cell;
 
-  // Carry their Hugging Face token through, if they have one. It is not needed
-  // to make a song: it only stops the Hub throttling 12 GB of anonymous
-  // downloading, which is the slowest part of a cold session. The notebook is
-  // private on their own account. A token cannot be quoted or escaped its way
-  // out of trouble, so anything that is not a plain token is simply not sent.
+  // THEIR Hugging Face token, from THEIR Settings, into THEIR private notebook.
+  //
+  // Chris said "I don't wanna bake in my HF token" and I first read that as "do
+  // not send it at all" and tore the whole path out. He meant the opposite of
+  // what I heard: he was worried it was being built into the app for everybody,
+  // which it never was, and what he actually wants is for the token he pastes
+  // into Settings to reach Kaggle. Nothing about a token is ever compiled into
+  // the installer; it lives in his config on his machine and goes out at push
+  // time with his own notebook.
+  //
+  // Writing it into the notebook is the ONLY route. Kaggle has no API for
+  // creating a Secret, so the app cannot put it anywhere better; the Secrets
+  // page is a thing a person clicks. What that costs is honest and worth
+  // knowing: the token sits in the source of a private notebook on his account
+  // and stays in its version history. The card in EngineSetup says so, and
+  // clearing the field in Settings stops it immediately.
+  //
+  // It is never required. Without it the 12 GB simply comes down throttled.
   const token = String(hfToken || '').trim();
   if (/^[A-Za-z0-9_-]{8,200}$/.test(token)) {
     const hfCell = nb.cells.findIndex((c) => c.cell_type === 'code' && text(c).includes('HF_TOKEN = ""'));

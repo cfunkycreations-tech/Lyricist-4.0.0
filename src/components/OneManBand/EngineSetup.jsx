@@ -185,6 +185,14 @@ export default function EngineSetup({ onKaggleReady, onLocalReady }) {
                 Pick <b>Kaggle</b> under "Where it runs" and press Make the song. Everything else
                 happens by itself.
               </p>
+              {/* Say out loud that a credential leaves the machine. He should
+                  never have to find that out by reading a notebook. */}
+              <p className="es-fine">
+                If you have a <b>Hugging Face token</b> saved in Settings, it is sent with your
+                notebook so the 12 GB of music files are not downloaded throttled. It goes only
+                into your own private notebook on Kaggle. Clear that field in Settings if you would
+                rather it stayed on this computer.
+              </p>
               <button type="button" className="es-plain" onClick={async () => { await api.kaggleDisconnect(); refresh(); }}>
                 Disconnect
               </button>

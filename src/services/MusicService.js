@@ -456,7 +456,7 @@ async function generateKaggle({ state, duration, seed, seeds, steps, guidance, h
       seeds: wanted,
       steps,
       guidance,
-      // Only speeds the 12 GB fetch up. The song is made with or without it.
+      // Optional, and only speeds the 12 GB fetch up. See kaggleCloud.js.
       hfToken,
     });
     if (res?.stopped) throw new Error('Stopped.');
