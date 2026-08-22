@@ -34,3 +34,7 @@ desktop.ini
 # WebAssembly). npm install regenerates it, so it does not belong in history:
 # every runtime bump would add another copy.
 public/ort/
+
+# The Ghost voice model, ~94 MB, fetched by scripts/fetch-ghost-voice-model.mjs
+# on postinstall and before every build. Not history.
+public/kokoro/

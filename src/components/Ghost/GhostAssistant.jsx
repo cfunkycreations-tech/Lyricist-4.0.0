@@ -80,14 +80,14 @@ export default function GhostAssistant({ tab, config, getContext }) {
     // Switching it on is not a wait any more. The picker plays baked audio
     // immediately, so the model can arrive in its own time and the note says
     // that rather than implying the feature is stuck.
-    setVoiceNote('Fetching the voice in the background, about 86 MB, once. The buttons below work now; spoken answers start when it lands.');
+    setVoiceNote('Warming the voice up. It ships with the app, so this is off your own disk and takes a couple of seconds.');
     try {
       await loadVoice();
       setVoiceNote('');
     } catch (e) {
       // The samples still work without it, so the voice does NOT get switched
       // back off here. It stays on and the note is honest about what is missing.
-      setVoiceNote(`Could not fetch the voice, so answers stay text only: ${e.message}`);
+      setVoiceNote(`The voice would not start, so answers stay text only: ${e.message}`);
     }
   };
 

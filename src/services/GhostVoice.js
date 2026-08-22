@@ -30,6 +30,44 @@
 
 const MODEL_ID = 'onnx-community/Kokoro-82M-v1.0-ONNX';
 
+/**
+ * PUT THE VOICES WHERE KOKORO WILL LOOK FOR THEM.
+ *
+ * kokoro-js does not fetch the voice style vectors through transformers. It
+ * builds this URL itself, in its own bundled code, and no configuration can
+ * redirect it:
+ *
+ *   https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/voices/<name>.bin
+ *
+ * It does check the Cache Storage bucket "kokoro-voices" first, though, and that
+ * is the door. The bundled copies are put into that cache under exactly those
+ * URLs before the model loads, so kokoro finds them and never reaches the
+ * network. Patching its bundle would have been the alternative, and a patched
+ * dependency survives until the next npm install.
+ *
+ * Best effort throughout: if the cache API is unavailable the app simply fetches
+ * as it did before, which still works when there is internet.
+ */
+const VOICE_CACHE = 'kokoro-voices';
+const VOICE_URL = (name) => `https://huggingface.co/${MODEL_ID}/resolve/main/voices/${name}.bin`;
+
+async function seedVoiceCache() {
+  try {
+    const cache = await caches.open(VOICE_CACHE);
+    await Promise.all(Object.values(VOICES).map(async ({ id }) => {
+      const url = VOICE_URL(id);
+      if (await cache.match(url)) return;
+      const local = await fetch(new URL(`kokoro/voices/${id}.bin`, document.baseURI).href);
+      if (!local.ok) return;   // not bundled: kokoro will fetch it itself
+      await cache.put(url, new Response(await local.arrayBuffer(), {
+        headers: { 'Content-Type': 'application/octet-stream' },
+      }));
+    }));
+  } catch {
+    // No cache API, or a locked-down context. The voice still works online.
+  }
+}
+
 /** The shipping depth from generate-ghost-audio.py. Measured, not chosen by ear. */
 const GHOST_PITCH = 0.740;  // asetrate factor
 const HIGHPASS_HZ = 55;
@@ -144,9 +182,12 @@ function audio() {
 }
 
 /**
- * Load the voice. ~86 MB the first time, cached by the browser afterwards, then
- * it is offline forever. Called on the first Speak rather than at boot, because
- * nobody should pay for a feature they have not switched on.
+ * Load the voice.
+ *
+ * Nothing is downloaded: the model ships inside the app. This is reading ~92 MB
+ * off disk and handing it to the WebAssembly runtime, which takes a couple of
+ * seconds the first time and nothing after that. Still lazy rather than done at
+ * boot, because a person who never turns the voice on should never pay for it.
  */
 export function loadVoice() {
   if (ttsPromise) return ttsPromise;
@@ -169,6 +210,21 @@ export function loadVoice() {
     // Threads need SharedArrayBuffer, which needs cross-origin isolation
     // headers that a file:// page does not have. One thread always works.
     env.backends.onnx.wasm.numThreads = 1;
+
+    // THE MODEL SHIPS WITH THE APP. Chris asked for the whole thing bundled, so
+    // there is no 92 MB fetch on first use and no network needed at all.
+    // scripts/fetch-ghost-voice-model.mjs puts it in public/kokoro at build
+    // time, laid out the way transformers resolves a local model:
+    // <localModelPath>/<model id>/onnx/model_quantized.onnx.
+    env.allowLocalModels = true;
+    env.localModelPath = new URL('kokoro/', document.baseURI).href;
+    // Nothing may quietly fall back to the hub. If the bundled copy is broken,
+    // that is a packaging bug and it should be loud, not papered over by a
+    // download the user did not ask for.
+    env.allowRemoteModels = false;
+    env.useBrowserCache = false;   // reading local files, nothing to cache
+
+    await seedVoiceCache();
 
     // Aliased to the web build in vite.config.js: the package's own exports
     // map offers only the node entry, which drags node APIs into the renderer.

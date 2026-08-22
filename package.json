@@ -8,8 +8,8 @@
   "scripts": {
     "dev": "vite",
     "copy:model": "node scripts/copy-basic-pitch-model.mjs",
-    "postinstall": "node scripts/copy-basic-pitch-model.mjs && node scripts/copy-onnx-runtime.mjs",
-    "build": "npm run copy:model && npm run copy:ort && vite build",
+    "postinstall": "node scripts/copy-basic-pitch-model.mjs && node scripts/copy-onnx-runtime.mjs && node scripts/fetch-ghost-voice-model.mjs",
+    "build": "npm run copy:model && npm run copy:ort && npm run fetch:voice && vite build",
     "electron": "electron .",
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
@@ -17,7 +17,8 @@
     "release:same": "node scripts/release.mjs --no-bump",
     "release:dir": "node scripts/release.mjs --dir",
     "preflight": "node scripts/preflight.mjs",
-    "copy:ort": "node scripts/copy-onnx-runtime.mjs"
+    "copy:ort": "node scripts/copy-onnx-runtime.mjs",
+    "fetch:voice": "node scripts/fetch-ghost-voice-model.mjs"
   },
   "build": {
     "appId": "com.cfunkycreations.lyricist",
