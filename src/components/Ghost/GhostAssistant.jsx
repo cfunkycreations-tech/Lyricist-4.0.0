@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import './GhostAssistant.css';
 import { askGhost, splitActions } from '../../services/GhostService.js';
 import { runGhostAction, watchGhostActions, availableGhostActions } from '../../services/ghostBus.js';
-import { speak, hush, loadVoice, voiceState } from '../../services/GhostVoice.js';
+import { speak, hush, loadVoice, voiceState, VOICES, getVoiceName, setVoiceName } from '../../services/GhostVoice.js';
 
 /**
  * THE GHOST, ALWAYS THERE.
@@ -56,6 +56,7 @@ export default function GhostAssistant({ tab, config, getContext }) {
   const [busy, setBusy] = useState(false);
   const [voiceOn, setVoiceOn] = useState(() => localStorage.getItem(VOICE_KEY) === '1');
   const [voiceNote, setVoiceNote] = useState('');
+  const [voiceName, setVoiceName_] = useState(() => getVoiceName());
   const [, bumpActions] = useState(0);
   const logRef = useRef(null);
   const abortRef = useRef(null);
@@ -181,6 +182,30 @@ export default function GhostAssistant({ tab, config, getContext }) {
               {voiceOn ? '🔊 Voice on' : '🔇 Voice off'}
             </button>
           </header>
+
+          {/* Who it sounds like. Only worth showing once the voice is on, and
+              switching says one line in the new voice so you can hear it
+              without having to think of something to ask. */}
+          {voiceOn && (
+            <div className="gha-picker">
+              <span>Voice</span>
+              {Object.entries(VOICES).map(([key, v]) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={voiceName === key}
+                  onClick={() => {
+                    setVoiceName_(setVoiceName(key));
+                    speak(key === 'ghost'
+                      ? 'This is me.'
+                      : `This is the ${v.label.toLowerCase()}. I can read the answers out in this voice instead.`);
+                  }}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {voiceNote && <p className="gha-note">{voiceNote}</p>}
 

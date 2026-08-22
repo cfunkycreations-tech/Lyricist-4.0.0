@@ -29,18 +29,60 @@
  */
 
 const MODEL_ID = 'onnx-community/Kokoro-82M-v1.0-ONNX';
-const VOICE = 'am_adam';
 
 /** The shipping depth from generate-ghost-audio.py. Measured, not chosen by ear. */
-const PITCH = 0.740;        // asetrate factor
-const SPEED = 1 / PITCH;    // 1.351, the atempo that puts the duration back
+const GHOST_PITCH = 0.740;  // asetrate factor
 const HIGHPASS_HZ = 55;
 const LOWPASS_HZ = 9000;    // 6.8k was unintelligible. Leave this alone.
+
+/**
+ * WHO IT SOUNDS LIKE.
+ *
+ * Chris: *"can we give the ghost optional voices? Like normal male and female?
+ * If you can, do it, along with its normal voice."*
+ *
+ * The ghost is the default and stays exactly what it was: am_adam dropped to
+ * 92 Hz and filtered, the same treatment as the 102 baked demo clips, so the
+ * assistant and the demo are one character.
+ *
+ * The other two are the same model with the treatment switched off, so they are
+ * plain speech at their own natural pitch. af_heart is not an arbitrary pick:
+ * it is the voice that already narrates the whole setup wizard, so choosing the
+ * woman makes the app sound like one person throughout rather than three.
+ *
+ * `pitch: 1` means no shift at all, which also means no filtering: the highpass
+ * and lowpass exist to sell the ghost, and on an untreated voice they only make
+ * it sound like a telephone.
+ */
+export const VOICES = {
+  ghost: { id: 'am_adam',    pitch: GHOST_PITCH, label: 'Ghost' },
+  man:   { id: 'am_michael', pitch: 1,           label: 'Man' },
+  woman: { id: 'af_heart',   pitch: 1,           label: 'Woman' },
+};
+
+const VOICE_CHOICE_KEY = 'lyricist.ghost.voicename';
+
+let chosen = (() => {
+  try {
+    const saved = localStorage.getItem(VOICE_CHOICE_KEY);
+    return VOICES[saved] ? saved : 'ghost';
+  } catch { return 'ghost'; }
+})();
+
+export function getVoiceName() { return chosen; }
+
+/** Switch voices. Anything unknown falls back to the ghost rather than failing. */
+export function setVoiceName(name) {
+  chosen = VOICES[name] ? name : 'ghost';
+  try { localStorage.setItem(VOICE_CHOICE_KEY, chosen); } catch { /* private mode */ }
+  hush();
+  return chosen;
+}
 
 let ttsPromise = null;      // the one load, shared by every caller
 let ctx = null;
 let current = null;         // what is playing, so it can be cut off
-const cache = new Map();    // text -> AudioBuffer, so a repeat is instant
+const cache = new Map();    // voice + text -> AudioBuffer, so a repeat is instant
 
 export const voiceState = { ready: false, loading: false, failed: null };
 
@@ -59,6 +101,24 @@ export function loadVoice() {
   if (ttsPromise) return ttsPromise;
   voiceState.loading = true;
   ttsPromise = (async () => {
+    // THE RUNTIME COMES FROM DISK, NOT A CDN.
+    //
+    // transformers.js fetches its WebAssembly runtime from jsDelivr by default.
+    // That is fine in the dev server and dies in the packaged app, which runs
+    // from file:// and cannot dynamically import a remote module. Chris saw it
+    // the first time he switched the voice on:
+    //   "Failed to fetch dynamically imported module:
+    //    https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1/...
+    //    ort-wasm-simd-threaded.jsep.mjs"
+    // scripts/copy-onnx-runtime.mjs puts that file in public/ort at build time
+    // and this points at the copy. Relative on purpose: the app is served from
+    // file:// once installed and from / in dev, and this resolves in both.
+    const { env } = await import('@huggingface/transformers');
+    env.backends.onnx.wasm.wasmPaths = new URL('ort/', document.baseURI).href;
+    // Threads need SharedArrayBuffer, which needs cross-origin isolation
+    // headers that a file:// page does not have. One thread always works.
+    env.backends.onnx.wasm.numThreads = 1;
+
     // Aliased to the web build in vite.config.js: the package's own exports
     // map offers only the node entry, which drags node APIs into the renderer.
     const { KokoroTTS } = await import('kokoro-js');
@@ -118,24 +178,45 @@ export function hush() {
  * Say it, in the ghost's voice. Resolves when it finishes, or immediately if it
  * cannot speak. Never throws.
  */
-export async function synthesize(line) {
-  let buffer = cache.get(line);
+export async function synthesize(line, name = chosen) {
+  const voice = VOICES[name] || VOICES.ghost;
+  const key = `${name}|${line}`;
+  let buffer = cache.get(key);
   if (buffer) return buffer;
+
   const tts = await loadVoice();
-  // Generated fast on purpose: the playback rate at the other end slows it back
-  // down and takes the pitch with it.
-  const raw = await tts.generate(line, { voice: VOICE, speed: SPEED });
+
+  // Generated fast on purpose when there is a shift coming: the playback rate at
+  // the other end slows it back down and takes the pitch with it. At pitch 1
+  // this is exactly 1 and nothing is done to the speech at all.
+  let id = voice.id;
+  if (tts.voices && !tts.voices[id]) {
+    // The model decides what voices exist, not this file. If a name ever goes
+    // away, say so in the log and fall back rather than throwing at the user.
+    console.warn(`[ghost voice] "${id}" is not in this model, using am_adam.`);
+    id = 'am_adam';
+  }
+
+  const raw = await tts.generate(line, { voice: id, speed: 1 / voice.pitch });
   buffer = toBuffer(raw);
   if (cache.size > 40) cache.delete(cache.keys().next().value);
-  cache.set(line, buffer);
+  cache.set(key, buffer);
   return buffer;
 }
 
 /** The shipping graph, in one place, so playing it and measuring it agree. */
-export function ghostChain(context, buffer) {
+export function ghostChain(context, buffer, name = chosen) {
+  const voice = VOICES[name] || VOICES.ghost;
   const src = context.createBufferSource();
   src.buffer = buffer;
-  src.playbackRate.value = PITCH;     // the asetrate half of the shift
+  src.playbackRate.value = voice.pitch;   // the asetrate half of the shift
+
+  // An untreated voice goes straight out. The two filters are there to sell the
+  // ghost, and on plain speech they only make it sound like a telephone.
+  if (voice.pitch === 1) {
+    src.connect(context.destination);
+    return src;
+  }
 
   const hp = context.createBiquadFilter();
   hp.type = 'highpass';
@@ -153,16 +234,17 @@ export async function speak(text) {
   const line = speakable(text);
   if (!line) return { ok: true, skipped: 'nothing to say' };
 
+  const name = chosen;
   let buffer;
   try {
-    buffer = await synthesize(line);
+    buffer = await synthesize(line, name);
   } catch (e) {
     return { ok: false, error: voiceState.failed || e?.message || 'The voice did not work.' };
   }
 
   hush();
   const c = audio();
-  const src = ghostChain(c, buffer);
+  const src = ghostChain(c, buffer, name);
   current = src;
 
   return new Promise((resolve) => {

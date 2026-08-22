@@ -2,21 +2,22 @@
   "name": "lyricist",
   "version": "4.2.0",
   "main": "main.js",
-  "description": "AI Songwriting Studio — Lyricist 4.2.0 Goes Quantum",
+  "description": "AI Songwriting Studio \u2014 Lyricist 4.2.0 Goes Quantum",
   "author": "CFunky Creations LLC",
   "license": "MIT",
   "scripts": {
     "dev": "vite",
     "copy:model": "node scripts/copy-basic-pitch-model.mjs",
-    "postinstall": "node scripts/copy-basic-pitch-model.mjs",
-    "build": "npm run copy:model && vite build",
+    "postinstall": "node scripts/copy-basic-pitch-model.mjs && node scripts/copy-onnx-runtime.mjs",
+    "build": "npm run copy:model && npm run copy:ort && vite build",
     "electron": "electron .",
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
     "release": "node scripts/preflight.mjs && node scripts/release.mjs",
     "release:same": "node scripts/release.mjs --no-bump",
     "release:dir": "node scripts/release.mjs --dir",
-    "preflight": "node scripts/preflight.mjs"
+    "preflight": "node scripts/preflight.mjs",
+    "copy:ort": "node scripts/copy-onnx-runtime.mjs"
   },
   "build": {
     "appId": "com.cfunkycreations.lyricist",
