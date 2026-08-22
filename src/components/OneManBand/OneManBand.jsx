@@ -4,6 +4,7 @@ import MultiPick from '../common/MultiPick.jsx';
 import EngineSetup from './EngineSetup.jsx';
 import { registerGhostActions } from '../../services/ghostBus.js';
 import { EXAMPLES } from '../../services/minimaxExamples.js';
+import { validateCaption, captionBrief } from '../../services/minimaxCaption.js';
 
 /**
  * THE SHAPE OF A SONG, IN ONE PRESS.
@@ -386,6 +387,18 @@ export default function OneManBand() {
    * three fields joined by blank lines, so what he reads here is what goes out.
    * If that join ever changes in MusicService this has to change with it.
    */
+  /** Everything the Ghost should know before it writes a caption for this song. */
+  useEffect(() => registerGhostActions({
+    describe_song: () => captionBrief({
+      seconds,
+      tags,
+      genres,
+      moods,
+      voices,
+      instrumental: voices.every((v) => v.startsWith('Instrumental')),
+    }),
+  }), [seconds, tags, genres, moods, voices]);
+
   const wholePrompt = useMemo(() => {
     const sound = [caption.globalMeta, caption.vocals, caption.arrangement]
       .map((t) => String(t || '').trim())
@@ -395,6 +408,23 @@ export default function OneManBand() {
     const words = instrumental ? '(instrumental, no vocals)' : (lyrics.trim() || '(no words yet)');
     return `${sound}\n\n----- LYRICS -----\n\n${words}`;
   }, [caption, lyrics, voices]);
+
+  /**
+   * MiniMax's own checklist, run in code instead of asked for politely.
+   *
+   * Their skill ends with a list of things to verify before returning a caption,
+   * addressed to whoever is writing it. A model asked to check its own work will
+   * tell you it did. This runs the checkable half on the actual text, every time
+   * either box changes, and says what is wrong in one line each.
+   */
+  const captionProblems = useMemo(
+    () => validateCaption(caption, {
+      lyrics,
+      instrumental: voices.every((v) => v.startsWith('Instrumental')),
+      tags,
+    }),
+    [caption, lyrics, voices, tags],
+  );
 
   const [copied, setCopied] = useState(false);
   const [confirmExample, setConfirmExample] = useState(null);
@@ -885,6 +915,12 @@ export default function OneManBand() {
                   beside them. Read-only on purpose, because the editable copy is
                   right above it, and one Copy button because this is also what
                   you paste into Suno or anywhere else. */}
+              {captionProblems.length > 0 && (
+                <ul className="omb-check">
+                  {captionProblems.map((p) => <li key={p}>{p}</li>)}
+                </ul>
+              )}
+
               <div className="omb-whole">
                 <div className="omb-cap">
                   <span>The whole prompt, exactly as it is sent</span>

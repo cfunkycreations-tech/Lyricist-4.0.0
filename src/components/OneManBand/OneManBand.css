@@ -214,6 +214,15 @@
   margin: 2px 0 6px;
 }
 
+/* MiniMax's checklist, run for real. Amber, not red: none of this stops a song
+   being made, it just makes a worse one. */
+.omb-check {
+  margin: 14px 0 0; padding: 10px 12px 10px 28px; border-radius: 8px;
+  background: hsla(35 90% 50% / .09); border: 1px solid hsla(35 90% 60% / .3);
+  display: grid; gap: 4px;
+}
+.omb-check li { font-size: 12px; line-height: 1.55; color: hsl(35 90% 76%); }
+
 /* The whole prompt, as sent. Read-only, and it scrolls rather than pushing the
    page sideways. */
 .omb-whole {

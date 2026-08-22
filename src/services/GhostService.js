@@ -26,6 +26,7 @@ import { assertApiKey } from './AIService.js';
 import { stripReasoning } from '../utils/stripReasoning.js';
 import { availableGhostActions } from './ghostBus.js';
 import { examplesForPrompt } from './minimaxExamples.js';
+import { CAPTION_METHOD } from './minimaxCaption.js';
 
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 const MODELS_URL = 'https://openrouter.ai/api/v1/models';
@@ -154,6 +155,7 @@ THE WHOLE APP:
 ${Object.values(TAB_NOTES).join('\n')}
 
 ${MINIMAX_RULES}
+${CAPTION_METHOD}
 
 WRITING LYRICS. Write like a person, not like a machine. Show feeling through
 physical detail and things left unsaid rather than naming the emotion. Avoid
