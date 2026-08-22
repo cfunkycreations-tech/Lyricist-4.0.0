@@ -44,6 +44,10 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   songBytes: (filePath) => ipcRenderer.invoke('song-bytes', { filePath }),
   songsFolder: () => ipcRenderer.invoke('songs-folder'),
   songsList: () => ipcRenderer.invoke('songs-list'),
+  captionSkillOpen: () => ipcRenderer.invoke('caption-skill-open'),
+  captionSkillIndexes: (families) => ipcRenderer.invoke('caption-skill-indexes', { families }),
+  captionSkillTemplates: (ids) => ipcRenderer.invoke('caption-skill-templates', { ids }),
+  captionSkillPresent: () => ipcRenderer.invoke('caption-skill-present'),
   onSetupProgress: (cb) => {
     const h = (_e, payload) => cb(payload);
     ipcRenderer.on('setup-progress', h);

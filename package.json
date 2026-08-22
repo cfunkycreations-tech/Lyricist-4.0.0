@@ -33,6 +33,7 @@
       "demucsLocal.js",
       "comfySetup.js",
       "kaggleCloud.js",
+      "captionSkill.js",
       "splash/**/*",
       "src/assets/icon.ico",
       "!node_modules/**/*"
@@ -41,6 +42,10 @@
       {
         "from": "resources/kaggle-minimax-music3.ipynb",
         "to": "kaggle-minimax-music3.ipynb"
+      },
+      {
+        "from": "resources/music-caption-rewriter",
+        "to": "music-caption-rewriter"
       }
     ],
     "win": {

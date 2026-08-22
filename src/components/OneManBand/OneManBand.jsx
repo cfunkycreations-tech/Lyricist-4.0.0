@@ -5,6 +5,7 @@ import EngineSetup from './EngineSetup.jsx';
 import { registerGhostActions } from '../../services/ghostBus.js';
 import { EXAMPLES } from '../../services/minimaxExamples.js';
 import { validateCaption, captionBrief } from '../../services/minimaxCaption.js';
+import { runCaptionSkill } from '../../services/captionSkillRunner.js';
 
 /**
  * THE SHAPE OF A SONG, IN ONE PRESS.
@@ -453,6 +454,9 @@ export default function OneManBand() {
   /** Where finished songs are written on disk, so a button can open it. */
   const [songsFolder, setSongsFolder] = useState('');
 
+  /** The Input Caption as it was before the skill last rewrote it. */
+  const undoCaption = useRef(null);
+
   /** The Input Lyrics as they were before the Ghost last replaced them. */
   const undoLyrics = useRef(null);
 
@@ -511,7 +515,39 @@ export default function OneManBand() {
    * their server. If it fails for any reason the offline draft is kept — the
    * button is an upgrade, never a dependency.
    */
+  /**
+   * THE BUTTON THAT RUNS MINIMAX'S SKILL.
+   *
+   * Chris installed `music-caption-rewriter` and said the caption is the
+   * skill's job, so this is the skill, not the hosted endpoint it used to call
+   * and not anything this app made up. It is a labelled button sitting under
+   * the box it rewrites, because a beginner should not have to know there is a
+   * Ghost to ask.
+   */
   const rewriteWithAI = async () => {
+    setRewriting(true);
+    setError('');
+    try {
+      const r = await runCaptionSkill({
+        caption,
+        lyrics,
+        config: store.config,
+        onStage: (msg) => setPhase(msg),
+      });
+      undoCaption.current = caption;
+      setCaption(r.caption);
+      setCaptionEdited(true);
+      setPhase(`Rewritten by MiniMax's caption skill, from ${r.families.join(' and ')}`);
+      setTimeout(() => setPhase((p) => (p.startsWith('Rewritten') ? '' : p)), 6000);
+    } catch (e) {
+      setError(`${e.message} Your description was left as it was.`);
+    } finally {
+      setRewriting(false);
+    }
+  };
+
+  /** The old hosted route, kept only so nothing that still calls it breaks. */
+  const rewriteViaHostedEndpoint = async () => {
     setRewriting(true);
     setError('');
     try {
@@ -847,6 +883,46 @@ export default function OneManBand() {
       });
       return 'added that to the end of the Input Lyrics';
     },
+    /**
+     * THE ONLY WAY A CAPTION GETS WRITTEN IN THIS APP.
+     *
+     * Chris, 2026-08-22: *"I want the ghost to only run this skill, DO NOT
+     * CHANGE IT CLAUDE!!!!"* — MiniMax's published `music-caption-rewriter`.
+     *
+     * The Ghost is not allowed to write a caption out of its own head any more.
+     * It asks for this, and this runs MiniMax's skill: their genre router,
+     * their family index, their reference captions, their Output Contract. What
+     * lands in the box is the skill's work.
+     *
+     * It replaces what is in the Input Caption, so like the words, it is
+     * undoable.
+     */
+    write_caption: async ({ instruction } = {}) => {
+      const before = caption;
+      const r = await runCaptionSkill({
+        caption: before,
+        lyrics,
+        constraints: String(instruction || ''),
+        config: store.config,
+        onStage: (msg) => setPhase(msg),
+      });
+      undoCaption.current = before;
+      setCaption(r.caption);
+      setCaptionEdited(true);
+      setPhase('');
+      const said = `wrote the Input Caption with MiniMax's own caption skill, from ${r.families.join(' and ')}`;
+      return before.trim()
+        ? { said: `${said}, over the one that was there`, undo: { action: 'restore_caption', label: 'Put my caption back' } }
+        : said;
+    },
+    /** The other half of the rule above. */
+    restore_caption: () => {
+      const back = undoCaption.current;
+      if (back == null) throw new Error('I do not have an older version of your caption to put back');
+      undoCaption.current = null;
+      setCaption(back);
+      return 'put your caption back the way it was';
+    },
     set_caption: ({ text }) => {
       const value = String(text || '').trim();
       if (!value) throw new Error('there was no caption text');
@@ -881,7 +957,7 @@ export default function OneManBand() {
       return 'started it. The Stop button is in the tab if you change your mind';
     },
     stop: () => { stop(); return 'stopped it'; },
-  }), [busy, kaggle, comfy, lyrics, seconds]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }), [busy, kaggle, comfy, lyrics, caption, seconds, store.config]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="omb">
@@ -1055,7 +1131,7 @@ export default function OneManBand() {
                   <span style={{ display: 'flex', gap: 6 }}>
                     <button type="button" className="omb-mini" disabled={rewriting}
                             onClick={rewriteWithAI}>
-                      {rewriting ? 'Writing…' : 'Rewrite with AI'}
+                      {rewriting ? (phase || 'Writing…') : "Rewrite with MiniMax's caption skill"}
                     </button>
                     <button type="button" className="omb-mini" onClick={() => {
                       setCaptionEdited(false);

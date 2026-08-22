@@ -26,7 +26,7 @@ import { assertApiKey } from './AIService.js';
 import { stripReasoning } from '../utils/stripReasoning.js';
 import { availableGhostActions } from './ghostBus.js';
 import { examplesForPrompt } from './minimaxExamples.js';
-import { CAPTION_METHOD } from './minimaxCaption.js';
+
 
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 const MODELS_URL = 'https://openrouter.ai/api/v1/models';
@@ -56,6 +56,35 @@ const WANTED = [
 ];
 
 let cachedModel = null;
+
+/**
+ * Several free models, in preference order, all checked alive.
+ *
+ * One id is not enough. The free pool is shared and it rate limits: proving the
+ * caption skill on 2026-08-22 the first choice answered
+ * `z-ai/glm-5.2:free is temporarily rate-limited upstream`, and a caller with
+ * one id has nowhere to go. Anything that runs several calls in a row needs a
+ * bench, not a single name.
+ */
+export async function freeGhostModels(limit = 5) {
+  try {
+    const res = await fetch(MODELS_URL, { headers: { 'HTTP-Referer': 'https://lyricist.app' } });
+    const list = (await res.json())?.data || [];
+    const alive = new Set(list.map((m) => m.id));
+    const out = WANTED.filter((id) => alive.has(id));
+    const rest = list
+      .filter((m) => String(m.id).endsWith(':free'))
+      .filter((m) => !/code|embed|guard|moderat|vision-only/i.test(m.id))
+      .sort((a, b) => (b.context_length || 0) - (a.context_length || 0));
+    for (const m of rest) {
+      if (!out.includes(m.id)) out.push(m.id);
+      if (out.length >= limit) break;
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
 
 /** Ask OpenRouter what is actually alive and free, then pick. */
 export async function resolveGhostModel() {
@@ -149,7 +178,7 @@ A section needs 15 to 20 seconds of song to exist as music.
 ${examplesForPrompt()}
 `;
 
-const HIDDEN_FROM_MODEL = new Set(['describe_song', 'restore_lyrics']);
+const HIDDEN_FROM_MODEL = new Set(['describe_song', 'restore_lyrics', 'restore_caption']);
 
 function systemPrompt(tab, context) {
   /**
@@ -177,7 +206,24 @@ THE WHOLE APP:
 ${Object.values(TAB_NOTES).join('\n')}
 
 ${MINIMAX_RULES}
-${CAPTION_METHOD}
+
+THE INPUT CAPTION IS NOT YOURS TO WRITE. Chris installed MiniMax's own caption
+skill into this app and it is the only thing allowed to write a caption:
+"music-caption-rewriter", with its genre router, its eighteen family indexes and
+its thousand reference captions, shipped exactly as MiniMax published it.
+
+So when they want a caption written, fixed, improved or rewritten, DO NOT write
+one. Emit
+
+<do>{"action":"write_caption","args":{"instruction":"anything extra they asked for"}}</do>
+
+and say in one line that you are running MiniMax's caption skill on it. The app
+runs the skill's own three steps against their description and their tags, and
+writes the result into the Input Caption box. Whatever comes back is the skill's
+work, not a draft of yours, and you do not rewrite it afterwards.
+
+You still write the INPUT LYRICS yourself. That is the half the skill does not
+do, and it will not touch their words.
 
 WRITING LYRICS. Write like a person, not like a machine. Show feeling through
 physical detail and things left unsaid rather than naming the emotion. Avoid
@@ -214,10 +260,11 @@ Now work out which of these they mean, and say in one line which you did:
      picks decide the sound, the tags decide the shape, the theme decides what
      it is about. The tags still win on shape. See RULE ONE.
 
-ALWAYS SEND BOTH when they ask for a song: a <lyrics> tag and a <caption> tag,
-each complete. Lyrics with no caption gets a song that sounds like nothing in
-particular, and a caption with no lyrics gets an instrumental they did not ask
-for.
+ALWAYS DO BOTH HALVES when they ask for a song: the <lyrics> tag with the whole
+lyric sheet in it, AND a write_caption action. Lyrics with no caption gets a
+song that sounds like nothing in particular, and a caption with no lyrics gets
+an instrumental they did not ask for. You write the words. MiniMax's skill
+writes the caption.
 
 YOU CAN PRESS THINGS. To do something, put a line on its own in your reply:
 <do>{"action":"NAME","args":{...}}</do>
@@ -227,23 +274,19 @@ ${actions.length ? actions.map((a) => `  - ${a}`).join('\n') : '  (nothing: no t
 ACTION NOTES:
   open_tab {"tab":"onemanband"} switches tabs. A tab has to be open before you
     can change anything on it, so open it first and say you are doing that.
-  THE TWO BIG ONES DO NOT USE <do> AT ALL. Write them as plain tagged text, with
-  real line breaks, nothing escaped:
-
-    <caption>
-    Global Metadata
-    Basic Attributes: ...
-    ...the whole Input Caption, every heading, in full...
-    </caption>
+  THE LYRICS DO NOT USE <do> AT ALL. Write them as plain tagged text, with real
+  line breaks, nothing escaped:
 
     <lyrics>
     [Verse]
     ...the whole Input Lyrics...
     </lyrics>
 
-  Write the WHOLE thing between the tags every time. Never a fragment, never a
-  summary, never a note saying what you would write. If they ask you to fill in
-  the song, that means both tags, complete, in one reply.
+  Write the WHOLE sheet between those tags every time. Never a fragment, never a
+  summary, never a note saying what you would write.
+
+  write_caption {"instruction":"..."} is the ONLY way a caption gets written.
+  Never put a caption in the <lyrics> tag and never type one into your reply.
 
   append_lyrics {"text":"..."} still exists for adding a section to the end.
   set_length {"seconds":180}, set_takes {"count":2}, roll_take_number {},

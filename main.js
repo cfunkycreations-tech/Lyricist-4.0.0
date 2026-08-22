@@ -4,6 +4,7 @@ const fs = require('fs');
 const demucsLocal = require('./demucsLocal');
 const comfySetup = require('./comfySetup');
 const kaggleCloud = require('./kaggleCloud');
+const captionSkill = require('./captionSkill');
 
 // One copy at a time. A second instance can't take the profile lock the first
 // one holds, so its storage comes up broken and the window can land black —
@@ -492,6 +493,28 @@ ipcMain.handle('songs-list', async () => {
     return { ok: false, error: e.message };
   }
 });
+
+/**
+ * MiniMax's caption skill, read one disclosure layer at a time.
+ *
+ * Three channels because the skill has three stages and refuses to be done in
+ * one: route, then compare cards in at most two family indexes, then read only
+ * the templates you picked. Reading all thousand up front is the exact thing
+ * the skill tells you not to do.
+ */
+ipcMain.handle('caption-skill-open', async () => {
+  try { return captionSkill.opening(); }
+  catch (e) { return { ok: false, error: e.message }; }
+});
+ipcMain.handle('caption-skill-indexes', async (event, { families } = {}) => {
+  try { return captionSkill.indexes(families); }
+  catch (e) { return { ok: false, error: e.message }; }
+});
+ipcMain.handle('caption-skill-templates', async (event, { ids } = {}) => {
+  try { return captionSkill.templates(ids); }
+  catch (e) { return { ok: false, error: e.message }; }
+});
+ipcMain.handle('caption-skill-present', async () => captionSkill.present());
 
 /** Where the finished songs are kept, so a button can open the folder. */
 ipcMain.handle('songs-folder', async () => {

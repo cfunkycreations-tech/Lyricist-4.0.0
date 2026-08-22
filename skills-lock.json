@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "music-caption-rewriter": {
+      "source": "MiniMax-AI/MiniMax-Music3",
+      "sourceType": "github",
+      "skillPath": "skills/music-caption-rewriter/SKILL.md",
+      "computedHash": "ce9ddadee501be2513013e9ff6e911cc2e8577952d89771a29b6d4615a13915a"
+    }
+  }
+}
