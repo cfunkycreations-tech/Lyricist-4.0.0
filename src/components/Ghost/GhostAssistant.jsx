@@ -360,7 +360,12 @@ export default function GhostAssistant({ tab, config, getContext }) {
               aria-label="Ask the Ghost"
               disabled={busy}
             />
-            <button type="submit" disabled={busy || !input.trim()}>Ask</button>
+            {/* ENTER, NOT ASK. Chris: the button that OPENS this can say Ask the
+                Ghost, because that is what it does. Once the box is open the
+                question is already typed and the button sends it, so it says
+                what pressing it does, and it matches the key that does the
+                same thing. */}
+            <button type="submit" disabled={busy || !input.trim()}>Enter</button>
           </form>
 
           {/* "on this tab" was wrong: a tab stays mounted once you have opened

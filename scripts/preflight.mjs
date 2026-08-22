@@ -140,10 +140,30 @@ function checkPackagedRuntimeAssets() {
   return assets.length;
 }
 
+/**
+ * THE SOURCE index.html MUST STILL BE THE SOURCE ONE.
+ *
+ * A BUILT index.html in the repo root looks almost identical and is fatal: it
+ * points at `./assets/index-<hash>.js` from a previous build instead of
+ * `/src/main.jsx`, so Vite fails to resolve and the release dies half way, or
+ * worse, ships a bundle nobody rebuilt. It got there by an `asar extract-file`
+ * run in the wrong directory and it was one `git add -A` away from being
+ * permanent. One line to check, so check it.
+ */
+function checkSourceIndexHtml() {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  if (!html.includes('/src/main.jsx')) {
+    problems.push('index.html in the repo root is a BUILT one, not the source. '
+      + 'It must load /src/main.jsx. Restore it with: git checkout -- index.html');
+  }
+  return 1;
+}
+
 const channels = checkDuplicateIpcHandlers();
 const bridged = checkPreloadChannels();
 const mainModules = checkPackagedMainModules();
 const runtimeAssets = checkPackagedRuntimeAssets();
+checkSourceIndexHtml();
 
 if (problems.length) {
   console.error('\n  PREFLIGHT FAILED\n');
