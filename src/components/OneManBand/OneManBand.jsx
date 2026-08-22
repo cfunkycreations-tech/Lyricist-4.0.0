@@ -3,6 +3,7 @@ import TabBackground from '../common/TabBackground.jsx';
 import MultiPick from '../common/MultiPick.jsx';
 import EngineSetup from './EngineSetup.jsx';
 import { registerGhostActions } from '../../services/ghostBus.js';
+import { EXAMPLES } from '../../services/minimaxExamples.js';
 
 /**
  * THE SHAPE OF A SONG, IN ONE PRESS.
@@ -139,10 +140,36 @@ const SECTIONS = [
   'Bridge', 'Breakdown', 'Solo', 'Instrumental', 'Outro',
 ];
 
-/** Pull the [bracket] tags out of the lyric sheet, in order. */
+/**
+ * Pull the section tags out of the lyric sheet, in order.
+ *
+ * Brackets anywhere, and ALSO a parenthesis tag sitting alone on its own line.
+ * Chris's own example song writes its choruses as `(Hook)` and its verses as
+ * `[verse 1]`, which is normal and which MiniMax reads either way. Counting only
+ * brackets called that 59 line song "4 parts" and sized it at 60 seconds.
+ *
+ * Alone on the line is the whole test, and it is what keeps ad-libs out: nobody
+ * writes "(yeah)" on a line by itself, and everybody writes it at the end of
+ * one. The word also has to look like a section name, so a parenthetical aside
+ * on its own line is still not a chorus.
+ */
+const SECTION_WORDS = /^(intro|verses?|pre-?chorus|post-?chorus|chorus|hook|bridge|breakdown|solos?|instrumental|outro|refrain|interlude|drop|guitar solo)\b/i;
+
 function readSections(lyrics) {
-  return [...String(lyrics).matchAll(/\[([^\]\n]{1,24})\]/g)].map((m) => m[1].trim());
+  const out = [];
+  for (const line of String(lyrics).split('\n')) {
+    const t = line.trim();
+
+    // [anything] can sit inline, and often does.
+    for (const m of t.matchAll(/\[([^\]\n]{1,24})\]/g)) out.push(m[1].trim());
+
+    // (Hook) only counts when it is the entire line and reads like a section.
+    const solo = /^\(([^)\n]{1,24})\)$/.exec(t);
+    if (solo && SECTION_WORDS.test(solo[1].trim())) out.push(solo[1].trim());
+  }
+  return out;
 }
+
 
 function prettyTime(totalSeconds) {
   // On the cloud engine a short song is genuinely under a minute, and rounding
@@ -370,6 +397,33 @@ export default function OneManBand() {
   }, [caption, lyrics, voices]);
 
   const [copied, setCopied] = useState(false);
+  const [confirmExample, setConfirmExample] = useState(null);
+
+  /**
+   * Load a finished, professional-grade song into every box.
+   *
+   * Chris asked for a real example to be baked in, and handed over one of his
+   * own. Reading a great caption teaches more than any amount of instruction
+   * text, so it goes in the boxes where it can be picked apart and edited.
+   *
+   * It replaces what is there, which is exactly why the button asks twice when
+   * there is something to lose and not at all when there is not.
+   */
+  const loadExample = (ex) => {
+    setLyrics(ex.lyrics);
+    setCaption({ globalMeta: ex.globalMeta, vocals: ex.vocals, arrangement: ex.arrangement });
+    setCaptionEdited(true);
+    fitLength(ex.lyrics);
+    setConfirmExample(null);
+    setPhase(`Loaded "${ex.title}". Edit any of it, or press Make the song.`);
+    setTimeout(() => setPhase((p) => (p.startsWith('Loaded') ? '' : p)), 5000);
+  };
+
+  const askForExample = (ex) => {
+    const hasWork = lyrics.trim() || captionEdited;
+    if (!hasWork) { loadExample(ex); return; }
+    setConfirmExample(ex);
+  };
   const copyWholePrompt = async () => {
     try {
       await navigator.clipboard.writeText(wholePrompt);
@@ -688,12 +742,33 @@ export default function OneManBand() {
               <span className="omb-lines">
                 {lineCount} {lineCount === 1 ? 'line' : 'lines'} · {tags.length} {tags.length === 1 ? 'part' : 'parts'}
               </span>
+              {EXAMPLES.map((ex) => (
+                <button key={ex.title} type="button" className="omb-mini"
+                        title={`${ex.title} — ${ex.genre}`}
+                        onClick={() => askForExample(ex)}>
+                  Example: {ex.genre.split('/')[0].trim()}
+                </button>
+              ))}
               <button type="button" className="omb-mini" onClick={pullFromSongwriter}>
                 Pull from Songwriter
               </button>
             </div>
           </header>
           <div className="omb-body">
+            {confirmExample && (
+              <div className="omb-confirm">
+                <span>
+                  Loading <b>{confirmExample.title}</b> replaces the words and the sound
+                  description you have now.
+                </span>
+                <span className="omb-confirmbtns">
+                  <button type="button" className="go" onClick={() => loadExample(confirmExample)}>
+                    Replace it
+                  </button>
+                  <button type="button" onClick={() => setConfirmExample(null)}>Keep mine</button>
+                </span>
+              </div>
+            )}
             <p className="omb-hint">
               <b>The bracket tags are the song structure.</b> The words set the mood, but these
               decide the shape. Tap one to add it.

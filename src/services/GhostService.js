@@ -25,6 +25,7 @@
 import { assertApiKey } from './AIService.js';
 import { stripReasoning } from '../utils/stripReasoning.js';
 import { availableGhostActions } from './ghostBus.js';
+import { examplesForPrompt } from './minimaxExamples.js';
 
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 const MODELS_URL = 'https://openrouter.ai/api/v1/models';
@@ -99,16 +100,40 @@ const TAB_NOTES = {
  * description decides more about how a song comes out than any slider does.
  */
 const MINIMAX_RULES = `
-THE SOUND DESCRIPTION (what One Man Band sends to MiniMax Music 3) has three parts:
-  1. The style: genre, tempo in BPM, key, and the overall feel. Do the most work here.
-  2. The singer: who is singing and how. Age, grain, delivery, harmonies.
-  3. The band: the instruments actually playing, and what each one is doing.
-Name instruments and numbers, never moods alone. "A sad song" gives mush.
-"Slow country ballad, 70 BPM, brushed drums, pedal steel, weary older male voice
-close to the mic" gives something usable.
-LYRICS use bracket tags for structure: [Intro] [Verse] [Pre-Chorus] [Chorus]
-[Post-Chorus] [Hook] [Bridge] [Breakdown] [Solo] [Instrumental] [Outro].
+MiniMax Music 3 takes two things: an INPUT CAPTION and INPUT LYRICS. In this app
+the caption is split across three boxes, and together they are one caption:
+  1. The style   -> the Global Metadata section
+  2. The singer  -> the Vocal Details section
+  3. The band    -> the Arrangement section
+
+THE CAPTION IS A SCHEMA, NOT FREE TEXT. Write these headings, in this order, and
+put real content under every one of them:
+
+Global Metadata
+  Basic Attributes:              bpm is N. key is X, and scale is major/minor. Genre.
+  Global Emotional Progression:  how the feeling MOVES from the opening through
+                                 the verses, choruses, any solo, and the ending.
+  Application Scenarios & Imagery: where somebody would hear this, what they see.
+  Sonics & Production Profile:   the mix. Soundstage, low end, top end, character.
+Vocal Details
+  Vocal Gender & Timbre:         who is singing and what the voice is like.
+  Vocal Style:                   phrasing, and where it sits against the beat.
+  Harmony/Backing Vocals:        stacks, gang vocals, doubles, and when they enter.
+  Vocal FX:                      compression, delay, reverb, and how much.
+Arrangement
+  Instrument Lifecycle Description (Primary/Secondary Layering): every instrument,
+                                 what it plays, and when it enters or drops out.
+  Groove & Foundation Progression: drums and bass specifically.
+  Embellishments, Textures & Spatial FX: transitions, sweeps, risers, room.
+
+Name instruments and give numbers. "A sad song" gives mush. Detail is the single
+biggest lever on how the song comes out, and long is correct here.
+
+INPUT LYRICS use tags for structure: [Intro] [Verse] [Pre-Chorus] [Chorus]
+[Post-Chorus] [Hook] [Bridge] [Breakdown] [Solo] [Instrumental] [Outro], and a
+tag can carry an instruction, like [hook, Accapella] or [guitar solo].
 A section needs 15 to 20 seconds of song to exist as music.
+${examplesForPrompt()}
 `;
 
 function systemPrompt(tab, context) {

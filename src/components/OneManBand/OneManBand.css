@@ -152,6 +152,26 @@
 .omb-seedlist span { color: var(--omb-faint); letter-spacing: .12em; text-transform: uppercase; }
 .omb-seedlist b { color: var(--omb-amber); font-weight: 600; }
 
+/* Loading an example throws away work, so it asks first when there is work. */
+.omb-confirm {
+  display: flex; flex-direction: column; gap: 9px;
+  margin: 0 0 12px; padding: 10px 12px; border-radius: 9px;
+  background: hsla(35 90% 50% / .10); border: 1px solid hsla(35 90% 60% / .38);
+}
+.omb-confirm > span:first-child { font-size: 12.5px; line-height: 1.55; color: hsl(35 90% 76%); }
+.omb-confirm b { color: #fff; }
+.omb-confirmbtns { display: flex; gap: 8px; }
+.omb-confirmbtns button {
+  padding: 7px 13px; border-radius: 8px; cursor: pointer;
+  font-family: inherit; font-size: 12px; font-weight: 600;
+  background: rgba(3, 5, 9, .55); color: var(--omb-dim, #9FB2D4);
+  border: 1px solid var(--omb-line-hot, hsla(262 70% 70% / .3));
+}
+.omb-confirmbtns button.go {
+  color: #EAF2FF; background: hsla(158 84% 40% / .26); border-color: hsla(158 80% 58% / .6);
+}
+.omb-confirmbtns button:hover { color: #fff; }
+
 /* One press for the whole arrangement, and it says out loud what it will write
    so nobody has to press it to find out. */
 .omb-shape {
