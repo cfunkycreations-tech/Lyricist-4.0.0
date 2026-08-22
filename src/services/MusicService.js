@@ -106,6 +106,28 @@ export function sectionBudget(seconds) {
 
 /** The shortest stretch that can exist as music: eight bars at 96 BPM is ~20s,
  *  and 15 is the floor below which a section is a fragment. */
+/**
+ * THE BIGGEST TAKE NUMBER ANY OF THESE ENGINES WILL ACCEPT.
+ *
+ * Chris pressed Make the song and got
+ * `Valve 143159582127780 is greater than maximum valve 2147483647`, straight
+ * from the music server. Every engine behind this app takes the seed as a
+ * signed 32 bit integer, and the take number was being rolled anywhere up to
+ * 9,007,199,254,740,991, so most rolls were unusable. The two takes that DID
+ * run had seeds in the quadrillions and only worked because Kaggle's own
+ * ComfyUI wrapped them quietly.
+ *
+ * One ceiling, applied where the number leaves the app, so no path can send a
+ * seed a server will refuse.
+ */
+export const SEED_MAX = 2147483647;
+
+/** Any number in, a take number every engine accepts out. */
+export function safeSeed(n) {
+  const v = Math.floor(Math.abs(Number(n) || 0));
+  return v % (SEED_MAX + 1);
+}
+
 export const SECONDS_PER_SECTION = 15;
 
 /** What to SUGGEST rather than what will fit. `sectionBudget` is a ceiling, and
@@ -447,7 +469,7 @@ async function generateKaggle({ state, duration, seed, seeds, steps, guidance, h
   signal?.addEventListener?.('abort', abort);
 
   try {
-    const wanted = (Array.isArray(seeds) && seeds.length ? seeds : [seed]).slice(0, 4);
+    const wanted = (Array.isArray(seeds) && seeds.length ? seeds : [seed]).slice(0, 4).map(safeSeed);
 
     /**
      * `global_meta`, WITH THE UNDERSCORE. THIS LINE SENT KAGGLE NOTHING.
@@ -567,6 +589,12 @@ export async function generateSong({
   }
 
   const started = Date.now();
+
+  // ONE PLACE EVERY ENGINE PASSES THROUGH. Clamped here as well as at the call
+  // sites, because this is the door out of the app and a take number that a
+  // server refuses must not be able to reach any of the three.
+  seed = safeSeed(seed);
+
   const run = engine === 'cloud'
     ? generateCloud({ state, duration, seed, steps, guidance, onProgress, signal, hfToken })
     : engine === 'kaggle'
@@ -610,7 +638,7 @@ export async function generateSong({
  * the first take is playable while the next is still cooking.
  */
 export async function generateTakes({ seeds = [0], onTake, ...opts } = {}) {
-  const list = (Array.isArray(seeds) && seeds.length ? seeds : [0]).slice(0, 4);
+  const list = (Array.isArray(seeds) && seeds.length ? seeds : [0]).slice(0, 4).map(safeSeed);
 
   if (opts.engine === 'kaggle' && list.length > 1) {
     const res = await generateSong({ ...opts, seed: list[0], seeds: list });

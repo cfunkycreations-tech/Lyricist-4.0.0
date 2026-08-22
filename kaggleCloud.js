@@ -329,9 +329,13 @@ function notebookPath() {
 function buildNotebook({ caption, lyrics, seconds, seed, seeds, steps, guidance, hfToken }) {
   const nb = JSON.parse(fs.readFileSync(notebookPath(), 'utf8'));
   const safe = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/"""/g, '\\"\\"\\"');
+  // Last line of defence on the take number. Every engine behind this app reads
+  // the seed as a signed 32 bit integer, and Chris hit the wall from the other
+  // side: "Value 143159582127780 is greater than maximum value 2147483647".
+  const SEED_MAX = 2147483647;
   const list = (Array.isArray(seeds) && seeds.length ? seeds : [seed ?? 222])
     .slice(0, 4)
-    .map((n) => Math.round(Number(n) || 0));
+    .map((n) => Math.floor(Math.abs(Number(n) || 0)) % (SEED_MAX + 1));
   const cell = [
     `CAPTION = """${safe(caption)}"""\n`,
     '\n',

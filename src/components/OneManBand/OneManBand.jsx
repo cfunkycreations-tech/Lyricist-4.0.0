@@ -68,7 +68,7 @@ function GrowBox({ value, minRows = 3, className = '', ...rest }) {
 }
 import {
   buildState, composeCaption, detectComfy, estimateSeconds, generateTakes, sectionBudget,
-  SECONDS_PER_SECTION,
+  SECONDS_PER_SECTION, SEED_MAX, safeSeed,
 } from '../../services/MusicService.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import {
@@ -390,7 +390,9 @@ export default function OneManBand() {
    * other, because adjacent seeds give suspiciously similar performances.
    */
   const seeds = useMemo(
-    () => Array.from({ length: takeCount }, (_, i) => seed + i * 1013904223),
+    // Wrapped inside the seed space, so a big stride cannot push take four
+    // past what the server accepts.
+    () => Array.from({ length: takeCount }, (_, i) => safeSeed(seed + i * 1013904223)),
     [seed, takeCount],
   );
   const lineCount = useMemo(
@@ -578,7 +580,9 @@ export default function OneManBand() {
     setRolling(true);
     let n = 0;
     const iv = setInterval(() => {
-      setSeed(Math.floor(Math.random() * 9007199254740991));
+      // SEED_MAX, not MAX_SAFE_INTEGER. The music server refuses anything
+      // bigger: "Value 143159582127780 is greater than maximum value 2147483647".
+      setSeed(Math.floor(Math.random() * (SEED_MAX + 1)));
       if (++n > 11) { clearInterval(iv); setRolling(false); }
     }, 60);
   };
@@ -1393,7 +1397,7 @@ export default function OneManBand() {
                     <a className="omb-mini" href={t.url} download={`one-man-band-${t.seed}.flac`}>Download</a>
                     <button type="button" className="omb-mini" onClick={() => {
                       setLyrics(t.recipe.lyrics); setCaption(joinCaption(t.recipe.caption));
-                      setSeconds(t.recipe.seconds); setSeed(t.seed);
+                      setSeconds(t.recipe.seconds); setSeed(safeSeed(t.seed));
                       setCaptionEdited(true);
                     }}>Load this recipe
                     </button>
