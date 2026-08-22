@@ -166,10 +166,16 @@ export function captionBrief({ seconds, tags = [], genres = [], moods = [], voic
   return lines.join('\n');
 }
 
-const HEADINGS = [
-  { key: 'globalMeta', name: 'The style', wants: [/basic attributes/i, /global emotional progression/i] },
-  { key: 'vocals', name: 'The singer', wants: [/vocal (gender|style|timbre)/i] },
-  { key: 'arrangement', name: 'The band', wants: [/instrument|groove|arrangement/i] },
+/**
+ * The sections one Input Caption has to contain.
+ *
+ * It used to be three separate boxes and this checked each one. There is one
+ * box now, exactly as MiniMax reads it, so these are things to find INSIDE it.
+ */
+const SECTIONS = [
+  { name: 'the style and tempo', wants: [/basic attributes/i, /global emotional progression/i] },
+  { name: 'the singer', wants: [/vocal (gender|style|timbre)/i, /vocal details/i] },
+  { name: 'the band', wants: [/instrument lifecycle/i, /groove/i, /arrangement/i] },
 ];
 
 /**
@@ -179,22 +185,28 @@ const HEADINGS = [
  * about taste: it does not police whether the prose is good, only whether it
  * broke a rule that has a right answer.
  */
-export function validateCaption(caption = {}, { lyrics = '', instrumental = false, tags = [] } = {}) {
+export function validateCaption(caption = '', { lyrics = '', instrumental = false, tags = [] } = {}) {
   const problems = [];
-  const all = [caption.globalMeta, caption.vocals, caption.arrangement].map((t) => String(t || '')).join('\n');
+  // Still accepts the old three-part object, because a saved take from an
+  // earlier build carries one and restoring it must not throw.
+  const all = typeof caption === 'string'
+    ? caption
+    : [caption.globalMeta, caption.vocals, caption.arrangement].map((t) => String(t || '')).join('\n\n');
 
-  for (const h of HEADINGS) {
-    const text = String(caption[h.key] || '').trim();
-    if (!text) { problems.push(`${h.name} is empty.`); continue; }
-    if (text.length < 80) problems.push(`${h.name} is very short, so it will not steer the model much.`);
-    // An instrumental's Vocal Details section is SUPPOSED to lack the vocal
-    // headings: the spec says state that it is instrumental and name what
-    // carries the melody. Demanding "Vocal Gender & Timbre" there told people
-    // their correct caption was wrong.
-    const instrumentalVocals = h.key === 'vocals' && instrumental
-      && /\b(instrumental|no vocals?)\b/i.test(text);
-    if (!instrumentalVocals && !h.wants.some((re) => re.test(text))) {
-      problems.push(`${h.name} is missing its named headings, so the model reads it as loose prose.`);
+  if (!all.trim()) {
+    problems.push('The Input Caption is empty.');
+    return problems;
+  }
+  if (all.trim().length < 200) {
+    problems.push('The Input Caption is very short, so it will not steer the model much.');
+  }
+
+  for (const sec of SECTIONS) {
+    // An instrumental is supposed to have no singer section: the spec says say
+    // it is instrumental and name what carries the melody instead.
+    if (sec.name === 'the singer' && instrumental && /\b(instrumental|no vocals?)\b/i.test(all)) continue;
+    if (!sec.wants.some((re) => re.test(all))) {
+      problems.push(`The Input Caption says nothing about ${sec.name}.`);
     }
   }
 

@@ -22,31 +22,6 @@ import { validateCaption, captionBrief } from '../../services/minimaxCaption.js'
  */
 const SONG_SHAPE = ['Intro', 'Verse', 'Chorus', 'Verse', 'Chorus', 'Bridge', 'Verse', 'Chorus', 'Outro'];
 
-/**
- * What each part of the sound description is FOR.
- *
- * These three boxes are MiniMax's own caption format, and they were shipped as
- * three unlabelled rectangles. The model reads them as one block, but a person
- * has to know that the tempo goes in the first and the singer goes in the
- * second, and nothing on screen said so.
- */
-const CAPTION_PARTS = [
-  {
-    key: 'globalMeta',
-    label: 'The style',
-    hint: 'Genre, speed, key, and the overall feel. This one does the most work.',
-  },
-  {
-    key: 'vocals',
-    label: 'The singer',
-    hint: 'Who is singing and how. Age, grain, delivery, harmonies.',
-  },
-  {
-    key: 'arrangement',
-    label: 'The band',
-    hint: 'The instruments you actually want to hear, and what each one is doing.',
-  },
-];
 
 /**
  * A box that grows with what you put in it.
@@ -211,6 +186,20 @@ function mergedKit(genreNames) {
  * Deliberately plain and offline. The AI rewrite is an upgrade on top of this,
  * never a dependency — somebody with no key and no internet still gets a song.
  */
+/**
+ * The three drafted blocks, as the one caption MiniMax actually reads.
+ *
+ * Blank lines between them because that is how his own example separates its
+ * sections, and the headings inside each block do the rest of the work.
+ */
+function joinCaption(parts) {
+  if (typeof parts === 'string') return parts;
+  return [parts?.globalMeta, parts?.vocals, parts?.arrangement]
+    .map((t) => String(t || '').trim())
+    .filter(Boolean)
+    .join('\n\n');
+}
+
 function draftCaption({ genres, moods, voices, seconds }) {
   // Up to five of each now, mixed into one piece of music.
   const gs = (genres || []).filter(Boolean);
@@ -309,9 +298,26 @@ export default function OneManBand() {
   const [showSetup, setShowSetup] = useState(true);
   const setupTouched = useRef(false);
 
-  const [caption, setCaption] = useState(() => draftCaption({
+  /**
+   * ONE INPUT CAPTION, NOT THREE BOXES.
+   *
+   * Chris, 2026-08-22: *"you have three boxes down there? You only need one
+   * fucking box, not three different ones. As you saw in the caption I gave you,
+   * the input caption was all one long prompt."*
+   *
+   * He is right and the three boxes were an invention of this app's. MiniMax
+   * takes exactly two inputs and calls them the Input Caption and the Input
+   * Lyrics. The caption is one block of text with headings inside it, which is
+   * exactly what his own example is. Splitting it into style, singer and band
+   * made a person fill in three fields to write one thing, and gave the Ghost
+   * three places to put an answer that belongs in one.
+   *
+   * The draft writer and MiniMax's own rewriter still think in three parts, so
+   * they are joined on the way in and the whole string goes out as the caption.
+   */
+  const [caption, setCaption] = useState(() => joinCaption(draftCaption({
     genres: ['Blues rock'], moods: ['Gritty and driving'], voices: ['Gravelly male'], seconds: 30,
-  }));
+  })));
   const [captionEdited, setCaptionEdited] = useState(false);
   const [rewriting, setRewriting] = useState(false);
 
@@ -343,7 +349,7 @@ export default function OneManBand() {
   // Redraft the caption when the picks change, unless he has taken it over.
   useEffect(() => {
     if (captionEdited) return;
-    setCaption(draftCaption({ genres, moods, voices, seconds }));
+    setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds })));
     // Joined rather than the arrays themselves: a new array every render would
     // redraft the caption on every keystroke elsewhere in the tab.
   }, [genres.join('|'), moods.join('|'), voices.join('|'), seconds, captionEdited]);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -389,21 +395,26 @@ export default function OneManBand() {
    */
   /** Everything the Ghost should know before it writes a caption for this song. */
   useEffect(() => registerGhostActions({
-    describe_song: () => captionBrief({
-      seconds,
-      tags,
-      genres,
-      moods,
-      voices,
-      instrumental: voices.every((v) => v.startsWith('Instrumental')),
-    }),
-  }), [seconds, tags, genres, moods, voices]);
+    describe_song: () => [
+      captionBrief({
+        seconds,
+        tags,
+        genres,
+        moods,
+        voices,
+        instrumental: voices.every((v) => v.startsWith('Instrumental')),
+      }),
+      lyrics.trim()
+        ? `THE INPUT LYRICS RIGHT NOW:\n${lyrics.slice(0, 2000)}`
+        : 'THE INPUT LYRICS BOX IS EMPTY.',
+      captionEdited && caption.trim()
+        ? `THE INPUT CAPTION RIGHT NOW:\n${caption.slice(0, 1500)}`
+        : 'THE INPUT CAPTION is still the automatic draft, so replacing it is safe.',
+    ].join('\n\n'),
+  }), [seconds, tags, genres, moods, voices, lyrics, caption, captionEdited]);
 
   const wholePrompt = useMemo(() => {
-    const sound = [caption.globalMeta, caption.vocals, caption.arrangement]
-      .map((t) => String(t || '').trim())
-      .filter(Boolean)
-      .join('\n\n');
+    const sound = String(caption || '').trim();
     const instrumental = voices.every((v) => v.startsWith('Instrumental'));
     const words = instrumental ? '(instrumental, no vocals)' : (lyrics.trim() || '(no words yet)');
     return `${sound}\n\n----- LYRICS -----\n\n${words}`;
@@ -491,20 +502,17 @@ export default function OneManBand() {
       const better = await composeCaption({
         state: buildState({
           lyrics,
-          globalMeta: caption.globalMeta,
-          vocals: caption.vocals,
-          arrangement: caption.arrangement,
+          globalMeta: caption,
+          vocals: '',
+          arrangement: '',
           instrumental: voices.every((v) => v.startsWith('Instrumental')),
         }),
         duration: seconds,
         hfToken: store.config?.huggingFaceToken || '',
       });
-      if (better.globalMeta || better.vocals || better.arrangement) {
-        setCaption((c) => ({
-          globalMeta: better.globalMeta || c.globalMeta,
-          vocals: better.vocals || c.vocals,
-          arrangement: better.arrangement || c.arrangement,
-        }));
+      const rewritten = joinCaption(better);
+      if (rewritten) {
+        setCaption(rewritten);
         setCaptionEdited(true);
       }
     } catch (e) {
@@ -569,9 +577,12 @@ export default function OneManBand() {
 
     const state = buildState({
       lyrics,
-      globalMeta: caption.globalMeta,
-      vocals: caption.vocals,
-      arrangement: caption.arrangement,
+      // The whole caption travels as globalMeta: MusicService joins the three
+      // fields with blank lines, so one full string and two empties comes out
+      // the other end as exactly the caption that is on screen.
+      globalMeta: caption,
+      vocals: '',
+      arrangement: '',
       instrumental: voices.every((v) => v.startsWith('Instrumental')),
     });
 
@@ -660,22 +671,12 @@ export default function OneManBand() {
       });
       return 'added that to the end of the words';
     },
-    set_caption: (parts) => {
-      const map = { style: 'globalMeta', singer: 'vocals', band: 'arrangement' };
-      // Work out what changed BEFORE handing anything to setState. React runs
-      // an updater when it feels like it, so a list built inside one is still
-      // empty when the line below reads it: the first version of this wrote the
-      // text correctly and then reported that it had done nothing.
-      const changed = Object.keys(map)
-        .filter((from) => typeof parts[from] === 'string' && parts[from].trim());
-      if (!changed.length) throw new Error('no part of the sound description was given');
+    set_caption: ({ text }) => {
+      const value = String(text || '').trim();
+      if (!value) throw new Error('there was no caption text');
       setCaptionEdited(true);
-      setCaption((c) => {
-        const next = { ...c };
-        changed.forEach((from) => { next[map[from]] = parts[from].trim(); });
-        return next;
-      });
-      return `rewrote the ${changed.join(' and the ')}`;
+      setCaption(value);
+      return `wrote the Input Caption, ${value.split(/\s+/).length} words`;
     },
     set_length: ({ seconds: n }) => {
       const v = Math.max(10, Math.min(300, Math.round(Number(n) || 0)));
@@ -767,7 +768,7 @@ export default function OneManBand() {
             the knobs move underneath. */}
         <section className="omb-card omb-write">
           <header>
-            <h2>The words</h2>
+            <h2>Input Lyrics</h2>
             <div className="omb-writehd">
               <span className="omb-lines">
                 {lineCount} {lineCount === 1 ? 'line' : 'lines'} · {tags.length} {tags.length === 1 ? 'part' : 'parts'}
@@ -835,12 +836,12 @@ export default function OneManBand() {
 
           <section className="omb-card">
             <header>
-              <h2>The sound</h2>
+              <h2>Input Caption</h2>
               <span className="omb-cost">{COUNTS.genres} genres · {COUNTS.moods} moods · {COUNTS.voices} voices</span>
             </header>
             <div className="omb-body">
               <p className="omb-hint omb-counts">
-                Every genre you pick brings its own real instruments into the description below.
+                Every genre you pick brings its own real instruments into the Input Caption below.
               </p>
 
               {/* Five of each, blended. The instruments of every genre picked go
@@ -874,7 +875,7 @@ export default function OneManBand() {
 
               <div className="omb-drafted">
                 <div className="omb-cap">
-                  <span>Sound description, written for you, edit freely</span>
+                  <span>Input Caption, written for you, edit freely</span>
                   <span style={{ display: 'flex', gap: 6 }}>
                     <button type="button" className="omb-mini" disabled={rewriting}
                             onClick={rewriteWithAI}>
@@ -888,24 +889,17 @@ export default function OneManBand() {
                   </span>
                 </div>
 
-                {/* Three anonymous grey boxes before this: you could not tell
-                    which one wanted the tempo and which one wanted the singer.
-                    They are named now, and each one says what belongs in it. */}
-                {CAPTION_PARTS.map(({ key, label, hint }) => (
-                  <label key={key} className="omb-capfield">
-                    <span className="nm">{label}</span>
-                    <span className="sub">{hint}</span>
-                    <GrowBox
-                      minRows={key === 'globalMeta' ? 4 : 3}
-                      value={caption[key]}
-                      spellCheck={false}
-                      onChange={(e) => {
-                        setCaptionEdited(true);
-                        setCaption((c) => ({ ...c, [key]: e.target.value }));
-                      }}
-                    />
-                  </label>
-                ))}
+                {/* ONE box. It was three, which made a person fill in three
+                    fields to write one thing and gave the Ghost three places to
+                    put an answer that belongs in one. The headings live inside
+                    the text, which is how MiniMax reads it anyway. */}
+                <GrowBox
+                  minRows={12}
+                  value={caption}
+                  spellCheck={false}
+                  placeholder={'Global Metadata\nBasic Attributes: bpm is 96, key is E, minor. Blues rock.\nGlobal Emotional Progression: ...\n\nVocal Details\nVocal Gender & Timbre: ...\n\nArrangement\nInstrument Lifecycle Description: ...'}
+                  onChange={(e) => { setCaptionEdited(true); setCaption(e.target.value); }}
+                />
               </div>
 
               {/* THE WHOLE THING, EXACTLY AS IT GOES OUT.
@@ -923,7 +917,7 @@ export default function OneManBand() {
 
               <div className="omb-whole">
                 <div className="omb-cap">
-                  <span>The whole prompt, exactly as it is sent</span>
+                  <span>Both inputs, exactly as they are sent</span>
                   <button type="button" className="omb-mini" onClick={copyWholePrompt}>
                     {copied ? 'Copied' : 'Copy it'}
                   </button>
@@ -1057,7 +1051,7 @@ export default function OneManBand() {
                     <button type="button" className="omb-mini" onClick={() => keep(t)}>Keep it</button>
                     <a className="omb-mini" href={t.url} download={`one-man-band-${t.seed}.flac`}>Download</a>
                     <button type="button" className="omb-mini" onClick={() => {
-                      setLyrics(t.recipe.lyrics); setCaption(t.recipe.caption);
+                      setLyrics(t.recipe.lyrics); setCaption(joinCaption(t.recipe.caption));
                       setSeconds(t.recipe.seconds); setSeed(t.seed);
                       setCaptionEdited(true);
                     }}>Load this recipe

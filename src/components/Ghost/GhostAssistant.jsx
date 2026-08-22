@@ -45,6 +45,28 @@ const VOICE_KEY = 'lyricist.ghost.voice';
  * Everything else runs immediately, because a wrong length or a wrong take
  * number costs one press to put back.
  */
+/**
+ * CLAIMS THAT HAVE TO BE TRUE.
+ *
+ * Chris, 2026-08-22: *"you shouldn't say it's starting when it's not."*
+ *
+ * It ended a reply with "I'm starting the run now" and started nothing. The
+ * prompt already forbids that in as many words, and it did it anyway, which is
+ * the answer: a rule a model can ignore is not a guarantee. This is the same
+ * rule enforced afterwards, on the text, where it cannot be ignored.
+ *
+ * When the words claim an action and the action never came, the claim is not
+ * quietly deleted. The button it was talking about is offered instead, so what
+ * was a false statement becomes the thing they wanted one tap away.
+ */
+const CLAIMS = [
+  {
+    action: 'make_the_song',
+    when: /\b(starting|start(ing)? it|i'?m starting|kick(ing)? it off|making the song now|running it now|off we go|here it goes)\b/i,
+    note: 'It said it was starting the song. It had not, and nothing was spent. The button is here if you want it.',
+  },
+];
+
 const NEEDS_A_TAP = {
   make_the_song: { chip: 'Yes, make it', blurb: 'The Ghost wants to start making the song.' },
 };
@@ -107,12 +129,30 @@ export default function GhostAssistant({ tab, config, getContext }) {
         .filter((m) => m.who === 'you' || m.who === 'ghost')
         .map((m) => ({ role: m.who === 'you' ? 'user' : 'assistant', content: m.text }));
 
+      /**
+       * ASK THE TAB WHAT IT KNOWS, EVERY TIME.
+       *
+       * Chris: *"it needs to be able to go by whatever boxes I choose to put in,
+       * or the tags, like intro verse chorus bridge outro... using the genre I
+       * picked, using the mood I picked."*
+       *
+       * It could not, because the picks and the tags live in the tab and the
+       * Ghost only ever saw the Songwriter text. Any tab that registers
+       * `describe_song` now gets asked before every question, so the answer is
+       * written against the actual song on screen rather than in the abstract.
+       */
+      let context = getContext?.() || '';
+      const fromTab = await runGhostAction('describe_song');
+      if (fromTab.ok && fromTab.said) {
+        context = [context, fromTab.said].filter(Boolean).join('\n\n');
+      }
+
       const { text, actions } = await askGhost({
         history,
         question: q,
         config,
         tab,
-        context: getContext?.() || '',
+        context,
         signal: ac.signal,
       });
 
@@ -124,7 +164,19 @@ export default function GhostAssistant({ tab, config, getContext }) {
         done.push({ name: a.name, ...r });
       }
 
-      setMsgs((m) => [...m, { who: 'ghost', text: text || 'Done.', did: done, waiting }]);
+      // A claim with no action behind it is a lie the app can catch, so catch it.
+      const claimed = CLAIMS.filter((c) => c.when.test(text)
+        && !actions.some((x) => x.name === c.action)
+        && !waiting.some((w) => w.name === c.action));
+      claimed.forEach((c) => waiting.push({ name: c.action, args: {} }));
+
+      setMsgs((m) => [...m, {
+        who: 'ghost',
+        text: text || 'Done.',
+        did: done,
+        waiting,
+        corrections: claimed.map((c) => c.note),
+      }]);
       if (voiceOn) speak(text);
     } catch (e) {
       setMsgs((m) => [...m, { who: 'error', text: e.message || 'That did not work.' }]);
@@ -152,7 +204,8 @@ export default function GhostAssistant({ tab, config, getContext }) {
     })));
   };
 
-  const canDo = availableGhostActions().length;
+  // describe_song is how the tab answers a question, not something to press.
+  const canDo = availableGhostActions().filter((n) => n !== 'describe_song').length;
 
   return (
     <>
@@ -228,6 +281,10 @@ export default function GhostAssistant({ tab, config, getContext }) {
             {msgs.map((m, i) => (
               <div key={i} className={`gha-msg ${m.who}`}>
                 <div className="gha-text">{m.text}</div>
+
+                {(m.corrections || []).map((c) => (
+                  <p className="gha-correction" key={c}>{c}</p>
+                ))}
 
                 {(m.waiting || []).map((w, k) => (
                   <div className="gha-tap" key={`${w.name}-${k}`}>

@@ -101,11 +101,9 @@ const TAB_NOTES = {
  * description decides more about how a song comes out than any slider does.
  */
 const MINIMAX_RULES = `
-MiniMax Music 3 takes two things: an INPUT CAPTION and INPUT LYRICS. In this app
-the caption is split across three boxes, and together they are one caption:
-  1. The style   -> the Global Metadata section
-  2. The singer  -> the Vocal Details section
-  3. The band    -> the Arrangement section
+MiniMax Music 3 takes exactly two things and this app calls them the same names
+it does: the INPUT CAPTION and the INPUT LYRICS. There is ONE caption box, not
+three. The whole caption is a single block of text with named headings inside it.
 
 THE CAPTION IS A SCHEMA, NOT FREE TEXT. Write these headings, in this order, and
 put real content under every one of them:
@@ -162,6 +160,29 @@ physical detail and things left unsaid rather than naming the emotion. Avoid
 neon, shadows, whispers, echoes, sparks, cage, gravity, storm, wings, chains.
 Irregular line lengths. Slant rhymes over perfect ones. No neat moral endings.
 
+WRITING A WHOLE SONG. When they ask for a song, work out which of these they
+mean, and say in one line which you did:
+
+  A. THEY GAVE YOU A THEME. "Write me a song about my brother moving away."
+     Write the words from that, then write the Input Caption to match them.
+  B. THEY ALREADY LAID OUT A STRUCTURE. There are tags in the Input Lyrics box,
+     [Intro] [Verse] [Chorus] and so on. Fill in every one of those sections, in
+     that order, keeping every tag exactly as it is written. Do not add sections
+     they did not ask for and do not drop any.
+  C. THEY PICKED GENRE, MOOD AND VOICE and said nothing else. Use those picks as
+     the whole brief. They are listed above under what they have so far.
+  D. ANY MIX OF THOSE. A theme plus tags plus picks is the normal case. The
+     picks decide the sound, the tags decide the shape, the theme decides what
+     it is about.
+
+If they already have words written, extend or edit them rather than throwing
+them away, unless they say to start over.
+
+ALWAYS SEND BOTH when they ask for a song: a <lyrics> tag and a <caption> tag,
+each complete. Lyrics with no caption gets a song that sounds like nothing in
+particular, and a caption with no lyrics gets an instrumental they did not ask
+for.
+
 YOU CAN PRESS THINGS. To do something, put a line on its own in your reply:
 <do>{"action":"NAME","args":{...}}</do>
 The person sees what you did, not the tag. Available right now:
@@ -170,9 +191,25 @@ ${actions.length ? actions.map((a) => `  - ${a}`).join('\n') : '  (nothing: no t
 ACTION NOTES:
   open_tab {"tab":"onemanband"} switches tabs. A tab has to be open before you
     can change anything on it, so open it first and say you are doing that.
-  set_lyrics {"text":"..."} replaces the words. append_lyrics adds to the end.
-  set_caption {"style":"...","singer":"...","band":"..."} sets any of the three
-    parts of the sound description. Send only the parts you are changing.
+  THE TWO BIG ONES DO NOT USE <do> AT ALL. Write them as plain tagged text, with
+  real line breaks, nothing escaped:
+
+    <caption>
+    Global Metadata
+    Basic Attributes: ...
+    ...the whole Input Caption, every heading, in full...
+    </caption>
+
+    <lyrics>
+    [Verse]
+    ...the whole Input Lyrics...
+    </lyrics>
+
+  Write the WHOLE thing between the tags every time. Never a fragment, never a
+  summary, never a note saying what you would write. If they ask you to fill in
+  the song, that means both tags, complete, in one reply.
+
+  append_lyrics {"text":"..."} still exists for adding a section to the end.
   set_length {"seconds":180}, set_takes {"count":2}, roll_take_number {},
     set_engine {"engine":"cloud"|"kaggle"|"local"}, lay_out_song {}.
   make_the_song {} EMIT IT whenever they want the song made. Do not ask them
@@ -193,16 +230,58 @@ is not on the list above. If you cannot do something, say so in one sentence.`;
 
 const DO_TAG = /<do>\s*(\{[\s\S]*?\})\s*<\/do>/g;
 
+/**
+ * LONG TEXT GETS ITS OWN TAGS, NOT JSON.
+ *
+ * The first version put everything in `<do>{"action":...}</do>`, which works
+ * fine for "set the length to 90" and falls apart the moment the payload is a
+ * four hundred word caption. Chris watched it fail exactly that way: the reply
+ * ran out of room mid-tag and what he got was raw
+ * `<do>{"action":"set_caption","args":{"style":"Basic Attributes: bpm is` sitting
+ * in the conversation, with nothing written into any box.
+ *
+ * Two separate faults there, both fixed. The token ceiling was too low for a
+ * caption to fit inside a JSON string at all, and JSON is the wrong container
+ * for prose: every newline has to be escaped, and models emit real ones.
+ *
+ * So the two big fields have plain tags with the text between them, where a
+ * newline is just a newline and nothing needs escaping.
+ */
+const CAPTION_TAG = /<caption>([\s\S]*?)<\/caption>/gi;
+const LYRICS_TAG = /<lyrics>([\s\S]*?)<\/lyrics>/gi;
+
+/** Anything that opened and never closed, because the reply was cut short. */
+const UNCLOSED = /<(do|caption|lyrics)>[\s\S]*$/i;
+
 /** Pull the action blocks out of a reply, and give back the prose without them. */
 export function splitActions(reply) {
   const actions = [];
-  const text = String(reply || '').replace(DO_TAG, (_m, json) => {
+  let text = String(reply || '');
+
+  text = text.replace(CAPTION_TAG, (_m, body) => {
+    const value = String(body || '').trim();
+    if (value) actions.push({ name: 'set_caption', args: { text: value } });
+    return '';
+  });
+
+  text = text.replace(LYRICS_TAG, (_m, body) => {
+    const value = String(body || '').trim();
+    if (value) actions.push({ name: 'set_lyrics', args: { text: value } });
+    return '';
+  });
+
+  text = text.replace(DO_TAG, (_m, json) => {
     try {
       const parsed = JSON.parse(json);
       if (parsed && parsed.action) actions.push({ name: String(parsed.action), args: parsed.args || {} });
     } catch { /* a malformed block is dropped, never shown raw */ }
     return '';
   });
+
+  // A tag that never closed is a truncated reply. Cut it rather than printing
+  // machinery at somebody who asked for a song.
+  text = text.replace(UNCLOSED, '');
+
   return { text: text.replace(/\n{3,}/g, '\n\n').trim(), actions };
 }
 
@@ -248,7 +327,10 @@ export async function askGhost({ history = [], question, config, tab = 'songwrit
       model: id,
       messages,
       temperature: 0.7,
-      max_tokens: 1200,
+      // A full caption is 250 to 450 words and the lyrics can be longer again.
+      // 1200 truncated them mid-tag, which is how Chris ended up looking at a
+      // half written <do> block instead of a filled in song.
+      max_tokens: 4000,
       // The scratchpad has to stay out of the answer at the source. Asking for
       // it to be excluded is cheaper and safer than filtering it afterwards.
       reasoning: { exclude: true },
