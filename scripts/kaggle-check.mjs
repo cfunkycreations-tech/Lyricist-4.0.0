@@ -63,6 +63,32 @@ ok('the length goes in', /DURATION = 75/.test(four));
 ok('every cell is one string, as Kaggle wants',
    JSON.parse(build({ caption: 'x', lyrics: 'y', seconds: 60, seed: 1 })).cells.every((c) => typeof c.source === 'string'));
 
+console.log('\n--- what it says when a run fails ---');
+const explain = kaggle.__test_explain;
+// The real thing, trimmed: this is what came back from his 2026-08-21 run.
+const NO_GPU_LOG = JSON.stringify([
+  { stream_name: 'stdout', data: '/bin/bash: line 1: nvidia-smi: command not found\n' },
+  { stream_name: 'stdout', data: 'torch 2.10.0+cpu | cuda None | GPUs 0\n' },
+  { stream_name: 'stderr', data: "AssertionError: No GPU. Set Accelerator to 'GPU T4 x2' and restart the session.\n" },
+]);
+ok('a session with no graphics card is named as the phone check',
+   /phone/i.test(explain(NO_GPU_LOG, 'FELL BACK')));
+ok('and it says nothing was wasted',
+   /nothing was used up/i.test(explain(NO_GPU_LOG, 'FELL BACK')));
+ok('out of memory is its own answer',
+   /shorter/i.test(explain('torch.cuda.OutOfMemoryError: CUDA out of memory', 'FELL BACK')));
+ok('so is a full disk',
+   /disk/i.test(explain('OSError: [Errno 28] No space left on device', 'FELL BACK')));
+ok('an unknown error still hands back its last real line',
+   explain(JSON.stringify([
+     { stream_name: 'stderr', data: '0.00s - Debugger warning: frozen modules\n' },
+     { stream_name: 'stderr', data: 'ValueError: something nobody predicted\n' },
+     { stream_name: 'stderr', data: '[NbConvertApp] Writing 1974 bytes\n' },
+   ]), 'FELL BACK').includes('ValueError: something nobody predicted'),
+   'and drops the boilerplate every session prints');
+ok('no log at all falls back rather than inventing one',
+   explain('', 'FELL BACK') === 'FELL BACK');
+
 const CODE = process.env.KAGGLE_CODE;
 if (!CODE) {
   console.log(`\n${bad ? `${bad} FAILED` : 'offline checks all passed'}. No KAGGLE_CODE given, so the live half was skipped.`);

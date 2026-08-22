@@ -338,6 +338,92 @@ function buildNotebook({ caption, lyrics, seconds, seed, seeds, steps, guidance 
 const TERMINAL = { COMPLETE: true, ERROR: true, CANCEL_ACKNOWLEDGED: true };
 
 /**
+ * WHY IT FAILED, IN WORDS THAT HELP.
+ *
+ * 2026-08-21. Chris pressed Make the song, waited, and got: "Kaggle ran it and
+ * hit an error. Open the notebook to see what it said." He opened it and found
+ * `AssertionError: No GPU. Set Accelerator to 'GPU T4 x2' and restart the
+ * session`, which is instructions for a Kaggle screen he never opened, from a
+ * notebook he never chose to look at. The app knew nothing and passed the buck.
+ *
+ * It can do better, because Kaggle hands back the whole session log. This reads
+ * it and answers the actual question.
+ *
+ * The no-GPU case is worth naming precisely: Kaggle ACCEPTS `enableGpu` and
+ * `machineShape`, records both against the notebook, and then runs the session
+ * on a CPU box anyway. Proved with a throwaway probe on his account: brand new
+ * notebook, both fields set and read back verbatim, quota untouched at zero
+ * seconds of thirty hours, and the session still came up `nvidia-smi: command
+ * not found`, `torch 2.10.0+cpu`, `count 0`. Nothing in the request is wrong and
+ * no retry will fix it. That is what an unverified phone number looks like from
+ * the API side, and Kaggle never says so out loud.
+ */
+const FAILURES = [
+  {
+    // Our own notebook's assertion, and the raw shape of it underneath.
+    when: /No GPU\. Set Accelerator|nvidia-smi: command not found|torch\.cuda\.is_available|\+cpu \| cuda None|cuda None .*count 0/i,
+    say: 'Kaggle ran it on a machine with no graphics card, so it stopped before making anything. '
+      + 'Nothing is wrong with your song and nothing was used up. Kaggle does this until the account '
+      + 'has a phone number on it: it accepts the request for a graphics card, then quietly gives you '
+      + 'a plain one. Go to kaggle.com/settings, verify your phone, and press Make the song again. '
+      + 'It is free and you only do it once.',
+  },
+  {
+    when: /CUDA out of memory|torch\.cuda\.OutOfMemoryError/i,
+    say: 'Kaggle\u2019s graphics card ran out of memory on this one. Make the song shorter, or drop the '
+      + 'polish passes, and try again.',
+  },
+  {
+    when: /No space left on device|Disk quota exceeded/i,
+    say: 'Kaggle ran out of disk part way through. Open the notebook on their site and restart the '
+      + 'session to clear it, then try again.',
+  },
+  {
+    when: /Connection (refused|reset)|Temporary failure in name resolution|Max retries exceeded/i,
+    say: 'Kaggle could not reach the internet to fetch the music program, so it could not start. '
+      + 'That is usually a blip on their side. Try again in a few minutes.',
+  },
+];
+
+/**
+ * Pull the session log and turn it into one plain sentence.
+ *
+ * Best effort by design: a failure to read the log must never replace the
+ * failure we are trying to explain.
+ */
+function readFailure(raw, fallback) {
+  if (!raw) return fallback;
+  // Kaggle sends the log as JSON records; the text is all we want out of it.
+  let text = String(raw);
+  try {
+    text = JSON.parse(text).map((e) => String(e?.data || '')).join('\n');
+  } catch { /* already plain text */ }
+
+  const hit = FAILURES.find((f) => f.when.test(text));
+  if (hit) return hit.say;
+
+  // Nothing recognised: hand back the last real line rather than a shrug. The
+  // noise filtered out here is what every Kaggle session prints whether it
+  // worked or not, and burying the one useful line under it helps nobody.
+  const lines = text.split('\n').map((l) => l.trim())
+    .filter((l) => l && !/^(0\.00s|\[NbConvertApp\]|Debugger warning|to python|Note: Debugging)/.test(l));
+  const lastError = [...lines].reverse().find((l) => /Error|Exception|Traceback/i.test(l));
+  return lastError ? `Kaggle stopped with: ${lastError.slice(0, 300)}` : fallback;
+}
+
+async function explainFailure(cred, fallback) {
+  try {
+    const out = await call('ListKernelSessionOutput', {
+      userName: cred.username, kernelSlug: SLUG, pageSize: 5,
+    }, cred, 30000);
+    return readFailure(out.json?.log, fallback);
+  } catch {
+    // Failing to read the log must never replace the failure it explains.
+    return fallback;
+  }
+}
+
+/**
  * Push the song, run it, wait, and bring the audio back.
  *
  * onProgress(fraction, message) all the way through, because this takes real
@@ -349,7 +435,13 @@ async function render(song, onProgress, shouldStop = () => false) {
   if (!cred) throw new Error('Not connected to Kaggle yet.');
   const say = (p, msg) => { try { onProgress(p, msg); } catch { /* window gone */ } };
 
-  say(0.02, 'Packing your song into the notebook');
+  // "Kaggle is making the song" while it makes two of them is a small lie that
+  // Chris caught within thirty seconds of a real run. The count is known here,
+  // so every line below says how many are actually being made.
+  const n = Array.isArray(song?.seeds) && song.seeds.length ? song.seeds.length : 1;
+  const takeWord = n === 1 ? 'the song' : n === 2 ? 'both takes' : `all ${n} takes`;
+
+  say(0.02, n === 1 ? 'Packing your song into the notebook' : `Packing ${n} takes into the notebook`);
   const text = buildNotebook(song);
 
   say(0.06, 'Uploading it to your Kaggle account');
@@ -387,7 +479,9 @@ async function render(song, onProgress, shouldStop = () => false) {
   }
   const url = push.json?.url || `https://www.kaggle.com/code/${cred.username}/${SLUG}`;
 
-  say(0.1, 'Kaggle has it. Waiting for a free graphics card');
+  say(0.1, n > 1
+    ? 'Kaggle has it. Waiting for its graphics cards'
+    : 'Kaggle has it. Waiting for a free graphics card');
   const started = Date.now();
   let lastStatus = '';
   // Kaggle queues, then runs. A full song is minutes; give it an hour before we
@@ -406,10 +500,14 @@ async function render(song, onProgress, shouldStop = () => false) {
     if (name && name !== lastStatus) lastStatus = name;
     const mins = Math.floor((Date.now() - started) / 60000);
     if (name === 'QUEUED' || name === 'NEW_SCRIPT') say(0.15, `Waiting in Kaggle's queue, ${mins} min`);
-    else if (name === 'RUNNING') say(0.5, `Kaggle is making the song, ${mins} min`);
+    else if (name === 'RUNNING') say(0.5, `Kaggle is making ${takeWord}, ${mins} min`);
     if (name === 'ERROR') {
-      throw new Error(st.json?.failureMessage
-        || `Kaggle ran it and hit an error. Open the notebook to see what it said: ${url}`);
+      const plain = await explainFailure(
+        cred,
+        st.json?.failureMessage
+          || `Kaggle ran it and hit an error. Open the notebook to see what it said: ${url}`,
+      );
+      throw new Error(plain);
     }
     if (TERMINAL[name] && name !== 'ERROR') break;
   }
@@ -460,5 +558,6 @@ module.exports = {
   // Exposed for the offline test harness: these are the two pieces that can be
   // proved without a Kaggle account, and both of them can silently ruin a run.
   __test_parse: parseToken,
+  __test_explain: readFailure,
   __test_build: buildNotebook,
 };

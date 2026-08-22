@@ -143,6 +143,15 @@
   overflow: hidden;
 }
 
+/* One number per take, because there is one number per take. */
+.omb-seedlist { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 3px; }
+.omb-seedlist li {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  font-family: var(--omb-mono); font-size: 11px;
+}
+.omb-seedlist span { color: var(--omb-faint); letter-spacing: .12em; text-transform: uppercase; }
+.omb-seedlist b { color: var(--omb-amber); font-weight: 600; }
+
 /* One press for the whole arrangement, and it says out loud what it will write
    so nobody has to press it to find out. */
 .omb-shape {

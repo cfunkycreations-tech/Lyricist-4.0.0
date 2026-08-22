@@ -326,6 +326,26 @@ export default function OneManBand() {
   }, [busy]);
 
   const tags = useMemo(() => readSections(lyrics), [lyrics]);
+
+  /**
+   * THE TAKE NUMBERS. Plural, because there is one per take.
+   *
+   * Chris, 2026-08-21: *"why is there only one take number if it's creating two
+   * diff versions?"* Fair. Every take has always had its own number, derived
+   * from the one on screen by a fixed stride, but only the first was shown, so
+   * the panel said 222 while the run used 222 and 1,014,126,445 and the second
+   * take's number appeared nowhere until it came back. A number you cannot see
+   * is a take you cannot get back to, and this knob exists precisely so you can
+   * get back to one you liked.
+   *
+   * The stride is the Numerical Recipes LCG multiplier. Any large odd number
+   * would do; what matters is that neighbouring takes are nowhere near each
+   * other, because adjacent seeds give suspiciously similar performances.
+   */
+  const seeds = useMemo(
+    () => Array.from({ length: takeCount }, (_, i) => seed + i * 1013904223),
+    [seed, takeCount],
+  );
   const lineCount = useMemo(
     () => lyrics.split('\n').filter((l) => l.trim() && !/^\s*\[/.test(l)).length,
     [lyrics],
@@ -470,8 +490,6 @@ export default function OneManBand() {
       instrumental: voices.every((v) => v.startsWith('Instrumental')),
     });
 
-    // Every take gets its own seed so they are genuinely different performances.
-    const seeds = Array.from({ length: takeCount }, (_, i) => seed + i * 1013904223);
 
     try {
       // ONE call for all of them. On Kaggle that is one push, one queue and one
@@ -761,13 +779,25 @@ export default function OneManBand() {
                 </div>
 
                 <div className="omb-knob">
-                  <div className="nm">Take number</div>
+                  <div className="nm">{seeds.length > 1 ? 'Take numbers' : 'Take number'}</div>
                   <div className="omb-seedrow">
                     <span className="val">{seed.toLocaleString('en-US')}</span>
                     <button type="button" className={`omb-dice ${rolling ? 'rolling' : ''}`}
-                            onClick={roll} aria-label="Roll a new take number">🎲</button>
+                            onClick={roll}
+                            aria-label={seeds.length > 1 ? 'Roll new take numbers' : 'Roll a new take number'}>🎲</button>
                   </div>
-                  <div className="sub">Same words, new number, different performance. Saved with the song.</div>
+                  {seeds.length > 1 && (
+                    <ol className="omb-seedlist">
+                      {seeds.map((n, i) => (
+                        <li key={n}><span>take {i + 1}</span><b>{n.toLocaleString('en-US')}</b></li>
+                      ))}
+                    </ol>
+                  )}
+                  <div className="sub">
+                    {seeds.length > 1
+                      ? `Rolling gives all ${seeds.length} takes new numbers. Same words, different performances. Each one is saved with its song.`
+                      : 'Same words, new number, different performance. Saved with the song.'}
+                  </div>
                 </div>
               </div>
 
