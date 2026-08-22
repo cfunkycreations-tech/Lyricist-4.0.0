@@ -162,6 +162,23 @@ export function explainCloudError(payload) {
   let msg = payload;
   try { msg = JSON.parse(payload).error || payload; } catch { /* not json */ }
 
+  /**
+   * STRIP THE HTML BEFORE ANYONE READS IT.
+   *
+   * Chris got a wall of red that included, verbatim,
+   * `<a style="white-space: nowrap;text-underline-offset: 2px;color: var(--body-text-color)" href="https://huggingface.co/subscribe/pro?from=ZeroGPU">Subscribe to Pro</a>`
+   * cut off mid sentence by the length cap. The free tier writes its errors as
+   * web page fragments, and this app is not a web page: nobody should ever see
+   * a stylesheet variable in a message about their song.
+   */
+  msg = String(msg)
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
   const over = /larger than the maximum allowed/i.test(msg);
   if (over) {
     return 'That song is too long for the free cloud. It tops out around 45 seconds '
@@ -176,7 +193,27 @@ export function explainCloudError(payload) {
       + '. Adding a free Hugging Face token in Settings raises this a lot. '
       + 'Until then, Kaggle or your own computer will still make the song.';
   }
-  return `The music server stopped: ${String(msg).slice(0, 200)}`;
+
+  /**
+   * NO GRAPHICS CARD ON THE FREE TIER, WHICH IS NOT A FAULT AND NOT HIS TO FIX.
+   *
+   * The free cloud shares a pool of cards between everybody using it. When they
+   * are all busy it waits sixty seconds and gives up, then advertises their
+   * paid plan. This app is free forever, so the answer is not to buy anything:
+   * it is Kaggle, which is also free and hands you two whole cards.
+   */
+  if (/no gpu was available|gpu task aborted|zerogpu is unavailable/i.test(msg)) {
+    return 'The free cloud had no graphics card free just now. Everybody shares the '
+      + 'same pool and it only waits a minute before giving up, so this is normal at '
+      + 'busy times and there is nothing wrong with your song. Press Make the song '
+      + 'again in a few minutes, or switch to Kaggle in the engine row above, which is '
+      + 'also free, gives you two whole graphics cards and makes full length songs.';
+  }
+
+  // Whatever is left is already stripped of markup. Keep it short and keep the
+  // first sentence, which is the part that ever says anything.
+  const plain = String(msg).split(/(?<=\.)\s/)[0] || String(msg);
+  return `The music server stopped: ${plain.slice(0, 200)}`;
 }
 
 async function pickHost(hosts, signal) {
@@ -196,10 +233,47 @@ async function pickHost(hosts, signal) {
  * Gradio's two step protocol: POST the arguments, get an event id back, then
  * read a server-sent event stream until the file url appears.
  */
+/**
+ * WAIT FOR A CARD INSTEAD OF HANDING HIM A DEAD END.
+ *
+ * The free cloud shares a pool of graphics cards with everybody using it. When
+ * they are all busy it waits sixty seconds, gives up, and advertises their paid
+ * plan. Chris pressed Make the song and got exactly that, with the advert's raw
+ * HTML in it.
+ *
+ * Sixty seconds is the server's patience, not his. Being told to press the same
+ * button again is the app making him do the retrying, so it does the retrying:
+ * three attempts, a wait between them, and the progress line says what it is
+ * waiting for rather than going quiet. Nothing is spent while it waits, and Stop
+ * still stops it.
+ */
+const NO_CARD = /no gpu was available|gpu task aborted|zerogpu.*(unavailable|busy)/i;
+const CARD_TRIES = 3;
+const CARD_WAIT_MS = 30000;
+
 async function generateCloud(opts) {
+  let last = null;
+  for (let attempt = 1; attempt <= CARD_TRIES; attempt += 1) {
+    try {
+      return await generateCloudOnce(opts, attempt);
+    } catch (e) {
+      last = e;
+      if (opts.signal?.aborted) throw e;
+      if (!NO_CARD.test(e.message || '')) throw e;
+      if (attempt === CARD_TRIES) break;
+      opts.onProgress?.({
+        phase: `the free cloud is busy, waiting for a graphics card (try ${attempt + 1} of ${CARD_TRIES})`,
+      });
+      await new Promise((r) => setTimeout(r, CARD_WAIT_MS));
+    }
+  }
+  throw last;
+}
+
+async function generateCloudOnce(opts, attempt = 1) {
   const { state, duration, seed, steps, guidance, onProgress, signal, hfToken } = opts;
   const host = await pickHost(CLOUD_HOSTS, signal);
-  onProgress?.({ phase: 'queued', host });
+  onProgress?.({ phase: attempt > 1 ? `queued (try ${attempt})` : 'queued', host });
 
   // SEND THE OBJECT, NOT A STRING. Their `studio_generate` runs the state
   // through `_normalize_state`, which is `if isinstance(state, dict)` and
