@@ -60,6 +60,57 @@ export const VOICES = {
   woman: { id: 'af_heart',   pitch: 1,           label: 'Woman' },
 };
 
+/**
+ * THE BAKED SAMPLES, so the picker never makes you wait.
+ *
+ * Chris: *"the ghost voices do work but take a long time to load. You should
+ * bake in the ghost, man and woman voices, but just for the optional buttons."*
+ *
+ * Right, and the reason it matters is where the wait falls. Pressing a button
+ * marked "Woman" and hearing nothing for a minute reads as broken. Waiting a few
+ * seconds for an ANSWER does not, because you asked a question and you already
+ * watched it think. So the three sample lines ship as audio and the model still
+ * reads the real answers.
+ *
+ * These are rendered by scripts/generate-voice-samples.py using the same voices
+ * and the same treatment as the live path, so the button tells the truth about
+ * what the answers will sound like. They also work with no model downloaded, no
+ * network, and after a failed download.
+ */
+const SAMPLE_URLS = import.meta.glob('../assets/ghost-vo/sample-*.mp3', {
+  eager: true, query: '?url', import: 'default',
+});
+
+function sampleUrl(name) {
+  const key = Object.keys(SAMPLE_URLS).find((k) => k.endsWith(`sample-${name}.mp3`));
+  return key ? SAMPLE_URLS[key] : null;
+}
+
+let sampleEl = null;
+
+/** Play the pre-rendered line for a voice. Instant, and never throws. */
+export function playSample(name) {
+  const url = sampleUrl(name);
+  if (!url) return false;
+  hush();
+  try {
+    if (!sampleEl) sampleEl = new Audio();
+    sampleEl.pause();
+    sampleEl.src = url;
+    sampleEl.currentTime = 0;
+    sampleEl.play().catch(() => {});
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Stop a sample if one is playing. */
+function hushSample() {
+  if (!sampleEl) return;
+  try { sampleEl.pause(); } catch { /* nothing playing */ }
+}
+
 const VOICE_CHOICE_KEY = 'lyricist.ghost.voicename';
 
 let chosen = (() => {
@@ -169,6 +220,7 @@ function toBuffer(raw) {
 
 /** Stop whatever the ghost is saying. Safe to call at any time. */
 export function hush() {
+  hushSample();
   if (!current) return;
   try { current.stop(); } catch { /* already finished */ }
   current = null;

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import './GhostAssistant.css';
 import { askGhost, splitActions } from '../../services/GhostService.js';
 import { runGhostAction, watchGhostActions, availableGhostActions } from '../../services/ghostBus.js';
-import { speak, hush, loadVoice, voiceState, VOICES, getVoiceName, setVoiceName } from '../../services/GhostVoice.js';
+import { speak, hush, loadVoice, voiceState, playSample, VOICES, getVoiceName, setVoiceName } from '../../services/GhostVoice.js';
 
 /**
  * THE GHOST, ALWAYS THERE.
@@ -76,18 +76,18 @@ export default function GhostAssistant({ tab, config, getContext }) {
     localStorage.setItem(VOICE_KEY, next ? '1' : '0');
     if (!next) { hush(); setVoiceNote(''); return; }
     if (voiceState.ready) return;
-    // First time on: say what is about to happen rather than freezing quietly.
-    // Do not promise offline: the voice model itself is cached after the first
-    // fetch, but the runtime it needs is pulled from a CDN, so claiming it
-    // never needs the internet again is a claim I have not proved.
-    setVoiceNote('Fetching the ghost’s voice, about 86 MB. Once only, and it is kept for next time.');
+
+    // Switching it on is not a wait any more. The picker plays baked audio
+    // immediately, so the model can arrive in its own time and the note says
+    // that rather than implying the feature is stuck.
+    setVoiceNote('Fetching the voice in the background, about 86 MB, once. The buttons below work now; spoken answers start when it lands.');
     try {
       await loadVoice();
       setVoiceNote('');
     } catch (e) {
-      setVoiceNote(`The voice would not load: ${e.message}. Everything still works to read.`);
-      setVoiceOn(false);
-      localStorage.setItem(VOICE_KEY, '0');
+      // The samples still work without it, so the voice does NOT get switched
+      // back off here. It stays on and the note is honest about what is missing.
+      setVoiceNote(`Could not fetch the voice, so answers stay text only: ${e.message}`);
     }
   };
 
@@ -196,9 +196,10 @@ export default function GhostAssistant({ tab, config, getContext }) {
                   aria-pressed={voiceName === key}
                   onClick={() => {
                     setVoiceName_(setVoiceName(key));
-                    speak(key === 'ghost'
-                      ? 'This is me.'
-                      : `This is the ${v.label.toLowerCase()}. I can read the answers out in this voice instead.`);
+                    // The BAKED line, not the model. This has to be instant or a
+                    // button marked "Woman" that sits silent for a minute reads
+                    // as broken. It also works with nothing downloaded at all.
+                    if (!playSample(key)) speak(`This is the ${v.label.toLowerCase()}.`);
                   }}
                 >
                   {v.label}
