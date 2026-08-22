@@ -16,6 +16,8 @@ import Settings from './components/Settings/Settings.jsx';
 import HelpLayer from './components/common/HelpLayer.jsx';
 import OnboardingWizard from './components/Onboarding/OnboardingWizard.jsx';
 import GhostDemo from './components/Onboarding/GhostDemo.jsx';
+import GhostAssistant from './components/Ghost/GhostAssistant.jsx';
+import { registerGhostAction } from './services/ghostBus.js';
 import MidiStudio from './components/MidiStudio/MidiStudio.jsx';
 import ToolsHub from './components/ToolsHub/ToolsHub.jsx';
 import SunoPlayer from './components/AudioPlayer/SunoPlayer.jsx';
@@ -230,6 +232,21 @@ function MainLayout() {
 
   // Reflect the global Tips switch on <body> so [data-help] elements get the
   // "you can hover me for help" cursor only when Tips are turned on.
+  /**
+   * The one thing the Ghost can do from anywhere: change tabs.
+   *
+   * It matters more than it looks. A tab that is not open has registered
+   * nothing, so the Ghost genuinely cannot touch it, and the only way through
+   * that door is the same one a person uses.
+   */
+  useEffect(() => registerGhostAction('open_tab', ({ tab }) => {
+    const id = String(tab || '').trim();
+    const known = tabs.some((t) => t.id === id);
+    if (!known) throw new Error(`There is no "${id}" tab.`);
+    setActiveTab(id);
+    return `opened ${id}`;
+  }), []);
+
   useEffect(() => {
     document.body.classList.toggle('tips-on', store.tipsEnabled);
   }, [store.tipsEnabled]);
@@ -264,6 +281,19 @@ function MainLayout() {
       {showWizard && (
         <OnboardingWizard onClose={closeWizard} onNavigate={setActiveTab} />
       )}
+
+      {/* Always there, on every tab. See components/Ghost/GhostAssistant.jsx. */}
+      {/* The key lives on store.config, not on the store itself. Passing the
+          whole store made assertApiKey read undefined and say "no API key
+          configured" while the key sat right there in Settings. */}
+      <GhostAssistant
+        tab={activeTab}
+        config={store.config}
+        getContext={() => {
+          const words = (store.getFullText?.() || '').trim();
+          return words ? `Their lyrics so far:\n${words.slice(0, 1800)}` : '';
+        }}
+      />
 
       {showGhostDemo && store.ghostDemoEnabled && (
         <GhostDemo

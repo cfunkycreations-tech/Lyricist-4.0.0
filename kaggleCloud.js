@@ -306,7 +306,7 @@ function notebookPath() {
  * about what one used to instead of a second queue, a second 12 GB fetch and a
  * second ten minute warm-up.
  */
-function buildNotebook({ caption, lyrics, seconds, seed, seeds, steps, guidance }) {
+function buildNotebook({ caption, lyrics, seconds, seed, seeds, steps, guidance, hfToken }) {
   const nb = JSON.parse(fs.readFileSync(notebookPath(), 'utf8'));
   const safe = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/"""/g, '\\"\\"\\"');
   const list = (Array.isArray(seeds) && seeds.length ? seeds : [seed ?? 222])
@@ -329,6 +329,20 @@ function buildNotebook({ caption, lyrics, seconds, seed, seeds, steps, guidance 
   const songCell = nb.cells.findIndex((c) => c.cell_type === 'code' && text(c).includes('CAPTION ='));
   if (songCell < 0) throw new Error('The shipped notebook has no CAPTION cell. This is a bug in Lyricist, not in your song.');
   nb.cells[songCell].source = cell;
+
+  // Carry their Hugging Face token through, if they have one. It is not needed
+  // to make a song: it only stops the Hub throttling 12 GB of anonymous
+  // downloading, which is the slowest part of a cold session. The notebook is
+  // private on their own account. A token cannot be quoted or escaped its way
+  // out of trouble, so anything that is not a plain token is simply not sent.
+  const token = String(hfToken || '').trim();
+  if (/^[A-Za-z0-9_-]{8,200}$/.test(token)) {
+    const hfCell = nb.cells.findIndex((c) => c.cell_type === 'code' && text(c).includes('HF_TOKEN = ""'));
+    if (hfCell >= 0) {
+      nb.cells[hfCell].source = text(nb.cells[hfCell]).replace('HF_TOKEN = ""', `HF_TOKEN = "${token}"`);
+    }
+  }
+
   // Kaggle's own pusher flattens every cell's source to ONE string before
   // sending; a list of lines comes back as a broken notebook.
   for (const c of nb.cells) if (Array.isArray(c.source)) c.source = c.source.join('');

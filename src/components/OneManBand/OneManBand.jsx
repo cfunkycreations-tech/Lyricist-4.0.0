@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import TabBackground from '../common/TabBackground.jsx';
 import MultiPick from '../common/MultiPick.jsx';
 import EngineSetup from './EngineSetup.jsx';
+import { registerGhostActions } from '../../services/ghostBus.js';
 
 /**
  * THE SHAPE OF A SONG, IN ONE PRESS.
@@ -547,6 +548,79 @@ export default function OneManBand() {
       setError(`Could not save: ${e.message}`);
     }
   };
+
+  /**
+   * WHAT THE GHOST IS ALLOWED TO DO IN HERE.
+   *
+   * Chris asked for the assistant to be able to press things, everything, and
+   * this is the everything. Each one returns the sentence the Ghost shows in the
+   * conversation, so a change on screen is always traceable to a line it said.
+   *
+   * These only exist while this tab is mounted, which is the point: the Ghost
+   * has to open a tab before it can touch it, the same as a person.
+   */
+  useEffect(() => registerGhostActions({
+    set_lyrics: ({ text }) => {
+      const t = String(text ?? '');
+      setLyrics(t);
+      fitLength(t);
+      return `wrote ${t.split('\n').filter((l) => l.trim()).length} lines into the words`;
+    },
+    append_lyrics: ({ text }) => {
+      const add = String(text ?? '').trim();
+      if (!add) throw new Error('there was nothing to add');
+      setLyrics((l) => {
+        const next = l.trim() ? `${l.replace(/\s*$/, '')}\n\n${add}` : add;
+        fitLength(next);
+        return next;
+      });
+      return 'added that to the end of the words';
+    },
+    set_caption: (parts) => {
+      const map = { style: 'globalMeta', singer: 'vocals', band: 'arrangement' };
+      // Work out what changed BEFORE handing anything to setState. React runs
+      // an updater when it feels like it, so a list built inside one is still
+      // empty when the line below reads it: the first version of this wrote the
+      // text correctly and then reported that it had done nothing.
+      const changed = Object.keys(map)
+        .filter((from) => typeof parts[from] === 'string' && parts[from].trim());
+      if (!changed.length) throw new Error('no part of the sound description was given');
+      setCaptionEdited(true);
+      setCaption((c) => {
+        const next = { ...c };
+        changed.forEach((from) => { next[map[from]] = parts[from].trim(); });
+        return next;
+      });
+      return `rewrote the ${changed.join(' and the ')}`;
+    },
+    set_length: ({ seconds: n }) => {
+      const v = Math.max(10, Math.min(300, Math.round(Number(n) || 0)));
+      if (!v) throw new Error('that is not a length');
+      setSeconds(v);
+      return `set the length to ${v} seconds`;
+    },
+    set_takes: ({ count }) => {
+      const v = Math.max(1, Math.min(4, Math.round(Number(count) || 0)));
+      setTakeCount(v);
+      return `set it to make ${v} take${v === 1 ? '' : 's'}`;
+    },
+    roll_take_number: () => { roll(); return 'rolled a new take number'; },
+    set_engine: ({ engine: e }) => {
+      const want = String(e || '').toLowerCase();
+      if (!['cloud', 'kaggle', 'local'].includes(want)) throw new Error(`"${e}" is not one of the three`);
+      if (want === 'kaggle' && !kaggle?.connected) throw new Error('Kaggle is not connected yet, open Set-up first');
+      if (want === 'local' && !comfy) throw new Error('this computer is not set up for it yet, open Set-up first');
+      setEngine(want);
+      return `switched it to ${want === 'cloud' ? 'the free cloud' : want === 'kaggle' ? 'Kaggle' : 'this computer'}`;
+    },
+    lay_out_song: () => { addWholeShape(); return 'laid out a whole song and made it long enough to hold it'; },
+    make_the_song: () => {
+      if (busy) throw new Error('it is already making one');
+      make();
+      return 'started it. The Stop button is in the tab if you change your mind';
+    },
+    stop: () => { stop(); return 'stopped it'; },
+  }), [busy, kaggle, comfy, lyrics, seconds]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="omb">

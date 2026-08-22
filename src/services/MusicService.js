@@ -434,7 +434,7 @@ async function generateComfy(opts) {
  * demo caps a single call at about 45 seconds of music, and Kaggle hands out 30
  * hours of graphics card a week.
  */
-async function generateKaggle({ state, duration, seed, seeds, steps, guidance, onProgress, signal }) {
+async function generateKaggle({ state, duration, seed, seeds, steps, guidance, hfToken, onProgress, signal }) {
   const api = typeof window !== 'undefined' ? window.lyricistAPI : null;
   if (!api?.kaggleRender) {
     throw new Error('Kaggle needs the desktop app. In the browser preview only the free cloud runs.');
@@ -456,6 +456,8 @@ async function generateKaggle({ state, duration, seed, seeds, steps, guidance, o
       seeds: wanted,
       steps,
       guidance,
+      // Only speeds the 12 GB fetch up. The song is made with or without it.
+      hfToken,
     });
     if (res?.stopped) throw new Error('Stopped.');
     if (!res?.ok) throw new Error(res?.error || 'Kaggle did not produce a song.');
@@ -505,7 +507,7 @@ export async function generateSong({
   const run = engine === 'cloud'
     ? generateCloud({ state, duration, seed, steps, guidance, onProgress, signal, hfToken })
     : engine === 'kaggle'
-      ? generateKaggle({ state, duration, seed, seeds, steps, guidance, onProgress, signal })
+      ? generateKaggle({ state, duration, seed, seeds, steps, guidance, hfToken, onProgress, signal })
       : generateComfy({ base, state, duration, seed, steps, guidance, dit, onProgress, signal });
 
   const { blob, takes, host } = await run;
