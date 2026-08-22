@@ -32,6 +32,18 @@ const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 const MODELS_URL = 'https://openrouter.ai/api/v1/models';
 
 /**
+ * How much room the Ghost gets to answer in.
+ *
+ * A full song is a 250 to 450 word caption plus nine sections of lyrics plus the
+ * prose around them, which lands near 4000 tokens on its own. 7000 leaves head
+ * room for a five minute song without ever being the thing that truncates.
+ * Nothing is spent unless it is used.
+ */
+const MAX_REPLY = 7000;
+/** Some models refuse a ceiling above their own. One retry, then give up. */
+const SAFE_REPLY = 4000;
+
+/**
  * Wishes, in order, all of them checked against the live list before use.
  * General instruct models only: the coding and safety-tuned ones on the free
  * router answer a songwriter's question like a code review.
@@ -314,7 +326,7 @@ export async function askGhost({ history = [], question, config, tab = 'songwrit
     { role: 'user', content: question },
   ];
 
-  const post = (id) => fetch(ENDPOINT, {
+  const post = (id, budget) => fetch(ENDPOINT, {
     method: 'POST',
     signal,
     headers: {
@@ -327,22 +339,32 @@ export async function askGhost({ history = [], question, config, tab = 'songwrit
       model: id,
       messages,
       temperature: 0.7,
-      // A full caption is 250 to 450 words and the lyrics can be longer again.
-      // 1200 truncated them mid-tag, which is how Chris ended up looking at a
-      // half written <do> block instead of a filled in song.
-      max_tokens: 4000,
+      // THE REPLY BUDGET, not the context window. The models here carry 256k of
+      // context; what ran out was room to WRITE. 1200 truncated a caption
+      // mid-tag, which is how Chris ended up looking at a half written block
+      // instead of a filled in song, and he called 4000 too tight for a five
+      // minute song with nine full sections plus a caption. He is right that it
+      // is close: that is roughly 4000 by itself. Costs nothing to raise,
+      // because only what actually gets generated is ever paid for.
+      max_tokens: budget,
       // The scratchpad has to stay out of the answer at the source. Asking for
       // it to be excluded is cheaper and safer than filtering it afterwards.
       reasoning: { exclude: true },
     }),
   });
 
-  let res = await post(model);
+  let res = await post(model, MAX_REPLY);
 
   // A busy shared model is the single most likely failure on the free router,
   // and it is not worth an error message when another one is sitting there.
   if (res.status === 429 && free && free !== model) {
-    res = await post(free);
+    res = await post(free, MAX_REPLY);
+  }
+
+  // A few models reject a ceiling higher than their own output limit rather
+  // than clamping it. Losing the whole answer over that would be daft.
+  if (res.status === 400) {
+    res = await post(model, SAFE_REPLY);
   }
 
   if (res.status === 401 || res.status === 403) {
