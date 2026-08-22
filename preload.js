@@ -44,6 +44,7 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   songBytes: (filePath) => ipcRenderer.invoke('song-bytes', { filePath }),
   songsFolder: () => ipcRenderer.invoke('songs-folder'),
   songsList: () => ipcRenderer.invoke('songs-list'),
+  kaggleCollect: () => ipcRenderer.invoke('kaggle-collect'),
   captionSkillOpen: () => ipcRenderer.invoke('caption-skill-open'),
   captionSkillIndexes: (families) => ipcRenderer.invoke('caption-skill-indexes', { families }),
   captionSkillTemplates: (ids) => ipcRenderer.invoke('caption-skill-templates', { ids }),

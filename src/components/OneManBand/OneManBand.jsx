@@ -729,17 +729,39 @@ export default function OneManBand() {
   const [recovering, setRecovering] = useState(false);
   const [onDisk, setOnDisk] = useState([]);
 
+  /**
+   * ON ARRIVAL: GO GET THE SONG. NOBODY PRESSES ANYTHING.
+   *
+   * Chris, 2026-08-22: *"THEY SUPPOSED TO BE IN MY FUCKING APP CLAUDE WHEN I
+   * PUSH THE FUCKING BUTTON!!!!"*
+   *
+   * He is right. A take only saved itself while the window sat watching the
+   * run, and a Kaggle job carries on with the app shut. Restart, crash, or just
+   * quit and come back and the song was finished on their server with nothing
+   * on screen. That is most of the ways a two hour render actually ends, and
+   * making him find a recovery button for it is the same failure twice.
+   *
+   * So opening the tab does the whole thing by itself: ask Kaggle whether the
+   * last run finished and pull anything new down, then file everything in the
+   * songs folder that Recordings has not got. Two calls, nothing when there is
+   * nothing new, and the button underneath stays for a manual retry.
+   */
   useEffect(() => {
     let alive = true;
-    window.lyricistAPI?.songsList?.().then((r) => {
-      if (!alive || !r?.ok) return;
-      setOnDisk(r.files || []);
-      if (r.folder) setSongsFolder(r.folder);
-    }).catch(() => { /* no folder yet is not an error */ });
+    (async () => {
+      try {
+        const got = await window.lyricistAPI?.kaggleCollect?.();
+        if (alive && got?.collected?.length) {
+          setPhase(`Kaggle had ${got.collected.length} finished song${got.collected.length === 1 ? '' : 's'} waiting. Bringing ${got.collected.length === 1 ? 'it' : 'them'} in.`);
+        }
+      } catch { /* offline, or not connected: the folder still gets read */ }
+      if (!alive) return;
+      await bringInFromDisk({ quiet: true });
+    })();
     return () => { alive = false; };
-  }, []);
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  const bringInFromDisk = async () => {
+  const bringInFromDisk = async ({ quiet = false } = {}) => {
     setRecovering(true);
     setError('');
     try {
@@ -769,14 +791,23 @@ export default function OneManBand() {
         }, ...prev]));
         brought += 1;
       }
-      setPhase(brought
-        ? `Brought ${brought} song${brought === 1 ? '' : 's'} in. They are in Recordings.`
-        : 'Every song in your folder is already in the app.');
+      // Silence when it ran on its own and there was nothing to do. Saying
+      // "already in the app" every single time you open the tab is noise.
+      if (brought) {
+        setPhase(`Brought ${brought} song${brought === 1 ? '' : 's'} in. ${brought === 1 ? 'It is' : 'They are'} in Recordings and in the rack below.`);
+      } else if (!quiet) {
+        setPhase('Every song in your folder is already in the app.');
+      }
       setTimeout(() => setPhase((p) => (p.startsWith('Brought') || p.startsWith('Every song') ? '' : p)), 6000);
     } catch (e) {
-      setError(e.message || 'Could not bring your songs in.');
+      if (!quiet) setError(e.message || 'Could not bring your songs in.');
     } finally {
       setRecovering(false);
+      window.lyricistAPI?.songsList?.().then((r) => {
+        if (!r?.ok) return;
+        setOnDisk(r.files || []);
+        if (r.folder) setSongsFolder(r.folder);
+      }).catch(() => {});
     }
   };
 
@@ -1186,8 +1217,18 @@ export default function OneManBand() {
               <div className="omb-grp">
                 <h3>The basics</h3>
                 <div className="omb-knob">
-                  <div className="nm">Length</div><div className="val">{seconds}s</div>
-                  <div className="sub">Anything up to a full 5 minute song</div>
+                  {/* IT IS A CEILING, NOT A LENGTH, AND SAYING OTHERWISE COST HIM
+                      A TWO HOUR RUN. Chris set this to 5 minutes and got 2:26
+                      back. The notebook wires this to MiniMax's `max_duration`,
+                      and the length the song actually comes out is decided by
+                      the words and the caption. Calling it "Length" and showing
+                      "300s" reads as a promise the engine never made. */}
+                  <div className="nm">Longest it may run</div><div className="val">{seconds}s</div>
+                  <div className="sub">
+                    A ceiling, not a length. MiniMax makes the song as long as your words
+                    and your Input Caption need, and stops here at the latest. More words
+                    and more sections is what makes a longer song.
+                  </div>
                   <input type="range" min="10" max="300" value={seconds}
                          onChange={(e) => setSeconds(Number(e.target.value))} />
                   <div className="omb-pre">

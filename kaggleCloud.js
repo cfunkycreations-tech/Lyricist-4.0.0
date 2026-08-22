@@ -477,6 +477,60 @@ async function explainFailure(cred, fallback) {
  * minutes and a button that just says "working" for twenty minutes is a button
  * people kill.
  */
+/**
+ * GO AND GET ANY SONG KAGGLE ALREADY FINISHED. NOBODY PRESSES ANYTHING.
+ *
+ * Chris, 2026-08-22: *"THEY SUPPOSED TO BE IN MY FUCKING APP CLAUDE WHEN I PUSH
+ * THE FUCKING BUTTON!!!!"* He is right, and a button that recovers a song is
+ * still a button he should never have had to find.
+ *
+ * The hole was this: the app only ever collected a song while it was sitting
+ * there watching the run. A Kaggle job keeps going with the window closed, so
+ * anyone who restarts, crashes, or just quits and comes back had a finished song
+ * on Kaggle's server and an empty rack. That is most of the ways a two hour
+ * render actually ends.
+ *
+ * So this runs by itself when the tab opens: ask Kaggle whether the last run
+ * finished, and pull down anything whose file is not already on this machine.
+ * It is cheap, it is two calls, and it costs nothing when there is nothing new.
+ */
+async function collect() {
+  const cred = readToken();
+  if (!cred) return { ok: true, collected: [], reason: 'not connected' };
+
+  let st;
+  try {
+    st = await call('GetKernelSessionStatus', { userName: cred.username, kernelSlug: SLUG }, cred, 20000);
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+  const status = String(st.json?.status || '');
+  // Still going is not a problem and not an answer. Leave it alone.
+  if (!TERMINAL[status]) return { ok: true, collected: [], status };
+
+  let out;
+  try {
+    out = await call('ListKernelSessionOutput', { userName: cred.username, kernelSlug: SLUG, pageSize: 50 }, cred, 60000);
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+
+  const dir = songsDir();
+  const files = (out.json?.files || []).filter((f) => /\.(flac|wav|mp3|ogg)$/i.test(f.fileName || ''));
+  const collected = [];
+  for (const f of files) {
+    const filePath = path.join(dir, f.fileName);
+    // Already on this machine is already collected. Never fetch twice.
+    if (fs.existsSync(filePath)) continue;
+    try {
+      const bytes = await download(f.url);
+      fs.writeFileSync(filePath, bytes);
+      collected.push({ fileName: f.fileName, filePath, size: bytes.length });
+    } catch { /* one that will not come down must not stop the rest */ }
+  }
+  return { ok: true, status, folder: dir, collected };
+}
+
 async function render(song, onProgress, shouldStop = () => false) {
   const cred = readToken();
   if (!cred) throw new Error('Not connected to Kaggle yet.');
@@ -533,7 +587,16 @@ async function render(song, onProgress, shouldStop = () => false) {
   let lastStatus = '';
   // Kaggle queues, then runs. A full song is minutes; give it an hour before we
   // call it lost, and poll gently so we are not the reason it gets rate limited.
-  const LIMIT_MS = 60 * 60 * 1000;
+  /**
+   * SIX HOURS, NOT ONE.
+   *
+   * Measured on his own five minute run: take one finished at 6,250 seconds,
+   * one hour and forty four minutes. The old one hour ceiling gave up on it
+   * with the song still cooking, and every long render this app has ever made
+   * would have hit it. Kaggle allows twelve hours a session, so the app is not
+   * the thing that should be deciding a song has taken too long.
+   */
+  const LIMIT_MS = 6 * 60 * 60 * 1000;
   while (Date.now() - started < LIMIT_MS) {
     if (shouldStop()) return { ok: false, stopped: true, url };
     await new Promise((r) => setTimeout(r, 10000));
@@ -559,7 +622,7 @@ async function render(song, onProgress, shouldStop = () => false) {
     if (TERMINAL[name] && name !== 'ERROR') break;
   }
   if (!TERMINAL[lastStatus]) {
-    return { ok: false, timedOut: true, url, error: 'Kaggle is still going after an hour. It keeps running without the app, so open the notebook to collect the song.' };
+    return { ok: false, timedOut: true, url, error: 'Kaggle has been going six hours, so the app stopped watching. The run keeps going without it and the song comes in by itself when you open this tab again.' };
   }
 
   say(0.9, 'Fetching the audio');
@@ -616,7 +679,7 @@ async function render(song, onProgress, shouldStop = () => false) {
 }
 
 module.exports = {
-  status, connect, disconnect, render, whoAmI, songsDir, SLUG, TITLE,
+  status, connect, disconnect, render, collect, whoAmI, songsDir, SLUG, TITLE,
   // Exposed for the offline test harness: these are the two pieces that can be
   // proved without a Kaggle account, and both of them can silently ruin a run.
   __test_parse: parseToken,

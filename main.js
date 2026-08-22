@@ -476,6 +476,13 @@ ipcMain.handle('song-bytes', async (event, { filePath } = {}) => {
   }
 });
 
+/** Ask Kaggle whether it finished something while nobody was watching, and
+    bring it down. Runs by itself when the tab opens. */
+ipcMain.handle('kaggle-collect', async () => {
+  try { return await kaggleCloud.collect(); }
+  catch (e) { return { ok: false, error: e.message }; }
+});
+
 /** Every song already on disk, so one that never made it into the app can be
     brought in later. A run that finished while the window was busy, reloading
     or closed is still a finished song. */
