@@ -29,3 +29,8 @@ desktop.ini
 
 # Claude Code local tooling
 .claude/
+
+# Generated at build time by scripts/copy-onnx-runtime.mjs (21 MB of
+# WebAssembly). npm install regenerates it, so it does not belong in history:
+# every runtime bump would add another copy.
+public/ort/
