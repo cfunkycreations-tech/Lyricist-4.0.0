@@ -18,8 +18,6 @@ import {
 } from './quantumFeatures.js';
 import { registerDemoSnapshot } from '../../services/demoSafety.js';
 import './QuantumLab.css';
-import quantumMedallionImg from '../../assets/quantum-medallion-glass.png';
-import quantumChrisImg from '../../assets/quantum-chris.png';
 
 // ============================================================
 // Quantum Lab — "Lyricist Goes Quantum" (Lyricist 4.2.0)
@@ -526,41 +524,6 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
 
   return (
     <div className="ql-root">
-      {/* ── Quantum Lab Banner ── medallion · title · primary buttons ── */}
-      <div
-        className="ql-banner"
-        data-help="Quantum Lab — heat the lattice, crystallize, generate neural lyrics. Medallion left, controls right."
-      >
-        {/* Left: the dichroic glass CFunky medallion — cannabis leaf + treble clef */}
-        <img src={quantumMedallionImg} alt="CFunky Creations" className="ql-banner-medallion" />
-
-        {/* Center: title + subtitle with dynamic DNA state */}
-        <div className="ql-banner-center">
-          {/* Words only. The two lightning bolts and the hand-drawn "helix"
-              beside them were flat, static SVG scribble — nothing like a
-              rotating high-colour double helix — and Chris cut them. The
-              medallion to the left carries the real artwork. */}
-          <div className="ql-banner-title-row">
-            <h1 className="ql-title ql-banner-title">LYRICIST GOES QUANTUM</h1>
-          </div>
-          <p className="ql-banner-subtitle">
-            Lyricist's Quantum{' '}
-            <span
-              className="ql-dna-pill"
-              data-help="DNA = this section's rhythm + rhyme plan (not biology). Unlocked = free to change. Locked = everything is pinned so nothing drifts."
-            >
-              {section.frozen ? 'DNA Locked 🔒' : 'DNA Unlocked 🔓'}
-            </span>
-          </p>
-        </div>
-
-        {/* Right: Chris and the guitar, cut out of the Austin boardwalk shot. */}
-        <img src={quantumChrisImg} alt="Chris Funk" className="ql-banner-chris" />
-
-        {/* Every action button now lives in the action bar directly under the
-            lattice (.ql-actionbar) — nothing hides at the bottom of the page. */}
-      </div>
-
       {/* YOUR KEYWORDS — primary entry point (user owns the lattice) */}
       <div
         className="ql-keywords"
@@ -1019,12 +982,14 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         >
           <h4>Section DNA</h4>
           <div className="ql-mini-btns">
+            {/* The banner is gone, so this button IS the lock indicator now —
+                it says which state the DNA is in, and goes green when pinned. */}
             <button
-              className="ql-mini"
+              className={`ql-mini ${section.frozen ? 'grn' : ''}`}
               onClick={doLock}
-              data-help="Pins every word so nothing can change. Click again to unlock. Use when the lattice looks good and you only want to Generate Neural Lyrics."
+              data-help="Pins every word so nothing can change. Click again to unlock. Green and reading DNA Locked means every word is pinned. Use when the lattice looks good and you only want to Generate Neural Lyrics."
             >
-              🔒 Lock
+              {section.frozen ? '🔒 DNA Locked' : '🔓 DNA Unlocked'}
             </button>
             <button
               className="ql-mini grn"
