@@ -24,7 +24,7 @@
  *   node scripts/publish-release.mjs --dry-run - says what it would do
  */
 
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -32,6 +32,11 @@ import crypto from 'node:crypto';
 const OWNER = 'cfunkycreations-tech';
 const REPO = 'lyricist-releases';
 const RELEASE_DIR = process.env.LYRICIST_RELEASE_DIR || 'V:/Releases/Lyricist 4.2.0 Releases';
+
+/** The website's index.html. Publishing rewrites the RELEASE block inside it so
+ *  the version, sizes, date and hashes on the site are never stale. Set
+ *  LYRICIST_SITE=none to skip. */
+const SITE_INDEX = process.env.LYRICIST_SITE || 'V:/src/lyricist-site/index.html';
 
 /** Constant asset names. See the header: these are load bearing. */
 const ASSET_INSTALLER = 'Lyricist-Setup.exe';
@@ -47,8 +52,16 @@ function die(msg, hint) {
   process.exit(1);
 }
 
-function gh(args, { capture = true } = {}) {
-  const r = spawnSync('gh', args, { encoding: 'utf8', shell: process.platform === 'win32' });
+/**
+ * NEVER pass shell:true here. Windows concatenates the args into one command
+ * line without quoting them, so `--description "Downloads for Lyricist, ..."`
+ * arrived at gh as ten separate arguments and repo creation died with
+ * "accepts at most 1 arg(s), received 10". Every path in this script has a
+ * space in it (V:\Releases\Lyricist 4.2.0 Releases\), so the uploads would
+ * have broken the same way. gh.exe resolves fine without a shell.
+ */
+function gh(args) {
+  const r = spawnSync('gh', args, { encoding: 'utf8' });
   if (r.error) die('GitHub CLI (gh) is not installed.', 'Get it at https://cli.github.com then run: gh auth login');
   return { code: r.status, out: (r.stdout || '').trim(), err: (r.stderr || '').trim() };
 }
@@ -141,6 +154,45 @@ if (seen.code !== 0) {
     `Make it public:  gh repo edit ${repoSlug} --visibility public --accept-visibility-change-consequences`);
 }
 
+/**
+ * A release is a tag, and a tag needs a commit to point at. A brand new repo
+ * has none, so GitHub answers 422 "Repository is empty" and the whole publish
+ * dies AFTER the repo exists. One README fixes it, and it doubles as the page
+ * a curious person lands on.
+ */
+if (!dryRun) {
+  const commits = gh(['api', `repos/${repoSlug}/commits`, '--jq', 'length']);
+  if (commits.code !== 0 || commits.out === '0' || commits.out === '') {
+    console.log('  Repo is empty, adding a README so a release has something to tag.');
+    const readme = [
+      '# Lyricist downloads',
+      '',
+      'Downloads for **Lyricist**, the free AI songwriting studio for Windows.',
+      'Made by CFunky Creations LLC in Austin, Texas.',
+      '',
+      '**Get the app: https://cfunkycreationsllc.com**',
+      '',
+      'This repository holds the installers only, no source code. Grab the newest build from the',
+      'Releases tab on the right, or use these two addresses, which always point at the newest one:',
+      '',
+      `- Installer: https://github.com/${repoSlug}/releases/latest/download/${ASSET_INSTALLER}`,
+      `- Portable (no install): https://github.com/${repoSlug}/releases/latest/download/${ASSET_PORTABLE}`,
+      '',
+      '## Windows will warn you the first time',
+      '',
+      'Windows shows a blue "Windows protected your PC" box because this installer is not signed',
+      'with a paid certificate. A certificate costs more per year than this free app will ever make.',
+      'Click **More info**, then **Run anyway**. Every release lists a SHA-256 you can check.',
+      '',
+      'Free. No account, no subscription, no card. Free AI tools for the masses.',
+      '',
+    ].join('\n');
+    const put = gh(['api', `repos/${repoSlug}/contents/README.md`, '-X', 'PUT',
+      '-f', 'message=Add README', '-f', `content=${Buffer.from(readme, 'utf8').toString('base64')}`]);
+    if (put.code !== 0) die('Could not add a README to the releases repo.', put.err);
+  }
+}
+
 /* ---- 6. Ship it ------------------------------------------------------ */
 if (dryRun) {
   console.log('\n  DRY RUN, nothing was uploaded. It would have created:');
@@ -173,7 +225,55 @@ for (const a of assets) {
 }
 fs.unlinkSync(tmpNotes);
 
-/* ---- 7. The addresses the website uses ------------------------------- */
+/* ---- 7. Update the website's RELEASE block --------------------------- */
+/*  The whole point of the markers in index.html. Everything the site says
+ *  about a release lives in that one block, so a publish rewrites it and the
+ *  site is correct without anybody editing HTML. The download links never
+ *  change, so they are carried through untouched.                          */
+function updateSite() {
+  if (SITE_INDEX === 'none') return;
+  if (!fs.existsSync(SITE_INDEX)) {
+    console.log(`  Site not found at ${SITE_INDEX}, skipping the website update.`);
+    return;
+  }
+  const html = fs.readFileSync(SITE_INDEX, 'utf8');
+  const open = html.indexOf('<!-- RELEASE:BEGIN');
+  const close = html.indexOf('<!-- RELEASE:END');
+  if (open === -1 || close === -1 || close < open) {
+    console.log('  No RELEASE:BEGIN / RELEASE:END markers in the site. Left it alone.');
+    return;
+  }
+  const jsonStart = html.indexOf('{', open);
+  const jsonEnd = html.lastIndexOf('}', close) + 1;
+  let data;
+  try {
+    data = JSON.parse(html.slice(jsonStart, jsonEnd));
+  } catch {
+    console.log('  The site RELEASE block is not valid JSON. Left it alone rather than guessing.');
+    return;
+  }
+
+  const inst = assets.find((a) => a.as === ASSET_INSTALLER);
+  const port = assets.find((a) => a.as === ASSET_PORTABLE);
+  const MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+  const d = new Date();
+
+  data.version = fullVersion;
+  data.released = `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  if (inst) { data.installerSize = `${inst.size} MB`; data.installerSha256 = inst.sha; }
+  if (port) { data.portableSize = `${port.size} MB`; data.portableSha256 = port.sha; }
+
+  const updated = html.slice(0, jsonStart)
+    + JSON.stringify(data, null, 2)
+    + html.slice(jsonEnd);
+  fs.writeFileSync(SITE_INDEX, updated, 'utf8');
+  console.log(`  Website updated: ${SITE_INDEX}`);
+  console.log('  Upload index.html to the host and the site says ' + fullVersion + '.');
+}
+updateSite();
+
+/* ---- 8. The addresses the website uses ------------------------------- */
 const base = `https://github.com/${repoSlug}/releases/latest/download`;
 console.log(`
   DONE. Lyricist ${fullVersion} is published.
