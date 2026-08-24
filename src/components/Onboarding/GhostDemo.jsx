@@ -81,6 +81,63 @@ function firePointerSequence(el, clientX, clientY, { click = true } = {}) {
   if (click) { try { el.click(); } catch { /* */ } }
 }
 
+/**
+ * WHERE THE SPEECH BUBBLE GOES SO IT NEVER LANDS ON THE GHOST.
+ *
+ * Chris: "make sure that ghost never goes behind the speech box ... he's
+ * always pointing to the right, so make sure it's always on the right or above
+ * it or somewhere, just not behind the box."
+ *
+ * The ghost is drawn at a fixed offset from the cursor by .ghost-demo-figure
+ * in GhostDemo.css: left -96px, top -118px, 112x112 plus the "Remote" label.
+ * The numbers below mirror that box with a little slack. If you move the ghost
+ * in the CSS, move it here too.
+ *
+ * The old code was one line, `x = min(innerWidth - 330, max(12, tx + 28))`.
+ * On a target near the right edge that clamp dragged the bubble left, straight
+ * on top of him.
+ *
+ * Order of preference: right of the ghost (the way he faces, so he points at
+ * what he is saying), then left, then above, then below. Never on top.
+ */
+function placeBubble(tx, ty) {
+  const M = 12;                                        // keep off the edges
+  const GAP = 18;
+  const W = Math.min(300, window.innerWidth - 32);      // matches the CSS width
+  const H = 150;                                       // generous; text varies
+
+  // The ghost's own rectangle in viewport coordinates.
+  const gLeft = tx - 100;
+  const gRight = tx + 20;
+  const gTop = ty - 122;
+  const gBottom = ty + 16;
+
+  let x = gRight + GAP;
+  let y = Math.max(M, ty - 130);
+
+  if (x + W > window.innerWidth - M) {
+    const leftX = gLeft - GAP - W;
+    if (leftX >= M) {
+      x = leftX;                                       // put him on the right
+    } else {
+      // No room either side. Go above him, or below if the top is tight.
+      x = Math.min(window.innerWidth - M - W, Math.max(M, tx - W / 2));
+      const aboveY = gTop - GAP - H;
+      y = aboveY >= M ? aboveY : gBottom + GAP;
+    }
+  }
+
+  x = Math.min(window.innerWidth - M - W, Math.max(M, x));
+  y = Math.min(window.innerHeight - M - H, Math.max(M, y));
+
+  // Last look. If clamping to the viewport pushed it back over him, drop it
+  // below him, which is always somewhere.
+  const overlaps = x < gRight && x + W > gLeft && y < gBottom && y + H > gTop;
+  if (overlaps) y = Math.min(window.innerHeight - M - H, gBottom + GAP);
+
+  return { x, y };
+}
+
 export default function GhostDemo({ tabId, onClose }) {
   const demo = getGhostDemo(tabId);
 
@@ -424,9 +481,8 @@ export default function GhostDemo({ tabId, onClose }) {
       // Move the visible mouse like a remote session
       await animateCursorTo(tx, ty, (el ? 900 + Math.random() * 200 : 600) * speedRef.current, runId);
 
-      const bx = Math.min(window.innerWidth - 330, Math.max(12, tx + 28));
-      const by = Math.max(56, ty - 130);
-      setBubble({ text: step.say, x: bx, y: by, visible: true });
+      const spot = placeBubble(tx, ty);
+      setBubble({ text: step.say, x: spot.x, y: spot.y, visible: true });
       // THE pacing bug. This was `Math.min(1200, …)` — a hard 1.2s ceiling on
       // how long the explanation sat there before the ghost clicked, no matter
       // how long the sentence was. You could not finish reading a step before

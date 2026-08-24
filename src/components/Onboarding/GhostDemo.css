@@ -50,7 +50,13 @@
 
 .ghost-demo-operator {
   position: fixed;
-  z-index: 120010;
+  /* ABOVE the speech bubble (120020), deliberately. Chris: "make sure that
+     ghost never goes behind the speech box ... nobody can see it." The bubble
+     used to win the stacking order, so any overlap swallowed him whole. The
+     placement maths in GhostDemo.jsx keeps them apart in the normal case; this
+     is the guarantee for the ones it cannot, like the screen-centred bubbles
+     that appear wherever the ghost happens to be standing. */
+  z-index: 120025;
   pointer-events: none;
   transform: translate(-4px, -2px);
   transition: filter 0.1s;
