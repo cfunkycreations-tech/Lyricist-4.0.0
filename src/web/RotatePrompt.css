@@ -1,0 +1,105 @@
+/*
+  TURN YOUR PHONE SIDEWAYS.
+
+  Only ever seen on a phone that refuses to be turned automatically, which in
+  practice means iPhone. Sits above everything except the boot splash, because
+  while it is up nothing behind it is usable anyway.
+*/
+
+.rot-root {
+  position: fixed;
+  inset: 0;
+  z-index: 120090;          /* under the splash (120100), over everything else */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background:
+    radial-gradient(80% 60% at 20% 0%, rgba(0, 240, 255, 0.14) 0%, transparent 60%),
+    radial-gradient(70% 55% at 90% 100%, rgba(192, 38, 255, 0.16) 0%, transparent 58%),
+    #04060f;
+  /* Paint under the notch and the home indicator. */
+  padding: max(22px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-right))
+           max(22px, env(safe-area-inset-bottom)) max(22px, env(safe-area-inset-left));
+}
+
+.rot-card {
+  width: 100%;
+  max-width: 340px;
+  text-align: center;
+  color: #f2f5fa;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+/* A phone outline that tips a quarter turn, on a loop. Says the whole thing
+   without needing the sentence underneath it. */
+.rot-phone {
+  position: relative;
+  width: 74px;
+  height: 116px;
+  margin: 0 auto 20px;
+  display: grid;
+  place-items: center;
+  animation: rot-tip 2.6s ease-in-out infinite;
+}
+.rot-phone-body {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  border: 2px solid rgba(0, 240, 255, 0.85);
+  box-shadow: 0 0 22px rgba(0, 240, 255, 0.35), inset 0 0 18px rgba(0, 240, 255, 0.12);
+}
+.rot-arrow {
+  position: absolute;
+  font-size: 1.5rem;
+  color: #00ff9c;
+  text-shadow: 0 0 12px rgba(0, 255, 156, 0.7);
+}
+
+@keyframes rot-tip {
+  0%, 22%   { transform: rotate(0deg); }
+  55%, 78%  { transform: rotate(-90deg); }
+  100%      { transform: rotate(0deg); }
+}
+
+.rot-title {
+  margin: 0 0 10px;
+  font-family: 'Metamorphous', serif;
+  font-size: 1.1rem;
+  color: #fff;
+  -webkit-text-stroke: 0.4px #00ff9c;
+  text-shadow: 0 0 10px rgba(0, 255, 156, 0.35);
+}
+
+.rot-copy {
+  margin: 0 0 20px;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: #b8c0ce;
+}
+
+/* NEVER A DEAD END. Someone with their own rotation lock on cannot turn the
+   phone even if they want to, and being trapped on a screen is worse than a
+   cramped one. */
+.rot-btn {
+  min-height: 44px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  background: rgba(10, 16, 32, 0.9);
+  color: #cfe9ff;
+  font-family: 'Metamorphous', serif;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+.rot-btn:active { transform: scale(0.97); }
+
+.rot-note {
+  margin: 14px 0 0;
+  font-size: 0.7rem;
+  color: #8b93a3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rot-phone { animation: none; transform: rotate(-90deg); }
+}

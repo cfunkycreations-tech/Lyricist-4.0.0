@@ -1236,3 +1236,24 @@ input.lyric-line-input {
 .tab-video-shell {
   background: transparent !important;
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   SUPPORT ROW — the donation buttons.
+
+   This row sat on EVERY tab and was the single most common overflow in the
+   whole app: measured at 491px wide inside a 375px phone screen, on all 18
+   tabs at once. It had six buttons in one line with a hard maxWidth of 360px.
+   Now three (PayPal, Cash App, Buy Me a Coffee) and it wraps.
+   ────────────────────────────────────────────────────────────────────────── */
+.support-row { min-width: 0; }
+.support-row > * { flex: 0 1 auto; min-width: 0; }
+.support-row img { max-width: 100%; height: auto; }
+
+@media (max-width: 640px) {
+  /* Centre it and let it breathe rather than crushing against the right edge. */
+  .support-row { justify-content: center !important; gap: 8px !important; }
+  /* Real finger targets, not 5px-padded desktop pills. */
+  .support-row > a,
+  .support-row > button { padding: 9px 14px !important; font-size: 0.78rem !important; }
+  .support-row img { height: 34px !important; }
+}

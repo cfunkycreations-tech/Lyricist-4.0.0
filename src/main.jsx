@@ -3,6 +3,11 @@ import { startPrism } from './services/prismTheme.js';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
+import { registerPWA } from './web/registerPWA.js';
+import LandscapeSplash from './web/LandscapeSplash.jsx';
+
+// Installable on a phone. No-op inside Electron - see the file.
+registerPWA();
 
 // Surface boot errors instead of a silent black screen
 class BootErrorBoundary extends React.Component {
@@ -45,6 +50,9 @@ try {
   ReactDOM.createRoot(rootEl).render(
     <React.StrictMode>
       <BootErrorBoundary>
+        {/* Web only. Turns the phone sideways and locks it, then gets out of
+            the way. Renders nothing inside the desktop app. */}
+        <LandscapeSplash />
         <App />
       </BootErrorBoundary>
     </React.StrictMode>

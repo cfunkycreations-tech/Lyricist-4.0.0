@@ -1,0 +1,123 @@
+/*
+  LANDSCAPE BOOT SPLASH — his title video, then the quarter turn.
+
+  Three phases, driven by a class on the root:
+    play    splash.mp4 runs, full frame, untouched
+    turn    the whole frame squishes, blurs and rotates a quarter turn
+    gone    fades out and unmounts
+
+  THE TURN HAPPENS AFTER THE CLIP, NEVER OVER IT. His title video is the first
+  thing anyone sees of Lyricist and it does not get covered by an effect. The
+  blur is what sells the rotation: a plain CSS rotate reads as a UI glitch,
+  while a rotate with motion blur and a squash reads as something turning
+  through space, which is exactly what the phone is about to do.
+
+  Z-INDEX 120100: above the Ghost operator (120025) and its speech bubble
+  (120020), which are the highest things in the app. Anything poking through
+  the splash would look like a rendering fault.
+*/
+
+.lsplash {
+  position: fixed;
+  inset: 0;
+  z-index: 120100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  opacity: 1;
+  transition: opacity 0.46s ease;
+  overflow: hidden;
+}
+
+.lsplash-plane {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  transform-origin: 50% 50%;
+  will-change: transform, filter;
+}
+
+/* CONTAIN, NEVER COVER. The clip is 1280x720; a phone in landscape is about
+   2.2:1. Cover would crop a third of his title card off the top and bottom,
+   which is the same mistake that once cut his head off in the header bar. */
+.lsplash-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.lsplash-hint {
+  position: absolute;
+  bottom: 8%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: 'Metamorphous', sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  color: rgba(184, 192, 206, 0.85);
+  pointer-events: none;
+}
+
+/* Always skippable. Nobody should be held for 25 seconds on a relaunch. */
+.lsplash-skip {
+  position: absolute;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  min-width: 64px;
+  min-height: 36px;
+  padding: 6px 16px;
+  font-family: 'Metamorphous', sans-serif;
+  font-size: 0.7rem;
+  color: #cfe9ff;
+  background: rgba(10, 16, 32, 0.72);
+  border: 1px solid rgba(0, 240, 255, 0.45);
+  border-radius: 999px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  z-index: 2;
+}
+.lsplash-skip:active { transform: scale(0.95); }
+
+/* ── turn: squash, blur, quarter turn ─────────────────────────────────── */
+.lsplash-turn .lsplash-plane {
+  animation: lsplash-turn 0.95s cubic-bezier(0.66, 0, 0.24, 1) forwards;
+}
+.lsplash-turn .lsplash-skip { display: none; }
+
+@keyframes lsplash-turn {
+  0% {
+    transform: rotate(0deg) scale(1, 1);
+    filter: blur(0);
+  }
+  38% {
+    /* the squish: pinched on one axis, stretched on the other, smeared */
+    transform: rotate(34deg) scale(1.16, 0.72);
+    filter: blur(8px);
+  }
+  68% {
+    transform: rotate(74deg) scale(0.9, 1.1);
+    filter: blur(4px);
+  }
+  100% {
+    transform: rotate(90deg) scale(1, 1);
+    filter: blur(0);
+  }
+}
+
+.lsplash-gone { opacity: 0; pointer-events: none; }
+
+/*
+  Someone who has asked their phone to stop animating things gets a plain cut.
+  The turn is decoration; the app underneath is the point.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .lsplash-turn .lsplash-plane {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}

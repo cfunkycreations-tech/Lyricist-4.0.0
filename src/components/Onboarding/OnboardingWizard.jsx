@@ -98,7 +98,11 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(5,2,14,0.78)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+      className="wiz-overlay"
+      /* z-index 950: the phone shell paints at 800 and its bottom sheet at 901.
+         At the old 200 the tour opened BEHIND the launcher and looked like the
+         button did nothing. Still below the Ghost operator, as before. */
+      style={{ position: 'fixed', inset: 0, zIndex: 950, background: 'rgba(5,2,14,0.78)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
       onClick={onClose}
     >
       {/* Narration audio — hidden element, driven by the controls below. */}
@@ -113,7 +117,7 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
       />
 
       <div
-        className="card-cosmic"
+        className="card-cosmic wiz-card"
         onClick={(e) => e.stopPropagation()}
         style={{ width: '100%', maxWidth: 560, maxHeight: '88vh', overflowY: 'auto', background: '#0d081c', border: '1px solid rgba(139,92,246,0.4)', borderRadius: 16, padding: '26px 28px', boxShadow: '0 0 50px rgba(124,58,237,0.45)' }}
       >

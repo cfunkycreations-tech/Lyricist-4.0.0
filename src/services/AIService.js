@@ -29,6 +29,50 @@ function isNoEndpointsError(status, message) {
 }
 
 /**
+ * THE FIRST THING A NEW PERSON HITS, AND IT USED TO BE UNREADABLE.
+ *
+ * A free model on OpenRouter is free because the provider is allowed to keep
+ * and train on what you send it. An account that has not granted that
+ * permission has NO endpoint that can serve a free model, so OpenRouter answers
+ * 404 with:
+ *
+ *   "No endpoints available matching your guardrail restrictions and data
+ *    policy. Configure: https://openrouter.ai/settings/privacy"
+ *
+ * That sentence was passed straight through to the workspace. Reported by a
+ * real user on 2026-08-24, on his first run, having done everything right: he
+ * installed the app, pasted a working key, and got API jargon instead of a song.
+ *
+ * The retry above cannot fix it. That retry drops OUR provider filter, but this
+ * block is set on the person's own OpenRouter account, so the second attempt
+ * fails exactly like the first. The only fix is to tell them plainly what to go
+ * and change.
+ *
+ * Zero Data Retention is the other half of the trap: NO free model offers ZDR,
+ * so switching it on removes every free model at once. It has to be named, or
+ * someone who turned it on for good reasons will never work out why the app
+ * appears broken.
+ */
+function isDataPolicyBlock(status, message) {
+  const m = String(message || '');
+  return (status === 404 || status === 403)
+    && /data policy|guardrail|settings\/privacy/i.test(m);
+}
+
+const DATA_POLICY_HELP = [
+  'Your OpenRouter account is currently set to refuse the free models, so there is nothing for Lyricist to write with. This is a setting on your OpenRouter account, not a problem with the app or your key.',
+  '',
+  'Free models are free because the provider is allowed to keep and learn from what you send them. Until you allow that, OpenRouter has no free model it can use.',
+  '',
+  'To fix it, go to  https://openrouter.ai/settings/privacy  and:',
+  '  1. Turn ON the options that allow model training and prompt logging for free models.',
+  '  2. Turn OFF Zero Data Retention if it is on. No free model offers it, so leaving it on removes every free model at once.',
+  '  3. Come back to Lyricist and press the button again. Nothing needs reinstalling.',
+  '',
+  'If you would rather not allow training, that is completely fair. You can add a few dollars of credit to OpenRouter and pick a paid model in Settings instead, and these restrictions stop applying.',
+].join('\n');
+
+/**
  * Clean a pasted key into something that can actually go in a header.
  *
  * A key copied off a web page routinely arrives with a trailing newline, a
@@ -121,6 +165,10 @@ async function singleCall(messages, config, modelId, customTemp, customMax) {
     unfiltered = attempt.ok;
   }
   if (!attempt.ok) {
+    // Translate the one failure a brand new person is most likely to meet.
+    if (isDataPolicyBlock(attempt.status, attempt.message)) {
+      throw new Error(DATA_POLICY_HELP);
+    }
     throw new Error(attempt.message || `API Error (${modelId}): status ${attempt.status}`);
   }
   const result = attempt.result;

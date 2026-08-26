@@ -3,6 +3,7 @@ import TabBackground from '../common/TabBackground.jsx';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { callAI } from '../../services/AIService.js';
 import EnergyField from './EnergyField.jsx';
+import LatticeFire from './LatticeFire.jsx';
 import {
   buildSection, buildSectionFromKeywords, buildEntanglements, setCellText,
   runGens, spotlightCell, measureCell,
@@ -17,6 +18,7 @@ import {
   QUANTUM_SECTIONS,
 } from './quantumFeatures.js';
 import { registerDemoSnapshot } from '../../services/demoSafety.js';
+import { useMobile } from '../../mobile/useMobile.js';
 import './QuantumLab.css';
 
 // ============================================================
@@ -35,17 +37,112 @@ const pct = (x) => `${Math.round((x || 0) * 100)}%`;
 const f2 = (x) => (x || 0).toFixed(2);
 const hashClass = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
 
-// Lattice tile color: ultra-hot = red, hot = orange, warm = magenta, cool cycles 5 colors
-const COOL_TILE_COLORS = [GRN, MAG, HOT_PNK, ORG, '#c084fc'];
-function tileColor(cell, selected) {
-  if (selected) return { c: VIO, glow: 32 };
-  const e = cell.energy || 0;
-  const glow = Math.round(8 + e * 32);
-  if (cell.frozen) return { c: 'rgba(180,180,200,0.55)', glow: 8 };
-  if (e >= 0.78) return { c: HOT_RED, glow };
-  if (e >= 0.6) return { c: HOT_ORG, glow };
-  if (e >= 0.42) return { c: YLW, glow };
-  return { c: COOL_TILE_COLORS[hashClass(cell.rhymeClass) % COOL_TILE_COLORS.length], glow };
+/**
+ * LATTICE TILE COLOUR: A REAL HEAT RAMP, NOT A PALETTE CYCLE.
+ *
+ * The old version put the three hottest bands on a ramp and then coloured every
+ * cool tile by RHYME CLASS, cycling five unrelated colours. So energy - the one
+ * thing the lattice exists to show - was invisible across the bottom two thirds
+ * of the range, and the board read as a random spread of greens and purples.
+ * Chris's word for it was bland, and he was right.
+ *
+ * Now it is a continuous furnace ramp, cold to white hot, exactly like real
+ * fire, so a glance tells you where the energy is:
+ *
+ *   0.00  deep midnight blue   barely alive
+ *   0.18  electric cyan
+ *   0.36  emerald green
+ *   0.52  burning yellow-gold
+ *   0.68  molten orange
+ *   0.84  fierce red
+ *   1.00  white hot core
+ *
+ * Entangled (superposition) tiles sit OUTSIDE the ramp in violet, because that
+ * is a different property, not more heat. Same reason frozen tiles go grey.
+ */
+const HEAT_RAMP = [
+  [0.00, [10, 26, 90]],     // deep midnight blue
+  [0.18, [0, 190, 255]],    // electric cyan
+  [0.36, [16, 240, 160]],   // emerald
+  [0.52, [255, 214, 0]],    // yellow-gold
+  [0.68, [255, 111, 0]],    // molten orange
+  [0.84, [255, 40, 24]],    // fierce red — HOTTEST
+  [1.00, [255, 18, 18]],    // and it stays red. His hottest tile is red, not
+                            // white; running on to white washed the top of the
+                            // board out to grey.
+];
+
+function heatColor(e) {
+  const x = Math.max(0, Math.min(1, e));
+  for (let i = 1; i < HEAT_RAMP.length; i++) {
+    const [p1, c1] = HEAT_RAMP[i - 1];
+    const [p2, c2] = HEAT_RAMP[i];
+    if (x <= p2) {
+      const t = (x - p1) / (p2 - p1 || 1);
+      const mix = c1.map((v, k) => Math.round(v + (c2[k] - v) * t));
+      // Bare components, not rgb(). The tile needs the same colour at five
+      // different alphas — outline, fill top, fill bottom, outer glow, inner
+      // glow — and `rgba(var(--tc), 0.2)` is the only way to get that from one
+      // custom property.
+      return `${mix[0]}, ${mix[1]}, ${mix[2]}`;
+    }
+  }
+  return '255, 18, 18';
+}
+
+/**
+ * ENERGY IS NORMALISED AGAINST THE BOARD, NOT READ AS AN ABSOLUTE 0..1.
+ *
+ * THIS IS WHY THE LATTICE LOOKED BLAND, and it was a real bug, not a taste
+ * problem. The engine's energy almost never climbs past about 0.45 in actual
+ * use - measured live, after loading 24 words, spotlighting four tiles six
+ * times each and running twelve generations, the hottest cell on the board was
+ * 0.45. But the old bands started at 0.42, 0.60 and 0.78, so the yellow band
+ * barely fired and the orange and red bands NEVER fired at all. Every tile fell
+ * through to the cool palette, which cycled five colours by rhyme class. The
+ * board could not show heat because the top two thirds of its scale was
+ * unreachable.
+ *
+ * So `maxE` is the hottest cell currently on the board and every tile is
+ * coloured by its share of that. The ramp always spans end to end: the hottest
+ * word is always white hot, the coldest always deep blue, whatever absolute
+ * numbers the engine happens to produce today. If the engine is ever retuned,
+ * this keeps working.
+ *
+ * The 0.08 floor stops a stone cold board (every cell at 0) dividing by zero
+ * and flashing the whole grid white.
+ */
+function tileColor(cell, selected, rankHeat) {
+  if (selected) return { c: '180, 77, 255', glow: 32, heat: 0 };
+  // Frozen is grey in the design — a pinned tile is out of the temperature
+  // system entirely, so it leaves the ramp rather than sitting cold on it.
+  if (cell.frozen) return { c: '176, 180, 200', glow: 10, heat: 0 };
+  const heat = Math.max(0, Math.min(1, rankHeat || 0));
+  // Superposition is its own state, not a temperature. Magenta, off the ramp,
+  // and it burns violet instead of orange.
+  if (cell.isSuperposition) return { c: '224, 64, 255', glow: Math.round(18 + heat * 30), heat };
+  return { c: heatColor(heat), glow: Math.round(10 + heat * 38), heat };
+}
+
+/**
+ * WHAT COLOUR DOES THIS TILE BURN?
+ *
+ * TWO ANSWERS, and this is straight off his animation, not a design choice of
+ * mine. Fire on this board is ORANGE — real fire, white at the fuel through
+ * yellow and orange to red at the tip. The only exception is an ENTANGLED
+ * tile, which burns VIOLET, deliberately wrong for fire, because a superposed
+ * word is not behaving like the rest of the board.
+ *
+ * An earlier pass had this cycling six hues by rhyme class, so the board came
+ * out as a rainbow of green and blue and yellow flames. The colours in the
+ * design are on the TILES — the temperature ramp — not on the flames. Two
+ * different things, and mixing them up cost most of an afternoon.
+ *
+ * Feeds --fh in QuantumLab.css, which drives the tongues, the core, the pool
+ * at the fuel, the light thrown back on the word, and the embers.
+ */
+function fireHue(cell) {
+  return cell.isSuperposition ? 282 : 26;
 }
 
 // a gentle static sparkline path for the Entanglement State card
@@ -75,6 +172,18 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const [spotlightMode, setSpotlightMode] = useState(false);
   const [crystallized, setCrystallized] = useState(false);
   const [entView, setEntView] = useState(true);
+
+  /* PHONE ONLY. In landscape the lattice is the tool; the keyword box, the
+     step buttons and the three inspector panels were eating 400 of the 915
+     available pixels and sitting on top of the thing you came here to see.
+     They become two drawers behind two labelled buttons instead. Both are
+     closed on arrival, so the lattice opens full width. */
+  const mobile = useMobile();
+  const [drawer, setDrawer] = useState(null);      // null | 'controls' | 'panels'
+  /* The linked-pairs readout floats over the lattice and covers four tiles.
+     It is a glance, not a panel: a chip that opens on hover, and on tap for
+     touch screens where hover does not exist. */
+  const [entOpen, setEntOpen] = useState(false);
   const [status, setStatus] = useState({
     lead: 'Your words first.',
     rest: ' Type YOUR keywords below (as many as you want), hit Load into lattice, then Spotlight / Run / Crystallize. Or click a tile and edit it. The demo grid is only a starting example.',
@@ -181,6 +290,34 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     [section]
   );
   const energyById = useMemo(() => Object.fromEntries(cells.map((c) => [c.id, c.energy])), [cells]);
+  /* The hottest cell on the board right now. Every tile's colour is its share
+     of this, so the heat ramp always spans end to end. See tileColor. */
+  /**
+   * HEAT IS A RANK ON THIS BOARD, NOT A FRACTION OF THE MAXIMUM.
+   *
+   * energy / boardMax looks correct and is not. The engine spreads energy
+   * quite evenly once it has run, so most tiles land close to the maximum,
+   * almost every tile computes to ~1.0, and the board turns solid red with
+   * every single tile on fire — no ramp, no meaning, nothing to look at.
+   *
+   * Ranking guarantees the spread his design shows: coldest tile 0.0, hottest
+   * 1.0, everything else evenly between. Ties share a rank so two identical
+   * tiles cannot end up different colours.
+   */
+  const heatByCell = useMemo(() => {
+    const map = new Map();
+    const live = cells.filter((c) => !c.frozen);
+    const sorted = [...live].sort((a, b) => (a.energy || 0) - (b.energy || 0));
+    const n = sorted.length;
+    for (let i = 0; i < n; i++) {
+      const e = sorted[i].energy || 0;
+      // Walk back to the first tile with this same energy, so ties agree.
+      let first = i;
+      while (first > 0 && (sorted[first - 1].energy || 0) === e) first--;
+      map.set(sorted[i].id, n > 1 ? first / (n - 1) : 0);
+    }
+    return map;
+  }, [cells]);
 
   // ---- actions ----
   const loadKeywords = useCallback(() => {
@@ -522,8 +659,49 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const stress01 = (s) => (s > 0 ? 'strong' : 'weak');
   const dominant = dna?.rhymeScheme ? [...new Set(dna.rhymeScheme.split(''))].join(' · ') : '—';
 
+  const rootCls = ['ql-root', mobile && 'ql-mob', drawer && `ql-draw-${drawer}`]
+    .filter(Boolean).join(' ');
+
   return (
-    <div className="ql-root">
+    <div className={rootCls}>
+      {/* ── PHONE: the two drawer buttons ──────────────────────────────────
+          Labelled, always visible, sitting above the lattice. No swipe-from-
+          the-edge gesture, no hidden handle: if a control exists it has a
+          button with a word on it. */}
+      {mobile && (
+        <div className="ql-mobbar">
+          <button
+            type="button"
+            className={`ql-mobtab ${drawer === 'controls' ? 'is-open' : ''}`}
+            onClick={() => setDrawer((d) => (d === 'controls' ? null : 'controls'))}
+            data-help="Your keywords and all six step buttons. Slides over the lattice, then closes again."
+          >
+            ☰ Words &amp; steps {drawer === 'controls' ? '✕' : '▾'}
+          </button>
+          <button
+            type="button"
+            className={`ql-mobtab ql-mobtab-mid ${drawer === 'adv' ? 'is-open' : ''}`}
+            onClick={() => setDrawer((d) => (d === 'adv' ? null : 'adv'))}
+            data-help="The advanced set: DNA, contracts, measure, multi-section, truth meter, stress, loop, style pressure and the collapse journal."
+          >
+            ⚙ Advanced
+          </button>
+          <button
+            type="button"
+            className={`ql-mobtab ${drawer === 'panels' ? 'is-open' : ''}`}
+            onClick={() => setDrawer((d) => (d === 'panels' ? null : 'panels'))}
+            data-help="Word Inspector, Section DNA and the scores for the lattice as it stands."
+          >
+            {drawer === 'panels' ? '✕' : '▾'} Inspector ⚛
+          </button>
+        </div>
+      )}
+
+      {/* Tapping the lattice closes whichever drawer is open. */}
+      {mobile && drawer && (
+        <div className="ql-mobscrim" onClick={() => setDrawer(null)} aria-hidden="true" />
+      )}
+
       {/* YOUR KEYWORDS — primary entry point (user owns the lattice) */}
       <div
         className="ql-keywords"
@@ -612,6 +790,34 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         )}
       </div>
 
+      {/* THE FIRE FILTER. One definition, used by every burning tile.
+
+          feTurbulence generates a fractal noise field; feDisplacementMap then
+          pushes each pixel of the flame sideways and upward by however bright
+          the noise is at that point. The result is an edge that tears and
+          re-forms continuously, which is the difference between "a shape that
+          is flame coloured" and "fire". The baseFrequency animates so the noise
+          itself churns rather than the flame sliding across a static pattern.
+
+          The filter region is clamped to 160% so the browser is not asked to
+          rasterise a huge buffer per tile — this runs on 19 tiles at once on a
+          phone. */}
+      <svg className="ql-fire-defs" aria-hidden="true" focusable="false">
+        <defs>
+          <filter id="ql-fire-warp" x="-30%" y="-30%" width="160%" height="160%"
+                  colorInterpolationFilters="sRGB">
+            <feTurbulence type="fractalNoise" baseFrequency="0.022 0.052"
+                          numOctaves="2" seed="7" result="noise">
+              <animate attributeName="baseFrequency"
+                       dur="1.6s" repeatCount="indefinite"
+                       values="0.022 0.052;0.034 0.078;0.018 0.044;0.022 0.052" />
+            </feTurbulence>
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="10"
+                               xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+      </svg>
+
       {/* Lattice + energy field */}
       <div
         className="ql-lattice-wrap"
@@ -636,13 +842,19 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
 
         {entView && (
           <div
-            className="ql-panel ql-ent-panel"
-            style={{ position: 'absolute', top: 6, right: 6, zIndex: 3, width: 250, padding: '10px 12px' }}
+            className={`ql-panel ql-ent-panel ${entOpen ? 'is-open' : ''}`}
             data-help="Shows how many word pairs are linked (entangled). Linked words tend to move together — same repeats or rhyme partners. Turn the links on/off with the Entanglement View button."
           >
-            <h4 style={{ marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
-              Linked pairs <span style={{ opacity: 0.5 }}>⋯</span>
-            </h4>
+            <button
+              type="button"
+              className="ql-ent-head"
+              onClick={() => setEntOpen((v) => !v)}
+              aria-expanded={entOpen}
+            >
+              <span>Linked pairs</span>
+              <span className="ql-ent-count">{links.length}</span>
+            </button>
+            <div className="ql-ent-body">
             <div style={{ display: 'flex', gap: 8 }}>
               {[3, 11].map((s, i) => (
                 <svg key={i} className="ql-spark" viewBox="0 0 150 40" preserveAspectRatio="none" style={{ flex: 1 }}>
@@ -653,19 +865,28 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             <div style={{ fontSize: '0.7rem', color: 'rgba(200,190,220,0.6)', marginTop: 4 }}>
               Active pairs: {links.length}
             </div>
+            </div>
           </div>
         )}
+
+        {/* Real fire, over the whole lattice. Reads .ql-burning straight off
+            the DOM, so it can never disagree with what the tiles are showing. */}
+        <LatticeFire wrapRef={wrapRef} />
 
         <div className="ql-lattice" ref={gridRef} style={{ gridTemplateColumns: `repeat(${cols}, minmax(72px, 1fr))` }}>
           {section.lines.map((line) =>
             line.cells.map((cell) => {
               const isSel = cell.id === selectedId;
-              const { c, glow } = tileColor(cell, isSel);
+              const { c, glow, heat } = tileColor(cell, isSel, heatByCell.get(cell.id) || 0);
               const cls = [
                 'ql-tile',
                 isSel && 'sel',
                 cell.frozen && 'frozen',
                 cell.isSuperposition && 'super',
+                // Only the genuinely hot tiles catch fire. If everything burned
+                // the flames would stop meaning anything.
+                !cell.frozen && heat >= 0.72 && 'ql-burning',
+                !cell.frozen && heat >= 0.88 && 'ql-blazing',
                 flashTileId === cell.id && 'ql-tile-flash',
               ].filter(Boolean).join(' ');
               const stateLabel = cell.frozen ? 'pinned' : cell.isSuperposition ? 'still open to change' : 'settled';
@@ -674,7 +895,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
                   key={cell.id}
                   data-cell={cell.id}
                   className={cls}
-                  style={{ '--tc': c, '--glow': `${glow}px` }}
+                  style={{ '--tc': c, '--glow': `${glow}px`, '--heat': heat.toFixed(2), '--fh': fireHue(cell) }}
                   onClick={() => onTile(cell)}
                   onDoubleClick={() => onTileDouble(cell)}
                   data-help={`“${cell.text}” — energy ${pct(cell.energy)} (${stateLabel})${cell.userOwned ? ' · YOUR word' : ''}. Click = purple (lattice tile). Double-click or edit below. Spotlight ON = pour heat.`}
@@ -686,7 +907,16 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
                       <span className="ql-tile-rime">{String(cell.rhymeClass || '—').replace(/^U_/, '~').slice(0, 6)}</span>
                     </span>
                   )}
+                  <span className="ql-tile-dots" aria-hidden="true">
+                    <i className={cell.userOwned ? 'on' : ''} />
+                    <i className={!cell.isSuperposition ? 'on' : ''} />
+                  </span>
                   {cell.isSuperposition && <span className="ql-tile-super-badge">Σ</span>}
+                  {/* No flame element here any more. The fire is drawn for the
+                      whole board at once by <LatticeFire>, on one canvas, as a
+                      particle system — see LatticeFire.jsx for why CSS could
+                      never do this job. The .ql-burning class is what tells the
+                      canvas which tiles to light. */}
                 </div>
               );
             })
@@ -869,7 +1099,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       {/* Multi-state neural output A / B + one-click handoffs */}
       {(neuralA || neuralB) && (
         <div
-          className="ql-panel"
+          className="ql-panel ql-neural-out"
           style={{ marginTop: 12, borderColor: 'rgba(234,255,43,0.4)' }}
           data-help="Two multi-state verses from the same lattice. Pick A or B (collapse), then Send to Songwriter or Song Forge in one click."
         >

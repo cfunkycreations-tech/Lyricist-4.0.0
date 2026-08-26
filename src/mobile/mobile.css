@@ -1,0 +1,391 @@
+/*
+  MOBILE LANDSCAPE SHELL — built from the approved mockups.
+
+  Target is 915 x 412: a Pixel held sideways. HEIGHT is the scarce resource
+  here, not width, which is the opposite of every instinct from portrait work.
+  So: 44px bars, 6-8px padding, columns instead of stacks, and lists that
+  scroll inside their own panel rather than lengthening the page.
+
+  Everything in this file is scoped under .mob-root, which only ever renders on
+  the phone build. The desktop app cannot be affected by anything in here.
+*/
+
+/* ── hide the desktop chrome on the phone ─────────────────────────────
+   The header is a 16:9 video sized at 62vh. On a 412px-tall screen that is
+   two thirds of the window spent on a title card. The tab strip is 3325px
+   wide, which is what the launcher replaces. Both go. */
+body.lyricist-mobile .header-cosmic,
+body.lyricist-mobile .tab-nav-scroll { display: none !important; }
+
+/* Push the whole app column below the 44px bar. The shell is position:fixed so
+   it takes no space in the flow of its own accord. */
+body.lyricist-mobile .min-h-screen {
+  padding-top: 44px;
+  box-sizing: border-box;
+}
+
+/* HIDE THE "GET YOUR FREE KEY" CARD ON THE PHONE.
+   Measured at 372px tall inside a 412px window: it is the entire screen, on
+   every tab, before you have seen a single tool. It is a desktop onboarding
+   card and it does not survive the translation. The same guidance lives on the
+   Settings tool, which is one tap away in the launcher. */
+body.lyricist-mobile .sh { display: none !important; }
+
+/* The footer medallion and the persistent player are desktop furniture too.
+   Between them they take another 270px of a 412px screen.
+
+   MEASURED, not guessed: with the footer in place the Quantum Lab lattice got
+   239px of a 412px window and showed one and a half rows of a three-row grid.
+   The medallion alone is 112px tall. Everything the footer carries — the LLC
+   line, the contact addresses, the donation buttons — is on the launcher and
+   in Settings, both one tap away. */
+body.lyricist-mobile .suno-player { display: none !important; }
+body.lyricist-mobile .app-footer  { display: none !important; }
+
+.mob-root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(70% 60% at 8% -10%, rgba(0, 240, 255, 0.16) 0%, transparent 60%),
+    radial-gradient(60% 55% at 95% 110%, rgba(192, 38, 255, 0.16) 0%, transparent 58%),
+    #04060f;
+  color: #f2f5fa;
+  overflow: hidden;
+  z-index: 800;
+  /* Paint under the notch and the gesture bar. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+           env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* WITH A TOOL OPEN this shrinks to just the bar and lets every click through to
+   the tool underneath. Without pointer-events:none the whole app would look
+   alive and be completely dead to the touch. */
+.mob-root.is-tool {
+  background: none;
+  pointer-events: none;
+}
+.mob-root.is-tool .mob-bar,
+.mob-root.is-tool .mob-scrim,
+.mob-root.is-tool .mob-sheet { pointer-events: auto; }
+
+/* ── top bar ─────────────────────────────────────────────────────────── */
+.mob-bar {
+  flex: 0 0 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  background: rgba(4, 6, 15, 0.72);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.22);
+}
+
+.mob-wordmark {
+  font-family: 'Audiowide', 'Orbitron', monospace;
+  font-size: 0.98rem;
+  letter-spacing: 0.09em;
+  color: #fff;
+  -webkit-text-stroke: 0.5px #00ff9c;
+  text-shadow: 0 0 10px rgba(0, 255, 156, 0.38);
+  white-space: nowrap;
+}
+.mob-wordmark b { color: #00ff9c; font-weight: 400; }
+
+.mob-bar-title {
+  flex: 1;
+  text-align: center;
+  font-family: 'Metamorphous', serif;
+  font-size: 0.95rem;
+  color: #fff;
+  -webkit-text-stroke: 0.4px #00ff9c;
+  text-shadow: 0 0 8px rgba(0, 255, 156, 0.3);
+  /* A long tool name must shorten, never push the hamburger off screen. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mob-bar-spacer { flex: 1; }
+
+.mob-icon-btn {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;          /* a finger, not a mouse pointer */
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 0;
+  color: #00f0ff;
+  cursor: pointer;
+}
+.mob-icon-btn:active { transform: scale(0.92); }
+
+/* ── the launcher ────────────────────────────────────────────────────── */
+.mob-home {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 7px;
+  gap: 6px;
+}
+.is-hidden { display: none !important; }
+
+.mob-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  /* 18 tools = 6 x 3 exactly. No dead corner, no half-empty last row. */
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+/* FEWER COLUMNS AS THE WINDOW NARROWS, so a tile never gets too thin to hold a
+   word. Six across only works from about 860px; below that the tile drops under
+   130px and "Songwriter" starts snapping in half. */
+@media (max-width: 700px) {
+  .mob-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .mob-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(5, minmax(0, 1fr)); }
+}
+@media (max-width: 420px) {
+  .mob-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(6, minmax(0, 1fr)); }
+}
+
+.mob-tile {
+  min-width: 0;                 /* lets the text ellipsis actually work */
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px;
+  text-align: left;
+  background: linear-gradient(180deg, rgba(10, 16, 32, 0.94), rgba(4, 6, 15, 0.94));
+  border: 1px solid rgba(0, 240, 255, 0.30);
+  border-radius: 11px;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.09), inset 0 0 20px rgba(192, 38, 255, 0.05);
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+.mob-tile:active { transform: scale(0.97); }
+.mob-tile.is-active {
+  border-color: rgba(0, 255, 156, 0.85);
+  box-shadow: 0 0 20px rgba(0, 255, 156, 0.32), inset 0 0 20px rgba(0, 255, 156, 0.08);
+}
+
+.mob-tile-ico {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.5));
+}
+.mob-tile-emoji { font-size: 18px; line-height: 24px; text-align: center; }
+
+.mob-tile-text { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+
+/* THE NAME MAY WRAP TO TWO LINES, THE BLURB MAY NOT.
+   "Recording Booth" and "Chopped & Screwed" cannot fit one line in a 150px
+   tile, and truncating them to "Recordi..." makes the launcher unreadable,
+   which is the whole job of this screen. Two lines, then clamp. */
+.mob-tile-name {
+  font-family: 'Metamorphous', serif;
+  font-size: 0.60rem;
+  line-height: 1.1;
+  color: #fff;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: break-word;  /* break a word only if it truly cannot fit */
+  hyphens: auto;
+}
+.mob-tile-sub {
+  font-size: 0.48rem;
+  line-height: 1.2;
+  color: #b8c0ce;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── support row ─────────────────────────────────────────────────────── */
+.mob-support {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 2px;
+}
+.mob-support-line { font-size: 0.58rem; color: #8b93a3; margin-right: 4px; }
+.mob-pill {
+  font-family: 'Metamorphous', serif;
+  font-size: 0.6rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #cfe9ff;
+  text-decoration: none;
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  background: rgba(10, 16, 32, 0.8);
+}
+
+/* ── the open tool ───────────────────────────────────────────────────── */
+.mob-tool {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── bottom sheet ────────────────────────────────────────────────────── */
+.mob-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 900;
+}
+.mob-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* 92% because there is barely any height to give away in landscape. */
+  height: 92%;
+  z-index: 901;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(10, 16, 32, 0.99), rgba(4, 6, 15, 0.99));
+  border-top: 1px solid rgba(0, 240, 255, 0.45);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -10px 40px rgba(0, 240, 255, 0.14);
+  animation: mob-sheet-up 0.22s ease-out;
+}
+@keyframes mob-sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+
+.mob-sheet-grip {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 4px;
+  margin: 7px auto 5px;
+  border-radius: 999px;
+  background: rgba(184, 192, 206, 0.5);
+}
+.mob-sheet-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;            /* scrolls inside itself, never lengthens the page */
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  padding: 0 8px 10px;
+}
+.mob-sheet-row {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 8px;
+  min-height: 44px;
+  text-align: left;
+  background: rgba(10, 16, 32, 0.9);
+  border: 1px solid rgba(0, 240, 255, 0.24);
+  border-radius: 9px;
+  color: inherit;
+  cursor: pointer;
+}
+.mob-sheet-row.is-active { border-color: rgba(0, 255, 156, 0.8); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mob-sheet { animation: none; }
+  .mob-tile, .mob-icon-btn { transition: none; }
+}
+
+/* ── the tour pill on the launcher ───────────────────────────────────────── */
+.mob-pill-tour {
+  cursor: pointer;
+  border-color: rgba(0, 255, 156, 0.6);
+  color: #d8ffe9;
+  background: rgba(0, 255, 156, 0.1);
+}
+.mob-pill-tour:active { transform: scale(0.96); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE GUIDED TOUR ON A 412px-TALL SCREEN.
+
+   The card is built for a desktop window: 26px of padding, a 2.6rem icon, a
+   1.35rem title, 0.9rem body at 1.68 line height, and twenty progress dots.
+   At 88vh of 412 that is a 362px box holding roughly 520px of content, so the
+   Next button falls off the bottom and the tour cannot be advanced — the one
+   thing a tour has to be able to do.
+
+   Everything below is proportional shrinking, not truncation: the whole card
+   still fits, and the nav row is pinned so Next is always reachable.
+   ══════════════════════════════════════════════════════════════════════════ */
+body.lyricist-mobile .wiz-overlay { padding: 6px; }
+
+body.lyricist-mobile .wiz-card {
+  max-width: 620px;
+  max-height: calc(100% - 12px);
+  padding: 10px 14px 8px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The icon is 2.6rem of decoration on a screen with none to spare. */
+body.lyricist-mobile .wiz-card > div:nth-child(2) {
+  font-size: 1.5rem !important;
+  margin-bottom: 4px !important;
+}
+body.lyricist-mobile .wiz-card h2 {
+  font-size: 1rem !important;
+  margin-bottom: 5px !important;
+}
+body.lyricist-mobile .wiz-card p {
+  font-size: 0.72rem !important;
+  line-height: 1.45 !important;
+}
+/* The paragraph stack is the part that must give when a card runs long. It
+   scrolls inside the card rather than pushing the buttons off the bottom. */
+body.lyricist-mobile .wiz-card > div:nth-last-child(3) {
+  gap: 6px !important;
+  overflow-y: auto;
+  min-height: 0;
+}
+/* Twenty dots on two rows, 20px of margin above and below. */
+body.lyricist-mobile .wiz-card > div:nth-last-child(2) {
+  margin: 7px 0 6px !important;
+  gap: 4px !important;
+  flex: 0 0 auto;
+}
+/* The nav row never scrolls away. */
+body.lyricist-mobile .wiz-card > div:last-child {
+  flex: 0 0 auto;
+}
+body.lyricist-mobile .wiz-card > div:last-child button {
+  padding: 6px 13px !important;
+  font-size: 0.7rem !important;
+}
+
+/* ── THE GHOST'S LAUNCHER, on a phone ─────────────────────────────────────
+   bottom: 84px was measured against the desktop footer and the persistent
+   player. With both hidden here, 84px lands the button in the MIDDLE of the
+   Quantum Lab lattice, sitting on top of two word tiles.
+
+   Bottom right corner, and icon-only: `font-size: 0` collapses the label
+   whatever the markup is, and the face gets its size back. A round 33px button
+   is all a 412px-tall screen can spare for something that is always on top of
+   whatever tool you are using. */
+body.lyricist-mobile .gha-launch {
+  right: 8px;
+  bottom: 8px;
+  padding: 8px;
+  gap: 0;
+  font-size: 0;
+}
+body.lyricist-mobile .gha-face { font-size: 17px; }

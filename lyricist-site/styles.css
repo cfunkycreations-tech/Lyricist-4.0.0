@@ -1,0 +1,593 @@
+/* ============================================================================
+   Lyricist 4.2.0 - cfunkycreationsllc.com
+   Dark only. Electric blue and violet cooling into emerald, which is the
+   signature colour: 4.2.0 is a deliberate 420 and the green means something.
+   ========================================================================= */
+
+:root{
+  --ink:#050208;
+  --ink-2:#0a0620;
+  --panel:rgba(10,6,28,.62);
+  --line:rgba(0,229,255,.28);
+  --text:#f3ecff;
+  --dim:#b6a9d4;
+  --dimmer:#9a8cbb;
+
+  --blu:#00e5ff;
+  --sky:#43d9ff;
+  --vio:#a855f7;
+  --vio-2:#c084fc;
+  --grn:#39ff14;
+  --emr:#10f0a0;
+  --hot:#ff7a1a;
+  --pink:#ff2d95;
+
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --wrap:1180px;
+  --r:14px;
+  --display:'Audiowide','Orbitron',system-ui,sans-serif;
+  --body:'Space Grotesk',system-ui,-apple-system,Segoe UI,sans-serif;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+body{
+  margin:0;
+  background:var(--ink);
+  color:var(--text);
+  font-family:var(--body);
+  font-size:17px;
+  line-height:1.62;
+  overflow-x:hidden;
+  background-image:
+    radial-gradient(120% 80% at 12% 0%, rgba(67,217,255,.13) 0%, transparent 52%),
+    radial-gradient(100% 70% at 88% 4%, rgba(168,85,247,.15) 0%, transparent 48%),
+    radial-gradient(140% 110% at 50% 0%, var(--ink-2) 0%, #050210 42%, var(--ink) 100%);
+  background-attachment:fixed;
+}
+
+img,video{max-width:100%;height:auto;display:block}
+
+a{color:var(--sky)}
+a:focus-visible,button:focus-visible,summary:focus-visible{
+  outline:2px solid var(--emr);outline-offset:3px;border-radius:4px;
+}
+
+.wrap{width:100%;max-width:var(--wrap);margin:0 auto;padding:0 22px}
+
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
+}
+.skip{
+  position:absolute;left:-9999px;top:0;z-index:100;
+  background:var(--emr);color:#04120c;padding:10px 16px;font-weight:700;
+}
+.skip:focus{left:12px;top:12px}
+
+/* ---- Typography ---------------------------------------------------- */
+h1,h2,h3{font-family:var(--display);font-weight:400;line-height:1.08;margin:0}
+
+/* The signature: WHITE type with a thin emerald laser edge. Not green text.
+   Used only on the three biggest headings so it keeps meaning something. */
+.laser{
+  font-size:clamp(1.9rem,4.6vw,3.4rem);
+  color:#fff;
+  letter-spacing:.02em;
+  text-transform:uppercase;
+  -webkit-text-stroke:1px rgba(16,240,160,.85);
+  text-shadow:
+    0 0 6px rgba(16,240,160,.55),
+    0 0 18px rgba(16,240,160,.35),
+    0 0 40px rgba(168,85,247,.28);
+}
+
+.kicker{
+  font-family:var(--display);
+  font-size:clamp(1.35rem,2.6vw,2rem);
+  color:#fff;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  margin-bottom:6px;
+}
+.eyebrow{
+  font-family:var(--display);
+  font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--emr);margin:0 0 10px;
+}
+.lede{font-size:1.06rem;color:var(--dim);margin:0 0 26px;max-width:62ch}
+
+.section{padding:74px 0;position:relative}
+
+/* ---- Nav ------------------------------------------------------------ */
+.nav{
+  position:sticky;top:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:12px 22px;
+  background:rgba(5,2,8,.82);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(0,229,255,.16);
+}
+.nav-brand{
+  font-family:var(--display);font-size:.9rem;letter-spacing:.1em;
+  color:#fff;text-decoration:none;display:flex;align-items:center;gap:9px;
+}
+.nav-brand b{color:var(--emr);font-weight:400}
+.nav-logo{
+  height:26px;width:auto;display:block;
+  /* The art is on solid black; a screen blend drops that black into the bar. */
+  mix-blend-mode:screen;
+}
+@media (max-width:700px){ .nav-logo{height:21px} }
+.nav-dot{
+  width:9px;height:9px;border-radius:50%;background:var(--emr);
+  box-shadow:0 0 10px var(--emr),0 0 20px rgba(16,240,160,.6);
+}
+.nav-links{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.nav-links a{
+  color:var(--dim);text-decoration:none;font-size:.85rem;
+  padding:7px 11px;border-radius:8px;
+}
+.nav-links a:hover{color:#fff;background:rgba(168,85,247,.16)}
+.nav-cta{
+  color:#04120c !important;background:var(--emr) !important;font-weight:700;
+}
+.nav-cta:hover{background:#4dffc0 !important}
+
+/* ---- Hero ----------------------------------------------------------- */
+.hero{padding-bottom:20px}
+.hero-art{display:block;position:relative}
+.hero-art img{
+  width:100%;
+  /* The art carries the title, so it is never scrimmed or cropped hard. */
+  border-bottom:1px solid rgba(0,229,255,.22);
+}
+.hero-body{padding-top:34px;padding-bottom:10px;text-align:center}
+.hero-line{
+  font-size:clamp(1.05rem,2vw,1.32rem);
+  color:var(--text);max-width:64ch;margin:0 auto 26px;
+}
+.hero-free{color:var(--dim);font-size:.95rem;margin:18px 0 0}
+.hero-free b{color:var(--emr)}
+.hero-soon{
+  color:var(--dimmer);font-size:.85rem;margin:6px 0 0;
+  font-family:var(--display);letter-spacing:.06em;
+}
+
+.dl{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+/* ---- Buttons -------------------------------------------------------- */
+.btn{
+  display:inline-flex;flex-direction:column;align-items:center;gap:2px;
+  padding:14px 26px;border-radius:var(--r);
+  text-decoration:none;font-family:var(--body);font-weight:700;
+  border:1px solid transparent;cursor:pointer;
+  transition:transform .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.btn-top{font-size:1.02rem;letter-spacing:.01em}
+.btn-sub{font-size:.74rem;font-weight:400;opacity:.85}
+
+.btn-primary{
+  background:linear-gradient(135deg,var(--emr),var(--grn));
+  color:#04120c;
+  box-shadow:0 0 24px rgba(16,240,160,.34), 0 8px 30px rgba(0,0,0,.5);
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 34px rgba(16,240,160,.5),0 10px 34px rgba(0,0,0,.55)}
+.btn-ghost{
+  background:var(--panel);color:var(--text);border-color:var(--line);
+}
+.btn-ghost:hover{transform:translateY(-2px);border-color:var(--sky);background:rgba(0,229,255,.09)}
+.btn-big{margin-top:18px}
+.btn-small,.btn-inline{
+  flex-direction:row;padding:9px 16px;font-size:.86rem;
+  background:rgba(0,229,255,.12);color:#dff6ff;border-color:var(--line);
+}
+.btn-small:hover,.btn-inline:hover{background:rgba(0,229,255,.2)}
+.btn-inline{margin-top:10px}
+.btn-support{
+  flex-direction:row;padding:12px 22px;font-size:.92rem;
+  background:var(--panel);border-color:rgba(168,85,247,.4);color:var(--text);
+}
+.btn-support:hover{border-color:var(--vio-2);background:rgba(168,85,247,.18);transform:translateY(-2px)}
+
+/* ---- Phone only note ------------------------------------------------ */
+.phone-note{display:none;margin:22px auto 0;max-width:520px;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.phone-note p{margin:0 0 10px;font-size:.92rem;color:var(--dim)}
+.phone-fallback{margin:10px 0 0 !important;font-size:.82rem !important}
+.copied{display:block;margin-top:8px;font-size:.82rem;color:var(--emr);min-height:1.2em}
+@media (max-width:700px){ .phone-note{display:block} }
+
+/* ---- The Windows warning. Important content, not fine print. -------- */
+.warn{
+  margin:26px auto 0;max-width:760px;text-align:left;
+  background:rgba(255,122,26,.07);
+  border:1px solid rgba(255,122,26,.42);
+  border-radius:var(--r);
+}
+.warn summary{
+  cursor:pointer;padding:14px 18px;font-weight:700;color:#ffd7b0;
+  display:flex;align-items:center;gap:10px;list-style:none;
+}
+.warn summary::-webkit-details-marker{display:none}
+.warn-badge{
+  flex:0 0 auto;width:22px;height:22px;border-radius:50%;
+  background:var(--hot);color:#1a0800;font-weight:800;
+  display:grid;place-items:center;font-size:.85rem;
+}
+.warn-body{padding:0 18px 18px;color:var(--dim);font-size:.94rem}
+.warn-body p{margin:0 0 12px}
+.warn-do{color:#fff;font-size:1rem}
+.warn-hash{font-size:.86rem;margin-top:14px !important}
+.hashes{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.hashes li{display:grid;gap:3px}
+.hashes span{font-size:.76rem;color:var(--dimmer)}
+.hashes code{
+  font-size:.7rem;word-break:break-all;color:var(--sky);
+  background:rgba(0,0,0,.45);padding:7px 9px;border-radius:7px;
+  border:1px solid rgba(0,229,255,.16);
+}
+
+/* ---- Proof video ---------------------------------------------------- */
+.video-frame{
+  border:1px solid var(--line);border-radius:var(--r);overflow:hidden;
+  background:#000;box-shadow:0 0 40px rgba(168,85,247,.16);
+  /* Deliberately narrower than the content column. Full width it reads as a
+     wall you have to get past instead of a look at the app. */
+  max-width:820px;margin:0 auto;
+}
+.caption{color:var(--dimmer);font-size:.88rem;margin-top:12px;text-align:center}
+
+/* ---- Before you start ----------------------------------------------- */
+.setup{
+  background:var(--panel);border:1px solid var(--line);border-radius:18px;
+  padding:30px;box-shadow:0 0 46px rgba(0,229,255,.08) inset;
+}
+.setup-list{list-style:none;margin:0;padding:0;display:grid;gap:26px}
+.setup-list li{display:flex;gap:18px;align-items:flex-start}
+.setup-n{
+  flex:0 0 auto;width:38px;height:38px;border-radius:50%;
+  display:grid;place-items:center;font-family:var(--display);
+  background:rgba(16,240,160,.14);border:1px solid rgba(16,240,160,.5);
+  color:var(--emr);
+}
+.setup-list h3{font-size:1.1rem;color:#fff;margin-bottom:5px}
+.setup-list p{margin:0;color:var(--dim);font-size:.96rem}
+.nokey{
+  margin-top:28px;padding-top:24px;border-top:1px solid rgba(0,229,255,.18);
+}
+.nokey h3{font-size:1.05rem;color:var(--emr);margin-bottom:6px}
+.nokey p{margin:0;color:var(--dim);font-size:.96rem}
+
+/* ---- One Man Band spotlight ----------------------------------------- */
+.spotlight{
+  background:
+    radial-gradient(80% 100% at 20% 50%, rgba(168,85,247,.14) 0%, transparent 60%),
+    linear-gradient(180deg, transparent, rgba(10,6,28,.5), transparent);
+  border-top:1px solid rgba(0,229,255,.14);
+  border-bottom:1px solid rgba(0,229,255,.14);
+}
+.spot-grid{display:grid;grid-template-columns:1.35fr .65fr;gap:40px;align-items:center}
+.spot-art img{border-radius:var(--r);border:1px solid var(--line);
+  box-shadow:0 0 44px rgba(16,240,160,.18)}
+.ticks{list-style:none;margin:0 0 22px;padding:0;display:grid;gap:11px}
+.ticks li{position:relative;padding-left:26px;color:var(--dim)}
+.ticks li::before{
+  content:"";position:absolute;left:0;top:.55em;width:11px;height:11px;
+  border-radius:3px;background:var(--emr);box-shadow:0 0 10px rgba(16,240,160,.8);
+}
+.honest{
+  background:rgba(255,122,26,.08);border-left:3px solid var(--hot);
+  padding:14px 18px;border-radius:0 10px 10px 0;color:var(--dim);
+  font-size:.95rem;margin:0;
+}
+.honest b{color:#ffd7b0}
+
+/* ---- The 17 tools ---------------------------------------------------- */
+.tools{
+  display:grid;gap:16px;
+  grid-template-columns:repeat(auto-fill,minmax(268px,1fr));
+}
+.tool{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:20px;display:flex;flex-direction:column;gap:9px;
+  transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;
+}
+.tool:hover{transform:translateY(-3px);border-color:var(--vio-2);
+  box-shadow:0 0 30px rgba(168,85,247,.2)}
+.tool{padding:0;overflow:hidden}
+.tool > h3,.tool > p,.tool > .tag{margin-left:20px;margin-right:20px}
+.tool > h3{margin-top:16px}
+.tool > .tag{margin-bottom:20px}
+.tool-art{
+  width:100%;aspect-ratio:16/9;object-fit:cover;display:block;
+  border-bottom:1px solid var(--line);
+  /* His art is all dark-on-black already; a touch of lift keeps the cards from
+     reading as one flat slab without washing the blacks out. */
+  filter:saturate(1.05) contrast(1.03);
+  transition:transform .3s ease;
+}
+.tool:hover .tool-art{transform:scale(1.04)}
+@media (prefers-reduced-motion:reduce){ .tool:hover .tool-art{transform:none} }
+.tool h3{font-size:1.02rem;color:#fff}
+.tool p{margin:0;font-size:.9rem;color:var(--dim);flex:1}
+.tool.feature{
+  border-color:rgba(16,240,160,.55);
+  box-shadow:0 0 34px rgba(16,240,160,.16);
+  background:linear-gradient(160deg,rgba(16,240,160,.09),var(--panel));
+}
+.tag{
+  align-self:flex-start;font-size:.66rem;font-weight:700;
+  letter-spacing:.09em;text-transform:uppercase;
+  padding:4px 10px;border-radius:999px;border:1px solid;
+}
+.t-key   {color:#d9c2ff;border-color:rgba(168,85,247,.6);background:rgba(168,85,247,.14)}
+.t-engine{color:#062b1c;border-color:var(--emr);background:var(--emr)}
+.t-free  {color:#bfefff;border-color:rgba(0,229,255,.6);background:rgba(0,229,255,.13)}
+.t-nokey {color:#c8ffbe;border-color:rgba(57,255,20,.55);background:rgba(57,255,20,.12)}
+.t-off   {color:#e6dcff;border-color:rgba(180,170,210,.45);background:rgba(180,170,210,.1)}
+
+/* ---- The story ------------------------------------------------------- */
+.story{
+  background:linear-gradient(180deg,transparent,rgba(10,6,28,.55),transparent);
+}
+.story-wrap{max-width:820px}
+.story .laser{margin-bottom:24px}
+.story-text p{color:var(--dim);margin:0 0 18px;font-size:1.03rem;line-height:1.75}
+.story-text .sig{
+  font-family:var(--display);color:var(--emr);font-size:1rem;
+  letter-spacing:.05em;margin-top:26px;
+}
+
+/* ---- The ask that appears after a download ---------------------------- */
+.postdl{
+  margin:24px auto 0;max-width:560px;text-align:left;
+  background:rgba(16,240,160,.07);
+  border:1px solid rgba(16,240,160,.45);
+  border-radius:var(--r);padding:20px;
+  box-shadow:0 0 34px rgba(16,240,160,.14);
+}
+.postdl-top{margin:0 0 6px;color:#fff;font-size:1rem}
+.postdl-top b{color:var(--emr)}
+.postdl-ask{margin:0 0 14px;color:var(--dim);font-size:.93rem}
+.postdl-no{
+  margin-top:12px;background:none;border:0;padding:4px 0;
+  color:var(--dimmer);font-family:var(--body);font-size:.82rem;
+  text-decoration:underline;cursor:pointer;
+}
+.postdl-no:hover{color:var(--dim)}
+
+/* ---- Updates signup -------------------------------------------------- */
+.updates{
+  background:
+    radial-gradient(70% 100% at 50% 0%, rgba(16,240,160,.09) 0%, transparent 62%),
+    linear-gradient(180deg, transparent, rgba(10,6,28,.5), transparent);
+  border-top:1px solid rgba(16,240,160,.2);
+  border-bottom:1px solid rgba(16,240,160,.2);
+}
+.updates-wrap{max-width:720px}
+.signup{display:flex;gap:12px;flex-wrap:wrap;align-items:stretch}
+.signup input{
+  flex:1 1 260px;min-width:0;
+  padding:14px 18px;border-radius:var(--r);
+  background:rgba(0,0,0,.45);
+  border:1px solid var(--line);
+  color:var(--text);font-family:var(--body);font-size:1rem;
+}
+.signup input::placeholder{color:var(--dimmer)}
+.signup input:focus{outline:2px solid var(--emr);outline-offset:2px;border-color:var(--emr)}
+.signup button{flex:0 0 auto}
+.signup button:disabled{opacity:.6;cursor:default;transform:none}
+.signup-said{min-height:1.4em;margin:12px 0 0;font-size:.9rem}
+.signup-said.good{color:var(--emr)}
+.signup-said.bad{color:#ffb38a}
+.signup-fallback{color:var(--dim);font-size:.9rem;margin:12px 0 0}
+
+/* ---- Support --------------------------------------------------------- */
+.support-row{display:flex;gap:12px;flex-wrap:wrap}
+
+/* ---- Last call ------------------------------------------------------- */
+.lastcall{text-align:center;padding:86px 0}
+
+/* ---- Footer ---------------------------------------------------------- */
+.foot{
+  border-top:1px solid rgba(0,229,255,.18);
+  padding:44px 0 30px;background:rgba(3,1,6,.72);
+}
+.foot-grid{
+  display:flex;gap:30px;flex-wrap:wrap;justify-content:space-between;
+  color:var(--dim);font-size:.9rem;
+}
+.foot-grid p{margin:0 0 4px}
+.foot-brand{font-family:var(--display);color:#fff;font-size:.95rem;letter-spacing:.06em}
+.foot-nav,.foot-social{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.foot-nav a,.foot-social a{color:var(--dim);text-decoration:none}
+.foot-nav a:hover,.foot-social a:hover{color:var(--emr)}
+.foot-ver{
+  text-align:center;color:var(--dimmer);font-size:.78rem;
+  margin:34px 0 0;padding:0 22px;
+}
+
+/* ---- Motion ---------------------------------------------------------- */
+.reveal{opacity:0;transform:translateY(16px);
+  transition:opacity .6s ease, transform .6s ease}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  .reveal{opacity:1;transform:none;transition:none}
+  .btn{transition:none}
+  .tool:hover,.btn:hover{transform:none}
+}
+
+/* ---- Narrow ---------------------------------------------------------- */
+@media (max-width:860px){
+  .spot-grid{grid-template-columns:1fr;gap:28px}
+  .spot-art{max-width:340px;margin:0 auto}
+  .section{padding:56px 0}
+}
+@media (max-width:700px){
+  body{font-size:16px}
+  .nav-links a:not(.nav-cta){display:none}
+  .dl{flex-direction:column;align-items:stretch}
+  .btn{align-items:center}
+  .setup{padding:22px 18px}
+  .setup-list li{gap:13px}
+}
+
+
+/* ============================================================================
+   THE LOGO TRAIN and THE DONATION BUTTONS
+   Both carried over from the old cfunkycreationsllc.com, near enough
+   verbatim. Two changes only: the old chip name used Metamorphous, which this
+   site does not load, so it uses the display face; and the old buttons set
+   `cursor:none` for a custom cursor that does not exist here.
+   ========================================================================= */
+
+.platforms{
+  border-top:1px solid rgba(255,45,149,.18);
+  border-bottom:1px solid rgba(255,45,149,.18);
+  background:radial-gradient(80% 100% at 50% 50%, rgba(255,45,149,.07) 0%, transparent 65%);
+}
+.logo-marquee{
+  overflow:hidden;
+  padding:12px 0;
+  position:relative;
+  -webkit-mask-image:linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+          mask-image:linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.logo-marquee:hover .logo-track{animation-play-state:paused}
+.logo-track{display:flex;gap:22px;width:max-content;will-change:transform}
+.logo-track-left {animation:trainLeft 38s linear infinite}
+.logo-track-right{animation:trainRight 44s linear infinite}
+@keyframes trainLeft  { from{transform:translateX(0)}     to{transform:translateX(-50%)} }
+@keyframes trainRight { from{transform:translateX(-50%)}  to{transform:translateX(0)} }
+
+.logo-chip{
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  height:84px;padding:0 26px;background:none;
+  text-decoration:none;color:inherit;cursor:pointer;
+  transition:transform .3s var(--ease);
+}
+.logo-chip:hover{transform:translateY(-4px) scale(1.06)}
+.logo-chip:focus-visible{outline:2px solid var(--pink);outline-offset:3px}
+.logo-chip .logo-mark{
+  height:34px;width:34px;flex-shrink:0;margin-right:14px;opacity:.92;
+  filter:drop-shadow(0 0 14px rgba(255,45,149,.75)) drop-shadow(0 0 34px rgba(255,45,149,.45));
+  transition:filter .3s var(--ease), opacity .3s var(--ease);
+}
+.logo-chip:hover .logo-mark{
+  opacity:1;
+  filter:drop-shadow(0 0 20px rgba(255,45,149,1)) drop-shadow(0 0 48px rgba(255,45,149,.65));
+}
+.logo-chip-name{
+  font-family:var(--display);
+  font-size:.95rem;letter-spacing:.02em;color:#fff;white-space:nowrap;opacity:.92;
+  text-shadow:0 0 14px rgba(255,45,149,.75), 0 0 34px rgba(255,45,149,.45);
+  transition:opacity .3s var(--ease), text-shadow .3s var(--ease);
+}
+.logo-chip:hover .logo-chip-name{
+  opacity:1;text-shadow:0 0 20px rgba(255,45,149,1), 0 0 48px rgba(255,45,149,.65);
+}
+.logo-chip--text .logo-chip-name{font-size:1.1rem}
+
+@media (prefers-reduced-motion:reduce){
+  .logo-track{animation:none}
+  .logo-marquee{overflow-x:auto}
+  .logo-chip:hover{transform:none}
+}
+
+/* ---- Donation buttons, straight off the old site ---------------------- */
+.support-grid{
+  display:flex;flex-wrap:wrap;justify-content:center;align-items:center;
+  gap:12px;max-width:780px;margin:0 auto;
+}
+.support-btn{
+  padding:13px 24px;border-radius:8px;text-decoration:none;
+  font-family:var(--body);font-weight:700;font-size:.98rem;
+  letter-spacing:.01em;line-height:1.2;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:none;cursor:pointer;
+  transition:transform .15s var(--ease), box-shadow .2s var(--ease), filter .2s var(--ease);
+}
+.support-btn:hover{transform:translateY(-3px);filter:brightness(1.08)}
+.s-fiverr  {background:#1dbf73;color:#fff;box-shadow:0 0 14px rgba(29,191,115,.45)}
+.s-fiverr:hover  {box-shadow:0 0 26px rgba(29,191,115,.7)}
+.s-paypal  {background:linear-gradient(135deg,#003087,#009cde);color:#fff;box-shadow:0 0 14px rgba(0,156,222,.45)}
+.s-paypal:hover  {box-shadow:0 0 26px rgba(0,156,222,.7)}
+.s-venmo   {background:linear-gradient(135deg,#008CFF,#3D95CE);color:#fff;box-shadow:0 0 14px rgba(0,140,255,.45)}
+.s-venmo:hover   {box-shadow:0 0 26px rgba(0,140,255,.7)}
+.s-cashapp {background:linear-gradient(135deg,#00D632,#00A82D);color:#04231a;box-shadow:0 0 14px rgba(0,214,50,.45)}
+.s-cashapp:hover {box-shadow:0 0 26px rgba(0,214,50,.7)}
+.s-chime   {background:linear-gradient(135deg,#1ec677,#0aa05a);color:#04231a;box-shadow:0 0 14px rgba(30,198,119,.45)}
+.s-chime:hover   {box-shadow:0 0 26px rgba(30,198,119,.7)}
+.s-bmc     {background:#FFDD00;color:#000;box-shadow:0 0 14px rgba(255,221,0,.5)}
+.s-bmc:hover     {box-shadow:0 0 26px rgba(255,221,0,.75)}
+.chime-said{text-align:center;color:var(--emr);font-size:.9rem;margin:16px 0 0;min-height:1.3em}
+@media (prefers-reduced-motion:reduce){ .support-btn:hover{transform:none} }
+
+
+/* ---- Reviews ---------------------------------------------------------- */
+.reviews{
+  background:linear-gradient(180deg,transparent,rgba(10,6,28,.5),transparent);
+  border-top:1px solid rgba(0,229,255,.14);
+}
+.reviews-wrap{max-width:860px}
+.rating-summary{display:flex;align-items:baseline;gap:12px;margin:0 0 26px}
+.rating-stars{color:var(--emr);font-size:1.5rem;letter-spacing:.08em;
+  text-shadow:0 0 12px rgba(16,240,160,.6)}
+.rating-num{font-family:var(--display);font-size:1.4rem;color:#fff}
+.rating-count{color:var(--dimmer);font-size:.85rem}
+
+.review-list{display:grid;gap:14px;margin-bottom:38px}
+.review-empty{color:var(--dimmer);font-size:.95rem;margin:0 0 34px}
+.review{background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);padding:18px 20px}
+.review-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.review-stars{color:var(--emr);letter-spacing:.06em}
+.review-who{color:#fff;font-weight:700;font-size:.95rem}
+.review-when{color:var(--dimmer);font-size:.78rem;margin-left:auto}
+.review-body{margin:0;color:var(--dim);font-size:.96rem;overflow-wrap:anywhere}
+
+.review-form-wrap{background:var(--panel);border:1px solid var(--line);
+  border-radius:18px;padding:26px}
+.review-h3{font-size:1.1rem;color:#fff;margin-bottom:4px}
+.review-note{color:var(--dim);font-size:.92rem;margin:0 0 18px}
+.review-form{display:grid;gap:12px}
+.review-form input[type=text],.review-form textarea{
+  width:100%;padding:13px 16px;border-radius:10px;
+  background:rgba(0,0,0,.45);border:1px solid var(--line);
+  color:var(--text);font-family:var(--body);font-size:1rem;resize:vertical;
+}
+.review-form input::placeholder,.review-form textarea::placeholder{color:var(--dimmer)}
+.review-form input:focus,.review-form textarea:focus{
+  outline:2px solid var(--emr);outline-offset:2px;border-color:var(--emr)}
+.review-form button{justify-self:start}
+
+/* Star picker. Written 5 to 1 in the HTML so plain CSS sibling selectors can
+   light up the stars to the LEFT of the one being hovered or chosen. */
+.stars-pick{display:flex;flex-direction:row-reverse;justify-content:flex-end;gap:2px}
+.stars-pick input{position:absolute;opacity:0;width:0;height:0}
+.stars-pick label{
+  font-size:2rem;line-height:1;cursor:pointer;color:rgba(180,170,210,.32);
+  transition:color .15s ease, text-shadow .15s ease;padding:0 2px;
+}
+.stars-pick label:hover,.stars-pick label:hover ~ label,
+.stars-pick input:checked ~ label{
+  color:var(--emr);text-shadow:0 0 12px rgba(16,240,160,.7);
+}
+.stars-pick input:focus-visible + label{outline:2px solid var(--emr);outline-offset:2px}
+.review-said{min-height:1.4em;margin:14px 0 0;font-size:.9rem}
+.review-said.good{color:var(--emr)}
+.review-said.bad{color:#ffb38a}
+
+/* ---- Chris and Craig -------------------------------------------------- */
+.brothers{margin:30px 0 0;max-width:520px}
+.brothers img{width:100%;border-radius:var(--r);border:1px solid var(--line);
+  box-shadow:0 0 34px rgba(168,85,247,.2)}
+.brothers figcaption{color:var(--dimmer);font-size:.82rem;margin-top:9px}
+
+/* ---- Contact ---------------------------------------------------------- */
+.contact-wrap{max-width:720px}
+.contact-btn{align-items:flex-start;text-align:left}

@@ -1,0 +1,8 @@
+name = "lyricist-kaggle-relay"
+main = "src/index.js"
+compatibility_date = "2026-08-24"
+
+# No secrets, no bindings, no storage. This worker holds nothing.
+# The user's Kaggle token rides through in the Authorization header and is
+# never read, logged or kept. If a future change wants a secret here, read the
+# comment at the top of src/index.js first.

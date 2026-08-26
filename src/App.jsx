@@ -15,6 +15,7 @@ import Dictionary from './components/Dictionary/Dictionary.jsx';
 import Settings from './components/Settings/Settings.jsx';
 import HelpLayer from './components/common/HelpLayer.jsx';
 import OnboardingWizard from './components/Onboarding/OnboardingWizard.jsx';
+import RotatePrompt from './web/RotatePrompt.jsx';
 import GhostDemo from './components/Onboarding/GhostDemo.jsx';
 import GhostAssistant from './components/Ghost/GhostAssistant.jsx';
 import { registerGhostAction } from './services/ghostBus.js';
@@ -49,6 +50,8 @@ import icoDictionary from './assets/icons/icon-dictionary.png';
 import icoToolshub from './assets/icons/icon-toolshub.png';
 import icoScratchpad from './assets/icons/icon-scratchpad.png';
 import icoSettings from './assets/icons/icon-settings.png';
+import { useMobile } from './mobile/useMobile.js';
+import MobileShell from './mobile/MobileShell.jsx';
 // The still header art (profile.jpg, logo.jpg, header-medallion / -signature /
 // -chris / -wordmark .png) is no longer imported here. The header became the
 // whole uncropped video clip, and its <img> elements went with it, but the six
@@ -71,26 +74,26 @@ const FOOTER_MEDALLION_H = 112;
 
 const tabs = [
   // Write / story tools first, then Quantum Lab
-  { id: 'songwriter', icon: '🎵', img: icoSongwriter, label: 'Songwriter', help: 'The main workspace. Set up the kind of song you want (style, mood, topic), then write and polish the lyrics line by line.' },
+  { id: 'songwriter', icon: '🎵', img: icoSongwriter, label: 'Songwriter', blurb: 'write and rewrite lyrics', help: 'The main workspace. Set up the kind of song you want (style, mood, topic), then write and polish the lyrics line by line.' },
   // Straight after Songwriter on purpose: write the words, then hear them.
-  { id: 'onemanband', icon: '🎸', img: icoOneManBand, label: 'One Man Band', help: 'Turns your lyrics into a real song with vocals and a full band. Pick a genre, a mood and a voice, and it writes the Input Caption for you. Free on the cloud engine, no key needed. Longer songs take longer, and it tells you how long before you start.' },
-  { id: 'analyzer', icon: '👻', img: icoAnalyzer, label: 'Ghost Rider', help: 'Studies any artist you name and breaks down how they write, then helps you write a NEW song in that same style. (It does not copy their actual lyrics.)' },
-  { id: 'songforge', icon: '🪄', img: icoSongforge, label: 'Song Forge', help: 'Auto-generate a full song and cover art using your single OpenRouter key (lyrics + Nano Banana image models on OpenRouter). Song First or Art First. No Google AI Studio key.' },
-  { id: 'quantum', icon: '⚛️', img: icoQuantum, label: 'Quantum Lab', help: 'Build a verse by playing with a grid of word tiles (the lattice). Heat words up, let energy spread, lock rhymes with Crystallize, then Generate Neural Lyrics for a real 4-line verse. Send to Songwriter or Song Forge in one click. Needs your OpenRouter key for generate.' },
-  { id: 'collab', icon: '🤝', img: icoCollab, label: 'Collaboration', help: 'Write a song with someone else at the same time, wherever they are. Start a session, send them the code, and you are both typing on the same page. Peer to peer — the words go straight between your two computers. No account, no server holding your song, free forever.' },
-  { id: 'loopstation', icon: '🔁', img: icoLoopstation, label: 'RC-Funk 5000', help: 'Live multi-track loop station (Boss RC-style). Record loops on up to 4 tracks, stack layers, control volume, undo a track. Fully offline. Great for riffs and vocal hooks while you write.' },
-  { id: 'stemmer', icon: '🎛️', img: icoStemmer, label: 'Stemmer', help: 'Split a full mix into Vocals, Drums, Bass, Guitar, Keys, and Other. Offline mode (default) is free, light CPU, no key, no GPU. Optional Cloud mode uses a Replicate API key for pro Demucs stems on their servers.' },
-  { id: 'booth', icon: '🎤', img: icoBooth, label: 'Recording Booth', help: 'Record harmonica, guitar, or vocals straight into the app (or upload takes) and keep them in a saved library. Play them in the persistent player while you write, convert them to MIDI, or export them as WAV.' },
-  { id: 'midistudio', icon: '🎹', img: icoMidistudio, label: 'MIDI Studio', help: 'Turn any audio into editable MIDI, tweak it on a piano-roll with a stronger multi-voice synth, and pick from dozens of Milkdrop-class visualizer presets. Runs fully offline.' },
-  { id: 'mastering', icon: '💽', img: icoMastering, label: 'Mastering Studio', help: 'The finish line: pull your songs together into an album, master each track with a real EQ/compression/limiter chain (all offline), add cover art (upload or AI-generated), and export the finished album — WAVs, cover, and tracklist.' },
+  { id: 'onemanband', icon: '🎸', img: icoOneManBand, label: 'One Man Band', blurb: 'lyrics into a real song', help: 'Turns your lyrics into a real song with vocals and a full band. Pick a genre, a mood and a voice, and it writes the Input Caption for you. Free on the cloud engine, no key needed. Longer songs take longer, and it tells you how long before you start.' },
+  { id: 'analyzer', icon: '👻', img: icoAnalyzer, label: 'Ghost Rider', blurb: 'analyse any artist\'s style', help: 'Studies any artist you name and breaks down how they write, then helps you write a NEW song in that same style. (It does not copy their actual lyrics.)' },
+  { id: 'songforge', icon: '🪄', img: icoSongforge, label: 'Song Forge', blurb: 'a full song from one idea', help: 'Auto-generate a full song and cover art using your single OpenRouter key (lyrics + Nano Banana image models on OpenRouter). Song First or Art First. No Google AI Studio key.' },
+  { id: 'quantum', icon: '⚛️', img: icoQuantum, label: 'Quantum Lab', blurb: 'experiment with structure', help: 'Build a verse by playing with a grid of word tiles (the lattice). Heat words up, let energy spread, lock rhymes with Crystallize, then Generate Neural Lyrics for a real 4-line verse. Send to Songwriter or Song Forge in one click. Needs your OpenRouter key for generate.' },
+  { id: 'collab', icon: '🤝', img: icoCollab, label: 'Collaboration', blurb: 'write with someone live', help: 'Write a song with someone else at the same time, wherever they are. Start a session, send them the code, and you are both typing on the same page. Peer to peer — the words go straight between your two computers. No account, no server holding your song, free forever.' },
+  { id: 'loopstation', icon: '🔁', img: icoLoopstation, label: 'RC-Funk 5000', blurb: 'drum machine and looper', help: 'Live multi-track loop station (Boss RC-style). Record loops on up to 4 tracks, stack layers, control volume, undo a track. Fully offline. Great for riffs and vocal hooks while you write.' },
+  { id: 'stemmer', icon: '🎛️', img: icoStemmer, label: 'Stemmer', blurb: 'split a track into stems', help: 'Split a full mix into Vocals, Drums, Bass, Guitar, Keys, and Other. Offline mode (default) is free, light CPU, no key, no GPU. Optional Cloud mode uses a Replicate API key for pro Demucs stems on their servers.' },
+  { id: 'booth', icon: '🎤', img: icoBooth, label: 'Recording Booth', blurb: 'record your own takes', help: 'Record harmonica, guitar, or vocals straight into the app (or upload takes) and keep them in a saved library. Play them in the persistent player while you write, convert them to MIDI, or export them as WAV.' },
+  { id: 'midistudio', icon: '🎹', img: icoMidistudio, label: 'MIDI Studio', blurb: 'audio to MIDI, piano roll', help: 'Turn any audio into editable MIDI, tweak it on a piano-roll with a stronger multi-voice synth, and pick from dozens of Milkdrop-class visualizer presets. Runs fully offline.' },
+  { id: 'mastering', icon: '💽', img: icoMastering, label: 'Mastering Studio', blurb: 'master and export', help: 'The finish line: pull your songs together into an album, master each track with a real EQ/compression/limiter chain (all offline), add cover art (upload or AI-generated), and export the finished album — WAVs, cover, and tracklist.' },
   // Sits after Mastering because it is something you do TO a finished track.
-  { id: 'screw', icon: '🍇', img: icoScrew, label: 'Chopped & Screwed', help: 'Slow a song down until the voice sinks with it, then chop it back up on the beat. The sound DJ Screw invented in Houston. Works on any audio file or any of your own recordings, runs entirely on your computer, and saves straight back to Recordings.' },
-  { id: 'rhyme', icon: '📖', img: icoRhyme, label: 'Rhyme Helper', help: 'A rhyming dictionary and rhyme finder. Look up words that rhyme, and check the rhymes inside lines you have already written.' },
-  { id: 'thesaurus', icon: '📚', img: icoThesaurus, label: 'Thesaurus', help: 'A word finder: type a word to get other words that mean the same, words that mean the opposite, and related ideas. Free, no AI key needed.' },
-  { id: 'dictionary', icon: '📕', img: icoDictionary, label: 'Dictionary', help: 'Look up what a word means, how to say it, and example sentences — in English or Spanish. Free, no AI key needed.' },
-  { id: 'toolshub', icon: '🧰', img: icoToolshub, label: 'AI Tools Hub', help: 'A community shelf of free AI tools — browse them, upvote your favorites, and share the ones you use. Free tools for the masses.' },
-  { id: 'scratchpad', icon: '📝', img: icoScratchpad, label: 'Scratchpad', help: 'A free, blank notepad for jotting ideas, hooks, or lines. It saves automatically on your computer so nothing gets lost.' },
-  { id: 'settings', icon: '⚙️', img: icoSettings, label: 'Settings', help: 'Where you connect your AI key and choose which AI model writes your lyrics. Set this up first so the rest of the app works.' }
+  { id: 'screw', icon: '🍇', img: icoScrew, label: 'Chopped & Screwed', blurb: 'slow it and chop it', help: 'Slow a song down until the voice sinks with it, then chop it back up on the beat. The sound DJ Screw invented in Houston. Works on any audio file or any of your own recordings, runs entirely on your computer, and saves straight back to Recordings.' },
+  { id: 'rhyme', icon: '📖', img: icoRhyme, label: 'Rhyme Helper', blurb: 'find rhymes that fit', help: 'A rhyming dictionary and rhyme finder. Look up words that rhyme, and check the rhymes inside lines you have already written.' },
+  { id: 'thesaurus', icon: '📚', img: icoThesaurus, label: 'Thesaurus', blurb: 'better words', help: 'A word finder: type a word to get other words that mean the same, words that mean the opposite, and related ideas. Free, no AI key needed.' },
+  { id: 'dictionary', icon: '📕', img: icoDictionary, label: 'Dictionary', blurb: 'what it means', help: 'Look up what a word means, how to say it, and example sentences — in English or Spanish. Free, no AI key needed.' },
+  { id: 'toolshub', icon: '🧰', img: icoToolshub, label: 'AI Tools Hub', blurb: 'every AI tool in one place', help: 'A community shelf of free AI tools — browse them, upvote your favorites, and share the ones you use. Free tools for the masses.' },
+  { id: 'scratchpad', icon: '📝', img: icoScratchpad, label: 'Scratchpad', blurb: 'dump your ideas', help: 'A free, blank notepad for jotting ideas, hooks, or lines. It saves automatically on your computer so nothing gets lost.' },
+  { id: 'settings', icon: '⚙️', img: icoSettings, label: 'Settings', blurb: 'your key and your setup', help: 'Where you connect your AI key and choose which AI model writes your lyrics. Set this up first so the rest of the app works.' }
 ];
 
 /**
@@ -166,6 +169,19 @@ function MainLayout() {
   // in the SAME render that switches to it, or the Ghost Demo would go looking
   // for controls a frame before they mount.
   const openedTabsRef = useRef(new Set(['songwriter']));
+  // Phone build only. Swaps the 18-tab strip for a launcher grid. Returns
+  // false inside Electron and on any window taller than 560px, so the desktop
+  // app is completely unaffected. See mobile/useMobile.js.
+  const isMobile = useMobile();
+
+  // The class the mobile CSS hangs off: it hides the header video and the tab
+  // strip. Kept in an effect so it is removed cleanly if the window is resized
+  // back to desktop shape.
+  useEffect(() => {
+    document.body.classList.toggle('lyricist-mobile', isMobile);
+    return () => document.body.classList.remove('lyricist-mobile');
+  }, [isMobile]);
+
   openedTabsRef.current.add(activeTab);
   const openedTabs = openedTabsRef.current;
 
@@ -274,6 +290,21 @@ function MainLayout() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ color: '#e8e0ff', position: 'relative', overflow: 'hidden' }}>
+      {/* Phone navigation. An overlay, not a wrapper - see MobileShell.jsx. */}
+      {isMobile && (
+        <MobileShell
+          tabs={tabs}
+          activeTab={activeTab}
+          onSelect={setActiveTab}
+          onWizard={() => setShowWizard(true)}
+        />
+      )}
+
+      {/* iPhone cannot be told to rotate — Apple has never supported orientation
+          locking — so on a portrait phone where the lock was refused, we ask.
+          Renders on nothing else: not Android, not desktop, not Electron. */}
+      <RotatePrompt />
+
       {/* App-wide hover-help engine: hovering any element with data-help shows a bubble. */}
       <HelpLayer />
 
@@ -628,6 +659,7 @@ function MainLayout() {
 
         {/* Footer */}
         <div
+          className="app-footer"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -691,25 +723,8 @@ function MainLayout() {
               and Cash App are, and a tooltip explaining them reads like the app
               thinks you're stupid. Tips are for the parts of this app that
               genuinely need explaining. */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 6, maxWidth: 360 }}>
-            {/* Fiverr — plain link (more reliable than a popup in Brave) */}
-            <a
-              href="https://www.fiverr.com/s/m541z1V"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                padding: '5px 11px',
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                background: '#1dbf73',
-                color: '#fff',
-                borderRadius: 6,
-                textDecoration: 'none',
-                boxShadow: '0 0 8px rgba(29,191,115,0.4)'
-              }}
-            >
-              Hire on Fiverr
-            </a>
+          <div className="support-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 6, maxWidth: '100%' }}>
+            
             <a
               href="https://paypal.me/funkchris"
               target="_blank"
@@ -727,23 +742,7 @@ function MainLayout() {
             >
               PayPal
             </a>
-            <a
-              href="https://venmo.com/u/Chris-Funk-20"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                padding: '5px 11px',
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                background: 'linear-gradient(135deg,#008CFF,#3D95CE)',
-                color: '#fff',
-                borderRadius: 6,
-                textDecoration: 'none',
-                boxShadow: '0 0 8px rgba(0,140,255,0.4)'
-              }}
-            >
-              Venmo
-            </a>
+            
             <a
               href="https://cash.app/$cfunkycreations"
               target="_blank"
@@ -761,31 +760,7 @@ function MainLayout() {
             >
               Cash App
             </a>
-            <button
-              onClick={() => {
-                const tag = '$Christopher-Funk-21';
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                  navigator.clipboard.writeText(tag)
-                    .then(() => alert(`Chime cashtag copied: ${tag}\n\nOpen the Chime app, tap Pay Anyone, and paste it in.`))
-                    .catch(() => alert(`Chime cashtag: ${tag}`));
-                } else {
-                  alert(`Chime cashtag: ${tag}`);
-                }
-              }}
-              style={{
-                padding: '5px 11px',
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                background: 'linear-gradient(135deg,#1ec677,#0aa05a)',
-                color: '#04231a',
-                border: 'none',
-                borderRadius: 6,
-                cursor: 'pointer',
-                boxShadow: '0 0 8px rgba(30,198,119,0.4)'
-              }}
-            >
-              Chime
-            </button>
+            
             <a
               href="https://buymeacoffee.com/cfunkycream"
               target="_blank"

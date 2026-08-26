@@ -187,44 +187,128 @@
   gap: 12px;
   max-width: 780px;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE TILE — built to the 2026-08-24 mockup.
+
+   Every tile carries its own temperature, and it carries it FIVE ways at once,
+   all from the single --tc custom property that tileColor() writes:
+
+     the outline    solid, 2px, full strength
+     the fill       a vertical wash of the same colour over near-black
+     the outer glow --glow px, scaled by how hot the tile is
+     the inner glow so the tile looks lit from inside rather than painted
+     the word       picks up a faint tint of it in its shadow
+
+   --tc arrives as bare "r, g, b" components exactly so all five can be
+   different alphas of one colour.
+
+   WHAT WAS HERE BEFORE: a flat charred box, 1px white border, and a comment
+   reading "ZERO outer glow" — the precise opposite of the design. --tc and
+   --glow were being computed for every tile and read by nothing at all, so
+   the whole temperature ramp was dead code and a HOTTEST tile looked identical
+   to a cold one.
+   ══════════════════════════════════════════════════════════════════════════ */
+
 .ql-tile {
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   min-height: 54px;
-  padding: 8px 6px;
-  border-radius: 12px;
-  background: rgba(8, 4, 16, 0.72);
-  border: 2px solid var(--tc, rgba(255, 45, 149, 0.6));
+  padding: 8px 6px 6px;
+  border-radius: 14px;
+  border: 2px solid rgb(var(--tc, 40 60 120));
+  background:
+    linear-gradient(180deg,
+      rgba(var(--tc, 40 60 120), calc(0.06 + var(--heat, 0) * 0.30)) 0%,
+      rgba(var(--tc, 40 60 120), calc(0.02 + var(--heat, 0) * 0.14)) 100%),
+    rgba(5, 3, 14, 0.92);
+  box-shadow:
+    0 0 var(--glow, 10px) rgba(var(--tc, 40 60 120), calc(0.30 + var(--heat, 0) * 0.45)),
+    inset 0 0 18px rgba(var(--tc, 40 60 120), calc(0.10 + var(--heat, 0) * 0.30)),
+    inset 0 0 26px rgba(0, 0, 0, 0.75);
   color: #fff;
   font-family: 'Audiowide', 'Orbitron', sans-serif;
   font-size: clamp(0.78rem, 1.4vw, 1.05rem);
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  box-shadow: 0 0 var(--glow, 8px) var(--tc, rgba(255, 45, 149, 0.5)), inset 0 0 10px rgba(0, 0, 0, 0.5);
   user-select: none;
   overflow: hidden;
 }
+
 .ql-tile:hover { transform: translateY(-2px) scale(1.02); }
-/* Lattice tile selected — solid purple glow (no dashed outlines) */
+
+/* Lattice tile selected — violet, and brighter than any temperature so you can
+   always find the one you picked. */
 .ql-tile.sel {
-  border-color: var(--ql-vio);
-  box-shadow: 0 0 26px rgba(180, 77, 255, 0.75), 0 0 60px rgba(180, 77, 255, 0.4), inset 0 0 16px rgba(180, 77, 255, 0.25);
-  animation: ql-tile-vio 1.8s ease-in-out infinite;
+  border-color: #b44dff;
+  box-shadow:
+    0 0 30px rgba(180, 77, 255, 0.7),
+    inset 0 0 16px rgba(180, 77, 255, 0.5),
+    inset 0 0 26px rgba(0, 0, 0, 0.8);
 }
+
 .ql-tile.ql-tile-flash {
   animation: ql-tile-shock 0.75s ease-out;
 }
+
+/* Kill the pulsating ql-tile-vio animation that threw a 78px shadow */
 @keyframes ql-tile-vio {
-  0%, 100% { box-shadow: 0 0 22px rgba(180, 77, 255, 0.55), 0 0 46px rgba(180, 77, 255, 0.3), inset 0 0 14px rgba(180, 77, 255, 0.2); }
-  50% { box-shadow: 0 0 34px rgba(180, 77, 255, 0.9), 0 0 78px rgba(232, 121, 249, 0.5), inset 0 0 20px rgba(180, 77, 255, 0.35); }
+  0%, 100% { box-shadow: inset 0 0 10px rgba(180, 77, 255, 0.4); }
+  50% { box-shadow: inset 0 0 18px rgba(180, 77, 255, 0.8); }
 }
+
 @keyframes ql-tile-shock {
   0% { transform: scale(1); filter: brightness(1); }
   20% { transform: scale(1.08); filter: brightness(1.4); }
   100% { transform: scale(1); filter: brightness(1); }
 }
+/* THE TWO DOTS under every word in the design. They were never built; the
+   information they carry was only ever in a hover tooltip.
+
+     left dot   lit when the word is YOURS (you typed it), dim when it came
+                from the demo grid
+     right dot  lit when the tile has SETTLED on one word, dim while it is
+                still open to change
+
+   Small, quiet, and readable at a glance without hovering anything — which is
+   the whole reason the design has them. */
+.ql-tile-word { position: relative; z-index: 3; }
+
+/* A burning tile is still a word you have to be able to read. The halo is dark
+   and tight, so it reads as the letters being lit from behind rather than as
+   an outline drawn round them. */
+.ql-burning .ql-tile-word {
+  color: #fff;
+  text-shadow:
+    0 0 2px rgba(0, 0, 0, 0.95),
+    0 1px 3px rgba(0, 0, 0, 0.9),
+    0 0 10px rgba(0, 0, 0, 0.75);
+}
+
+.ql-tile-dots {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  pointer-events: none;
+}
+.ql-tile-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+}
+.ql-tile-dots i.on {
+  background: #fff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.9),
+              0 0 12px rgba(var(--tc, 255 255 255), 0.8);
+}
+
 .ql-tile.frozen { border-style: dashed; opacity: 0.85; }
 .ql-tile.frozen::before {
   content: '🔒'; position: absolute; top: 3px; right: 5px; font-size: 0.6rem; opacity: 0.8;
@@ -376,6 +460,65 @@
 .ql-ent-panel {
   border-color: rgba(67,217,255,0.4); box-shadow: 0 0 24px rgba(67,217,255,0.16), inset 0 0 24px rgba(0,0,0,0.35);
 }
+
+/* The turbulence filter's host svg. Zero size, still in the render tree: a
+   display:none svg cannot be referenced by filter: url() everywhere. */
+.ql-fire-defs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+
+/* ---- Linked pairs: a chip, not a panel -------------------------------------
+   It floats over the lattice and covered four tiles. It is a glance — how many
+   pairs are live — so it collapses to its own title bar and opens on hover, on
+   keyboard focus, or on tap for the touch screens where hover does not exist. */
+.ql-ent-panel {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 3;
+  width: 250px;
+  padding: 0;
+  overflow: hidden;
+  transition: width 0.18s ease, background-color 0.18s ease;
+}
+.ql-ent-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--ql-blu);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ql-ent-count {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  color: #04121a;
+  background: var(--ql-blu);
+  box-shadow: 0 0 10px rgba(67, 217, 255, 0.6);
+}
+/* Closed by default. Height, not display, so it can animate. */
+.ql-ent-body {
+  max-height: 0;
+  opacity: 0;
+  padding: 0 10px;
+  transition: max-height 0.2s ease, opacity 0.16s ease, padding 0.2s ease;
+}
+.ql-ent-panel:hover .ql-ent-body,
+.ql-ent-panel:focus-within .ql-ent-body,
+.ql-ent-panel.is-open .ql-ent-body {
+  max-height: 120px;
+  opacity: 1;
+  padding: 0 10px 10px;
+}
+
 .ql-spark { width: 100%; height: 46px; display: block; }
 
 /* ---- Action bar ---- every command as a button, docked under the lattice.
@@ -682,4 +825,563 @@
   .ql-root { padding: 16px 14px 26px; }
   .ql-adv-tabs { gap: 3px; }
   .ql-adv-tab { font-size: 0.62rem; padding: 5px 7px; }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   THE LATTICE BURNS.
+
+   Energy used to be a border colour and nothing more, so a heated board and a
+   cold one looked much the same. Now the hottest tiles carry real fire: tongues
+   licking upward, embers rising off them, and a heat shimmer over the word.
+
+   Only tiles at 0.62 energy and above get a flame, and only 0.84 and above get
+   the tall blazing one. If every tile burned, the fire would stop telling you
+   anything, which is the whole point of it.
+
+   --heat (0..1) comes from the tile's own energy, so the flame's height, speed
+   and opacity scale with how hot that specific word actually is.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.ql-tile { position: relative; }
+
+/* No hard rule through the middle of a fire: the tile's own 1px top border was
+   showing through the flame as a razor line at the fuel. */
+.ql-tile.ql-burning { border-top-color: transparent; }
+
+/* A BURNING TILE MUST NOT CLIP ITS OWN FLAME.
+   .ql-tile is overflow:hidden so its inner glow stays inside the rounded
+   corners. That also cut 62px off a 72px flame and left only the pale base
+   showing inside the tile — which is why the earlier attempts read as smudges
+   no matter what was drawn above them. */
+.ql-tile.ql-burning { overflow: visible; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FIRE.
+
+   Three attempts failed before this one, each for a different reason, and all
+   three reasons are worth keeping written down:
+
+     1. Stacked radial gradients — a glowing blob. Fire is not a light source
+        with soft edges, it is a shape that is tearing itself apart.
+     2. clip-path polygons — three rigid spikes. A fixed outline cannot be fire
+        no matter how it is animated, because the outline is the thing that has
+        to change.
+     3. A correct flame, drawn 42px wide on a 146px tile — a birthday candle
+        sitting on a word. The physics were right and the SCALE was wrong.
+
+   What it takes:
+
+     A RAGGED, MOVING EDGE. An SVG turbulence field displaces every pixel of
+       the flame each frame, so the silhouette never repeats. Without this the
+       shape is always a shape.
+     A MORPHING BODY. The tongues are border-radius blobs whose eight radii
+       animate independently — they pinch and swell rather than merely scaling.
+     ADDITIVE LIGHT. mix-blend-mode: screen, so overlapping tongues BRIGHTEN
+       each other. That is how fire builds its white centre for free.
+     WIDTH. The flame is sized as a percentage of its tile, so it burns across
+       the whole word instead of standing on the middle of it.
+     FOUR TONGUES, off the centreline, at different heights and speeds, leaning
+       different ways. Concentric tongues look like a logo.
+
+   ── EVERY COLOUR ──────────────────────────────────────────────────────────
+   The whole flame is driven by ONE hue, --fh, set per tile in QuantumLab.jsx.
+   Rhyme partners get the same hue, so the board tells you who rhymes with whom
+   by what colour they burn: red, orange, yellow, green, blue, violet. Each
+   flame still runs white-hot at its base through its own hue to a dark tip,
+   which is what keeps a green flame reading as FLAME and not as a green shape.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.ql-flame {
+  position: absolute;
+  left: 50%;
+  /* Sits INSIDE the tile's top edge so it grows out of the word rather than
+     hovering above it like a decal. */
+  bottom: calc(100% - 11px);
+  /* PERCENTAGES, not pixels. A 146px tile gets a 146px-scale fire; the last
+     version was a fixed 42px and looked like a candle on a table. */
+  width: calc(60% + var(--heat, 0.7) * 24%);
+  height: calc(70px + var(--heat, 0.7) * 46px);
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 1;
+  opacity: calc(0.72 + var(--heat, 0.7) * 0.28);
+  /* THE RAGGED EDGE. Everything else here is decoration without it. */
+  filter: url(#ql-fire-warp) saturate(1.25);
+  /* NOT mix-blend-mode: screen. Screen adds the flame to the backdrop, which
+     was fine over the old near-black tiles and blows straight out to white now
+     that a HOTTEST tile is itself lit red. The flame carries its own light. */
+  mix-blend-mode: normal;
+  /* Feather the bottom into the tile. Without this every tongue ends on a dead
+     flat line and the fire reads as a sticker. */
+  /* Feathered base: the fire fades out over the word instead of laying a solid
+     block across it, so a burning tile is still readable. */
+  -webkit-mask-image: linear-gradient(to top, transparent 4%,
+                        rgba(0,0,0,0.30) 20%, rgba(0,0,0,0.72) 34%, #000 48%);
+          mask-image: linear-gradient(to top, transparent 4%,
+                        rgba(0,0,0,0.30) 20%, rgba(0,0,0,0.72) 34%, #000 48%);
+}
+
+/* The hot pool where the fire meets the word. Fire is brightest at the fuel,
+   and without this the tongues look like they are floating. */
+.ql-flame::before {
+  content: '';
+  position: absolute;
+  left: 20%;
+  bottom: -2px;
+  width: 60%;
+  height: 14%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 100%,
+              hsl(var(--fh, 24) 100% 84%) 0%,
+              hsl(var(--fh, 24) 100% 66%) 34%,
+              hsla(var(--fh, 24) 100% 52% / 0.45) 66%,
+              hsla(var(--fh, 24) 100% 40% / 0) 100%);
+  filter: blur(3px);
+  animation: ql-fire-pool 0.42s ease-in-out infinite alternate;
+}
+
+/* ── the tongues ─────────────────────────────────────────────────────────
+   Bottom-anchored, so the base stays welded to the tile while the tip moves.
+   The border-radius IS the silhouette, and it is what animates. */
+.ql-flame > i {
+  position: absolute;
+  bottom: 0;
+  transform-origin: 50% 100%;
+  /* White-hot at the fuel, the tile's own hue through the body, darkening and
+     fading out at the tip. The hue slides down as it rises, the way a real
+     flame cools — that shift is most of what sells the colour. */
+  background: linear-gradient(to top,
+              hsl(var(--fh, 24) 100% 86%) 0%,
+              hsl(var(--fh, 24) 100% 68%) 16%,
+              hsl(var(--fh, 24) 100% 52%) 38%,
+              hsla(calc(var(--fh, 24) - 12) 100% 44% / 0.78) 58%,
+              hsla(calc(var(--fh, 24) - 20) 100% 36% / 0.42) 74%,
+              hsla(calc(var(--fh, 24) - 26) 100% 28% / 0.14) 88%,
+              hsla(calc(var(--fh, 24) - 30) 100% 22% / 0) 100%);
+  /* THE TAPER. A clip-path is the only way to guarantee the shape comes to
+     a point; a border-radius blob keeps parallel sides and caps itself with a
+     dome, which is a thumb, not a flame. */
+  clip-path: polygon(50% 0%, 55% 10%, 62% 24%, 74% 42%, 84% 62%, 92% 82%, 88% 100%, 12% 100%, 8% 82%, 16% 62%, 26% 42%, 38% 24%, 45% 10%);
+  filter: blur(1.3px);
+}
+
+/* Each tongue carries a brighter inner tongue. This is what gives fire a white
+   heart without anyone having to paint a white shape. */
+.ql-flame > i::before {
+  content: '';
+  position: absolute;
+  left: 30%;
+  bottom: 0;
+  width: 40%;
+  height: 46%;
+  background: linear-gradient(to top,
+              hsl(var(--fh, 24) 100% 72%) 0%,
+              hsl(var(--fh, 24) 100% 62%) 40%,
+              hsla(var(--fh, 24) 100% 56% / 0.32) 76%,
+              hsla(var(--fh, 24) 100% 50% / 0) 100%);
+  filter: blur(0.7px);
+}
+
+/* The leading tongue is the only one hot enough to go white, and it goes white
+   in a narrow stripe up its middle rather than across the whole base. */
+.ql-flame > i:nth-child(2)::before {
+  left: 34%;
+  width: 32%;
+  height: 42%;
+  background: linear-gradient(to top,
+              #fffdf6 0%,
+              hsl(var(--fh, 24) 100% 84%) 30%,
+              hsla(var(--fh, 24) 100% 76% / 0.45) 70%,
+              hsla(var(--fh, 24) 100% 64% / 0) 100%);
+}
+
+/* Four tongues across the width, none of them sharing an axis. */
+.ql-flame > i:nth-child(1) {
+  left: -2%; width: 58%; height: 74%;
+  animation: ql-fire-1 0.86s ease-in-out infinite;
+}
+.ql-flame > i:nth-child(2) {
+  left: 21%; width: 60%; height: 100%;
+  animation: ql-fire-2 0.67s ease-in-out infinite;
+  animation-delay: -0.24s;
+}
+.ql-flame > i:nth-child(3) {
+  left: 44%; width: 56%; height: 70%;
+  animation: ql-fire-3 0.74s ease-in-out infinite;
+  animation-delay: -0.41s;
+}
+.ql-flame > i:nth-child(4) {
+  left: 30%; width: 40%; height: 58%;
+  animation: ql-fire-4 0.49s ease-in-out infinite;
+  animation-delay: -0.11s;
+}
+
+/* The eight radii move independently: the waist pinches while the tip swells,
+   then the other way round. That asymmetry is the whole trick. */
+@keyframes ql-fire-1 {
+  0%   { clip-path: polygon(50% 0%, 55% 10%, 62% 24%, 74% 42%, 84% 62%, 92% 82%, 88% 100%, 12% 100%, 8% 82%, 16% 62%, 26% 42%, 38% 24%, 45% 10%); transform: translateY(0)    scale(1, 0.94)  skewX(-5deg); }
+  28%  { clip-path: polygon(66% 0%, 70% 10%, 75% 24%, 81% 42%, 87% 62%, 93% 82%, 89% 100%, 11% 100%, 7% 82%, 14% 62%, 22% 42%, 32% 24%, 48% 10%);  transform: translateX(6%) translateY(-9%)  scale(0.88, 1.14) skewX(6deg); }
+  55%  { clip-path: polygon(50% 0%, 54% 12%, 59% 28%, 67% 48%, 77% 68%, 88% 86%, 87% 100%, 13% 100%, 12% 86%, 23% 68%, 33% 48%, 41% 28%, 46% 12%);   transform: translateX(-4%) translateY(-3%) scale(1.08, 1.02) skewX(-3deg); }
+  78%  { clip-path: polygon(34% 0%, 38% 10%, 44% 24%, 54% 42%, 70% 62%, 89% 82%, 88% 100%, 12% 100%, 8% 82%, 12% 62%, 18% 42%, 26% 24%, 30% 10%);  transform: translateX(9%) translateY(-13%) scale(0.92, 1.18) skewX(8deg); }
+  100% { clip-path: polygon(50% 0%, 55% 10%, 62% 24%, 74% 42%, 84% 62%, 92% 82%, 88% 100%, 12% 100%, 8% 82%, 16% 62%, 26% 42%, 38% 24%, 45% 10%); transform: translateY(0)    scale(1, 0.94)  skewX(-5deg); }
+}
+@keyframes ql-fire-2 {
+  0%   { clip-path: polygon(66% 0%, 70% 10%, 75% 24%, 81% 42%, 87% 62%, 93% 82%, 89% 100%, 11% 100%, 7% 82%, 14% 62%, 22% 42%, 32% 24%, 48% 10%);  transform: translateX(-2%) translateY(-4%)  scale(0.96, 1.06) skewX(6deg); }
+  33%  { clip-path: polygon(50% 0%, 54% 12%, 59% 28%, 67% 48%, 77% 68%, 88% 86%, 87% 100%, 13% 100%, 12% 86%, 23% 68%, 33% 48%, 41% 28%, 46% 12%);   transform: translateX(7%) translateY(-13%)  scale(1.1, 0.88)  skewX(-7deg); }
+  66%  { clip-path: polygon(34% 0%, 38% 10%, 44% 24%, 54% 42%, 70% 62%, 89% 82%, 88% 100%, 12% 100%, 8% 82%, 12% 62%, 18% 42%, 26% 24%, 30% 10%);  transform: translateX(-6%) translateY(-6%)  scale(0.88, 1.2)  skewX(4deg); }
+  100% { clip-path: polygon(66% 0%, 70% 10%, 75% 24%, 81% 42%, 87% 62%, 93% 82%, 89% 100%, 11% 100%, 7% 82%, 14% 62%, 22% 42%, 32% 24%, 48% 10%);  transform: translateX(-2%) translateY(-4%)  scale(0.96, 1.06) skewX(6deg); }
+}
+@keyframes ql-fire-3 {
+  0%   { clip-path: polygon(50% 0%, 54% 12%, 59% 28%, 67% 48%, 77% 68%, 88% 86%, 87% 100%, 13% 100%, 12% 86%, 23% 68%, 33% 48%, 41% 28%, 46% 12%);   transform: translateX(2%) translateY(-2%)   scale(1.02, 0.98) skewX(4deg); }
+  30%  { clip-path: polygon(34% 0%, 38% 10%, 44% 24%, 54% 42%, 70% 62%, 89% 82%, 88% 100%, 12% 100%, 8% 82%, 12% 62%, 18% 42%, 26% 24%, 30% 10%);  transform: translateX(-7%) translateY(-11%) scale(0.9, 1.16)  skewX(-6deg); }
+  62%  { clip-path: polygon(50% 0%, 55% 10%, 62% 24%, 74% 42%, 84% 62%, 92% 82%, 88% 100%, 12% 100%, 8% 82%, 16% 62%, 26% 42%, 38% 24%, 45% 10%); transform: translateX(6%) translateY(-5%)   scale(1.1, 0.94)  skewX(7deg); }
+  100% { clip-path: polygon(50% 0%, 54% 12%, 59% 28%, 67% 48%, 77% 68%, 88% 86%, 87% 100%, 13% 100%, 12% 86%, 23% 68%, 33% 48%, 41% 28%, 46% 12%);   transform: translateX(2%) translateY(-2%)   scale(1.02, 0.98) skewX(4deg); }
+}
+/* The little fast one that flicks off the top and dies. */
+@keyframes ql-fire-4 {
+  0%   { clip-path: polygon(50% 0%, 55% 10%, 62% 24%, 74% 42%, 84% 62%, 92% 82%, 88% 100%, 12% 100%, 8% 82%, 16% 62%, 26% 42%, 38% 24%, 45% 10%); transform: translateY(-8%)  scale(1, 1)       skewX(2deg);  opacity: 0.85; }
+  40%  { clip-path: polygon(34% 0%, 38% 10%, 44% 24%, 54% 42%, 70% 62%, 89% 82%, 88% 100%, 12% 100%, 8% 82%, 12% 62%, 18% 42%, 26% 24%, 30% 10%);  transform: translateX(-9%) translateY(-32%) scale(0.72, 1.34) skewX(-9deg); opacity: 1; }
+  70%  { clip-path: polygon(66% 0%, 70% 10%, 75% 24%, 81% 42%, 87% 62%, 93% 82%, 89% 100%, 11% 100%, 7% 82%, 14% 62%, 22% 42%, 32% 24%, 48% 10%);  transform: translateX(7%) translateY(-19%)  scale(0.86, 1.12) skewX(7deg);  opacity: 0.6; }
+  100% { clip-path: polygon(50% 0%, 55% 10%, 62% 24%, 74% 42%, 84% 62%, 92% 82%, 88% 100%, 12% 100%, 8% 82%, 16% 62%, 26% 42%, 38% 24%, 45% 10%); transform: translateY(-8%)  scale(1, 1)       skewX(2deg);  opacity: 0.85; }
+}
+@keyframes ql-fire-pool {
+  0%   { transform: scale(1, 0.9);     opacity: 0.85; }
+  100% { transform: scale(1.1, 1.16);  opacity: 1; }
+}
+
+/* THE BLAZING TIER burns taller, wider and faster. */
+.ql-blazing .ql-flame {
+  width: calc(70% + var(--heat, 1) * 26%);
+  height: calc(88px + var(--heat, 1) * 44px);
+}
+.ql-blazing .ql-flame > i:nth-child(1) { animation-duration: 0.58s; }
+.ql-blazing .ql-flame > i:nth-child(2) { animation-duration: 0.44s; }
+.ql-blazing .ql-flame > i:nth-child(3) { animation-duration: 0.5s; }
+.ql-blazing .ql-flame > i:nth-child(4) { animation-duration: 0.33s; }
+.ql-blazing .ql-flame::before          { animation-duration: 0.28s; }
+
+/* The tile itself catches the light of its own flame — same hue, so a green
+   flame throws green onto its word. */
+.ql-burning::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(85% 75% at 50% 0%,
+      hsla(var(--fh, 24) 100% 62% / calc(0.14 + var(--heat, 0.7) * 0.28)) 0%, transparent 72%),
+    radial-gradient(70% 60% at 50% 100%,
+      hsla(calc(var(--fh, 24) - 16) 100% 48% / calc(0.06 + var(--heat, 0.7) * 0.14)) 0%, transparent 74%);
+  animation: ql-heat-breathe 1.5s ease-in-out infinite;
+}
+@keyframes ql-heat-breathe { 0%, 100% { opacity: 0.72; } 50% { opacity: 1; } }
+
+/* EMBERS. Five sparks in a single element, made of box-shadows so they cost
+   one node and no extra paint, drifting up out of the fire and going out.
+
+   They live on the TILE, not on the flame: the flame carries the turbulence
+   warp, and a 2px dot pushed 10px sideways by a displacement map is not a dot
+   any more. Out here they stay round and read as sparks. */
+.ql-burning::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 3;
+  background: hsl(var(--fh, 24) 100% 86%);
+  box-shadow:
+    -13px  -9px 0 0 hsl(var(--fh, 24) 100% 80%),
+     15px -17px 0 0 hsl(var(--fh, 24) 100% 76%),
+     -6px -27px 0 -0.5px hsl(var(--fh, 24) 100% 72%),
+     10px -38px 0 -0.5px hsl(var(--fh, 24) 100% 68%);
+  animation: ql-embers 2.1s linear infinite;
+}
+@keyframes ql-embers {
+  0%   { transform: translate(0, -14px)    scale(1);    opacity: 0; }
+  14%  { opacity: 1; }
+  58%  { transform: translate(6px, -46px)  scale(0.8);  opacity: 0.7; }
+  100% { transform: translate(-5px, -84px) scale(0.35); opacity: 0; }
+}
+.ql-blazing::after { animation-duration: 1.5s; }
+
+/* A still board for anyone who has asked their device to stop animating. The
+   colours and the shapes stay; only the motion goes. */
+@media (prefers-reduced-motion: reduce) {
+  .ql-flame > i, .ql-flame::before, .ql-burning::before { animation: none; }
+  .ql-flame { filter: blur(1px); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   QUANTUM LAB IN LANDSCAPE, ON THE PHONE.
+
+   The three-column version put the keyword box and the step buttons down the
+   left, the lattice in the middle and three inspector panels down the right.
+   It fitted, but it left the lattice — the entire point of the tab — with 480
+   of 915 pixels, boxed in on both sides by chrome you only touch occasionally.
+
+   So the columns become DRAWERS. Three labelled buttons across the top; the
+   lattice gets the whole window; a drawer slides over it when you ask for it
+   and gets out of the way when you are done.
+
+     ☰ Words & steps   the keyword box, the six step buttons, the status line
+     ⚙ Advanced        DNA, contracts, measure, truth, stress, loop, journal
+     Inspector ⚛       the word inspector, section DNA, scores, neural output
+
+   NOTHING IS HIDDEN, and nothing needs a gesture. Every drawer has a button
+   with a word on it, and tapping the lattice closes whatever is open.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.ql-mob {
+  display: block;
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;      /* the drawers live off-canvas; never scroll to them */
+}
+
+/* ── the three drawer buttons ─────────────────────────────────────────────
+   30px is as tall as this bar is allowed to be. It is navigation, and it is
+   competing with the lattice for a 412px window. */
+.ql-mobbar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 30px;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 5px;
+  background: rgba(5, 3, 16, 0.9);
+  border-bottom: 1px solid rgba(67, 217, 255, 0.3);
+  backdrop-filter: blur(8px);
+}
+
+.ql-mobtab {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+  color: #cfe9ff;
+  background: rgba(12, 8, 32, 0.9);
+  border: 1px solid rgba(67, 217, 255, 0.4);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ql-mobtab.is-open {
+  color: #04121a;
+  background: var(--ql-blu);
+  border-color: var(--ql-blu);
+  box-shadow: 0 0 12px rgba(67, 217, 255, 0.55);
+}
+.ql-mobtab-mid { margin: 0 auto; }
+.ql-mobbar-title { display: none; }   /* the shell's own bar already names the tab */
+
+/* Tap-anywhere-else to close. Deliberately faint: the lattice underneath must
+   stay readable, because you are usually closing the drawer to look at it. */
+.ql-mobscrim {
+  position: absolute;
+  inset: 30px 0 0 0;
+  z-index: 5;
+  background: rgba(2, 1, 8, 0.35);
+}
+
+/* ── the lattice takes the whole window ──────────────────────────────────── */
+.ql-mob .ql-lattice-wrap {
+  position: absolute;
+  top: 30px; left: 0; right: 0; bottom: 0;
+  margin: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* ── DRAWER 1, left: your words and the six steps ────────────────────────── */
+.ql-mob .ql-keywords,
+.ql-mob .ql-actionbar,
+.ql-mob .ql-status {
+  position: absolute;
+  left: 0;
+  width: 274px;
+  z-index: 7;
+  margin: 0;
+  box-sizing: border-box;
+  background: rgba(6, 4, 20, 0.97);
+  border-right: 1px solid rgba(67, 217, 255, 0.35);
+  transform: translateX(-108%);
+  transition: transform 0.22s cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+.ql-mob .ql-keywords  { top: 30px; height: 118px; overflow: hidden; padding: 5px 7px; }
+.ql-mob .ql-actionbar { top: 148px; bottom: 22px; overflow-y: auto; padding: 6px; }
+.ql-mob .ql-status    { bottom: 0; height: 22px; padding: 2px 8px; font-size: 0.55rem;
+                        overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* Two step buttons per row. Six steps in three rows fits the drawer; six rows
+   of one does not, and burying Step 2 under a scroll is how a "no hidden
+   controls" tool ends up with hidden controls anyway. */
+.ql-mob .ql-actionbar-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+.ql-mob .ql-actionbar-primary .ql-btn { min-width: 0; flex: none; }
+.ql-mob .ql-actionbar-caption { margin-bottom: 4px; }
+.ql-mob .ql-actionbar-title   { font-size: 0.6rem; }
+.ql-mob .ql-genbadge          { grid-column: 1 / -1; text-align: center; }
+
+.ql-draw-controls .ql-keywords,
+.ql-draw-controls .ql-actionbar,
+.ql-draw-controls .ql-status { transform: none; }
+
+.ql-mob .ql-keywords textarea {
+  min-height: 40px !important;
+  max-height: 40px;
+  font-size: 0.58rem;
+}
+/* One line, or the two-line heading pushes Step 2 out of a box that clips. */
+.ql-mob .ql-keywords-label {
+  font-size: 0.55rem;
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* "Ctrl+Enter to load" is desktop advice on a device with no Ctrl key. */
+.ql-mob .ql-keywords-hint  { display: none; }
+.ql-mob .ql-keywords-actions { gap: 4px; }
+/* The caption paragraph explains what the bar is; the bar is now behind a
+   button that says the same thing. Its 3 lines cost a step button. */
+.ql-mob .ql-actionbar-sub { display: none; }
+
+/* ── DRAWER 2, middle: the advanced set ──────────────────────────────────── */
+.ql-mob .ql-adv {
+  display: block !important;      /* it was hidden outright; now it has a door */
+  position: absolute;
+  left: 50%;
+  top: 30px;
+  bottom: 0;
+  width: 340px;
+  margin: 0 0 0 -170px;
+  z-index: 7;
+  box-sizing: border-box;
+  overflow-y: auto;
+  background: rgba(6, 4, 20, 0.98);
+  transform: translateY(-108%);
+  transition: transform 0.22s cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+.ql-draw-adv .ql-adv { transform: none; }
+.ql-mob .ql-adv-body { padding: 8px 10px 10px; }
+.ql-mob .ql-adv-tab  { font-size: 0.55rem; padding: 4px 7px; }
+
+/* ── DRAWER 3, right: inspector, DNA, scores, and the neural output ───────
+   The neural verses are the payoff of the tab, so when they exist they take
+   the top of the drawer and the panels slide under them. */
+.ql-mob .ql-panels,
+.ql-mob .ql-neural-out {
+  position: absolute;
+  right: 0;
+  width: 292px;
+  z-index: 7;
+  margin: 0;
+  box-sizing: border-box;
+  background: rgba(6, 4, 20, 0.97);
+  border-left: 1px solid rgba(192, 38, 255, 0.35);
+  transform: translateX(108%);
+  transition: transform 0.22s cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+.ql-mob .ql-panels {
+  top: 30px;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  padding: 6px;
+}
+.ql-mob .ql-neural-out {
+  top: 30px;
+  max-height: 46%;
+  overflow-y: auto;
+  border-radius: 0;
+}
+/* .ql-neural-out precedes .ql-panels in the markup, so this only applies when
+   there is actually a generated verse to show. */
+.ql-mob .ql-neural-out ~ .ql-panels { top: calc(30px + 46%); }
+
+.ql-draw-panels .ql-panels,
+.ql-draw-panels .ql-neural-out { transform: none; }
+
+/* The how-to is 339px of instructions — bigger than the tool it explains. The
+   six step buttons carry the same six steps, in order, with the same words. */
+.ql-mob .ql-howto { display: none !important; }
+
+/* Everything shrinks: 412px of height does not forgive desktop padding. */
+.ql-mob .ql-panel     { padding: 6px 7px; font-size: 0.62rem; }
+.ql-mob .ql-kv        { font-size: 0.58rem; padding: 2px 0; }
+.ql-mob .ql-btn,
+.ql-mob .ql-mini      { font-size: 0.53rem; padding: 4px 5px; min-height: 30px;
+                        white-space: normal; line-height: 1.15; }
+.ql-mob .ql-step-tag  { font-size: 0.5rem; padding: 1px 5px; }
+.ql-mob .ql-tile-word { font-size: 0.62rem; }
+.ql-mob .ql-tile      { padding: 4px 3px; }
+/* ── FIRE ON A 412px SCREEN ──────────────────────────────────────────────
+   A flame here MUST stand taller than the tile it burns and lick up over the
+   row above it. That is what the animation shows and it is the whole reason
+   the board reads as on fire rather than decorated.
+
+   An earlier version of this block shrank the flame to 20-44px to stop the top
+   row being clipped by the scrolling wrap. It worked, and it meant every
+   screenshot of the running app showed candle flames while the isolated test
+   bench showed proper fire — the app and the bench disagreed for hours and the
+   override was the reason.
+
+   The clipping is solved with headroom above row 1 instead. */
+.ql-mob .ql-flame {
+  width: calc(44% + var(--heat, 0.7) * 18%);
+  height: calc(66px + var(--heat, 0.7) * 40px);
+  bottom: calc(100% - 30px);
+}
+.ql-mob .ql-blazing .ql-flame {
+  width: calc(54% + var(--heat, 1) * 20%);
+  height: calc(84px + var(--heat, 1) * 40px);
+}
+.ql-mob .ql-lattice { padding-top: 62px; }
+
+/* The linked-pairs chip shrinks with everything else and keeps its own
+   hover-to-open behaviour — on the phone the tap on its title bar is what
+   opens it. */
+.ql-mob .ql-ent-panel { width: 128px; top: 4px; right: 4px; }
+.ql-mob .ql-ent-head  { padding: 4px 7px; font-size: 0.55rem; }
+.ql-mob .ql-ent-panel.is-open { width: 210px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ql-mob .ql-keywords, .ql-mob .ql-actionbar, .ql-mob .ql-status,
+  .ql-mob .ql-adv, .ql-mob .ql-panels, .ql-mob .ql-neural-out { transition: none; }
+}
+/* ══════════════════════════════════════════════════════════════════════════
+   THE FIRE CANVAS.
+
+   Sits over the lattice, under the words. z-index 1 puts it above every tile
+   (which are z-index auto) and below every word (z-index 3), so a burning tile
+   is engulfed and still perfectly readable — which is what the mockup shows.
+
+   pointer-events: none, or the whole board would stop being clickable.
+   ══════════════════════════════════════════════════════════════════════════ */
+.ql-firecanvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  /* ABOVE .ql-lattice, which is z-index 2. At 1 the canvas sat behind the whole
+     grid and the fire could only ever show in the gaps between tiles — the
+     tiles themselves were never engulfed, which is the one thing the fire is
+     for. */
+  z-index: 5;
+  pointer-events: none;
+  will-change: transform;
 }

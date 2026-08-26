@@ -1,0 +1,15 @@
+{
+  "name": "lyricist-kaggle-relay",
+  "private": true,
+  "version": "1.0.0",
+  "description": "CORS shim so One Man Band can reach Kaggle from a phone. Holds no secrets.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  },
+  "type": "module"
+}
