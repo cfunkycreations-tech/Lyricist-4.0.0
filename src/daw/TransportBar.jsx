@@ -11,7 +11,7 @@ import webMidiService from './services/WebMidiService';
  * Contains playback controls, timing info, ASIO status, and Render Queue tray.
  * @returns {JSX.Element}
  */
-export default function TransportBar({ onOpenSettings, onOpenExport }) {
+export default function TransportBar({ onOpenSettings, onOpenExport, onOpenScope }) {
   const { transport, togglePlay, stop, toggleRecord, setTransport, renderQueue, tracks, lyrics, loadProject } = useDAW();
   const [asioConnected] = useState(true);
   const [showQueue, setShowQueue] = useState(false);
@@ -174,16 +174,26 @@ export default function TransportBar({ onOpenSettings, onOpenExport }) {
       </div>
 
       <div className="transport-group" style={{ position: 'relative' }}>
-        <MasterVUMeter
-          orientation="horizontal"
-          compact={true}
-          leftLevel={transport.isPlaying ? (6.4 + Math.random() * 1.8) : 0}
-          rightLevel={transport.isPlaying ? (6.0 + Math.random() * 1.6) : 0}
-          width={110}
-          showLabels={true}
-          showReadout={false}
-          segments={14}
-        />
+        <div 
+          onClick={onOpenScope} 
+          title="Click to open Master Acoustic Scope"
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+        >
+          <MasterVUMeter
+            orientation="horizontal"
+            compact={true}
+            leftLevel={transport.isPlaying ? (6.4 + Math.random() * 1.8) : 0}
+            rightLevel={transport.isPlaying ? (6.0 + Math.random() * 1.6) : 0}
+            width={110}
+            showLabels={true}
+            showReadout={false}
+            segments={14}
+          />
+        </div>
+        
+        <button className="btn-hardware" title="Open Master Acoustic Scope" onClick={onOpenScope}>
+          ⚡ Scope
+        </button>
 
         <div 
           className={`asio-dot ${asioConnected ? 'connected' : ''}`} 

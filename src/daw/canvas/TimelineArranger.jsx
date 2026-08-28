@@ -3,6 +3,7 @@ import './TimelineArranger.css';
 import RotaryKnob from '../components/RotaryKnob';
 import HardwareFader from '../components/HardwareFader';
 import AutomationLane from './AutomationLane';
+import VocalKaraokeTracker from './VocalKaraokeTracker';
 import { useDAW } from '../context/DAWContext';
 import funkMatrixEngine from '../engine/FunkMatrixEngine';
 import audioGraph from '../engine/AudioGraph';
@@ -348,6 +349,8 @@ export default function TimelineArranger({ onEditClip }) {
               <div className="playhead-line"></div>
             </div>
           </div>
+
+          <VocalKaraokeTracker />
 
           {tracks.map((track) => (
             <div key={track.id} style={{ display: 'flex', flexDirection: 'column' }}>

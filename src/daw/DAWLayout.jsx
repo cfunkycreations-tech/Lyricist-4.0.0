@@ -6,6 +6,7 @@ import BottomDock from './BottomDock';
 import CenterCanvas from './canvas/CenterCanvas';
 import SettingsModal from './settings/SettingsModal';
 import ExportModal from './export/ExportModal';
+import MasterScopeModal from './components/MasterScopeModal';
 import { DAWProvider, useDAW } from './context/DAWContext';
 import DAWContextMenu from './components/DAWContextMenu';
 import keyCommandService from './services/KeyCommandService';
@@ -17,6 +18,7 @@ function DAWLayoutContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [showScope, setShowScope] = useState(false);
   const [editingClip, setEditingClip] = useState(null);
   const { togglePlay, toggleRecord, setPlayhead } = useDAW();
 
@@ -42,7 +44,11 @@ function DAWLayoutContent() {
 
   return (
     <div className="daw-shell">
-      <TransportBar onOpenSettings={() => setShowSettings(true)} onOpenExport={() => setShowExport(true)} />
+      <TransportBar 
+        onOpenSettings={() => setShowSettings(true)} 
+        onOpenExport={() => setShowExport(true)} 
+        onOpenScope={() => setShowScope(true)}
+      />
       <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
       <div className="daw-canvas">
         <CenterCanvas onEditClip={(clip, trackId) => setEditingClip({ clip, trackId })} />
@@ -50,6 +56,7 @@ function DAWLayoutContent() {
       <BottomDock />
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       {showExport && <ExportModal onClose={() => setShowExport(false)} />}
+      {showScope && <MasterScopeModal onClose={() => setShowScope(false)} />}
       {editingClip && (
         <WaveformEditorModal 
           clip={editingClip.clip} 
