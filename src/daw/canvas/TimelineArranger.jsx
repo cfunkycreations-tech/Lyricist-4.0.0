@@ -5,6 +5,7 @@ import HardwareFader from '../components/HardwareFader';
 import { useDAW } from '../context/DAWContext';
 import funkMatrixEngine from '../engine/FunkMatrixEngine';
 import audioGraph from '../engine/AudioGraph';
+import audioRecorder from '../engine/AudioRecorder';
 
 /**
  * TimelineArranger Component
@@ -26,6 +27,7 @@ export default function TimelineArranger() {
   const [snap, setSnap] = useState('1/16');
   const [zoom, setZoom] = useState(1);
   const [generatingTrackId, setGeneratingTrackId] = useState(null);
+  const [livePeak, setLivePeak] = useState(0);
 
   const handleGeneratePreview = async (track) => {
     if (!aiConfig.enabled) {
@@ -72,6 +74,44 @@ export default function TimelineArranger() {
       setGeneratingTrackId(null);
     }
   };
+
+  React.useEffect(() => {
+    if (transport.isRecording) {
+      const armedTrack = tracks.find(t => t.armed);
+      if (armedTrack && armedTrack.type === 'audio') {
+        if (!audioRecorder.isRecording()) {
+          audioRecorder.init().then(() => {
+            audioRecorder.startRecording(armedTrack.id, (peak) => {
+              setLivePeak(peak);
+            });
+          }).catch(console.error);
+        }
+      }
+    } else {
+      if (audioRecorder.isRecording()) {
+        audioRecorder.stopRecording().then((data) => {
+          if (data) {
+            const armedTrack = tracks.find(t => t.armed);
+            if (armedTrack) {
+              // Convert duration to bars approximately, minimum 1 bar
+              const beats = (data.duration / 60) * transport.bpm;
+              const bars = Math.max(1, beats / 4);
+              
+              const newClip = {
+                id: `clip-${Date.now()}`,
+                name: 'Audio Recording',
+                start: transport.playhead,
+                length: bars,
+                data: data.blob
+              };
+              addClipToTrack(armedTrack.id, newClip);
+            }
+          }
+          setLivePeak(0);
+        });
+      }
+    }
+  }, [transport.isRecording, tracks, addClipToTrack, transport.playhead, transport.bpm]);
 
   const handleRulerClick = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -244,6 +284,31 @@ export default function TimelineArranger() {
                   </div>
                 );
               })}
+              
+              {transport.isRecording && track.armed && track.type === 'audio' && (
+                <div
+                  className="clip audio recording pulse"
+                  style={{
+                    left: `${transport.playhead * barWidth}px`,
+                    width: `${Math.max(1, livePeak * 100)}px`,
+                    minWidth: '20px',
+                    backgroundColor: 'rgba(230, 57, 70, 0.4)',
+                    borderColor: 'var(--gm-crimson, #E63946)',
+                    borderStyle: 'dashed'
+                  }}
+                >
+                  <span className="clip-name" style={{ color: '#fff' }}>Recording...</span>
+                  <div className="clip-waveform-bars">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div 
+                        key={i} 
+                        className="clip-bar" 
+                        style={{ height: `${livePeak * 100}%`, backgroundColor: 'var(--gm-crimson, #E63946)' }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

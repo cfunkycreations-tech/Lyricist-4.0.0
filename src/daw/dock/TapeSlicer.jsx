@@ -1,12 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import tapeSlicerEngine from '../engine/TapeSlicerEngine';
 
 /**
  * TapeSlicer Component - Half-speed time/pitch DSP engine and Tape Slicer
  */
 export default function TapeSlicer() {
   const [pitch, setPitch] = useState(0);
-  const [tapeSlowdown, setTapeSlowdown] = useState(50);
+  const [tapeSlowdown, setTapeSlowdown] = useState(100);
   const [vinylBrake, setVinylBrake] = useState(false);
+  const [activeTrigger, setActiveTrigger] = useState(null);
+
+  useEffect(() => {
+    tapeSlicerEngine.init();
+  }, []);
+
+  const handlePitchChange = (newPitch) => {
+    setPitch(newPitch);
+    tapeSlicerEngine.setPitchShift(newPitch);
+  };
+
+  const handleSlowdownChange = (e) => {
+    const val = parseInt(e.target.value, 10);
+    setTapeSlowdown(val);
+    tapeSlicerEngine.setTapeSlowdown(val / 100);
+  };
+
+  const handleVinylBrake = () => {
+    setVinylBrake(true);
+    tapeSlicerEngine.triggerVinylBrake(1500, (factor) => {
+      setTapeSlowdown(Math.round(factor * 100));
+      if (factor <= 0) setVinylBrake(false);
+    });
+  };
+
+  const handleTriggerPress = (trigger) => {
+    setActiveTrigger(trigger);
+    if (trigger === 'STUTTER' || trigger === 'REVERSE') {
+      // Stub for advanced triggers
+    } else {
+      tapeSlicerEngine.triggerBeatChop(trigger, 120);
+    }
+  };
+
+  const handleTriggerRelease = () => {
+    setActiveTrigger(null);
+    tapeSlicerEngine.stopBeatChop();
+  };
 
   return (
     <div style={styles.container}>
@@ -16,7 +55,15 @@ export default function TapeSlicer() {
         <div style={styles.engineControls}>
           <div style={styles.controlGroup}>
             <div style={styles.knobWrapper}>
-              <div style={styles.largeKnob}>PITCH</div>
+              {/* Simplistic Pitch Knob Interaction via clicks for demonstration */}
+              <div 
+                style={{...styles.largeKnob, cursor: 'pointer', userSelect: 'none'}} 
+                onClick={() => handlePitchChange(Math.min(12, pitch + 1))}
+                onContextMenu={(e) => { e.preventDefault(); handlePitchChange(Math.max(-12, pitch - 1)); }}
+                title="Left Click: +1 ST | Right Click: -1 ST"
+              >
+                PITCH
+              </div>
             </div>
             <div style={styles.valueDisplay}>{pitch > 0 ? `+${pitch}` : pitch} ST</div>
           </div>
@@ -28,7 +75,7 @@ export default function TapeSlicer() {
               min="0" 
               max="100" 
               value={tapeSlowdown} 
-              onChange={(e) => setTapeSlowdown(e.target.value)}
+              onChange={handleSlowdownChange}
               style={styles.slider}
             />
             <div style={styles.valueDisplay}>{tapeSlowdown}% WET</div>
@@ -41,9 +88,7 @@ export default function TapeSlicer() {
                 backgroundColor: vinylBrake ? 'var(--gm-crimson, #E63946)' : '#222',
                 color: vinylBrake ? '#fff' : 'var(--gm-crimson, #E63946)',
               }}
-              onMouseDown={() => setVinylBrake(true)}
-              onMouseUp={() => setVinylBrake(false)}
-              onMouseLeave={() => setVinylBrake(false)}
+              onMouseDown={handleVinylBrake}
             >
               VINYL BRAKE
             </button>
@@ -55,7 +100,17 @@ export default function TapeSlicer() {
         <div style={styles.sectionHeader}>BEAT SLICE GRID</div>
         <div style={styles.triggerGrid}>
           {['1/4', '1/8', '1/8T', '1/16', '1/16T', '1/32', 'STUTTER', 'REVERSE'].map(trigger => (
-            <button key={trigger} style={styles.triggerBtn}>
+            <button 
+              key={trigger} 
+              style={{
+                ...styles.triggerBtn,
+                backgroundColor: activeTrigger === trigger ? 'var(--gm-amber, #FF9900)' : '#222',
+                color: activeTrigger === trigger ? '#000' : 'var(--gm-ice-white, #F0F8FF)',
+              }}
+              onMouseDown={() => handleTriggerPress(trigger)}
+              onMouseUp={handleTriggerRelease}
+              onMouseLeave={handleTriggerRelease}
+            >
               {trigger}
             </button>
           ))}

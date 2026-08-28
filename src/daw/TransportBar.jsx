@@ -9,7 +9,7 @@ import RenderQueueTray from './components/RenderQueueTray';
  * Contains playback controls, timing info, ASIO status, and Render Queue tray.
  * @returns {JSX.Element}
  */
-export default function TransportBar({ onOpenSettings }) {
+export default function TransportBar({ onOpenSettings, onOpenExport }) {
   const { transport, togglePlay, stop, toggleRecord, setTransport, renderQueue } = useDAW();
   const [asioConnected] = useState(true);
   const [showQueue, setShowQueue] = useState(false);
@@ -154,6 +154,11 @@ export default function TransportBar({ onOpenSettings }) {
         </button>
 
         {showQueue && <RenderQueueTray />}
+        
+        {/* Export Button */}
+        <button className="btn-hardware" title="Export Audio" onClick={onOpenExport}>
+          ⚡ Export
+        </button>
 
         {/* Settings Button */}
         <button className="btn-hardware" title="Funk Matrix & Settings" onClick={onOpenSettings}>

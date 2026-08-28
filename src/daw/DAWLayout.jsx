@@ -5,6 +5,7 @@ import Sidebar from './Sidebar';
 import BottomDock from './BottomDock';
 import CenterCanvas from './canvas/CenterCanvas';
 import SettingsModal from './settings/SettingsModal';
+import ExportModal from './export/ExportModal';
 import { DAWProvider, useDAW } from './context/DAWContext';
 import DAWContextMenu from './components/DAWContextMenu';
 import keyCommandService from './services/KeyCommandService';
@@ -12,6 +13,7 @@ import keyCommandService from './services/KeyCommandService';
 function DAWLayoutContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const { togglePlay, toggleRecord, setPlayhead } = useDAW();
 
   useEffect(() => {
@@ -34,13 +36,14 @@ function DAWLayoutContent() {
 
   return (
     <div className="daw-shell">
-      <TransportBar onOpenSettings={() => setShowSettings(true)} />
+      <TransportBar onOpenSettings={() => setShowSettings(true)} onOpenExport={() => setShowExport(true)} />
       <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
       <div className="daw-canvas">
         <CenterCanvas />
       </div>
       <BottomDock />
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      {showExport && <ExportModal onClose={() => setShowExport(false)} />}
       <DAWContextMenu />
     </div>
   );
