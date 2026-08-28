@@ -252,6 +252,19 @@ export const DAWProvider = ({ children }) => {
     };
   }, [transport.isPlaying, tick]);
 
+  const loadProject = useCallback((projectState) => {
+    if (projectState.tracks) setTracks(projectState.tracks);
+    if (projectState.lyrics) setLyrics(projectState.lyrics);
+    if (projectState.bpm || projectState.key || projectState.timeSig) {
+      setTransportState(prev => ({
+        ...prev,
+        bpm: projectState.bpm || prev.bpm,
+        key: projectState.key || prev.key,
+        timeSig: projectState.timeSig || prev.timeSig
+      }));
+    }
+  }, []);
+
   const value = {
     tracks,
     transport,
@@ -276,7 +289,8 @@ export const DAWProvider = ({ children }) => {
     addRenderJob,
     updateRenderJob,
     clearCompletedJobs,
-    setAIEnabled
+    setAIEnabled,
+    loadProject
   };
 
   return (

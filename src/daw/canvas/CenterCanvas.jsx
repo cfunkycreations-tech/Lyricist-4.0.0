@@ -7,7 +7,7 @@ import './CenterCanvas.css';
  * CenterCanvas Component
  * Host container with view mode switcher: Timeline Arranger, Lyric Forge, or Split View.
  */
-const CenterCanvas = () => {
+const CenterCanvas = ({ onEditClip }) => {
   const [viewMode, setViewMode] = useState('split'); // 'timeline', 'lyric', 'split'
 
   useEffect(() => {
@@ -49,7 +49,7 @@ const CenterCanvas = () => {
       
       <div className={`canvas-content ${viewMode === 'split' ? 'split-view' : ''}`}>
         {(viewMode === 'timeline' || viewMode === 'split') && (
-          <TimelineArranger />
+          <TimelineArranger onEditClip={onEditClip} />
         )}
         
         {(viewMode === 'lyric' || viewMode === 'split') && (

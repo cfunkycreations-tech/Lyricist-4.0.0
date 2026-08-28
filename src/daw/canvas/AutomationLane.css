@@ -1,0 +1,84 @@
+.automation-lane {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--gm-bg-surface, #1e1e24);
+  border-bottom: 1px solid var(--gm-border, #33333d);
+  font-family: 'Inter', 'Roboto', sans-serif;
+  color: var(--gm-text-primary, #e0e0e0);
+}
+
+.automation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background-color: var(--gm-bg-header, #2a2a32);
+  font-size: 12px;
+}
+
+.param-selector select {
+  background-color: var(--gm-bg-input, #151519);
+  color: var(--gm-ice-white, #F0F8FF);
+  border: 1px solid var(--gm-border, #33333d);
+  padding: 2px 6px;
+  border-radius: 3px;
+  outline: none;
+}
+
+.automation-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.automation-actions button {
+  background-color: var(--gm-bg-button, #3a3a44);
+  color: var(--gm-text-primary, #e0e0e0);
+  border: none;
+  border-radius: 3px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.automation-actions button:hover {
+  background-color: var(--gm-bg-button-hover, #4a4a56);
+}
+
+.write-toggle.active {
+  background-color: var(--gm-crimson-red, #E63946);
+  color: white;
+}
+
+.automation-canvas-container {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--gm-bg-canvas, #151519);
+}
+
+.automation-svg {
+  cursor: crosshair;
+}
+
+.automation-path {
+  filter: url(#glow);
+}
+
+.automation-node {
+  fill: var(--gm-ice-white, #F0F8FF);
+  stroke: var(--gm-warm-amber, #FF9900);
+  stroke-width: 2;
+  cursor: pointer;
+  transition: r 0.1s;
+}
+
+.automation-node:hover {
+  r: 6;
+  fill: var(--gm-warm-amber, #FF9900);
+}
+
+.playhead-line {
+  stroke: var(--gm-crimson-red, #E63946);
+  stroke-width: 1;
+  opacity: 0.7;
+  pointer-events: none;
+}

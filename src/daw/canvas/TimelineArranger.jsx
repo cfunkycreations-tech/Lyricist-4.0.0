@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import './TimelineArranger.css';
 import RotaryKnob from '../components/RotaryKnob';
 import HardwareFader from '../components/HardwareFader';
+import AutomationLane from './AutomationLane';
 import { useDAW } from '../context/DAWContext';
 import funkMatrixEngine from '../engine/FunkMatrixEngine';
 import audioGraph from '../engine/AudioGraph';
@@ -11,7 +12,7 @@ import audioRecorder from '../engine/AudioRecorder';
  * TimelineArranger Component
  * Multi-track timeline supporting Audio and MIDI tracks with live hardware controls and AI preview.
  */
-export default function TimelineArranger() {
+export default function TimelineArranger({ onEditClip }) {
   const {
     tracks,
     transport,
@@ -28,6 +29,14 @@ export default function TimelineArranger() {
   const [zoom, setZoom] = useState(1);
   const [generatingTrackId, setGeneratingTrackId] = useState(null);
   const [livePeak, setLivePeak] = useState(0);
+  const [automationExpanded, setAutomationExpanded] = useState({});
+
+  const toggleAutomation = (trackId) => {
+    setAutomationExpanded(prev => ({
+      ...prev,
+      [trackId]: !prev[trackId]
+    }));
+  };
 
   const handleGeneratePreview = async (track) => {
     if (!aiConfig.enabled) {
@@ -227,6 +236,15 @@ export default function TimelineArranger() {
                     {isGen ? '⚙️ Synthesizing...' : '⚡ Audio Preview'}
                   </button>
                 )}
+
+                <button 
+                  className={`btn-icon ${automationExpanded[track.id] ? 'active' : ''}`} 
+                  onClick={() => toggleAutomation(track.id)}
+                  title="Toggle Automation"
+                  style={{ fontSize: '10px', marginTop: '4px' }}
+                >
+                  Auto
+                </button>
               </div>
             );
           })}
@@ -253,61 +271,71 @@ export default function TimelineArranger() {
           </div>
 
           {tracks.map((track) => (
-            <div 
-              key={track.id} 
-              className="lane"
-              style={{ width: `${totalBars * barWidth}px` }}
-            >
-              {track.clips && track.clips.map((clip) => {
-                const clipLeft = (clip.start || 0) * barWidth;
-                const clipWidth = (clip.length || 4) * barWidth;
-                return (
-                  <div 
-                    key={clip.id} 
-                    className={`clip ${track.type}`} 
-                    style={{ 
-                      left: `${clipLeft}px`, 
-                      width: `${clipWidth}px`,
-                      borderColor: track.color
+            <div key={track.id} style={{ display: 'flex', flexDirection: 'column' }}>
+              <div 
+                className="lane"
+                style={{ width: `${totalBars * barWidth}px` }}
+              >
+                {track.clips && track.clips.map((clip) => {
+                  const clipLeft = (clip.start || 0) * barWidth;
+                  const clipWidth = (clip.length || 4) * barWidth;
+                  return (
+                    <div 
+                      key={clip.id} 
+                      className={`clip ${track.type}`} 
+                      style={{ 
+                        left: `${clipLeft}px`, 
+                        width: `${clipWidth}px`,
+                        borderColor: track.color
+                      }}
+                      onDoubleClick={() => onEditClip && onEditClip(clip, track.id)}
+                    >
+                      <span className="clip-name">{clip.name}</span>
+                      <div className="clip-waveform-bars">
+                        {Array.from({ length: 24 }).map((_, i) => (
+                          <div 
+                            key={i} 
+                            className="clip-bar" 
+                            style={{ height: `${20 + Math.sin(i * 0.6) * 60}%` }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                {transport.isRecording && track.armed && track.type === 'audio' && (
+                  <div
+                    className="clip audio recording pulse"
+                    style={{
+                      left: `${transport.playhead * barWidth}px`,
+                      width: `${Math.max(1, livePeak * 100)}px`,
+                      minWidth: '20px',
+                      backgroundColor: 'rgba(230, 57, 70, 0.4)',
+                      borderColor: 'var(--gm-crimson, #E63946)',
+                      borderStyle: 'dashed'
                     }}
                   >
-                    <span className="clip-name">{clip.name}</span>
+                    <span className="clip-name" style={{ color: '#fff' }}>Recording...</span>
                     <div className="clip-waveform-bars">
-                      {Array.from({ length: 24 }).map((_, i) => (
+                      {Array.from({ length: 8 }).map((_, i) => (
                         <div 
                           key={i} 
                           className="clip-bar" 
-                          style={{ height: `${20 + Math.sin(i * 0.6) * 60}%` }}
+                          style={{ height: `${livePeak * 100}%`, backgroundColor: 'var(--gm-crimson, #E63946)' }}
                         />
                       ))}
                     </div>
                   </div>
-                );
-              })}
-              
-              {transport.isRecording && track.armed && track.type === 'audio' && (
-                <div
-                  className="clip audio recording pulse"
-                  style={{
-                    left: `${transport.playhead * barWidth}px`,
-                    width: `${Math.max(1, livePeak * 100)}px`,
-                    minWidth: '20px',
-                    backgroundColor: 'rgba(230, 57, 70, 0.4)',
-                    borderColor: 'var(--gm-crimson, #E63946)',
-                    borderStyle: 'dashed'
-                  }}
-                >
-                  <span className="clip-name" style={{ color: '#fff' }}>Recording...</span>
-                  <div className="clip-waveform-bars">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <div 
-                        key={i} 
-                        className="clip-bar" 
-                        style={{ height: `${livePeak * 100}%`, backgroundColor: 'var(--gm-crimson, #E63946)' }}
-                      />
-                    ))}
-                  </div>
-                </div>
+                )}
+              </div>
+              {automationExpanded[track.id] && (
+                <AutomationLane 
+                  track={track} 
+                  totalBars={totalBars} 
+                  barWidth={barWidth} 
+                  currentPlayhead={transport.playhead} 
+                />
               )}
             </div>
           ))}
@@ -316,4 +344,3 @@ export default function TimelineArranger() {
     </div>
   );
 }
-

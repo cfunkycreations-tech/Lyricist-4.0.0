@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import MasterVUMeter from './components/MasterVUMeter';
 import { useDAW } from './context/DAWContext';
 import audioGraph from './engine/AudioGraph';
 import RenderQueueTray from './components/RenderQueueTray';
+import projectSessionService from './services/ProjectSessionService';
 
 /**
  * TransportBar component for daw-shell top grid area.
@@ -10,9 +11,10 @@ import RenderQueueTray from './components/RenderQueueTray';
  * @returns {JSX.Element}
  */
 export default function TransportBar({ onOpenSettings, onOpenExport }) {
-  const { transport, togglePlay, stop, toggleRecord, setTransport, renderQueue } = useDAW();
+  const { transport, togglePlay, stop, toggleRecord, setTransport, renderQueue, tracks, lyrics, loadProject } = useDAW();
   const [asioConnected] = useState(true);
   const [showQueue, setShowQueue] = useState(false);
+  const fileInputRef = useRef(null);
 
   const activeJobs = renderQueue ? renderQueue.filter(j => j.status === 'active') : [];
   const completedJobs = renderQueue ? renderQueue.filter(j => j.status === 'completed') : [];
@@ -22,9 +24,61 @@ export default function TransportBar({ onOpenSettings, onOpenExport }) {
     togglePlay();
   };
 
+  const handleFileAction = (e) => {
+    const action = e.target.value;
+    e.target.value = ''; // Reset select
+    if (action === 'new') {
+      const defaultState = projectSessionService.createDefaultProject();
+      loadProject(defaultState);
+    } else if (action === 'open') {
+      fileInputRef.current.click();
+    } else if (action === 'save') {
+      projectSessionService.saveProjectToFile({
+        tracks,
+        lyrics,
+        bpm: transport.bpm,
+        key: transport.key,
+        timeSig: transport.timeSig,
+        automation: {}
+      });
+    }
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      try {
+        const state = await projectSessionService.loadProjectFromFile(file);
+        loadProject(state);
+      } catch (err) {
+        console.error('Failed to load project:', err);
+      }
+    }
+    e.target.value = null; // Reset input
+  };
+
   return (
     <div className="daw-transport">
       <div className="transport-group">
+        <select 
+          className="control-input"
+          style={{ width: '80px', fontWeight: 'bold' }}
+          onChange={handleFileAction}
+          value=""
+          title="File Menu"
+        >
+          <option value="" disabled>📁 File</option>
+          <option value="new">New Project</option>
+          <option value="open">Open .lyricist File...</option>
+          <option value="save">Save Project</option>
+        </select>
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          style={{ display: 'none' }} 
+          accept=".lyricist" 
+          onChange={handleFileChange}
+        />
         <button 
           className={`btn-hardware ${transport.isPlaying ? 'active' : ''}`}
           onClick={handlePlayClick}

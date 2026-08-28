@@ -9,11 +9,13 @@ import ExportModal from './export/ExportModal';
 import { DAWProvider, useDAW } from './context/DAWContext';
 import DAWContextMenu from './components/DAWContextMenu';
 import keyCommandService from './services/KeyCommandService';
+import WaveformEditorModal from './components/WaveformEditorModal';
 
 function DAWLayoutContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [editingClip, setEditingClip] = useState(null);
   const { togglePlay, toggleRecord, setPlayhead } = useDAW();
 
   useEffect(() => {
@@ -39,11 +41,18 @@ function DAWLayoutContent() {
       <TransportBar onOpenSettings={() => setShowSettings(true)} onOpenExport={() => setShowExport(true)} />
       <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
       <div className="daw-canvas">
-        <CenterCanvas />
+        <CenterCanvas onEditClip={(clip, trackId) => setEditingClip({ clip, trackId })} />
       </div>
       <BottomDock />
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       {showExport && <ExportModal onClose={() => setShowExport(false)} />}
+      {editingClip && (
+        <WaveformEditorModal 
+          clip={editingClip.clip} 
+          trackId={editingClip.trackId} 
+          onClose={() => setEditingClip(null)} 
+        />
+      )}
       <DAWContextMenu />
     </div>
   );
