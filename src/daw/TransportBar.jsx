@@ -11,7 +11,7 @@ import webMidiService from './services/WebMidiService';
  * Contains playback controls, timing info, ASIO status, and Render Queue tray.
  * @returns {JSX.Element}
  */
-export default function TransportBar({ onOpenSettings, onOpenExport, onOpenScope }) {
+export default function TransportBar({ onOpenSettings, onOpenExport, onOpenScope, onOpenHistory }) {
   const { transport, togglePlay, stop, toggleRecord, setTransport, renderQueue, tracks, lyrics, loadProject } = useDAW();
   const [asioConnected] = useState(true);
   const [showQueue, setShowQueue] = useState(false);
@@ -258,6 +258,11 @@ export default function TransportBar({ onOpenSettings, onOpenExport, onOpenScope
           }}
           title="MIDI Activity"
         />
+
+        {/* History Button */}
+        <button className="btn-hardware" title="Session History" onClick={onOpenHistory}>
+          🕒 History
+        </button>
 
         {/* Settings Button */}
         <button className="btn-hardware" title="Funk Matrix & Settings" onClick={onOpenSettings}>

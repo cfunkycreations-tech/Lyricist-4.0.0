@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import './StemSeparator.css';
 import { useDAW } from '../context/DAWContext';
 import HardwareFader from '../components/HardwareFader';
+import spectralDebleedEngine from '../engine/SpectralDebleedEngine';
 
 export default function StemSeparator() {
   const { addTrack } = useDAW();
@@ -11,6 +12,8 @@ export default function StemSeparator() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [separated, setSeparated] = useState(false);
+  const [debleedAmount, setDebleedAmount] = useState(50);
+  const dbReduction = spectralDebleedEngine.calculateBleedReduction(debleedAmount / 100).toFixed(1);
 
   const [stemStates, setStemStates] = useState([
     { id: 'vocals', name: 'Vocals', volume: 7, muted: false, soloed: false, color: 'var(--gm-led-amber)', meter: 6.5 },
@@ -133,7 +136,20 @@ export default function StemSeparator() {
               </div>
             ))}
           </div>
-          <div className="stem-actions">
+          <div className="stem-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: '16px' }}>
+            <div className="debleed-control" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ color: 'var(--gm-text-secondary)', fontSize: '12px', textTransform: 'uppercase' }}>Spectral De-Bleed</span>
+              <input 
+                type="range" 
+                min="0" 
+                max="100" 
+                value={debleedAmount} 
+                onChange={e => setDebleedAmount(e.target.value)} 
+                style={{ width: '120px', accentColor: 'var(--gm-led-amber)' }} 
+              />
+              <span style={{ color: 'var(--gm-led-amber)', fontFamily: 'var(--gm-font-mono)', fontSize: '12px', width: '45px' }}>{debleedAmount}%</span>
+              <span style={{ color: 'var(--gm-led-ice)', fontFamily: 'var(--gm-font-mono)', fontSize: '12px' }}>({dbReduction} dB)</span>
+            </div>
             <button className="stem-btn explode-btn" onClick={handleExplode}>Explode to Timeline</button>
           </div>
         </div>

@@ -14,13 +14,16 @@ import WaveformEditorModal from './components/WaveformEditorModal';
 import webMidiService from './services/WebMidiService';
 import GhostPilotHUD from './components/GhostPilotHUD';
 
+import HistoryTimelineModal from './components/HistoryTimelineModal';
+
 function DAWLayoutContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [showScope, setShowScope] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [editingClip, setEditingClip] = useState(null);
-  const { togglePlay, toggleRecord, setPlayhead } = useDAW();
+  const { togglePlay, toggleRecord, setPlayhead, loadProject } = useDAW();
 
   useEffect(() => {
     webMidiService.init();
@@ -42,12 +45,17 @@ function DAWLayoutContent() {
     setSidebarCollapsed(prev => !prev);
   };
 
+  const handleRestoreHistory = (snapshot) => {
+    loadProject(snapshot);
+  };
+
   return (
     <div className="daw-shell">
       <TransportBar 
         onOpenSettings={() => setShowSettings(true)} 
         onOpenExport={() => setShowExport(true)} 
         onOpenScope={() => setShowScope(true)}
+        onOpenHistory={() => setShowHistory(true)}
       />
       <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
       <div className="daw-canvas">
@@ -57,6 +65,12 @@ function DAWLayoutContent() {
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       {showExport && <ExportModal onClose={() => setShowExport(false)} />}
       {showScope && <MasterScopeModal onClose={() => setShowScope(false)} />}
+      {showHistory && (
+        <HistoryTimelineModal 
+          onClose={() => setShowHistory(false)} 
+          onRestore={handleRestoreHistory} 
+        />
+      )}
       {editingClip && (
         <WaveformEditorModal 
           clip={editingClip.clip} 

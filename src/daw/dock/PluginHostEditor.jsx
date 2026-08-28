@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import './PluginHostEditor.css';
 import RotaryKnob from '../components/RotaryKnob';
 import MasterVUMeter from '../components/MasterVUMeter';
+import jucePluginWindowManager from '../services/JucePluginWindowManager';
 
 export default function PluginHostEditor() {
   const [bypassed, setBypassed] = useState(false);
   const [preset, setPreset] = useState('Fat Moog Bass');
+  const [toastMessage, setToastMessage] = useState('');
   const [params, setParams] = useState({
     cutoff: 5, // 0-10
     resonance: 3,
@@ -21,6 +23,13 @@ export default function PluginHostEditor() {
     setParams(prev => ({ ...prev, [key]: val }));
   };
 
+  const handleOpenNativeGui = async () => {
+    setToastMessage('Opening Native GUI...');
+    const success = await jucePluginWindowManager.openPluginWindow('plugin-vst3', 'inst-01');
+    setToastMessage(success ? 'Native GUI Opened' : 'Failed to open GUI');
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
   const presets = [
     'Fat Moog Bass',
     'Surgical Notch EQ',
@@ -32,7 +41,15 @@ export default function PluginHostEditor() {
     <div className="plugin-host">
       <div className="plugin-header">
         <h2 className="section-mark">VST3 Plugin Host</h2>
+        {toastMessage && <span style={{ color: 'var(--gm-led-ice)', marginLeft: '10px' }}>{toastMessage}</span>}
         <div className="plugin-controls">
+          <button 
+            className="plugin-btn" 
+            onClick={handleOpenNativeGui}
+            style={{ marginRight: '10px', background: 'var(--gm-bg-panel)', color: 'var(--gm-text-primary)', border: '1px solid var(--gm-border-light)', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer' }}
+          >
+            🖥️ Open Native GUI Window
+          </button>
           <select value={preset} onChange={(e) => setPreset(e.target.value)} className="plugin-select">
             {presets.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
