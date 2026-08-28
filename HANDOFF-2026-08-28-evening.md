@@ -81,11 +81,30 @@ Configure already succeeded (103.9s, JUCE 8.0.3 fetched into `build/_deps/`).
 
 1. **ASIO made conditional.** Was hard `JUCE_ASIO=1`, which forces
    `juce_audio_devices` to include `iasiodrv.h` from the Steinberg SDK — **not
-   vendored, and not anywhere on `V:`** (verified by full-drive search). That
-   build fails *late*, after the whole JUCE download. Now gated behind
-   `-DASIO_SDK_DIR=<path to sdk>/common`; drop the SDK in and it lights up with
-   no code change. `AsioDriver.cpp` never includes the SDK itself — it asks for
-   the `"ASIO"` device type by string and already falls back — so nothing else is lost.
+   vendored, and not anywhere on this machine** (verified). That build fails
+   *late*, after the whole JUCE download. Now gated behind
+   `-DASIO_SDK_DIR=<path to sdk>/common`.
+
+   > **⚠ THIS IS UNFINISHED, NOT A DESIGN CHOICE.** The current binary has ASIO
+   > compiled **out**, and that is not acceptable as a final state. Chris has
+   > **three registered ASIO drivers** — `FlexASIO`, `Yamaha Steinberg USB ASIO`,
+   > and `Ableton Push` — and FlexASIO is deliberate: commit `0867866` added
+   > FlexASIO attribution. **ASIO is the point, not a nice-to-have.**
+   >
+   > It shows in the smoke test: `asio.enumerate` returned only
+   > `Speakers (JBL Bar 2.1)`, `Speakers (5- Logitech USB Headset)`,
+   > `Primary Sound Driver` — all WASAPI/DirectSound. **None of the three ASIO
+   > drivers appeared**, because the host support isn't compiled in.
+   >
+   > To finish: get `iasiodrv.h` from Steinberg's ASIO SDK (free, license
+   > acceptance required — **Chris's call, don't do it for him**), then
+   > reconfigure with `-DASIO_SDK_DIR=.../common`. Configure prints
+   > `ASIO SDK found … ASIO enabled` when it takes. **Gitignore the vendored
+   > SDK** — it has redistribution terms and this repo is public with a
+   > commercial EULA.
+
+   `AsioDriver.cpp` never includes the SDK itself — it asks for the `"ASIO"`
+   device type by string and falls back — so no code changes when it's enabled.
 2. **`juce_generate_juce_header(LyricistEngine)` added.** `Main.cpp` includes
    `<JuceHeader.h>`, which modern JUCE CMake does not generate by default. Every
    other source uses modular includes. Without this: `C1083`.
