@@ -1,0 +1,145 @@
+/* Surgical Gunmetal Theme - Performance Diagnostics HUD */
+.gm-perf-modal {
+  background: #1b1d22; /* Dark Charcoal */
+  border: 1px solid #4a4d54; /* Lighter brushed nickel */
+  border-radius: 8px;
+  width: 550px;
+  max-width: 95vw;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+  color: #e0e0e0;
+  font-family: 'Inter', 'Roboto', sans-serif;
+}
+
+.gm-perf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid #3a3d42;
+  background: linear-gradient(180deg, #25282d 0%, #1b1d22 100%);
+  border-radius: 8px 8px 0 0;
+}
+
+.gm-perf-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #F0F8FF; /* Ice White */
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.gm-perf-content {
+  padding: 24px;
+}
+
+.gm-perf-section {
+  margin-bottom: 24px;
+}
+
+.gm-perf-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #a0a5ab;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+.gm-dsp-bar-container {
+  height: 12px;
+  background: #0f1115;
+  border: 1px solid #3a3d42;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.gm-dsp-bar-fill {
+  height: 100%;
+  transition: width 0.1s linear, background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.gm-perf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.gm-perf-box {
+  background: #22252a;
+  border: 1px solid #3a3d42;
+  border-radius: 6px;
+  padding: 16px;
+  text-align: center;
+}
+
+.gm-box-label {
+  font-size: 0.75rem;
+  color: #8a8f96;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+.gm-box-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #F0F8FF;
+}
+
+.gm-box-sub {
+  font-size: 0.75rem;
+  color: #FF9900; /* Warm Amber */
+  margin-top: 4px;
+}
+
+.gm-sm-btn {
+  margin-top: 10px;
+  background: transparent;
+  border: 1px solid #4a4d54;
+  color: #a0a5ab;
+  font-size: 0.7rem;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+
+.gm-sm-btn:hover {
+  background: #3a3d42;
+  color: #F0F8FF;
+}
+
+.gm-buffer-selector {
+  display: flex;
+  gap: 8px;
+}
+
+.gm-buffer-btn {
+  flex: 1;
+  background: #1a1c20;
+  border: 1px solid #3a3d42;
+  color: #8a8f96;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  padding: 8px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.gm-buffer-btn:hover {
+  background: #2a2d32;
+  color: #F0F8FF;
+}
+
+.gm-buffer-btn.active {
+  background: #F0F8FF; /* Ice White */
+  color: #1a1c20;
+  border-color: #F0F8FF;
+  font-weight: bold;
+}

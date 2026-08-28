@@ -15,13 +15,16 @@ import webMidiService from './services/WebMidiService';
 import GhostPilotHUD from './components/GhostPilotHUD';
 
 import HistoryTimelineModal from './components/HistoryTimelineModal';
-
+import EulaModal from './components/EulaModal';
+import PerformanceDiagnosticsModal from './components/PerformanceDiagnosticsModal';
 function DAWLayoutContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [showScope, setShowScope] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showEula, setShowEula] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [editingClip, setEditingClip] = useState(null);
   const { togglePlay, toggleRecord, setPlayhead, loadProject } = useDAW();
 
@@ -56,6 +59,8 @@ function DAWLayoutContent() {
         onOpenExport={() => setShowExport(true)} 
         onOpenScope={() => setShowScope(true)}
         onOpenHistory={() => setShowHistory(true)}
+        onOpenEula={() => setShowEula(true)}
+        onOpenDiagnostics={() => setShowDiagnostics(true)}
       />
       <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
       <div className="daw-canvas">
@@ -71,6 +76,8 @@ function DAWLayoutContent() {
           onRestore={handleRestoreHistory} 
         />
       )}
+      {showEula && <EulaModal onClose={() => setShowEula(false)} />}
+      {showDiagnostics && <PerformanceDiagnosticsModal onClose={() => setShowDiagnostics(false)} />}
       {editingClip && (
         <WaveformEditorModal 
           clip={editingClip.clip} 
