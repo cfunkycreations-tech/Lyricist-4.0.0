@@ -637,10 +637,10 @@ function MainLayout() {
             where the BYOK key that drives the routing actually lives. */}
         <div className="app-footer">
           {/* LEFT NODE — the organisation. */}
-          <div className="deck-node deck-left" data-help="Funk Audio File OpSec — the Austin, Texas engineering shop behind Lyricist Pro.">
+          <div className="deck-node deck-left" data-help="Funk Audio Flow OpSec — the Austin, Texas engineering shop behind Lyricist Pro.">
             <span className="deck-mark">FAFO</span>
             <span className="deck-text">
-              <b>Funk Audio File OpSec (FAFO)</b>
+              <b>Funk Audio Flow OpSec (FAFO)</b>
               <i>Austin, Texas</i>
             </span>
           </div>
@@ -686,10 +686,22 @@ function MainLayout() {
   );
 }
 
+/**
+ * ══════════════════════════════════════════════════════════════════════════
+ * DAW LAYOUT — LYRICIST 4.2.0 PRO.
+ *
+ * The new single-window DAW layout replaces the old 18-tab strip. MainLayout
+ * (above) is preserved in full — nothing was removed — so the old UI is one
+ * boolean away from coming back if needed. DAWLayout renders the CSS Grid
+ * shell: Transport Bar → Sidebar → Center Canvas → Bottom Dock.
+ * ══════════════════════════════════════════════════════════════════════════
+ */
+import DAWLayout from './daw/DAWLayout';
+
 export default function App() {
   return (
     <LyricStoreProvider>
-      <MainLayout />
+      <DAWLayout />
     </LyricStoreProvider>
   );
 }

@@ -169,7 +169,7 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
               rest of the donationware. What is left is the same status deck the
               desktop footer carries, folded onto one line. */}
           <span className="mob-support-line">
-            Funk Audio File OpSec (FAFO) · Austin, Texas
+            Funk Audio Flow OpSec (FAFO) · Austin, Texas
           </span>
           <span className="mob-support-line">
             Lyricist Pro · Engine: Local/Hybrid · Air-Gapped Safe

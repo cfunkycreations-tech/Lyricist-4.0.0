@@ -1,0 +1,378 @@
+/* v:\src\Lyricist-4.2.0\src\daw\components\HardwareFader.css */
+/* Surgical Gunmetal Theme - Hardware Fader */
+
+.hw-fader {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+  touch-action: none;
+  font-family: var(--gm-font-ui, 'Inter', 'Roboto', sans-serif);
+  color: var(--gm-text-label, #A0A0A0);
+  background: var(--gm-bg-panel, #151515);
+  border: 1px solid var(--gm-border-dark, #111111);
+  border-radius: var(--gm-radius, 2px);
+  padding: 10px 12px 8px 12px;
+  box-sizing: border-box;
+  gap: 8px;
+  position: relative;
+  transition: border-color 0.15s ease;
+}
+
+.hw-fader:hover {
+  border-color: #2E2E2E;
+}
+
+.hw-fader:focus-within {
+  border-color: #444444;
+}
+
+/* Header: Label & dB Readout */
+.hw-fader__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+}
+
+.hw-fader__label {
+  font-family: var(--gm-font-ui, 'Inter', 'Roboto', sans-serif);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gm-text-label, #A0A0A0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  transition: color 0.15s ease;
+}
+
+.hw-fader:hover .hw-fader__label {
+  color: var(--gm-text-active, #FFFFFF);
+}
+
+.hw-fader__readout {
+  font-family: var(--gm-font-metrics, 'JetBrains Mono', monospace);
+  font-size: 9px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--gm-text-active, #FFFFFF);
+  background: #0A0A0A;
+  border: 1px solid #222222;
+  border-radius: 2px;
+  padding: 1px 4px;
+  min-width: 48px;
+  text-align: center;
+  box-sizing: border-box;
+  letter-spacing: 0.02em;
+}
+
+.hw-fader__readout--unity {
+  color: var(--gm-led-amber, #FF9900);
+  border-color: rgba(255, 153, 0, 0.4);
+}
+
+.hw-fader__readout--muted {
+  color: var(--gm-led-crimson, #E63946);
+  border-color: rgba(230, 57, 70, 0.4);
+}
+
+/* Body: Scale + Track + Peak Meter */
+.hw-fader__body {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  padding: 4px 0;
+}
+
+/* dB Scale Ticks */
+.hw-fader__scale {
+  position: relative;
+  width: 26px;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+.hw-fader__tick {
+  position: absolute;
+  right: 0;
+  transform: translateY(50%);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 0;
+}
+
+.hw-fader__tick-label {
+  font-family: var(--gm-font-metrics, 'JetBrains Mono', monospace);
+  font-size: 8px;
+  font-weight: 400;
+  color: #707070;
+  line-height: 1;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.hw-fader__tick-mark {
+  width: 4px;
+  height: 1px;
+  background: #3A3A3A;
+}
+
+.hw-fader__tick--unity .hw-fader__tick-label {
+  color: var(--gm-led-amber, #FF9900);
+  font-weight: 600;
+}
+
+.hw-fader__tick--unity .hw-fader__tick-mark {
+  background: var(--gm-led-amber, #FF9900);
+  width: 6px;
+  height: 1.5px;
+  box-shadow: 0 0 3px rgba(255, 153, 0, 0.5);
+}
+
+.hw-fader__tick--clip .hw-fader__tick-label {
+  color: var(--gm-led-crimson, #E63946);
+  font-weight: 600;
+}
+
+.hw-fader__tick--clip .hw-fader__tick-mark {
+  background: var(--gm-led-crimson, #E63946);
+  width: 5px;
+}
+
+/* Recessed Track Container */
+.hw-fader__track-slot {
+  position: relative;
+  width: 34px;
+  display: flex;
+  justify-content: center;
+  cursor: ns-resize;
+}
+
+.hw-fader__track-groove {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  background: #090909;
+  border: 1px solid #1A1A1A;
+  border-radius: 3px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.9), inset 0 0 2px #000000;
+}
+
+.hw-fader__track-centerline {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  background: #030303;
+  border-radius: 1px;
+}
+
+/* Brushed Nickel Slider Cap */
+.hw-fader__cap {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  width: 32px;
+  height: 20px;
+  background: var(--gm-fader-cap, linear-gradient(180deg, #E5E5E5 0%, #A0A0A0 50%, #6E6E6E 100%));
+  border: 1px solid #282828;
+  border-radius: 2px;
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.8),
+    0 2px 5px rgba(0, 0, 0, 0.75),
+    0 4px 8px rgba(0, 0, 0, 0.4);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  outline: none;
+  transition: filter 0.1s ease, box-shadow 0.1s ease;
+}
+
+.hw-fader__cap:hover {
+  filter: brightness(1.06);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.8),
+    0 3px 6px rgba(0, 0, 0, 0.85),
+    0 0 4px rgba(255, 255, 255, 0.2);
+}
+
+.hw-fader__cap:active,
+.hw-fader__cap--dragging {
+  cursor: grabbing;
+  filter: brightness(1.12);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.9),
+    0 2px 4px rgba(0, 0, 0, 0.9),
+    0 0 6px var(--gm-led-ice, #F0F8FF);
+}
+
+.hw-fader__cap:focus-visible {
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.9),
+    0 0 0 2px var(--gm-led-amber, #FF9900);
+}
+
+/* Horizontal Grip Ridge on Slider Cap */
+.hw-fader__cap-ridge {
+  width: 100%;
+  height: 3px;
+  background: #151515;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.hw-fader__cap-line {
+  width: 100%;
+  height: 1px;
+  background: #FFFFFF;
+  opacity: 0.9;
+}
+
+/* Cap Side Textures */
+.hw-fader__cap-bevel-top {
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  right: 2px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.hw-fader__cap-bevel-bottom {
+  position: absolute;
+  bottom: 1px;
+  left: 2px;
+  right: 2px;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+/* Dynamic 3-Stage LED Peak Meter */
+.hw-fader__meter {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 1.5px;
+  width: 7px;
+  background: #090909;
+  border: 1px solid #181818;
+  border-radius: 2px;
+  padding: 2px 1px;
+  box-sizing: border-box;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.hw-fader__meter-seg {
+  flex: 1;
+  width: 100%;
+  border-radius: 0.5px;
+  background: #1B1B1B;
+  transition: background 0.05s ease, box-shadow 0.05s ease;
+}
+
+/* Unlit segment states with subtle tint */
+.hw-fader__meter-seg--stage1 {
+  background: #16181B;
+}
+
+.hw-fader__meter-seg--stage2 {
+  background: #1E1A14;
+}
+
+.hw-fader__meter-seg--stage3 {
+  background: #201314;
+}
+
+/* Lit segment 3-stage LED colors */
+.hw-fader__meter-seg--lit.hw-fader__meter-seg--stage1 {
+  background: var(--gm-led-ice, #F0F8FF);
+  box-shadow: 0 0 4px rgba(240, 248, 255, 0.7);
+}
+
+.hw-fader__meter-seg--lit.hw-fader__meter-seg--stage2 {
+  background: var(--gm-led-amber, #FF9900);
+  box-shadow: 0 0 5px rgba(255, 153, 0, 0.85);
+}
+
+.hw-fader__meter-seg--lit.hw-fader__meter-seg--stage3 {
+  background: var(--gm-led-crimson, #E63946);
+  box-shadow: 0 0 8px rgba(230, 57, 70, 0.95);
+}
+
+/* Peak Hold Segment */
+.hw-fader__meter-seg--peak.hw-fader__meter-seg--stage1 {
+  background: #FFFFFF;
+  box-shadow: 0 0 5px #FFFFFF;
+}
+
+.hw-fader__meter-seg--peak.hw-fader__meter-seg--stage2 {
+  background: #FFB347;
+  box-shadow: 0 0 6px #FF9900;
+}
+
+.hw-fader__meter-seg--peak.hw-fader__meter-seg--stage3 {
+  background: #FF4D5E;
+  box-shadow: 0 0 9px #E63946;
+}
+
+/* Muted State */
+.hw-fader--muted {
+  opacity: 0.72;
+}
+
+.hw-fader--muted .hw-fader__cap {
+  filter: grayscale(0.5) contrast(0.9);
+}
+
+.hw-fader--muted .hw-fader__meter-seg--lit {
+  background: #333333 !important;
+  box-shadow: none !important;
+}
+
+.hw-fader__mute-btn {
+  font-family: var(--gm-font-ui, 'Inter', 'Roboto', sans-serif);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 8px;
+  background: #1A1A1A;
+  color: var(--gm-text-label, #888888);
+  border: 1px solid var(--gm-border-dark, #222222);
+  border-radius: var(--gm-radius, 2px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hw-fader__mute-btn:hover {
+  color: #FFFFFF;
+  background: #252525;
+}
+
+.hw-fader__mute-btn--active {
+  background: var(--gm-led-crimson, #E63946);
+  color: #FFFFFF;
+  border-color: #B02A35;
+  box-shadow: 0 0 6px rgba(230, 57, 70, 0.7);
+}

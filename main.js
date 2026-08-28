@@ -1327,6 +1327,76 @@ function createWindow() {
   }
 }
 
+// --- Native JUCE Engine Management ---
+const { spawn } = require('child_process');
+const readline = require('readline');
+
+let juceProcess = null;
+
+function getJuceEnginePath() {
+  const p1 = path.join(__dirname, 'juce-backend', 'build', 'LyricistEngine.exe');
+  const p2 = path.join(__dirname, 'juce-backend', 'build', 'Release', 'LyricistEngine.exe');
+  if (fs.existsSync(p1)) return p1;
+  if (fs.existsSync(p2)) return p2;
+  return null;
+}
+
+ipcMain.handle('juce-spawn', async (event) => {
+  if (juceProcess) return { ok: true, message: 'Already running' };
+  
+  const exePath = getJuceEnginePath();
+  if (!exePath) {
+    return { ok: false, error: 'LyricistEngine.exe not found' };
+  }
+  
+  try {
+    juceProcess = spawn(exePath, [], { stdio: ['pipe', 'pipe', 'pipe'] });
+    
+    const rl = readline.createInterface({ input: juceProcess.stdout });
+    rl.on('line', (line) => {
+      try {
+        const jsonResponse = JSON.parse(line);
+        event.sender.send('juce-message', jsonResponse);
+      } catch (e) {
+        bootLog(`juce parse error: ${e.message} - line: ${line}`);
+      }
+    });
+    
+    juceProcess.stderr.on('data', (data) => {
+      bootLog(`juce error: ${data.toString()}`);
+    });
+    
+    juceProcess.on('close', (code) => {
+      bootLog(`juce process exited with code ${code}`);
+      juceProcess = null;
+    });
+    
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('juce-send', async (event, payload) => {
+  if (!juceProcess || !juceProcess.stdin) {
+    return { ok: false, error: 'JUCE engine not running' };
+  }
+  try {
+    juceProcess.stdin.write(JSON.stringify(payload) + '\n');
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('juce-close', async () => {
+  if (juceProcess) {
+    juceProcess.kill();
+    juceProcess = null;
+  }
+  return { ok: true };
+});
+
 app.whenReady().then(() => {
   // Belt and braces: a losing second instance never gets as far as a window.
   if (!gotInstanceLock) return;

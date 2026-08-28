@@ -1,0 +1,131 @@
+.plugin-host {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: 100%;
+  box-sizing: border-box;
+  background: var(--gm-bg-canvas);
+  color: var(--gm-text-active);
+}
+
+.plugin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--gm-border-dark);
+  padding-bottom: 12px;
+}
+
+.plugin-controls {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.plugin-select {
+  background: var(--gm-bg-panel);
+  color: var(--gm-text-active);
+  border: 1px solid var(--gm-border-dark);
+  padding: 6px 12px;
+  border-radius: var(--gm-radius);
+  font-family: var(--gm-font-ui);
+}
+
+.bypass-btn {
+  background: rgba(255, 26, 26, 0.1);
+  color: var(--gm-led-crimson);
+  border: 1px solid var(--gm-led-crimson);
+  padding: 6px 12px;
+  border-radius: var(--gm-radius);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bypass-btn:hover {
+  background: rgba(255, 26, 26, 0.2);
+  box-shadow: 0 0 8px rgba(255, 26, 26, 0.4);
+}
+
+.bypass-btn.bypassed {
+  background: #2a2a2a;
+  color: #888;
+  border-color: #555;
+  box-shadow: none;
+}
+
+.plugin-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+  background: var(--gm-bg-panel);
+  border: 1px solid var(--gm-border-dark);
+  border-radius: var(--gm-radius);
+  padding: 24px;
+  transition: opacity 0.3s;
+}
+
+.plugin-body.is-bypassed {
+  opacity: 0.5;
+  pointer-events: none; /* Can't adjust bypassed plugin */
+}
+
+.plugin-meters {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+}
+
+.meter-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: #000;
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid #111;
+}
+
+.meter-label {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #666;
+  font-family: var(--gm-font-ui);
+  letter-spacing: 1px;
+}
+
+.plugin-knobs {
+  display: flex;
+  gap: 32px;
+}
+
+.knob-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  border-right: 1px solid var(--gm-border-dark);
+}
+
+.knob-group:last-child {
+  border-right: none;
+}
+
+.knob-group-title {
+  margin: 0;
+  font-family: var(--gm-font-ui);
+  color: var(--gm-text-label);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.knob-row {
+  display: flex;
+  gap: 16px;
+}

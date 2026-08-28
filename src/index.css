@@ -124,6 +124,34 @@ body, button, input, select, label, textarea {
   --chrome-mid: #C5CCD8;
   --chrome-lo: #5A6270;
   --bg-deep: var(--bg-obsidian);
+
+  /* ══ SURGICAL GUNMETAL — DAW hardware aesthetic ═══════════════════════════
+     Charcoal canvas, gunmetal panels, brushed nickel hardware, and a 3-stage
+     dynamic LED gradient (Ice White → Warm Amber → Crimson Red) for all
+     metering, knob rings and fader indicators.
+     ══════════════════════════════════════════════════════════════════════════ */
+
+  /* Canvas & Panel surfaces */
+  --gm-bg-canvas:     #1E1E1E;
+  --gm-bg-panel:      #151515;
+  --gm-border-dark:   #111111;
+  --gm-border-width:  1px;
+  --gm-radius:        2px;
+
+  /* Knob / Fader hardware finishes */
+  --gm-knob-body:     #2A2A2A;
+  --gm-knob-cap:      linear-gradient(145deg, #D4D4D4, #9A9A9A);
+  --gm-fader-cap:     linear-gradient(180deg, #D4D4D4, #A0A0A0);
+
+  /* Dynamic 3-stage LED gradient */
+  --gm-led-ice:       #F0F8FF;
+  --gm-led-amber:     #FF9900;
+  --gm-led-crimson:   #E63946;
+
+  /* Typography — clean flat sans-serif */
+  --gm-text-label:    #A0A0A0;
+  --gm-text-active:   #FFFFFF;
+  --gm-font-ui:       'Inter', 'Roboto', ui-sans-serif, system-ui, sans-serif;
 }
 
 /* THE CANVAS IS FLAT MATTE OBSIDIAN. It used to carry three stacked radial

@@ -1,0 +1,320 @@
+/* v:\src\Lyricist-4.2.0\src\daw\components\MasterVUMeter.css */
+/* Surgical Gunmetal Theme - Master VU Meter */
+
+.master-vu {
+  display: inline-flex;
+  user-select: none;
+  font-family: var(--gm-font-ui, 'Inter', 'Roboto', sans-serif);
+  color: var(--gm-text-label, #A0A0A0);
+  background: var(--gm-bg-panel, #151515);
+  border: 1px solid var(--gm-border-dark, #111111);
+  border-radius: var(--gm-radius, 2px);
+  box-sizing: border-box;
+  position: relative;
+  transition: border-color 0.15s ease;
+}
+
+.master-vu:hover {
+  border-color: #2E2E2E;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   HORIZONTAL ORIENTATION (Compact for Transport Bar & Toolbars)
+   ══════════════════════════════════════════════════════════════════ */
+.master-vu--horizontal {
+  flex-direction: column;
+  justify-content: center;
+  padding: 4px 8px;
+  gap: 3px;
+  min-width: 100px;
+}
+
+.master-vu--horizontal.master-vu--compact {
+  padding: 2px 5px;
+  gap: 2px;
+  min-width: 80px;
+}
+
+.master-vu__h-channel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.master-vu__h-label {
+  font-family: var(--gm-font-metrics, 'JetBrains Mono', monospace);
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--gm-text-label, #777777);
+  width: 8px;
+  text-align: center;
+  line-height: 1;
+}
+
+.master-vu__h-track {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 1px;
+  background: #090909;
+  border: 1px solid #1A1A1A;
+  border-radius: 1.5px;
+  padding: 1px;
+  box-sizing: border-box;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.9);
+  height: 8px;
+}
+
+.master-vu--compact .master-vu__h-track {
+  height: 6px;
+  padding: 0.5px;
+  gap: 0.5px;
+}
+
+.master-vu__h-seg {
+  flex: 1;
+  border-radius: 0.5px;
+  background: #181818;
+  transition: background 0.04s ease, box-shadow 0.04s ease;
+}
+
+/* Unlit tints */
+.master-vu__seg--stage1 { background: #151719; }
+.master-vu__seg--stage2 { background: #1C1914; }
+.master-vu__seg--stage3 { background: #1F1314; }
+
+/* Lit states */
+.master-vu__seg--lit.master-vu__seg--stage1 {
+  background: var(--gm-led-ice, #F0F8FF);
+  box-shadow: 0 0 3px rgba(240, 248, 255, 0.7);
+}
+
+.master-vu__seg--lit.master-vu__seg--stage2 {
+  background: var(--gm-led-amber, #FF9900);
+  box-shadow: 0 0 4px rgba(255, 153, 0, 0.85);
+}
+
+.master-vu__seg--lit.master-vu__seg--stage3 {
+  background: var(--gm-led-crimson, #E63946);
+  box-shadow: 0 0 6px rgba(230, 57, 70, 0.95);
+}
+
+/* Peak hold states */
+.master-vu__seg--peak.master-vu__seg--stage1 {
+  background: #FFFFFF;
+  box-shadow: 0 0 4px #FFFFFF;
+}
+
+.master-vu__seg--peak.master-vu__seg--stage2 {
+  background: #FFB347;
+  box-shadow: 0 0 5px #FF9900;
+}
+
+.master-vu__seg--peak.master-vu__seg--stage3 {
+  background: #FF4D5E;
+  box-shadow: 0 0 7px #E63946;
+}
+
+/* Horizontal Clip Indicator */
+.master-vu__h-clip {
+  width: 5px;
+  height: 8px;
+  border-radius: 1px;
+  background: #251214;
+  border: 1px solid #1A0D0E;
+  cursor: pointer;
+  transition: all 0.08s ease;
+}
+
+.master-vu--compact .master-vu__h-clip {
+  width: 4px;
+  height: 6px;
+}
+
+.master-vu__h-clip--active {
+  background: var(--gm-led-crimson, #E63946);
+  border-color: #FF5A67;
+  box-shadow: 0 0 6px var(--gm-led-crimson, #E63946);
+}
+
+/* Horizontal Readout Header / Scale */
+.master-vu__h-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding-bottom: 2px;
+}
+
+.master-vu__h-title {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gm-text-label, #888888);
+}
+
+.master-vu__h-peak-text {
+  font-family: var(--gm-font-metrics, 'JetBrains Mono', monospace);
+  font-size: 8px;
+  color: var(--gm-text-active, #FFFFFF);
+  font-variant-numeric: tabular-nums;
+}
+
+.master-vu__h-peak-text--clip {
+  color: var(--gm-led-crimson, #E63946);
+  font-weight: 700;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   VERTICAL ORIENTATION (Full Channel Strip / Master Rack Mode)
+   ══════════════════════════════════════════════════════════════════ */
+.master-vu--vertical {
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 10px;
+  gap: 6px;
+}
+
+.master-vu__v-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+}
+
+.master-vu__v-title {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--gm-text-label, #999999);
+}
+
+.master-vu__v-clip-row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+}
+
+.master-vu__v-clip-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  cursor: pointer;
+}
+
+.master-vu__v-clip-led {
+  width: 10px;
+  height: 4px;
+  border-radius: 1px;
+  background: #231214;
+  border: 1px solid #150A0B;
+  transition: all 0.08s ease;
+}
+
+.master-vu__v-clip-led--active {
+  background: var(--gm-led-crimson, #E63946);
+  border-color: #FF5A67;
+  box-shadow: 0 0 6px var(--gm-led-crimson, #E63946);
+}
+
+.master-vu__v-clip-label {
+  font-family: var(--gm-font-metrics, 'JetBrains Mono', monospace);
+  font-size: 7px;
+  color: #666666;
+  text-transform: uppercase;
+}
+
+.master-vu__v-clip-indicator:hover .master-vu__v-clip-label {
+  color: #AAAAAA;
+}
+
+/* Vertical Channels Body */
+.master-vu__v-body {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
+  gap: 4px;
+  position: relative;
+}
+
+.master-vu__v-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.master-vu__v-track {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 1.5px;
+  width: 9px;
+  background: #090909;
+  border: 1px solid #181818;
+  border-radius: 2px;
+  padding: 2px 1px;
+  box-sizing: border-box;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.master-vu__v-seg {
+  flex: 1;
+  width: 100%;
+  border-radius: 0.5px;
+  transition: background 0.04s ease, box-shadow 0.04s ease;
+}
+
+.master-vu__v-channel-tag {
+  font-family: var(--gm-font-metrics, 'JetBrains Mono', monospace);
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--gm-text-label, #888888);
+  line-height: 1;
+}
+
+/* Center dB Scale for Vertical Mode */
+.master-vu__v-scale {
+  position: relative;
+  width: 28px;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+.master-vu__v-tick {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 0;
+  width: 100%;
+}
+
+.master-vu__v-tick-label {
+  font-family: var(--gm-font-metrics, 'JetBrains Mono', monospace);
+  font-size: 7.5px;
+  font-weight: 500;
+  color: #606060;
+  line-height: 1;
+  text-align: center;
+}
+
+.master-vu__v-tick--unity .master-vu__v-tick-label {
+  color: var(--gm-led-amber, #FF9900);
+  font-weight: 700;
+}
+
+.master-vu__v-tick--clip .master-vu__v-tick-label {
+  color: var(--gm-led-crimson, #E63946);
+  font-weight: 700;
+}

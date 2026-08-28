@@ -1,0 +1,23 @@
+.rotary-knob {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+  touch-action: none;
+  cursor: ns-resize;
+}
+.rotary-knob__label {
+  font-family: var(--gm-font-ui);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--gm-text-label, #A0A0A0);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.rotary-knob:hover .rotary-knob__label {
+  color: var(--gm-text-active, #FFFFFF);
+}
+.rotary-knob:active {
+  cursor: grabbing;
+}
