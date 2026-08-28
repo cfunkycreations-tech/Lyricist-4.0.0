@@ -9,6 +9,19 @@ release/
 .vite/
 *.asar
 
+# More packaging output. `build/*` above has a slash in it, so it is anchored to
+# the repo root and does NOT cover juce-backend/build — which holds the fetched
+# JUCE 8 tree and its artefacts (742 MB). These four total ~3.1 GB:
+dist-build/
+dist-standalone/
+juce-backend/build/
+
+# Lyricist/ is a SEPARATE GIT REPOSITORY checked out inside this one (it has its
+# own .git, plus Lyricist-release/ at 1.3 GB and lyric-core/). Committing it would
+# silently record a gitlink rather than files. Ignored here until someone decides
+# deliberately whether it should be a real submodule.
+Lyricist/
+
 # Logs
 *.log
 npm-debug.log*
