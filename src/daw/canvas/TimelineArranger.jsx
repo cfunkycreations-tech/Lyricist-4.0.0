@@ -7,6 +7,7 @@ import { useDAW } from '../context/DAWContext';
 import funkMatrixEngine from '../engine/FunkMatrixEngine';
 import audioGraph from '../engine/AudioGraph';
 import audioRecorder from '../engine/AudioRecorder';
+import audioImportService from '../services/AudioImportService';
 
 /**
  * TimelineArranger Component
@@ -30,6 +31,42 @@ export default function TimelineArranger({ onEditClip }) {
   const [generatingTrackId, setGeneratingTrackId] = useState(null);
   const [livePeak, setLivePeak] = useState(0);
   const [automationExpanded, setAutomationExpanded] = useState({});
+  const [isDragging, setIsDragging] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    if (e.currentTarget === e.target) setIsDragging(false);
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setIsImporting(true);
+      const files = Array.from(e.dataTransfer.files);
+      const newTracks = await audioImportService.importFiles(files, transport.playhead, transport.bpm);
+      newTracks.forEach(track => addTrack(track));
+      setIsImporting(false);
+    }
+  };
+
+  const handleFileInput = async (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setIsImporting(true);
+      const files = Array.from(e.target.files);
+      const newTracks = await audioImportService.importFiles(files, transport.playhead, transport.bpm);
+      newTracks.forEach(track => addTrack(track));
+      setIsImporting(false);
+    }
+    e.target.value = null;
+  };
 
   const toggleAutomation = (trackId) => {
     setAutomationExpanded(prev => ({
@@ -138,6 +175,21 @@ export default function TimelineArranger({ onEditClip }) {
     <div className="timeline-arranger">
       <div className="timeline-toolbar">
         <div className="timeline-tools-left">
+          <button 
+            className="toolbar-btn" 
+            onClick={() => document.getElementById('audio-import-input').click()}
+            disabled={isImporting}
+          >
+            {isImporting ? 'Importing...' : 'Import Stems'}
+          </button>
+          <input 
+            type="file" 
+            id="audio-import-input" 
+            style={{ display: 'none' }} 
+            multiple 
+            accept=".wav,.mp3,.ogg,.flac,.m4a,.aac" 
+            onChange={handleFileInput}
+          />
           <select 
             className="toolbar-btn" 
             onChange={(e) => { if (e.target.value) { addTrack(e.target.value); e.target.value = ''; } }} 
@@ -164,7 +216,34 @@ export default function TimelineArranger({ onEditClip }) {
         </div>
       </div>
       
-      <div className="timeline-workspace">
+      <div 
+        className={`timeline-workspace ${isDragging ? 'drag-over' : ''}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {isDragging && (
+          <div className="drag-drop-overlay" style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(230, 57, 70, 0.1)',
+            border: '2px dashed var(--gm-led-crimson)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none'
+          }}>
+            <div className="drag-drop-message" style={{
+              fontSize: '24px',
+              fontWeight: 'bold',
+              color: 'var(--gm-led-crimson)',
+              textShadow: '0 0 10px rgba(230,57,70,0.5)'
+            }}>
+              Drop Audio Stems to Auto-Import Multi-Track
+            </div>
+          </div>
+        )}
         <div className="track-headers">
           {tracks.map(track => {
             const isGen = generatingTrackId === track.id;

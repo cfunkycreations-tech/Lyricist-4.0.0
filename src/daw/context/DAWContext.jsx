@@ -137,11 +137,27 @@ export const DAWProvider = ({ children }) => {
     setTracks(prev => prev.map(t => t.id === trackId ? { ...t, ...changes } : t));
   }, []);
 
-  const addTrack = useCallback((type, name) => {
+  const addTrack = useCallback((typeOrObj, name) => {
+    if (typeof typeOrObj === 'object') {
+      const newTrack = {
+        id: `t${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        volume: 7,
+        pan: 5,
+        muted: false,
+        soloed: false,
+        armed: false,
+        color: 'var(--gm-led-white)',
+        clips: [],
+        ...typeOrObj
+      };
+      setTracks(prev => [...prev, newTrack]);
+      return;
+    }
+
     const newTrack = {
       id: `t${Date.now()}`,
       name,
-      type,
+      type: typeOrObj,
       volume: 7,
       pan: 5,
       muted: false,
