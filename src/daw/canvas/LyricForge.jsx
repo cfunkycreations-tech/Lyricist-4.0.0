@@ -4,6 +4,7 @@ import { useDAW } from '../context/DAWContext';
 import funkMatrixEngine from '../engine/FunkMatrixEngine';
 import rhymeAnalyzer from '../engine/RhymeAnalyzer';
 import RhymeHeatmap from './RhymeHeatmap';
+import RhymeCoachBar from '../components/RhymeCoachBar';
 
 /**
  * LyricForge Component
@@ -20,6 +21,8 @@ export default function LyricForge() {
   const [activeSectionId, setActiveSectionId] = useState(lyrics[1]?.id || lyrics[0]?.id || 'verse-1');
   const [activeContextMenu, setActiveContextMenu] = useState(null);
   const [loadingAction, setLoadingAction] = useState(null);
+  const [activeWord, setActiveWord] = useState('');
+  const [focusedLineId, setFocusedLineId] = useState(null);
 
   const activeSection = lyrics.find(s => s.id === activeSectionId) || lyrics[0] || {
     id: 'sec-1', type: 'verse', energy: 6, bars: 16, lines: []
@@ -29,6 +32,22 @@ export default function LyricForge() {
 
   const handleLineChange = (lineId, text) => {
     updateLyricLine(activeSection.id, lineId, text);
+    const words = text.trim().split(/\s+/);
+    setActiveWord(words[words.length - 1] || '');
+  };
+
+  const handleSelectRhyme = (rhyme) => {
+    if (!focusedLineId) return;
+    const line = analyzedLines.find(l => l.id === focusedLineId);
+    if (!line) return;
+    const text = line.text;
+    // Replace the last word with the selected rhyme
+    const words = text.trim().split(/\s+/);
+    if (words.length > 0) words.pop();
+    words.push(rhyme);
+    const newText = words.join(' ') + ' ';
+    updateLyricLine(activeSection.id, focusedLineId, newText);
+    setActiveWord(rhyme);
   };
 
   const handleContextMenu = (e, lineId) => {
@@ -120,6 +139,7 @@ export default function LyricForge() {
         <div className="lf-header">
           Precision Lyric Line Editor (<span style={{ textTransform: 'capitalize' }}>{activeSection.type}</span>)
         </div>
+        <RhymeCoachBar activeWord={activeWord} onSelectRhyme={handleSelectRhyme} />
         <div className="lyric-editor">
           {analyzedLines.map((line, idx) => (
             <div 
@@ -149,6 +169,11 @@ export default function LyricForge() {
                 className="lyric-input" 
                 value={line.text}
                 onChange={(e) => handleLineChange(line.id, e.target.value)}
+                onFocus={(e) => {
+                  setFocusedLineId(line.id);
+                  const words = e.target.value.trim().split(/\s+/);
+                  setActiveWord(words[words.length - 1] || '');
+                }}
                 placeholder="Type your lyric line here (right click for AI context actions)..."
               />
               

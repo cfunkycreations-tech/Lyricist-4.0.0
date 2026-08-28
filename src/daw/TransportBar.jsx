@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import MasterVUMeter from './components/MasterVUMeter';
 import { useDAW } from './context/DAWContext';
 import audioGraph from './engine/AudioGraph';
+import metronomeEngine from './engine/MetronomeEngine';
 import RenderQueueTray from './components/RenderQueueTray';
 import projectSessionService from './services/ProjectSessionService';
 import webMidiService from './services/WebMidiService';
@@ -16,10 +17,15 @@ export default function TransportBar({ onOpenSettings, onOpenExport, onOpenScope
   const [asioConnected] = useState(true);
   const [showQueue, setShowQueue] = useState(false);
   const [midiActivity, setMidiActivity] = useState(false);
+  const [metroActive, setMetroActive] = useState(false);
   const fileInputRef = useRef(null);
 
   const activeJobs = renderQueue ? renderQueue.filter(j => j.status === 'active') : [];
   const completedJobs = renderQueue ? renderQueue.filter(j => j.status === 'completed') : [];
+
+  useEffect(() => {
+    metronomeEngine.setBpm(transport.bpm);
+  }, [transport.bpm]);
 
   useEffect(() => {
     const onMidiActivity = () => {
@@ -31,9 +37,31 @@ export default function TransportBar({ onOpenSettings, onOpenExport, onOpenScope
     return () => webMidiService.removeEventListener(onMidiActivity);
   }, []);
 
+  const toggleMetronome = () => {
+    const nextActive = !metroActive;
+    setMetroActive(nextActive);
+    if (nextActive && transport.isPlaying) {
+      metronomeEngine.setBpm(transport.bpm);
+      metronomeEngine.start();
+    } else {
+      metronomeEngine.stop();
+    }
+  };
+
   const handlePlayClick = () => {
     audioGraph.init();
+    if (!transport.isPlaying && metroActive) {
+      metronomeEngine.setBpm(transport.bpm);
+      metronomeEngine.start();
+    } else {
+      metronomeEngine.stop();
+    }
     togglePlay();
+  };
+
+  const handleStopClick = () => {
+    metronomeEngine.stop();
+    stop();
   };
 
   const handleFileAction = (e) => {
@@ -92,6 +120,14 @@ export default function TransportBar({ onOpenSettings, onOpenExport, onOpenScope
           onChange={handleFileChange}
         />
         <button 
+          className={`btn-hardware ${metroActive ? 'active' : ''}`}
+          onClick={toggleMetronome}
+          title="Metronome"
+          style={{ color: metroActive ? 'var(--gm-led-amber, #FF9900)' : 'inherit' }}
+        >
+          🔔 Metronome
+        </button>
+        <button 
           className={`btn-hardware ${transport.isPlaying ? 'active' : ''}`}
           onClick={handlePlayClick}
           title={transport.isPlaying ? "Pause (Space)" : "Play (Space)"}
@@ -100,7 +136,7 @@ export default function TransportBar({ onOpenSettings, onOpenExport, onOpenScope
         </button>
         <button 
           className="btn-hardware"
-          onClick={stop}
+          onClick={handleStopClick}
           title="Stop"
         >
           ■

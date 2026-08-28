@@ -9,6 +9,7 @@ import ChordPalette from './dock/ChordPalette';
 import MacroRack from './dock/MacroRack';
 import DrumPadSampler from './dock/DrumPadSampler';
 import GranularSynth from './dock/GranularSynth';
+import AutoTuneDock from './dock/AutoTuneDock';
 
 /**
  * BottomDock Component - Tabbed resizable dock for DAW modules
@@ -18,7 +19,7 @@ export default function BottomDock() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [height, setHeight] = useState(300);
 
-  const tabs = ['VST3 Chains', 'Piano Roll', 'Drum Pads', 'Looper', 'Tape Slicer', 'Stems', 'Plugin Editor', 'Chords', 'Macros', 'Granular'];
+  const tabs = ['VST3 Chains', 'Piano Roll', 'Drum Pads', 'Looper', 'Tape Slicer', 'Stems', 'Plugin Editor', 'Chords', 'Macros', 'Granular', 'Auto-Tune'];
 
   const renderContent = () => {
     switch(activeTab) {
@@ -32,6 +33,7 @@ export default function BottomDock() {
       case 'Chords': return <ChordPalette />;
       case 'Macros': return <MacroRack />;
       case 'Granular': return <GranularSynth />;
+      case 'Auto-Tune': return <AutoTuneDock />;
       default: return null;
     }
   };

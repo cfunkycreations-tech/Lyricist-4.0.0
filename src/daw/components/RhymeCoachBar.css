@@ -1,0 +1,97 @@
+.rhyme-coach-bar {
+  background: var(--gm-bg-surface, #1a1a1a);
+  border: 1px solid var(--gm-border-dark, #333);
+  border-radius: var(--gm-radius, 4px);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 60px;
+  margin-bottom: 16px;
+  font-family: var(--gm-font-ui, 'Inter', 'Roboto', sans-serif);
+}
+
+.rhyme-coach-bar.empty {
+  justify-content: center;
+  align-items: center;
+  color: var(--gm-text-muted, #666);
+  font-style: italic;
+  font-size: 13px;
+}
+
+.rcb-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gm-text-label, #A0A0A0);
+}
+
+.rcb-target {
+  color: var(--gm-led-ice, #F0F8FF);
+  font-family: var(--gm-font-metrics, 'JetBrains Mono', monospace);
+}
+
+.rcb-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.rcb-category {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rcb-badge {
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+  color: #000;
+}
+
+/* 3-stage dynamic LED color badges */
+.badge-perfect {
+  background: var(--gm-led-ice, #F0F8FF);
+  box-shadow: 0 0 4px rgba(240, 248, 255, 0.4);
+}
+
+.badge-slant {
+  background: var(--gm-led-amber, #FF9900);
+  box-shadow: 0 0 4px rgba(255, 153, 0, 0.4);
+}
+
+.badge-multi {
+  background: var(--gm-led-crimson, #E63946);
+  box-shadow: 0 0 4px rgba(230, 57, 70, 0.4);
+  color: #fff;
+}
+
+.rcb-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rcb-chip {
+  background: #222;
+  border: 1px solid #444;
+  color: #ddd;
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--gm-font-metrics, 'JetBrains Mono', monospace);
+}
+
+.rcb-chip:hover {
+  background: #333;
+  border-color: var(--gm-led-ice, #F0F8FF);
+  color: #fff;
+}
