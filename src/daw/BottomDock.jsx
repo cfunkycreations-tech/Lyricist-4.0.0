@@ -7,6 +7,7 @@ import StemSeparator from './dock/StemSeparator';
 import PluginHostEditor from './dock/PluginHostEditor';
 import ChordPalette from './dock/ChordPalette';
 import MacroRack from './dock/MacroRack';
+import DrumPadSampler from './dock/DrumPadSampler';
 
 /**
  * BottomDock Component - Tabbed resizable dock for DAW modules
@@ -16,12 +17,13 @@ export default function BottomDock() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [height, setHeight] = useState(300);
 
-  const tabs = ['VST3 Chains', 'Piano Roll', 'Looper', 'Tape Slicer', 'Stems', 'Plugin Editor', 'Chords', 'Macros'];
+  const tabs = ['VST3 Chains', 'Piano Roll', 'Drum Pads', 'Looper', 'Tape Slicer', 'Stems', 'Plugin Editor', 'Chords', 'Macros'];
 
   const renderContent = () => {
     switch(activeTab) {
       case 'VST3 Chains': return <DeviceChain />;
       case 'Piano Roll': return <PianoRoll />;
+      case 'Drum Pads': return <DrumPadSampler />;
       case 'Looper': return <LooperDock />;
       case 'Tape Slicer': return <TapeSlicer />;
       case 'Stems': return <StemSeparator />;

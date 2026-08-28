@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './GhostPilotHUD.css';
 import ghostPilotDAWBridge from '../services/GhostPilotDAWBridge';
+import voiceControlService from '../services/VoiceControlService';
 
 /**
  * GhostPilotHUD
@@ -10,6 +11,7 @@ const GhostPilotHUD = () => {
   const [expanded, setExpanded] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [status, setStatus] = useState('idle'); // idle, processing, error
+  const [isListening, setIsListening] = useState(false);
   const [messages, setMessages] = useState([
     { id: 1, type: 'system', text: 'Ghost Pilot initialized. Ready for commands.', success: true, timestamp: new Date() }
   ]);
@@ -72,6 +74,17 @@ const GhostPilotHUD = () => {
     }
   };
 
+  const toggleListening = () => {
+    if (voiceControlService.isListening()) {
+      voiceControlService.stopListening();
+    } else {
+      voiceControlService.startListening(
+        (transcript) => setInputValue(transcript),
+        (listeningStatus) => setIsListening(listeningStatus)
+      );
+    }
+  };
+
   const getLedClass = () => {
     if (status === 'processing') return 'led-processing';
     if (status === 'error') return 'led-error';
@@ -130,6 +143,16 @@ const GhostPilotHUD = () => {
         </div>
 
         <div className="console-footer">
+          {voiceControlService.isSupported() && (
+            <button 
+              className={`mic-btn ${isListening ? 'listening pulsing-crimson' : ''}`}
+              onClick={toggleListening}
+              title="Voice Control"
+              style={isListening ? { color: '#E63946', animation: 'pulse 1.5s infinite' } : {}}
+            >
+              🎙️
+            </button>
+          )}
           <input
             type="text"
             className="command-input"

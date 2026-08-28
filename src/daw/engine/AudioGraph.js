@@ -1,3 +1,5 @@
+import truePeakLimiter from './TruePeakLimiter';
+
 /**
  * @file AudioGraph.js
  * @description Real-time Web Audio API execution graph for Lyricist 4.2.0 Pro.
@@ -49,13 +51,13 @@ class AudioGraph {
       // Master Gain
       this.masterGain = this.context.createGain();
       
-      // Master Limiter (Compressor)
+      // Master Limiter (Compressor) mapped to True Peak parameters
       this.masterLimiter = this.context.createDynamicsCompressor();
-      this.masterLimiter.threshold.value = -1.0; // Hard limit at -1dB
-      this.masterLimiter.knee.value = 0.0;
+      this.masterLimiter.threshold.value = -0.1; // True Peak Ceiling default
+      this.masterLimiter.knee.value = 5.0; // Soft knee
       this.masterLimiter.ratio.value = 20.0;
-      this.masterLimiter.attack.value = 0.005;
-      this.masterLimiter.release.value = 0.050;
+      this.masterLimiter.attack.value = 0.0015; // 1.5ms lookahead equivalent
+      this.masterLimiter.release.value = 0.050; // 50ms release default
 
       // Master Analysers (L/R)
       this.masterSplitter = this.context.createChannelSplitter(2);
