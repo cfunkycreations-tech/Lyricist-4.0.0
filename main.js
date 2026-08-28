@@ -1199,40 +1199,78 @@ function getJuceEnginePath() {
   return null;
 }
 
-ipcMain.handle('juce-spawn', async (event) => {
-  if (juceProcess) return { ok: true, message: 'Already running' };
-  
+// ── Native engine IPC ───────────────────────────────────────────────────────
+// The engine speaks strict JSON-RPC 2.0 on stdin/stdout: { jsonrpc, id, method,
+// params }. It replies { id, result } or { id, error: { code, message } }, one
+// JSON object per line. Verified against the built binary — asio.enumerate
+// returns real hardware.
+//
+// The renderer speaks a DIFFERENT dialect ({ cmd, args }), so juce-command below
+// translates. Do not "simplify" that away: sending { cmd } gets you
+// "Method not found: " with an empty name, because the engine reads `method`.
+const jucePending = new Map();
+let juceReqId = 0;
+
+function ensureJuceEngine(webContents) {
+  if (juceProcess) return { ok: true };
+
   const exePath = getJuceEnginePath();
-  if (!exePath) {
-    return { ok: false, error: 'LyricistEngine.exe not found' };
-  }
-  
+  if (!exePath) return { ok: false, error: 'LyricistEngine.exe not found' };
+
   try {
     juceProcess = spawn(exePath, [], { stdio: ['pipe', 'pipe', 'pipe'] });
-    
+
     const rl = readline.createInterface({ input: juceProcess.stdout });
     rl.on('line', (line) => {
+      let msg;
       try {
-        const jsonResponse = JSON.parse(line);
-        event.sender.send('juce-message', jsonResponse);
+        msg = JSON.parse(line);
       } catch (e) {
         bootLog(`juce parse error: ${e.message} - line: ${line}`);
+        return;
+      }
+
+      // Settle a correlated request, if this reply belongs to one.
+      if (msg && msg.id != null && jucePending.has(msg.id)) {
+        const { resolve, timer } = jucePending.get(msg.id);
+        clearTimeout(timer);
+        jucePending.delete(msg.id);
+        resolve(msg.error
+          ? { ok: false, error: msg.error.message || String(msg.error), code: msg.error.code }
+          : { ok: true, result: msg.result });
+      }
+
+      // Still broadcast, so the older juce-message listeners keep working.
+      if (webContents && !webContents.isDestroyed()) {
+        webContents.send('juce-message', msg);
       }
     });
-    
+
     juceProcess.stderr.on('data', (data) => {
       bootLog(`juce error: ${data.toString()}`);
     });
-    
+
     juceProcess.on('close', (code) => {
       bootLog(`juce process exited with code ${code}`);
       juceProcess = null;
+      // Never leave a caller hanging on a dead engine.
+      for (const [, { resolve, timer }] of jucePending) {
+        clearTimeout(timer);
+        resolve({ ok: false, error: `engine exited (code ${code})` });
+      }
+      jucePending.clear();
     });
-    
+
     return { ok: true };
   } catch (e) {
+    juceProcess = null;
     return { ok: false, error: e.message };
   }
+}
+
+ipcMain.handle('juce-spawn', async (event) => {
+  if (juceProcess) return { ok: true, message: 'Already running' };
+  return ensureJuceEngine(event.sender);
 });
 
 ipcMain.handle('juce-send', async (event, payload) => {
@@ -1580,8 +1618,43 @@ ipcMain.handle('vst3-open-gui', async (_event, pluginInfo) => {
   }
 });
 
-ipcMain.handle('juce-command', async (_event, { cmd, args }) => {
-  return { ok: true, cmd, args };
+// Renderer dialect { cmd, args } -> engine dialect { jsonrpc, id, method, params }.
+// Resolves with the engine's actual reply, or an error - never hangs.
+ipcMain.handle('juce-command', async (event, payload) => {
+  // JuceBridge.js passes ONE object ({ cmd, reqId, ...params }) while
+  // JucePluginWindowManager.js passes (cmd, args) as preload declares. Accept both
+  // rather than breaking one of them.
+  const { cmd, args } = (payload && typeof payload.cmd === 'object')
+    ? { cmd: payload.cmd.cmd, args: payload.cmd }
+    : (payload || {});
+
+  const method = typeof cmd === 'string' ? cmd : (cmd && cmd.cmd);
+  if (!method) return { ok: false, error: 'juce-command: no method given' };
+
+  const started = ensureJuceEngine(event.sender);
+  if (!started.ok) return started;
+
+  const id = ++juceReqId;
+  const params = { ...(args || {}) };
+  delete params.cmd;
+  delete params.reqId;
+
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      jucePending.delete(id);
+      resolve({ ok: false, error: `juce-command timed out after 10s: ${method}` });
+    }, 10000);
+
+    jucePending.set(id, { resolve, timer });
+
+    try {
+      juceProcess.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n');
+    } catch (e) {
+      clearTimeout(timer);
+      jucePending.delete(id);
+      resolve({ ok: false, error: e.message });
+    }
+  });
 });
 
 ipcMain.handle('juce-close', async () => {

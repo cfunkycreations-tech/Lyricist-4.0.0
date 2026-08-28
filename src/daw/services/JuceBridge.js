@@ -39,25 +39,31 @@ class JuceBridge {
     if (!this.isNative) {
       return this._mockResponse(cmd, payload);
     }
-    
-    return new Promise((resolve, reject) => {
-      const id = ++this.reqId;
-      this.pendingRequests.set(id, { resolve, reject });
-      
-      try {
-        window.electronAPI.sendJuceCommand({ cmd, reqId: id, ...payload });
-      } catch (err) {
-        this.pendingRequests.delete(id);
-        reject(err);
-      }
-    });
+
+    // sendJuceCommand is (cmd, args) - two positional arguments, as preload
+    // declares it. This used to pass a single { cmd, reqId, ...payload } object,
+    // so `cmd` arrived as the whole object and `args` as undefined.
+    //
+    // It also used to park a promise in pendingRequests and wait for
+    // onJuceMessage to settle it, which never happened: juce-command is an
+    // ipcRenderer.invoke, so the reply comes back as the return value. Every
+    // call hung forever, with no timeout and no reject. Await the result instead.
+    const res = await window.electronAPI.sendJuceCommand(cmd, payload);
+
+    if (!res || !res.ok) {
+      throw new Error((res && res.error) || `engine call failed: ${cmd}`);
+    }
+    return res.result;
   }
 
   _mockResponse(cmd, payload) {
     // Graceful fallback for browser or missing executable
     switch (cmd) {
+      // Key is `drivers`, matching what the real engine returns. It said
+      // `devices` until 2026-08-28, which would have made browser mode and
+      // native mode disagree for whoever wired this to the UI first.
       case 'asio.enumerate':
-        return Promise.resolve({ devices: ['Web Audio Default', 'Web Audio Fallback'] });
+        return Promise.resolve({ drivers: ['Web Audio Default', 'Web Audio Fallback'] });
       case 'asio.open':
         return Promise.resolve({ success: true, message: 'Opened mocked audio driver' });
       case 'asio.close':
