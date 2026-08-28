@@ -1,3 +1,4 @@
+import { getAudioContext, getMasterInput } from './AudioContextProvider';
 /**
  * @fileoverview Spectral De-Bleed DSP Engine for Lyricist 4.2.0 Pro.
  * Handles phase-cancellation and spectral bleed suppression.
@@ -5,7 +6,7 @@
 
 class SpectralDebleedEngine {
   constructor() {
-    this.context = new (window.AudioContext || window.webkitAudioContext)();
+    this.context = getAudioContext();
   }
 
   /**

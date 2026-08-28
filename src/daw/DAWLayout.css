@@ -2,7 +2,10 @@
 .daw-shell {
   display: grid;
   grid-template-rows: 48px 1fr auto;
-  grid-template-columns: auto 1fr;
+  /* minmax(0, 1fr) is load-bearing: a plain 1fr floors at the canvas's
+     min-content width, so a wide dock rack could squeeze the lyric window
+     down to a sliver instead of letting it scroll. */
+  grid-template-columns: auto minmax(0, 1fr);
   grid-template-areas:
     "transport transport"
     "sidebar   canvas"

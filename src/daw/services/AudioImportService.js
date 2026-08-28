@@ -1,3 +1,4 @@
+import { getAudioContext, getMasterInput } from '../engine/AudioContextProvider';
 /**
  * AudioImportService
  * Handles importing multi-track audio files, decoding audio data, and generating waveform peaks.
@@ -21,7 +22,7 @@ class AudioImportService {
 
   getAudioContext() {
     if (!this.audioContext) {
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      this.audioContext = getAudioContext();
     }
     return this.audioContext;
   }

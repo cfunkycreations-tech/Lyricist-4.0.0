@@ -106,4 +106,9 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   pilotMove: (x, y) => ipcRenderer.invoke('pilot-move', { x, y }),
   pilotClick: () => ipcRenderer.invoke('pilot-click'),
   pilotType: (text) => ipcRenderer.invoke('pilot-type', { text }),
+
+  // Real Windows VST3 Plugin Scanner & Native Window Hosting
+  vst3ScanSystem: () => ipcRenderer.invoke('vst3-scan-system'),
+  openPluginGui: (pluginInfo) => ipcRenderer.invoke('vst3-open-gui', pluginInfo),
+  sendJuceCommand: (cmd, args) => ipcRenderer.invoke('juce-command', { cmd, args }),
 });

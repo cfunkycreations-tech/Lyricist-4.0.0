@@ -127,27 +127,34 @@ export default function GhostPilotLayer() {
               { action: 'type', target: '#ql-kw-input', text: SEEDS },
               { action: 'wait', ms: 600 },
 
-              // Step 2 — load the typed words into the lattice.
+              // Load the typed words into the grid. This button (Step 2) lives in
+              // the keyword intake block above the grid, always visible.
               { action: 'move', target: '[data-demo="ql-load"]' },
-              { action: 'speak', text: 'Now I hit Load into lattice, and every one of those words drops straight into the grid below.', waitFor: 'play' },
+              { action: 'speak', text: 'Now I hit Load into Grid, and every one of those words drops straight into the grid below.', waitFor: 'play' },
               { action: 'click', target: '[data-demo="ql-load"]' },
               { action: 'wait', ms: 1400 },
 
-              // Steps 4+5 combined — spread the energy and lock the field.
-              { action: 'move', target: '[data-demo="ql-runlock"]' },
-              { action: 'speak', text: 'This button here does two things at once. It spreads energy across the whole grid for twelve rounds, then locks the field in place so it stops moving.', waitFor: 'play' },
-              { action: 'click', target: '[data-demo="ql-runlock"]' },
-              { action: 'speak', text: 'Watch the tiles light up. The hotter a tile gets, the more pull it has on the words around it. That is the grid working out which of my ideas belong together.', waitFor: 'end' },
-              { action: 'wait', ms: 2200 },
+              /**
+               * THE ONE BUTTON. Auto-Craft Verse is the Tier-1 Quick Path: one
+               * press spreads the energy across twelve generations, locks the
+               * field, and writes both neural verses.
+               *
+               * WHY NOT THE SIX MANUAL STEPS. The old script drove ql-runlock
+               * then ql-generate — but the two-tier refactor moved every manual
+               * control into the Advanced Studio drawer, which is COLLAPSED by
+               * default, so those buttons are not in the DOM and the walkthrough
+               * died on "nothing matches ql-runlock". Auto-Craft is always on
+               * screen and does the same job in a single, cleaner press — which
+               * is the better demo anyway.
+               */
+              { action: 'move', target: '[data-demo="matrix-autocraft"]' },
+              { action: 'speak', text: 'And here is the one button that does all the work. Auto-Craft Verse spreads energy across the whole grid, locks it in, and writes me two full verses. One click.', waitFor: 'play' },
+              { action: 'click', target: '[data-demo="matrix-autocraft"]' },
+              { action: 'speak', text: 'Watch the tiles light up. The hotter a tile gets, the more pull it has on the words around it. That is the grid working out which of my ideas belong together, and then it writes the verses for me.', waitFor: 'end' },
 
-              // Step 6 — the payoff.
-              { action: 'move', target: '[data-demo="ql-generate"]' },
-              { action: 'speak', text: 'And now the fun part. Generate Neural Lyrics takes that locked grid and writes me two different verses from it.', waitFor: 'play' },
-              { action: 'click', target: '[data-demo="ql-generate"]' },
-              { action: 'speak', text: 'Give it a few seconds while it writes both of them.', waitFor: 'end' },
-
-              // Two sequential model calls plus the 400ms gap between them.
-              { action: 'wait', ms: 12000 },
+              // Auto-Craft runs 12 generations, locks, then two sequential model
+              // calls with a gap between them. Give it room to finish.
+              { action: 'wait', ms: 14000 },
 
               // Payoff and soft CTA.
               { action: 'speak', text: 'And there we go, two verses to choose from. Pick whichever one sounds most like you, send it over to Songwriter, and you are off. That is how easy it is. Go give it a try yourself.', waitFor: 'end' },

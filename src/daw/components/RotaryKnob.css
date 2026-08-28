@@ -15,9 +15,35 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-.rotary-knob:hover .rotary-knob__label {
+.rotary-knob__value {
+  font-family: var(--gm-font-mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--gm-text-muted, #8A8A8A);
+  font-variant-numeric: tabular-nums;
+  margin-top: -2px;
+}
+.rotary-knob:hover .rotary-knob__label,
+.rotary-knob:focus-visible .rotary-knob__label {
   color: var(--gm-text-active, #FFFFFF);
 }
-.rotary-knob:active {
+.rotary-knob:hover .rotary-knob__value,
+.rotary-knob--dragging .rotary-knob__value {
+  color: var(--gm-text-active, #FFFFFF);
+}
+.rotary-knob:focus {
+  outline: none;
+}
+.rotary-knob:focus-visible {
+  outline: 1px solid var(--gm-accent-ice, #F0F8FF);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.rotary-knob:active,
+.rotary-knob--dragging {
   cursor: grabbing;
+}
+.rotary-knob--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }

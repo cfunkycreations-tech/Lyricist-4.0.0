@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './RhymeCoachBar.css';
+import { rhymeSets } from '../services/RhymeService';
 
 /**
  * RhymeCoachBar
@@ -13,30 +14,24 @@ export default function RhymeCoachBar({ activeWord, onSelectRhyme }) {
   const [rhymes, setRhymes] = useState({ perfect: [], slant: [], multi: [] });
 
   useEffect(() => {
-    if (!activeWord || activeWord.trim().length === 0) {
+    const word = String(activeWord || '').trim();
+    if (!word) {
       setRhymes({ perfect: [], slant: [], multi: [] });
-      return;
+      return undefined;
     }
 
-    // Mock analysis based on activeWord
-    const word = activeWord.toLowerCase().trim();
-    
-    // Some hardcoded fun for demo purposes, else generic
-    let perfect = [`${word}er`, `${word}ing`, `re${word}`];
-    let slant = [`${word}ah`, `${word}ish`, `un${word}`];
-    let multi = [`${word}ation`, `${word}ology`, `super${word}`];
+    // Wait for a pause in typing before asking, so a whole line does not fire
+    // a request per keystroke.
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const sets = await rhymeSets(word);
+      if (!cancelled) setRhymes(sets);
+    }, 250);
 
-    if (word === 'fire') {
-      perfect = ['desire', 'higher', 'wire'];
-      slant = ['fighter', 'writer', 'rider'];
-      multi = ['wildfire', 'inspire', 'empire'];
-    } else if (word === 'flow') {
-      perfect = ['glow', 'show', 'blow'];
-      slant = ['cold', 'bold', 'soul'];
-      multi = ['overflow', 'undertow', 'status quo'];
-    }
-
-    setRhymes({ perfect, slant, multi });
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [activeWord]);
 
   if (!activeWord || activeWord.trim().length === 0) {

@@ -25,6 +25,14 @@ export class KeyCommandService {
     this.callbacks = {};
   }
 
+  cleanup() {
+    this.destroy();
+  }
+
+  dispose() {
+    this.destroy();
+  }
+
   _isInputActive(target) {
     if (!target) return false;
     const tagName = target.tagName.toLowerCase();

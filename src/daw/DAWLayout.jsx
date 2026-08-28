@@ -41,7 +41,11 @@ function DAWLayoutContent() {
       }
     });
     
-    return () => keyCommandService.cleanup();
+    return () => {
+      if (keyCommandService && typeof keyCommandService.cleanup === 'function') {
+        keyCommandService.cleanup();
+      }
+    };
   }, [togglePlay, toggleRecord, setPlayhead]);
 
   const toggleSidebar = () => {

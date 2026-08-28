@@ -1,9 +1,10 @@
+import { getAudioContext, getMasterInput } from './AudioContextProvider';
 /**
  * 4-Channel Web Audio Live Loop Buffer Engine for Lyricist 4.2.0 Pro.
  */
 export class LooperEngine {
   constructor() {
-    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    this.audioContext = getAudioContext();
     
     this.channels = Array.from({ length: 4 }, (_, i) => ({
       id: i + 1,
@@ -21,9 +22,9 @@ export class LooperEngine {
     this.channels.forEach(ch => {
       if (ch.panNode) {
         ch.gainNode.connect(ch.panNode);
-        ch.panNode.connect(this.audioContext.destination);
+        ch.panNode.connect(getMasterInput());
       } else {
-        ch.gainNode.connect(this.audioContext.destination);
+        ch.gainNode.connect(getMasterInput());
       }
       this._updateChannelMixing(ch);
     });

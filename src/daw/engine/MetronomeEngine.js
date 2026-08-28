@@ -1,3 +1,4 @@
+import { getAudioContext, getMasterInput } from './AudioContextProvider';
 /**
  * Audio Metronome Engine for Lyricist 4.2.0 Pro
  * Web Audio sample-accurate click engine.
@@ -26,7 +27,7 @@ class MetronomeEngine {
 
   init(context = null) {
     if (!this.audioContext) {
-      this.audioContext = context || new (window.AudioContext || window.webkitAudioContext)();
+      this.audioContext = context || getAudioContext();
     }
   }
 
@@ -67,7 +68,7 @@ class MetronomeEngine {
     const gainNode = this.audioContext.createGain();
 
     osc.connect(gainNode);
-    gainNode.connect(this.audioContext.destination);
+    gainNode.connect(getMasterInput());
 
     if (this.preset === 'Classic Beep') {
       osc.type = 'square';

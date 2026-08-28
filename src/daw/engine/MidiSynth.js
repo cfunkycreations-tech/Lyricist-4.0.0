@@ -1,3 +1,4 @@
+import { getAudioContext, getMasterInput } from './AudioContextProvider';
 /**
  * Polyphonic Web Audio Synthesizer for Lyricist 4.2.0 Pro.
  * Provides a 16-voice dynamic allocator with ADSR envelopes and filtering.
@@ -24,10 +25,19 @@ export class MidiSynth {
    * Initializes the synthesizer and its Web Audio Context.
    */
   init() {
-    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    this.masterGain = this.audioContext.createGain();
-    this.masterGain.gain.value = 0.5;
-    this.masterGain.connect(this.audioContext.destination);
+    if (!this.audioContext) {
+      this.audioContext = getAudioContext();
+      this.masterGain = this.audioContext.createGain();
+      this.masterGain.gain.value = 0.5;
+      this.masterGain.connect(getMasterInput());
+    }
+    if (this.audioContext.state === 'suspended') {
+      this.audioContext.resume();
+    }
+  }
+
+  ensureContext() {
+    this.init();
   }
 
   /**
@@ -39,6 +49,10 @@ export class MidiSynth {
     if (this.params.hasOwnProperty(param)) {
       this.params[param] = value;
     }
+  }
+
+  setPreset(preset = {}) {
+    Object.assign(this.params, preset);
   }
 
   /**
@@ -56,6 +70,7 @@ export class MidiSynth {
    * @param {number} [velocity=100] - MIDI velocity (0-127).
    */
   noteOn(midiNote, velocity = 100) {
+    this.ensureContext();
     if (!this.audioContext) return;
     
     // Voice stealing if at max capacity

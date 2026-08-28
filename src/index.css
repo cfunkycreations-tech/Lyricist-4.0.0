@@ -152,6 +152,58 @@ body, button, input, select, label, textarea {
   --gm-text-label:    #A0A0A0;
   --gm-text-active:   #FFFFFF;
   --gm-font-ui:       'Inter', 'Roboto', ui-sans-serif, system-ui, sans-serif;
+  --gm-font-mono:     'JetBrains Mono', ui-monospace, monospace;
+
+  /* ── Aliases the DAW panels actually ask for ───────────────────────────
+     The sidebar, device rack and plugin browser were written against these
+     names, but only the dozen tokens above were ever defined. Every
+     `var(--gm-bg-medium)` with no fallback resolved to nothing, so those
+     panels rendered with transparent backgrounds and invisible borders.
+     Defining them here repairs the whole surface at once. */
+  --gm-bg:            #1A1A1A;
+  --gm-bg-base:       #141416;
+  --gm-bg-dark:       #0D0D0F;
+  --gm-bg-medium:     #202024;
+  --gm-bg-input:      #0D0D0F;
+  --gm-bg-hover:      #2A2A30;
+  --gm-bg-active:     #34343C;
+  --gm-bg-track:      #2A2A2E;
+  --gm-bg-lanes:      #161618;
+  --gm-panel:         #202024;
+  --gm-border:        #303036;
+  --gm-text:          #E4E4E7;
+  --gm-text-muted:    #8A8A93;
+  --gm-text-primary:  #E4E4E7;
+
+  /* Accents. Artist Flow used to run crimson, which read as an error state
+     against a rack that uses red for bypass. Amber is the warm accent. */
+  --gm-accent-ice:    #F0F8FF;
+  --gm-accent-amber:  #FFB020;
+  --gm-accent-crimson:#E63946;
+  --gm-accent-blue:   #4CC9F0;
+  --gm-amber:         #FFB020;
+  --gm-ice-white:     #F0F8FF;
+  --gm-crimson:       #E63946;
+  --gm-cyan:          #4CC9F0;
+  --gm-led-connected: #10F0A0;
+  --gm-led-white:     #F0F8FF;
+}
+
+/* ── Glowing amber panel heading ──────────────────────────────────────────
+   Warm amber core with a soft bloom and a faint inner highlight, so the text
+   reads as lit glass rather than flat red paint. */
+.gm-panel-title {
+  margin: 0 0 16px;
+  font-family: var(--gm-font-ui);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #FFC65A;
+  text-shadow:
+    0 0 1px rgba(255, 226, 160, 0.9),
+    0 0 8px rgba(255, 176, 32, 0.55),
+    0 0 22px rgba(255, 150, 0, 0.28);
 }
 
 /* THE CANVAS IS FLAT MATTE OBSIDIAN. It used to carry three stacked radial

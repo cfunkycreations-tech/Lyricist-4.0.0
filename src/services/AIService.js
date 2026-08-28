@@ -690,3 +690,104 @@ function parseBridgeVariations(text) {
     C: v3Match ? v3Match[1].trim() : ""
   };
 }
+
+/**
+ * Writes original lyrics in a named artist's style, plus the Suno style tags
+ * that go with them.
+ *
+ * Ported out of the Artist Analyzer tab so the DAW can use it directly. Two
+ * rules carried over verbatim because they are what make the output usable:
+ * the artist's name must never appear in the lyrics, and the style tags must
+ * never name a real person — Suno rejects prompts that do.
+ *
+ * @param {string} artist - Artist whose style to imitate.
+ * @param {string} topic - What the song is about; blank lets the model choose.
+ * @param {Object} store - LyricStore, for the API key and model config.
+ * @returns {Promise<{lyrics: string, sunoTags: string}>}
+ */
+export async function writeInArtistStyle(artist, topic, store) {
+  assertApiKey(store?.config);
+  const name = String(artist || '').trim();
+  if (!name) throw new Error('Name an artist first.');
+
+  const topicPrompt = String(topic || '').trim()
+    ? `Topic: ${String(topic).trim()}`
+    : 'Choose a typical subject for this artist.';
+
+  const prompt = `Write original lyrics in the style of ${name}. ${topicPrompt}
+Write a verse (16 bars) and a hook (8 bars). Match their rhyme schemes, vocabulary, and flow. Do NOT mention the artist's name anywhere in the lyrics.
+
+After the lyrics, on a new line write exactly this separator and nothing else:
+---SUNO TAGS---
+Then on the very next line write 10-14 comma-separated Suno AI style keywords. STRICT RULES for the tags: NO artist names, NO real person names, NO celebrity names whatsoever. Only include: genre, subgenre, production style, mood, tempo, instruments, vocal style, era. One line only.`;
+
+  const rawResult = await callAI([
+    { role: 'system', content: 'You are an elite ghostwriter who captures the raw, authentic artistic voice, flow, cadence, vocabulary, and stylistic nuances of specific musical artists. You despise generic AI-sounding imitations. Focus on subtext, friction, and rhythm.' },
+    { role: 'user', content: prompt }
+  ], store.config);
+
+  const parts = String(rawResult).split('---SUNO TAGS---');
+  const lyrics = parts[0]?.trim() || '';
+
+  // Strip the artist's name out of the tags even if the model ignored the rule.
+  const artistClean = name.toLowerCase();
+  const sunoTags = (parts[1]?.trim().split('\n')[0] || '')
+    .split(',')
+    .map(t => t.trim())
+    .filter(t => t.length > 2 && t.toLowerCase() !== artistClean && !t.toLowerCase().includes(artistClean))
+    .join(', ');
+
+  return { lyrics, sunoTags };
+}
+
+/**
+ * Analysis angles for an artist's writing, carried over from the Artist
+ * Analyzer tab's prompt builders.
+ */
+export const ARTIST_ANALYSIS_MODES = {
+  full: (artist) => `Comprehensive analysis of ${artist} as a lyricist: style, flow, themes, era, influences, and what makes them unique. Use catalog examples.`,
+  style: (artist) => `Analyze ${artist}'s lyrical writing style in depth. Cover vocabulary, metaphor usage, storytelling approach, word choice, rhyme schemes, and what makes their lyrics distinctive. Use catalog examples.`,
+  flow: (artist) => `Analyze ${artist}'s rap flow, rhythm, and cadence. Cover syllable placement, rhythm patterns, breath control, beat riding, double-time vs half-time, and signature flow techniques. Use catalog examples.`,
+  themes: (artist) => `Analyze the common themes in ${artist}'s music. Cover recurring motifs, emotional tone, life experiences, and how their themes evolved over time.`
+};
+
+/**
+ * Breaks down how an artist writes, so the style can be studied before it is
+ * borrowed.
+ *
+ * @param {string} artist - Artist to analyse.
+ * @param {'full'|'style'|'flow'|'themes'} [mode='full'] - Which angle to take.
+ * @param {Object} store - LyricStore, for the API key and model config.
+ * @returns {Promise<string>} Prose analysis.
+ */
+export async function analyzeArtistStyle(artist, mode = 'full', store) {
+  assertApiKey(store?.config);
+  const name = String(artist || '').trim();
+  if (!name) throw new Error('Name an artist first.');
+
+  const build = ARTIST_ANALYSIS_MODES[mode] || ARTIST_ANALYSIS_MODES.full;
+  const result = await callAI([
+    { role: 'system', content: 'You are a music journalist and lyrical analyst. Be specific and concrete, cite real songs, and avoid generic praise. Use short paragraphs and plain language.' },
+    { role: 'user', content: build(name) }
+  ], store.config);
+
+  return String(result || '').trim();
+}
+
+/**
+ * Suggests style tags for a piece of writing, for pasting into a music
+ * generator. Never returns a real person's name — those get rejected.
+ *
+ * @param {string} text - Lyrics or a description of the song.
+ * @param {Object} store - LyricStore, for the API key and model config.
+ * @returns {Promise<string>} Comma-separated tags on one line.
+ */
+export async function suggestStyleTags(text, store) {
+  assertApiKey(store?.config);
+  const result = await callAI([
+    { role: 'system', content: 'You output only a single comma-separated line of style keywords. Nothing else.' },
+    { role: 'user', content: `Give 10-14 comma-separated style keywords for this song. STRICT: no artist names, no real person names, no celebrity names. Only genre, subgenre, production style, mood, tempo, instruments, vocal style, era. One line only.\n\n${String(text).slice(0, 3000)}` }
+  ], store.config);
+
+  return String(result || '').split('\n')[0].split(',').map(t => t.trim()).filter(t => t.length > 2).join(', ');
+}

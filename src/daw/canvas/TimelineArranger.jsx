@@ -295,12 +295,13 @@ export default function TimelineArranger({ onEditClip }) {
                   >
                     S
                   </button>
-                  <RotaryKnob 
-                    size={28} 
-                    value={track.pan} 
+                  <RotaryKnob
+                    size={28}
+                    value={track.pan}
                     onChange={(val) => updateTrack(track.id, { pan: val })}
                     defaultValue={5}
                     label="Pan"
+                    showValue={false}
                   />
                 </div>
 

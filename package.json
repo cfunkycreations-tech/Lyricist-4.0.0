@@ -24,7 +24,7 @@
     "appId": "com.cfunkycreations.lyricist",
     "productName": "Lyricist",
     "directories": {
-      "output": "release"
+      "output": "dist-build"
     },
     "files": [
       "dist/**/*",

@@ -1,3 +1,4 @@
+import { getAudioContext, getMasterInput } from './AudioContextProvider';
 /**
  * GranularEngine.js
  * Real-time Web Audio granular synthesis engine.
@@ -29,9 +30,9 @@ class GranularEngine {
    */
   init() {
     if (!this.audioContext) {
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      this.audioContext = getAudioContext();
       this.masterGain = this.audioContext.createGain();
-      this.masterGain.connect(this.audioContext.destination);
+      this.masterGain.connect(getMasterInput());
     }
   }
 

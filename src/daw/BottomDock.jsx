@@ -81,11 +81,16 @@ export default function BottomDock() {
 
 const styles = {
   dock: {
+    // Pins the dock to the shell's dock area. Without this it is auto-placed
+    // into the sidebar column, where the device rack's intrinsic width
+    // collapses the canvas column to nothing.
+    gridArea: 'dock',
     backgroundColor: 'var(--gm-panel, #242424)',
     borderTop: '1px solid var(--gm-border, #333)',
     display: 'flex',
     flexDirection: 'column',
     position: 'relative',
+    minWidth: 0,
     width: '100%',
     fontFamily: 'Inter, Roboto, sans-serif',
   },

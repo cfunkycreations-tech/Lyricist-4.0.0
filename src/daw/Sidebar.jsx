@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Vst3Browser from './sidebar/Vst3Browser';
 import ArtistFlowManager from './sidebar/ArtistFlowManager';
 import LexiconInspector from './sidebar/LexiconInspector';
+import StyleMatch from './sidebar/StyleMatch';
 
 /**
  * Sidebar component for Lyricist 4.2.0 Pro
@@ -11,15 +12,19 @@ export default function Sidebar() {
   const [activeTab, setActiveTab] = useState('VST3');
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const tabs = ['VST3', 'Artist Flow', 'Lexicon'];
+  const tabs = ['VST3', 'Style Match', 'Rap Styles', 'Lexicon'];
 
   return (
-    <div style={{ 
-      width: isCollapsed ? '60px' : '340px', 
-      transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
-      background: 'var(--gm-bg-base, #1c1c1e)', 
+    <div style={{
+      // Without an explicit grid-area this panel is auto-placed and the shell's
+      // named areas never apply, which lets it share a column with the dock.
+      gridArea: 'sidebar',
+      width: isCollapsed ? '60px' : '340px',
+      transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      background: 'var(--gm-bg-base, #1c1c1e)',
       borderRight: '1px solid var(--gm-border, #2d2d30)',
       height: '100%',
+      minHeight: 0,
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
@@ -85,7 +90,8 @@ export default function Sidebar() {
         display: isCollapsed ? 'none' : 'block'
       }}>
         {activeTab === 'VST3' && <Vst3Browser />}
-        {activeTab === 'Artist Flow' && <ArtistFlowManager />}
+        {activeTab === 'Style Match' && <StyleMatch />}
+        {activeTab === 'Rap Styles' && <ArtistFlowManager />}
         {activeTab === 'Lexicon' && <LexiconInspector />}
       </div>
     </div>

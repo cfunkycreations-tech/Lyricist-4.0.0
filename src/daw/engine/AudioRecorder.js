@@ -1,3 +1,4 @@
+import { getAudioContext, getMasterInput } from './AudioContextProvider';
 /**
  * @file AudioRecorder.js
  * @description Real-time Web Audio microphone recording engine for Lyricist Pro.
@@ -24,7 +25,7 @@ class AudioRecorder {
   async init() {
     try {
       this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      this.audioContext = getAudioContext();
       
       this.source = this.audioContext.createMediaStreamSource(this.mediaStream);
       this.analyser = this.audioContext.createAnalyser();

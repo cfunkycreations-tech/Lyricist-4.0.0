@@ -141,3 +141,34 @@
   font-family: 'JetBrains Mono', monospace;
   width: 100%;
 }
+
+/* A pad holding one of the user's own samples, versus a built-in sound. */
+.drum-pad { position: relative; }
+
+.pad-sample-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gm-accent-amber, #FFB020);
+  box-shadow: 0 0 6px rgba(255, 176, 32, 0.8);
+}
+
+.drum-pad.drag-over {
+  border-color: var(--gm-accent-amber, #FFB020) !important;
+  background: rgba(255, 176, 32, 0.12);
+  box-shadow: inset 0 0 18px rgba(255, 176, 32, 0.25);
+}
+
+.sampler-load-msg {
+  margin: 0 0 10px;
+  padding: 7px 11px;
+  font-family: var(--gm-font-mono, monospace);
+  font-size: 11px;
+  color: var(--gm-accent-amber, #FFB020);
+  background: rgba(255, 176, 32, 0.08);
+  border: 1px solid rgba(255, 176, 32, 0.3);
+  border-radius: 4px;
+}

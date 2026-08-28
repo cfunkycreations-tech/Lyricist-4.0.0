@@ -187,6 +187,41 @@ export default function GhostAssistant({ tab, config, getContext }) {
     abortRef.current = ac;
 
     try {
+      /**
+       * PASTED ACTIONS RUN AS WRITTEN — NO MODEL IN THE LOOP.
+       *
+       * When the message itself carries <do>{"action":...}</do> tags, those ARE
+       * the instructions. Handing them to the LLM to "decide" whether to emit
+       * them is exactly where it flakes — it answers "Ready when you are" and
+       * presses nothing. So if the input already contains action tags, parse and
+       * run them directly, in order. This is what makes a fixed macro like the
+       * Matrix walkthrough fire the same way every single time, instead of
+       * depending on the model choosing to repeat back what it was handed.
+       */
+      const pasted = [...q.matchAll(/<do>\s*(\{[\s\S]*?\})\s*<\/do>/g)]
+        .map((mm) => {
+          try {
+            const o = JSON.parse(mm[1]);
+            return o && o.action ? { name: o.action, args: o.args || {} } : null;
+          } catch { return null; }
+        })
+        .filter(Boolean);
+
+      if (pasted.length) {
+        const did = [];
+        for (const a of pasted) {
+          const r = await runGhostAction(a.name, a.args);
+          did.push({ name: a.name, ...r });
+        }
+        const anyFail = did.some((d) => !d.ok);
+        setMsgs((m) => [...m, {
+          who: anyFail ? 'error' : 'ghost',
+          text: anyFail ? 'One of the pasted actions did not run.' : 'Ran it.',
+          did,
+        }]);
+        return;   // finally{} below clears busy — do not fall through to the model
+      }
+
       const history = msgs
         .filter((m) => m.who === 'you' || m.who === 'ghost')
         .map((m) => ({ role: m.who === 'you' ? 'user' : 'assistant', content: m.text }));

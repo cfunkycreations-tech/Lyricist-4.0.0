@@ -12,40 +12,56 @@ export default function ArtistFlowManager() {
   const handleApplyFlow = (profName) => {
     // In a real app this would call setArtistFlow() on DAWContext
     setAiConfig(true); // Ensure AI is enabled
-    setToastMsg(`Applied flow: ${profName}`);
+    setToastMsg(`Now writing in ${profName}`);
     setTimeout(() => {
       setToastMsg(null);
     }, 2500);
   };
 
+  // Plain-English values only. "Vocab: Tier 2" and "Density: Low" told the
+  // person writing the song nothing about what they were choosing.
   const profiles = [
-    { name: 'Houston Slow Flow', speed: '60-80 BPM', density: 'Low', vocab: 'Tier 2', energy: 'Smooth' },
-    { name: 'Late Night Melodic', speed: '80-100 BPM', density: 'Medium', vocab: 'Tier 3', energy: 'Vibe' },
-    { name: 'Fast Rhyme Density', speed: '120-160 BPM', density: 'High', vocab: 'Tier 5', energy: 'Aggressive' },
-    { name: 'Storyteller Folk', speed: '70-90 BPM', density: 'Medium', vocab: 'Tier 4', energy: 'Narrative' },
-    { name: 'Neo-Soul Pocket', speed: '85-95 BPM', density: 'Medium', vocab: 'Tier 4', energy: 'Groove' },
+    { name: 'Houston Slow Flow', tempo: '60-80 BPM', words: 'Few, spaced out', wording: 'Everyday', mood: 'Smooth' },
+    { name: 'Late Night Melodic', tempo: '80-100 BPM', words: 'Steady', wording: 'Everyday', mood: 'Moody' },
+    { name: 'Fast Rhyme Density', tempo: '120-160 BPM', words: 'Packed tight', wording: 'Advanced', mood: 'Aggressive' },
+    { name: 'Storyteller Folk', tempo: '70-90 BPM', words: 'Steady', wording: 'Descriptive', mood: 'Narrative' },
+    { name: 'Neo-Soul Pocket', tempo: '85-95 BPM', words: 'Steady', wording: 'Descriptive', mood: 'Groovy' },
   ];
 
   return (
     <div style={{ padding: '16px', color: 'var(--gm-text)', fontFamily: 'Inter, sans-serif' }}>
-      <h3 style={{ margin: '0 0 16px', color: 'var(--gm-accent-crimson, #E63946)' }}>Artist Flow Profiles</h3>
+      <h3 className="gm-panel-title">Rap Styles</h3>
+      <p style={{ margin: '-8px 0 16px', fontSize: '11px', lineHeight: 1.5, color: 'var(--gm-text-muted)' }}>
+        Pick how you want to sound. This sets the tempo, how many words you pack
+        in, and the mood the AI writes in.
+      </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {profiles.map((prof, idx) => (
-          <div key={idx} style={{ background: 'var(--gm-bg-medium)', padding: '12px', borderRadius: '4px', borderLeft: '4px solid var(--gm-accent-crimson, #E63946)' }}>
-            <h4 style={{ margin: '0 0 10px', fontSize: '15px' }}>{prof.name}</h4>
+          <div
+            key={idx}
+            style={{
+              background: 'linear-gradient(180deg, #232329 0%, #1A1A1E 100%)',
+              padding: '14px',
+              borderRadius: '6px',
+              border: '1px solid var(--gm-border)',
+              borderLeft: '3px solid var(--gm-accent-amber)',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04)'
+            }}
+          >
+            <h4 style={{ margin: '0 0 12px', fontSize: '14px', fontWeight: 700, color: 'var(--gm-text-active)' }}>{prof.name}</h4>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '11px', fontFamily: 'JetBrains Mono, monospace' }}>
-              <div><span style={{ color: 'var(--gm-text-muted)', display: 'block', marginBottom: '2px' }}>Speed</span> {prof.speed}</div>
-              <div><span style={{ color: 'var(--gm-text-muted)', display: 'block', marginBottom: '2px' }}>Density</span> {prof.density}</div>
-              <div><span style={{ color: 'var(--gm-text-muted)', display: 'block', marginBottom: '2px' }}>Vocab</span> {prof.vocab}</div>
-              <div><span style={{ color: 'var(--gm-text-muted)', display: 'block', marginBottom: '2px' }}>Energy</span> {prof.energy}</div>
+              <div><span style={{ color: 'var(--gm-text-muted)', display: 'block', marginBottom: '2px' }}>Tempo</span> {prof.tempo}</div>
+              <div><span style={{ color: 'var(--gm-text-muted)', display: 'block', marginBottom: '2px' }}>Words</span> {prof.words}</div>
+              <div><span style={{ color: 'var(--gm-text-muted)', display: 'block', marginBottom: '2px' }}>Wording</span> {prof.wording}</div>
+              <div><span style={{ color: 'var(--gm-text-muted)', display: 'block', marginBottom: '2px' }}>Mood</span> {prof.mood}</div>
             </div>
             <button 
               onClick={() => handleApplyFlow(prof.name)}
-              style={{ width: '100%', marginTop: '16px', padding: '8px', background: 'var(--gm-bg-dark)', color: 'var(--gm-accent-ice, #F0F8FF)', border: '1px solid var(--gm-accent-crimson, #E63946)', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}
-              onMouseOver={(e) => e.target.style.boxShadow = '0 0 8px rgba(230, 57, 70, 0.4)'}
-              onMouseOut={(e) => e.target.style.boxShadow = 'none'}
+              style={{ width: '100%', marginTop: '16px', padding: '8px', background: 'var(--gm-bg-dark)', color: 'var(--gm-accent-amber)', border: '1px solid rgba(255,176,32,0.45)', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', transition: 'all 0.2s' }}
+              onMouseOver={(e) => { e.currentTarget.style.boxShadow = '0 0 10px rgba(255,176,32,0.35)'; e.currentTarget.style.borderColor = 'var(--gm-accent-amber)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255,176,32,0.45)'; }}
             >
-              Apply Flow to Lyric Forge
+              Write in this style
             </button>
           </div>
         ))}
@@ -56,11 +72,11 @@ export default function ArtistFlowManager() {
           bottom: '20px',
           left: '50%',
           transform: 'translateX(-50%)',
-          background: 'var(--gm-led-crimson)',
-          color: '#fff',
+          background: 'var(--gm-accent-amber)',
+          color: '#1A1A1A',
           padding: '8px 16px',
           borderRadius: '4px',
-          boxShadow: '0 0 12px rgba(230, 57, 70, 0.6)',
+          boxShadow: '0 0 14px rgba(255, 176, 32, 0.5)',
           fontWeight: 'bold',
           fontSize: '12px',
           zIndex: 1000

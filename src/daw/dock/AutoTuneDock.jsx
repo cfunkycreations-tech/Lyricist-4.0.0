@@ -1,61 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './AutoTuneDock.css';
 import autoTuneEngine from '../engine/AutoTuneEngine';
+import SharedRotaryKnob from '../components/RotaryKnob';
 
 /**
- * Custom Rotary Knob for Surgical Gunmetal UI
+ * The dock draws its own label and readout around each knob, so the shared
+ * control renders bare here. Everything else — wheel, drag, double-click
+ * reset, keyboard — comes from the shared implementation.
  */
-const RotaryKnob = ({ size = 48, min, max, value, onChange, format = v => v }) => {
-  const [isDragging, setIsDragging] = useState(false);
-  const startY = useRef(0);
-  const startVal = useRef(0);
-
-  const handleMouseDown = (e) => {
-    setIsDragging(true);
-    startY.current = e.clientY;
-    startVal.current = value;
-  };
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (!isDragging) return;
-      const deltaY = startY.current - e.clientY;
-      const range = max - min;
-      // 100 pixels = full range
-      let newVal = startVal.current + (deltaY / 100) * range;
-      newVal = Math.max(min, Math.min(max, newVal));
-      onChange(newVal);
-    };
-
-    const handleMouseUp = () => setIsDragging(false);
-
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, min, max, onChange]);
-
-  // Calculate rotation (-135deg to +135deg)
-  const pct = (value - min) / (max - min);
-  const rotation = -135 + pct * 270;
-
-  return (
-    <div 
-      className="rotary-knob-wrapper"
-      style={{ width: size, height: size }}
-      onMouseDown={handleMouseDown}
-    >
-      <div 
-        className="rotary-knob-indicator" 
-        style={{ transform: `rotate(${rotation}deg)` }} 
-      />
-    </div>
-  );
-};
+const RotaryKnob = (props) => (
+  <SharedRotaryKnob {...props} showValue={false} />
+);
 
 /**
  * AutoTuneDock Component

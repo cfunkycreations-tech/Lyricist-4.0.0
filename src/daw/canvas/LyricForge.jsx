@@ -1,34 +1,59 @@
 import React, { useState } from 'react';
 import './LyricForge.css';
 import { useDAW } from '../context/DAWContext';
-import funkMatrixEngine from '../engine/FunkMatrixEngine';
+import { useLyricStore } from '../../context/LyricStore';
+import { generateLineVariation, fillBlank, generateSection } from '../../services/AIService';
+import { lookup } from '../services/RhymeService';
 import rhymeAnalyzer from '../engine/RhymeAnalyzer';
 import RhymeHeatmap from './RhymeHeatmap';
 import RhymeCoachBar from '../components/RhymeCoachBar';
+import LyricMatrix from './LyricMatrix';
 
 /**
  * LyricForge Component
- * Professional two-column lyric songwriting studio connected to live DAWContext and Funk Matrix Engine.
+ * Two-column lyric studio wired to DAWContext, the real rhyme service, and
+ * AIService for generation.
  */
 export default function LyricForge() {
   const {
     lyrics,
     updateLyricLine,
     addLyricSection,
+    writeSection,
     aiConfig
   } = useDAW();
+  const store = useLyricStore();
 
   const [activeSectionId, setActiveSectionId] = useState(lyrics[1]?.id || lyrics[0]?.id || 'verse-1');
   const [activeContextMenu, setActiveContextMenu] = useState(null);
   const [loadingAction, setLoadingAction] = useState(null);
   const [activeWord, setActiveWord] = useState('');
   const [focusedLineId, setFocusedLineId] = useState(null);
+  const [rhymeChoices, setRhymeChoices] = useState(null);
+  const [actionError, setActionError] = useState('');
 
   const activeSection = lyrics.find(s => s.id === activeSectionId) || lyrics[0] || {
     id: 'sec-1', type: 'verse', energy: 6, bars: 16, lines: []
   };
 
   const { lines: analyzedLines, flowConsistency } = rhymeAnalyzer.analyzeLines(activeSection.lines || []);
+
+  // The Matrix stands in only when the song has no words at all — not merely
+  // when the selected section is blank, or clicking an empty Chorus would wipe
+  // a finished verse off the screen.
+  // A section full of blank lines is still an empty song, so test the text
+  // rather than the line count.
+  const songIsEmpty = lyrics.every(
+    sec => !(sec.lines || []).some(l => String(l.text || '').trim())
+  );
+
+  /** "Verse 1" -> "V1", "Chorus" -> "C1", so the page reads like a lyric sheet. */
+  const sectionCode = (() => {
+    const type = String(activeSection.type || '');
+    const num = (type.match(/\d+/) || [''])[0];
+    const letter = type.trim().charAt(0).toUpperCase();
+    return `${letter}${num || ''}: ${type}`;
+  })();
 
   const handleLineChange = (lineId, text) => {
     updateLyricLine(activeSection.id, lineId, text);
@@ -68,24 +93,39 @@ export default function LyricForge() {
 
     setLoadingAction(actionType);
     try {
+      // These used to call FunkMatrixEngine, whose every method returned a
+      // hardcoded string after a fake delay. They go through AIService now,
+      // which makes real model calls with the user's own key.
+      const sectionContext = (activeSection.lines || []).map(l => l.text).join('\n');
+
       if (actionType === 'suggest-rhyme') {
         const words = line.text.trim().split(/\s+/);
-        const lastWord = words[words.length - 1] || 'flow';
-        const rhymes = await funkMatrixEngine.suggestRhymes(lastWord);
-        const bestRhyme = rhymes.perfect[0] || 'glow';
-        updateLyricLine(activeSection.id, line.id, `${line.text} (rhyme: ${bestRhyme})`);
+        const lastWord = words[words.length - 1] || '';
+        if (!lastWord) return;
+        // Rhymes come from the dictionary service, not the model: it is
+        // instant, free, and better at rhyming than a chat completion.
+        const found = await lookup(lastWord, 'perfect', 10);
+        const rhymeWords = (found.length ? found : await lookup(lastWord, 'slant', 10)).map(r => r.word);
+        setRhymeChoices(rhymeWords.length ? { lineId: line.id, words: rhymeWords } : null);
+        if (!rhymeWords.length) setActionError(`No rhymes found for "${lastWord}".`);
       } else if (actionType === 'cadence') {
-        const rewritten = await funkMatrixEngine.rewriteWithCadence(line.text, { name: 'Houston Slow Flow', speed: 'mid' });
-        updateLyricLine(activeSection.id, line.id, rewritten);
+        const rewritten = await generateLineVariation(line.text, sectionContext, store);
+        if (rewritten) updateLyricLine(activeSection.id, line.id, rewritten);
       } else if (actionType === 'fill') {
-        const filled = await funkMatrixEngine.fillInBlank(line.text, '', 'smooth');
-        updateLyricLine(activeSection.id, line.id, filled);
+        const filled = await fillBlank(sectionContext, store);
+        if (filled) updateLyricLine(activeSection.id, line.id, filled.trim());
       } else if (actionType === 'bridge') {
-        const bridge = await funkMatrixEngine.generateBridge(lyrics, 'high energy');
-        addLyricSection('bridge');
+        const bridgeText = await generateSection('Bridge', store,
+          lyrics.map(s => ({ name: s.type, lines: s.lines || [] })));
+        const bridgeLines = String(bridgeText).split('\n')
+          .map(l => l.replace(/^\s*[\[(].*?[\])]\s*$/, '').trim())
+          .filter(Boolean);
+        if (bridgeLines.length) writeSection('Bridge', bridgeLines);
       }
     } catch (err) {
-      console.warn('FunkMatrix error:', err.message);
+      const msg = String(err?.message || err);
+      setActionError(/key/i.test(msg) ? 'Add your AI key in Settings first.' : msg);
+      setTimeout(() => setActionError(''), 5000);
     } finally {
       setLoadingAction(null);
       closeContextMenu();
@@ -139,8 +179,13 @@ export default function LyricForge() {
         <div className="lf-header">
           Precision Lyric Line Editor (<span style={{ textTransform: 'capitalize' }}>{activeSection.type}</span>)
         </div>
+        {/* No words anywhere yet: the Matrix takes the window instead of an
+            empty scroll area, and offers the one button that starts the song. */}
+        {songIsEmpty ? <LyricMatrix /> : (
+        <>
         <RhymeCoachBar activeWord={activeWord} onSelectRhyme={handleSelectRhyme} />
         <div className="lyric-editor">
+          <span className="lyric-section-code">{sectionCode}</span>
           {analyzedLines.map((line, idx) => (
             <div 
               key={line.id} 
@@ -197,10 +242,44 @@ export default function LyricForge() {
           ))}
           {loadingAction && (
             <div style={{ fontSize: '11px', color: 'var(--gm-led-amber, #FF9900)', marginTop: '8px', paddingLeft: '8px' }}>
-              ⚡ Funk Matrix Engine processing {loadingAction}...
+              ⚡ Working on {loadingAction}...
             </div>
           )}
+
+          {/* Rhymes for the line that was right-clicked. Clicking one swaps
+              the line's last word for it. */}
+          {rhymeChoices && (
+            <div className="lyric-rhyme-picker" onClick={(e) => e.stopPropagation()}>
+              <span className="lrp-label">Swap last word:</span>
+              {rhymeChoices.words.map(w => (
+                <button
+                  key={w}
+                  className="lrp-chip"
+                  onClick={() => {
+                    setFocusedLineId(rhymeChoices.lineId);
+                    const target = analyzedLines.find(l => l.id === rhymeChoices.lineId);
+                    if (target) {
+                      const parts = target.text.trim().split(/\s+/);
+                      parts.pop();
+                      parts.push(w);
+                      updateLyricLine(activeSection.id, rhymeChoices.lineId, parts.join(' '));
+                    }
+                    setRhymeChoices(null);
+                  }}
+                >
+                  {w}
+                </button>
+              ))}
+              <button className="lrp-close" onClick={() => setRhymeChoices(null)}>✕</button>
+            </div>
+          )}
+
+          {actionError && (
+            <div className="lyric-action-error">{actionError}</div>
+          )}
         </div>
+        </>
+        )}
       </div>
 
       <div className="lf-inspect-col" style={{ width: '300px', flexShrink: 0 }}>

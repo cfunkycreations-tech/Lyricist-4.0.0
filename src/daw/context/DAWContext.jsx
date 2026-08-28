@@ -102,6 +102,11 @@ export const DAWProvider = ({ children }) => {
 
   const [selectedTrackId, setSelectedTrackId] = useState('t1');
   const [activeDockTab, setActiveDockTab] = useState('VST3 Chains'); // 'VST3 Chains' | 'Piano Roll' | 'Looper' | 'Tape Slicer'
+  /**
+   * Plugins the user has loaded onto each track, keyed by track id.
+   * @type {[Object<string, Array<{id: string, name: string, vendor: string, path: string, type: string, bypassed: boolean}>>, Function]}
+   */
+  const [trackPlugins, setTrackPlugins] = useState({});
   const [renderQueue, setRenderQueue] = useState([]);
   const [aiConfig, setAiConfig] = useState({
     enabled: true,
@@ -205,6 +210,30 @@ export const DAWProvider = ({ children }) => {
     }]);
   }, []);
 
+  /**
+   * Replaces a whole section's lines at once. Generated verses arrive as plain
+   * text, so this is the seam between the writer and the editor.
+   * @param {string} sectionType - Matched case-insensitively; created if absent.
+   * @param {string[]} texts - One string per lyric line.
+   */
+  const writeSection = useCallback((sectionType, texts) => {
+    const lines = texts.map((text, i) => ({
+      id: `l${Date.now()}-${i}-${Math.round(performance.now() * 1000) % 100000}`,
+      text,
+      syllables: (text.match(/[aeiouy]+/gi) || []).length,
+      rhymeTag: null
+    }));
+    setLyrics(prev => {
+      const idx = prev.findIndex(s => String(s.type).toLowerCase() === String(sectionType).toLowerCase());
+      if (idx === -1) {
+        return [...prev, { id: `sec${Date.now()}-${sectionType}`, type: sectionType, energy: 5, bars: 8, lines }];
+      }
+      const next = [...prev];
+      next[idx] = { ...next[idx], lines };
+      return next;
+    });
+  }, []);
+
   const addRenderJob = useCallback((job) => {
     setRenderQueue(prev => [...prev, {
       ...job,
@@ -281,6 +310,32 @@ export const DAWProvider = ({ children }) => {
     }
   }, []);
 
+  /**
+   * Adds a scanned VST3 to a track's chain. Duplicate paths are ignored so a
+   * double click on the browser row cannot stack the same plugin twice.
+   * @param {string} trackId
+   * @param {{name: string, vendor: string, path: string, type: string}} plugin
+   */
+  const loadPluginToTrack = useCallback((trackId, plugin) => {
+    setTrackPlugins(prev => {
+      const chain = prev[trackId] || [];
+      if (chain.some(p => p.path === plugin.path)) return prev;
+      const entry = { ...plugin, id: `${trackId}:${plugin.path}`, bypassed: false };
+      return { ...prev, [trackId]: [...chain, entry] };
+    });
+  }, []);
+
+  /**
+   * @param {string} trackId
+   * @param {string} pluginId
+   */
+  const unloadPluginFromTrack = useCallback((trackId, pluginId) => {
+    setTrackPlugins(prev => ({
+      ...prev,
+      [trackId]: (prev[trackId] || []).filter(p => p.id !== pluginId)
+    }));
+  }, []);
+
   const value = {
     tracks,
     transport,
@@ -289,6 +344,9 @@ export const DAWProvider = ({ children }) => {
     activeDockTab,
     renderQueue,
     aiConfig,
+    trackPlugins,
+    loadPluginToTrack,
+    unloadPluginFromTrack,
     setSelectedTrackId,
     setActiveDockTab,
     setTransport,
@@ -302,6 +360,7 @@ export const DAWProvider = ({ children }) => {
     addClipToTrack,
     updateLyricLine,
     addLyricSection,
+    writeSection,
     addRenderJob,
     updateRenderJob,
     clearCompletedJobs,

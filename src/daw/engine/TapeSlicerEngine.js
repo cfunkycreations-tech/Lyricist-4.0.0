@@ -1,3 +1,4 @@
+import { getAudioContext, getMasterInput } from './AudioContextProvider';
 /**
  * @file TapeSlicerEngine.js
  * @description Real-time Tape DSP simulation engine for Lyricist Pro.
@@ -27,10 +28,10 @@ class TapeSlicerEngine {
     if (this.initialized) return;
     
     // If an external audio context is provided, use it, otherwise create one
-    this.audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+    this.audioContext = audioContext || getAudioContext();
     
     this.masterGain = this.audioContext.createGain();
-    this.masterGain.connect(this.audioContext.destination);
+    this.masterGain.connect(getMasterInput());
     
     this.gateNode = this.audioContext.createGain();
     this.gateNode.connect(this.masterGain);

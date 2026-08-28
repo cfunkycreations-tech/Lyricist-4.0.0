@@ -1,42 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import modulationMatrix from '../engine/ModulationMatrix';
+import SharedRotaryKnob from '../components/RotaryKnob';
 import './MacroRack.css';
 
-const RotaryKnob = ({ value, onChange, label, index }) => {
-  const rotation = -135 + (value * 270);
-  
-  const handleDrag = (e) => {
-    // simplified drag
-    const updateVal = (moveEv) => {
-      const delta = (e.clientY - moveEv.clientY) * 0.01;
-      onChange(Math.max(0, Math.min(1, value + delta)));
-    };
-    
-    const stopDrag = () => {
-      window.removeEventListener('mousemove', updateVal);
-      window.removeEventListener('mouseup', stopDrag);
-    };
-    
-    window.addEventListener('mousemove', updateVal);
-    window.addEventListener('mouseup', stopDrag);
-  };
-
-  return (
-    <div className="macro-knob-container">
-      <div 
-        className="macro-knob" 
-        onMouseDown={handleDrag}
-      >
-        <div 
-          className="knob-indicator" 
-          style={{ transform: `rotate(${rotation}deg)` }}
-        />
-      </div>
-      <div className="macro-label">{label}</div>
-      <div className="macro-value">{Math.round(value * 100)}%</div>
-    </div>
-  );
-};
+/**
+ * Macros are normalised 0..1 but read as a percentage, and default to fully
+ * down rather than centred so a double click zeroes the macro.
+ */
+const RotaryKnob = ({ value, onChange, label }) => (
+  <div className="macro-knob-container">
+    <SharedRotaryKnob
+      size={44}
+      min={0}
+      max={1}
+      step={0.01}
+      value={value}
+      onChange={onChange}
+      label={label}
+      defaultValue={0}
+      formatLabel={(v) => `${Math.round(v * 100)}%`}
+    />
+  </div>
+);
 
 export default function MacroRack() {
   const [macros, setMacros] = useState(Array(8).fill(0));

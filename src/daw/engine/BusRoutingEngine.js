@@ -1,3 +1,4 @@
+import { getAudioContext, getMasterInput } from './AudioContextProvider';
 class BusRoutingEngine {
   constructor() {
     this.audioCtx = null;
@@ -23,7 +24,7 @@ class BusRoutingEngine {
 
   init(audioContext) {
     if (this.audioCtx) return;
-    this.audioCtx = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+    this.audioCtx = audioContext || getAudioContext();
     
     // Master Bus
     this.masterBus = this.audioCtx.createGain();
@@ -37,7 +38,7 @@ class BusRoutingEngine {
     this.limiter.release.setValueAtTime(0.05, this.audioCtx.currentTime);
     
     this.masterBus.connect(this.limiter);
-    this.limiter.connect(this.audioCtx.destination);
+    this.limiter.connect(getMasterInput());
     
     // Setup Aux Busses
     this.setupAuxBusses();

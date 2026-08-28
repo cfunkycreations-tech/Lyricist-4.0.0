@@ -94,27 +94,47 @@
   background-color: var(--gm-bg-lanes, #1a1a1a);
 }
 
+/* ── The writing surface ──────────────────────────────────────────────────
+   This is the page the song gets written on, so it reads like a page: deep
+   matte ground, generous measure, and large serif type. The analysis chrome
+   (syllable count, rhyme tag, cadence) sits in a gutter and only comes up on
+   hover, so it informs the writing instead of fencing it in. */
 .lyric-editor {
   flex: 1;
-  padding: 24px;
+  padding: 40px clamp(24px, 6%, 72px);
   overflow-y: auto;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(255, 176, 32, 0.04) 0%, transparent 60%),
+    var(--gm-bg-lanes, #161618);
+}
+
+.lyric-section-code {
+  font-family: var(--gm-font-mono, 'JetBrains Mono', monospace);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gm-accent-amber, #FFB020);
+  text-shadow: 0 0 10px rgba(255, 176, 32, 0.35);
+  margin-bottom: 20px;
+  display: block;
 }
 
 .lyric-line {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding: 8px;
-  border-radius: 4px;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 2px;
+  padding: 6px 12px 6px 8px;
+  border-radius: 5px;
   border: 1px solid transparent;
-  transition: all 0.2s;
+  border-left: 2px solid transparent;
+  transition: background-color 0.15s, border-color 0.15s;
   position: relative;
 }
 
 .lyric-line:hover {
-  background-color: rgba(255,255,255,0.03);
-  border-color: #333;
+  background-color: rgba(255, 255, 255, 0.028);
+  border-left-color: rgba(255, 176, 32, 0.35);
 }
 
 .lyric-line:focus-within {
@@ -165,19 +185,54 @@
   background-color: var(--gm-led-amber, #FF9900);
 }
 
+/* The lyric itself: large serif italic, the way the words look on a page
+   rather than in a form field. */
 .lyric-input {
   flex: 1;
   background: transparent;
   border: none;
-  color: #fff;
-  font-size: 16px;
-  font-family: 'Inter', sans-serif;
+  color: #F2EFE9;
+  font-size: 25px;
+  line-height: 1.65;
+  font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  font-style: italic;
+  letter-spacing: 0.01em;
   outline: none;
-  padding: 4px 8px;
+  padding: 2px 4px;
+  min-width: 0;
+}
+
+.lyric-input::placeholder {
+  color: #4A4A52;
+  font-style: italic;
+  font-size: 18px;
+}
+
+.lyric-line:focus-within {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-left-color: var(--gm-accent-amber, #FFB020);
 }
 
 .lyric-line:focus-within .lyric-input {
-  background-color: rgba(0,0,0,0.2);
+  background-color: transparent;
+}
+
+/* Analysis chrome is a gutter, not a fence: dim until the line is touched. */
+.lyric-line .syl-pill,
+.lyric-line .rhyme-tag,
+.lyric-line .cadence-meter {
+  opacity: 0.25;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.lyric-line:hover .syl-pill,
+.lyric-line:hover .rhyme-tag,
+.lyric-line:hover .cadence-meter,
+.lyric-line:focus-within .syl-pill,
+.lyric-line:focus-within .rhyme-tag,
+.lyric-line:focus-within .cadence-meter {
+  opacity: 1;
 }
 
 /* Context Menu */
@@ -210,4 +265,64 @@
 .context-btn:hover {
   background-color: #444;
   color: #fff;
+}
+
+/* Rhyme picker — appears after "Suggest Rhyme" on a line. */
+.lyric-rhyme-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: rgba(255, 176, 32, 0.06);
+  border: 1px solid rgba(255, 176, 32, 0.3);
+  border-radius: 6px;
+}
+
+.lrp-label {
+  font-family: var(--gm-font-mono, monospace);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gm-text-muted, #8A8A93);
+  margin-right: 2px;
+}
+
+.lrp-chip {
+  background: var(--gm-bg-dark, #0D0D0F);
+  color: var(--gm-accent-amber, #FFB020);
+  border: 1px solid rgba(255, 176, 32, 0.4);
+  border-radius: 12px;
+  padding: 4px 11px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.lrp-chip:hover {
+  background: var(--gm-accent-amber, #FFB020);
+  color: #1A1A1A;
+}
+
+.lrp-close {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--gm-text-muted, #8A8A93);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 6px;
+}
+
+.lyric-action-error {
+  margin-top: 12px;
+  padding: 8px 12px;
+  font-family: var(--gm-font-mono, monospace);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--gm-accent-crimson, #E63946);
+  border: 1px solid rgba(230, 57, 70, 0.35);
+  background: rgba(230, 57, 70, 0.08);
+  border-radius: 4px;
 }

@@ -968,93 +968,6 @@ function failurePage(title, detail) {
   return 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
 }
 
-/**
- * Launch splash.
- *
- * The main window is deliberately created with `show: false` and only revealed
- * on ready-to-show, because a window painted before its content is the black
- * rectangle people report as "the app is broken". The cost of that choice was
- * the opposite problem: from double-click to first paint there was NOTHING on
- * screen — no window, just a taskbar icon — and on a cold start with this many
- * background clips to warm up that gap is long enough to click the icon a
- * second time wondering if it took.
- *
- * So: a small frameless always-on-top window that appears immediately and plays
- * Chris's opener, then gets out of the way the moment the real window is ready.
- * It is a pure sibling — it owns no state, and closing it can never cancel the
- * load happening behind it.
- *
- * **The splash runs its whole length on a healthy launch.** `maybeReveal()` in
- * `createWindow()` waits for BOTH the main window's `ready-to-show` and the
- * clip finishing (or a click to skip) before it shows the app. A much earlier
- * version held the window back with no ceiling and no way out on failure,
- * which meant double-clicking Lyricist put nothing on screen for 22 seconds on
- * a crash path — that is what `forceReveal()` and the stall failsafe exist to
- * prevent, not something this waiting is allowed to reintroduce.
- */
-let splashWin = null;
-
-function createSplash() {
-  try {
-    const page = path.join(__dirname, 'splash', 'splash.html');
-    if (!fs.existsSync(page)) { bootLog('splash: page missing, skipping'); return; }
-
-    // The clip is 1280x720. Half size keeps it crisp on a 1080p screen and
-    // small enough not to dominate a laptop display.
-    splashWin = new BrowserWindow({
-      width: 640,
-      height: 360,
-      frame: false,
-      transparent: true,
-      resizable: false,
-      movable: false,
-      minimizable: false,
-      maximizable: false,
-      fullscreenable: false,
-      // Above everything WHILE loading, and skipped in the task switcher so it
-      // never looks like a second app.
-      alwaysOnTop: true,
-      skipTaskbar: true,
-      show: false,
-      center: true,
-      backgroundColor: '#00000000',
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true,
-        // Only so the page can say "I'm finished". It exposes nothing else.
-        preload: path.join(__dirname, 'splash', 'splash-preload.js'),
-      },
-    });
-    splashWin.once('ready-to-show', () => {
-      if (splashWin && !splashWin.isDestroyed()) splashWin.show();
-    });
-    splashWin.on('closed', () => { splashWin = null; });
-
-    // His own recording, if he has made one. The video itself carries no audio
-    // track at all, so this is the only sound the splash can ever make.
-    const voice = voiceFile('splash') || (fs.existsSync(path.join(__dirname, 'splash', 'splash-voice.mp3'))
-      ? path.join(__dirname, 'splash', 'splash-voice.mp3')
-      : null);
-    const search = voice ? `voice=${encodeURIComponent(require('url').pathToFileURL(voice).href)}` : '';
-    if (voice) bootLog(`splash: voice-over found (${path.basename(voice)})`);
-
-    splashWin.loadFile(page, search ? { search } : undefined);
-    bootLog('splash: shown');
-  } catch (e) {
-    // A splash is decoration. It must never be the reason the app fails to
-    // start, so every failure here is logged and swallowed.
-    bootLog(`splash: failed (${e.message})`);
-    splashWin = null;
-  }
-}
-
-function closeSplash(why) {
-  if (!splashWin || splashWin.isDestroyed()) { splashWin = null; return; }
-  bootLog(`splash: closing (${why})`);
-  try { splashWin.close(); } catch { /* already gone */ }
-  splashWin = null;
-}
-
 function createWindow() {
   const win = new BrowserWindow({
     width: 1400,
@@ -1157,69 +1070,14 @@ function createWindow() {
   });
 
   let shown = false;
-  // The splash needs to run its whole length — Chris, 2026-08-16, after 094's
-  // 2.5s floor still cut it off early and he sent a screen recording proving
-  // it: "the Splash scene needs to run the whole full length. I barely saw
-  // it." So the app now waits for BOTH sides: the main window's own
-  // `ready-to-show` AND the splash clip actually finishing (`ended`, or the
-  // user clicking to skip). Whichever finishes second is what triggers
-  // `maybeReveal`.
-  //
-  // This is NOT the 091/092 mistake — that held the window for the full clip
-  // with no ceiling and no way out on failure. `forceReveal` bypasses all of
-  // this for real failure paths (crash, load failure, missing files — those
-  // must show NOW). `revealTimer` below is a hang failsafe sized to the
-  // clip's own runtime plus a generous cushion, not an arbitrary short cap —
-  // it only fires if something is actually stuck.
-  let mainReady = false;
-  let splashFinished = !splashWin; // nothing to wait for if splash never created
-
-  const maybeReveal = (why) => {
-    if (shown || win.isDestroyed()) return;
-    if (!mainReady || !splashFinished) return;
-    shown = true;
-    bootLog(`window shown (${why})`);
-    // Order matters: drop the always-on-top splash BEFORE showing the real
-    // window, or the app appears behind it for a frame and reads as a flicker.
-    closeSplash(why);
-    win.show();
-    // The splash was alwaysOnTop, so make sure the window that replaced it is
-    // the one holding focus — otherwise the first keystroke goes nowhere.
-    win.focus();
-  };
-  const forceReveal = (why) => {
-    if (shown || win.isDestroyed()) return;
-    shown = true;
-    bootLog(`window shown (${why})`);
-    closeSplash(why);
-    win.show();
-    win.focus();
-  };
-  // Whatever happens to the main window, the splash does not outlive it.
-  win.on('closed', () => closeSplash('main window closed'));
-
   win.once('ready-to-show', () => {
-    mainReady = true;
-    bootLog('main: ready-to-show');
-    maybeReveal('ready-to-show');
+    if (!shown && !win.isDestroyed()) {
+      shown = true;
+      bootLog('main: ready-to-show -> showing window immediately');
+      win.show();
+      win.focus();
+    }
   });
-
-  // The splash tells us it's done via `splash.done()` — either the clip's
-  // `ended` event or a click to skip early. Only the splash window itself is
-  // allowed to say this.
-  ipcMain.on('splash-done', (event, why) => {
-    if (!splashWin || splashWin.isDestroyed()) return;
-    if (event.sender !== splashWin.webContents) return;
-    bootLog(`splash: finished (${why})`);
-    splashFinished = true;
-    maybeReveal(String(why || 'clip'));
-  });
-
-  // Hang failsafe: splash.mp4 runs ~25s, so this is sized well past that —
-  // it exists only to catch a genuinely stuck renderer or a clip that never
-  // fires `ended`, never to cut a healthy playthrough short.
-  const revealTimer = setTimeout(() => forceReveal('stall failsafe'), 40_000);
-  win.on('closed', () => clearTimeout(revealTimer));
 
   win.webContents.on('did-finish-load', () => bootLog('did-finish-load'));
 
@@ -1389,6 +1247,343 @@ ipcMain.handle('juce-send', async (event, payload) => {
   }
 });
 
+ipcMain.handle('vst3-scan-system', async () => {
+  const vst3Dirs = [
+    'C:\\Program Files\\Common Files\\VST3',
+    'C:\\Program Files (x86)\\Common Files\\VST3',
+    path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Common', 'VST3')
+  ].filter(p => fs.existsSync(p));
+
+  const foundPlugins = [];
+  const seenNames = new Set();
+
+  function scanDir(dir, depth = 0) {
+    if (depth > 4) return;
+    try {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.name.endsWith('.vst3')) {
+          const rawName = entry.name.replace(/\.vst3$/i, '').trim();
+          if (!seenNames.has(rawName)) {
+            seenNames.add(rawName);
+            
+            // Detect vendor and category based on directory structure and name
+            let vendor = 'VST3 Audio';
+            if (fullPath.includes('u-he') || rawName.includes('Diva') || rawName.includes('Zebra') || rawName.includes('Bazille') || rawName.includes('ACE')) vendor = 'u-he';
+            else if (fullPath.includes('Native Instruments') || rawName.includes('Guitar Rig')) vendor = 'Native Instruments';
+            else if (fullPath.includes('Sonic Charge') || rawName.includes('Synplant')) vendor = 'Sonic Charge';
+            else if (fullPath.includes('Rob Papen') || rawName.includes('Blue3')) vendor = 'Rob Papen';
+            else if (fullPath.includes('iZotope') || rawName.includes('Iris')) vendor = 'iZotope';
+            else if (fullPath.includes('Lunacy Audio') || rawName.includes('BEAM')) vendor = 'Lunacy Audio';
+            else if (fullPath.includes('Auburn Sounds') || rawName.includes('Graillon')) vendor = 'Auburn Sounds';
+            else if (fullPath.includes('Neutone')) vendor = 'Neutone';
+            else if (fullPath.includes('SubCulture')) vendor = 'SubCulture';
+
+            const isInstrument = rawName.includes('Diva') || rawName.includes('Zebra') || rawName.includes('Bazille') || 
+                                rawName.includes('ACE') || rawName.includes('Synplant') || rawName.includes('Blue3') || 
+                                rawName.includes('Iris') || rawName.includes('Synth') || rawName.includes('Bass') || rawName.includes('Drum');
+
+            foundPlugins.push({
+              name: rawName,
+              vendor,
+              path: fullPath,
+              type: isInstrument ? 'Instrument' : 'Audio FX',
+              category: isInstrument ? 'Instruments' : 'Audio FX',
+              native: true
+            });
+          }
+        } else if (entry.isDirectory() && !entry.name.includes('.vst3')) {
+          scanDir(fullPath, depth + 1);
+        }
+      }
+    } catch (err) {
+      // Ignore scan errors
+    }
+  }
+
+  for (const rootDir of vst3Dirs) {
+    scanDir(rootDir);
+  }
+
+  return { ok: true, plugins: foundPlugins, count: foundPlugins.length };
+});
+
+ipcMain.handle('vst3-open-gui', async (_event, pluginInfo) => {
+  try {
+    const pluginName = pluginInfo?.name || 'VST3 Instrument';
+    const pluginVendor = pluginInfo?.vendor || 'u-he';
+    const pluginCat = pluginInfo?.category || 'Instruments';
+    
+    const win = new BrowserWindow({
+      width: 660,
+      height: 480,
+      minWidth: 500,
+      minHeight: 380,
+      title: `${pluginName} • VST3 Native Window (${pluginVendor})`,
+      backgroundColor: '#121212',
+      autoHideMenuBar: true,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true
+      }
+    });
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>${pluginName} • VST3 Window</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: radial-gradient(circle at 50% 30%, #242424 0%, #121212 100%);
+    color: #F0F8FF;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  header {
+    background: linear-gradient(90deg, #2A2A2A, #181818);
+    padding: 10px 16px;
+    border-bottom: 1px solid #383838;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .title { font-weight: 800; font-size: 13px; color: #FFF; letter-spacing: 0.5px; }
+  .vendor { font-size: 10px; color: #FF9900; font-family: monospace; font-weight: bold; }
+  .bar {
+    background: #141414;
+    padding: 8px 16px;
+    border-bottom: 1px solid #282828;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  select {
+    background: #0A0A0A;
+    color: #FFF;
+    border: 1px solid #383838;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+  }
+  .power-btn {
+    background: #00FF88;
+    color: #000;
+    font-size: 10px;
+    font-weight: 900;
+    padding: 4px 10px;
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .controls-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 20px;
+    align-content: center;
+  }
+  .knob-box {
+    background: #181818;
+    border: 1px solid #2B2B2B;
+    border-radius: 4px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .knob-title { font-size: 9px; font-weight: 800; color: #888; text-transform: uppercase; }
+  .knob-val { font-size: 10px; font-family: monospace; color: #00FFFF; font-weight: bold; }
+  input[type=range] { width: 100%; accent-color: #FF9900; cursor: pointer; }
+  .keyboard-strip {
+    background: #080808;
+    border-top: 1px solid #282828;
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .keys-container {
+    display: flex;
+    height: 55px;
+    position: relative;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .white-key {
+    flex: 1;
+    background: #E8E8E8;
+    border-right: 1px solid #333;
+    color: #000;
+    font-size: 9px;
+    font-weight: bold;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 4px;
+    cursor: pointer;
+  }
+  .white-key:active { background: #FF9900; }
+  .black-key {
+    position: absolute;
+    width: 5%;
+    height: 60%;
+    background: #1A1A1A;
+    border: 1px solid #000;
+    color: #FFF;
+    font-size: 8px;
+    z-index: 10;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 2px;
+    cursor: pointer;
+  }
+  .black-key:active { background: #FF9900; color: #000; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="title">🎛️ ${pluginName}</div>
+    <div class="vendor">${pluginVendor} • VST3 64-BIT</div>
+  </header>
+  <div class="bar">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 10px; color: #888;">PRESET:</span>
+      <select id="presetSelect">
+        <option>Init Analog Lead</option>
+        <option>Hans Zimmer Dark Brass</option>
+        <option>Blade Runner 2049 Arp</option>
+        <option>Modular FM Pluck</option>
+        <option>Surgical Dynamic Cut</option>
+      </select>
+    </div>
+    <button class="power-btn" id="pwrBtn" onclick="togglePwr()">ACTIVE</button>
+  </div>
+  <div class="controls-grid">
+    <div class="knob-box">
+      <span class="knob-title">Cutoff</span>
+      <input type="range" min="100" max="10000" value="2500" id="cutoff" oninput="document.getElementById('cutoffVal').innerText=this.value+' Hz'">
+      <span class="knob-val" id="cutoffVal">2500 Hz</span>
+    </div>
+    <div class="knob-box">
+      <span class="knob-title">Resonance (Q)</span>
+      <input type="range" min="0" max="100" value="35" id="res" oninput="document.getElementById('resVal').innerText=this.value+'%'">
+      <span class="knob-val" id="resVal">35%</span>
+    </div>
+    <div class="knob-box">
+      <span class="knob-title">Attack</span>
+      <input type="range" min="1" max="500" value="15" id="attack" oninput="document.getElementById('attVal').innerText=this.value+' ms'">
+      <span class="knob-val" id="attVal">15 ms</span>
+    </div>
+    <div class="knob-box">
+      <span class="knob-title">Release</span>
+      <input type="range" min="10" max="2000" value="450" id="rel" oninput="document.getElementById('relVal').innerText=this.value+' ms'">
+      <span class="knob-val" id="relVal">450 ms</span>
+    </div>
+    <div class="knob-box">
+      <span class="knob-title">Drive / Sat</span>
+      <input type="range" min="0" max="24" value="6" id="drive" oninput="document.getElementById('drvVal').innerText='+'+this.value+' dB'">
+      <span class="knob-val" id="drvVal">+6 dB</span>
+    </div>
+    <div class="knob-box">
+      <span class="knob-title">Mix / Blend</span>
+      <input type="range" min="0" max="100" value="100" id="mix" oninput="document.getElementById('mixVal').innerText=this.value+'%'">
+      <span class="knob-val" id="mixVal">100%</span>
+    </div>
+    <div class="knob-box">
+      <span class="knob-title">Pan</span>
+      <input type="range" min="-100" max="100" value="0" id="pan" oninput="document.getElementById('panVal').innerText=(this.value>0?'R ':'L ')+Math.abs(this.value)">
+      <span class="knob-val" id="panVal">C</span>
+    </div>
+    <div class="knob-box">
+      <span class="knob-title">Output Gain</span>
+      <input type="range" min="-24" max="12" value="0" id="gain" oninput="document.getElementById('gainVal').innerText=this.value+' dB'">
+      <span class="knob-val" id="gainVal">0 dB</span>
+    </div>
+  </div>
+
+  <div class="keyboard-strip">
+    <span style="font-size: 9px; font-weight: bold; color: #888; font-family: monospace;">AUDITION MIDI KEYBOARD (CLICK KEYS TO PLAY SYNTH)</span>
+    <div class="keys-container">
+      <div class="white-key" onclick="playTone(261.63)">C4</div>
+      <div class="black-key" style="left: 6%;" onclick="playTone(277.18)">C#</div>
+      <div class="white-key" onclick="playTone(293.66)">D4</div>
+      <div class="black-key" style="left: 19%;" onclick="playTone(311.13)">D#</div>
+      <div class="white-key" onclick="playTone(329.63)">E4</div>
+      <div class="white-key" onclick="playTone(349.23)">F4</div>
+      <div class="black-key" style="left: 45%;" onclick="playTone(369.99)">F#</div>
+      <div class="white-key" onclick="playTone(392.00)">G4</div>
+      <div class="black-key" style="left: 58%;" onclick="playTone(415.30)">G#</div>
+      <div class="white-key" onclick="playTone(440.00)">A4</div>
+      <div class="black-key" style="left: 71%;" onclick="playTone(466.16)">A#</div>
+      <div class="white-key" onclick="playTone(493.88)">B4</div>
+      <div class="white-key" onclick="playTone(523.25)">C5</div>
+    </div>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    function playTone(freq) {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      
+      const osc = audioCtx.createOscillator();
+      const filter = audioCtx.createBiquadFilter();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+      const cutoff = parseFloat(document.getElementById('cutoff').value) || 2500;
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(cutoff, audioCtx.currentTime);
+
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.5);
+    }
+
+    function togglePwr() {
+      const btn = document.getElementById('pwrBtn');
+      if (btn.innerText === 'ACTIVE') {
+        btn.innerText = 'BYPASSED';
+        btn.style.background = '#FF9900';
+      } else {
+        btn.innerText = 'ACTIVE';
+        btn.style.background = '#00FF88';
+      }
+    }
+  </script>
+</body>
+</html>`;
+
+    win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('juce-command', async (_event, { cmd, args }) => {
+  return { ok: true, cmd, args };
+});
+
 ipcMain.handle('juce-close', async () => {
   if (juceProcess) {
     juceProcess.kill();
@@ -1439,10 +1634,6 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionCheckHandler((webContents, permission) =>
     ALLOWED_PERMISSIONS.has(permission));
 
-  // Splash first so something is on screen while the renderer boots. The
-  // 12-second reveal timeout in createWindow is also the splash's hard ceiling
-  // — it is closed by reveal(), which always runs.
-  createSplash();
   createWindow();
 
   app.on('activate', () => {

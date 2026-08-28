@@ -1,4 +1,5 @@
 import truePeakLimiter from './TruePeakLimiter';
+import { getAudioContext, getMasterInput, attachMasterChain, resumeAudio } from './AudioContextProvider';
 
 /**
  * @file AudioGraph.js
@@ -39,13 +40,9 @@ class AudioGraph {
    * @returns {Promise<void>}
    */
   async init() {
-    if (!this.context) {
-      this.context = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    
-    if (this.context.state === 'suspended') {
-      await this.context.resume();
-    }
+    // One shared context for the whole DAW — see AudioContextProvider.
+    this.context = getAudioContext();
+    await resumeAudio();
 
     if (!this.masterGain) {
       // Master Gain
@@ -73,6 +70,11 @@ class AudioGraph {
       this.masterSplitter.connect(this.masterAnalyserLeft, 0);
       this.masterSplitter.connect(this.masterAnalyserRight, 1);
       this.masterLimiter.connect(this.context.destination);
+
+      // Every other engine feeds the shared master input. Routing it into the
+      // master gain here is what puts the synth, sampler, looper and metronome
+      // under the master fader, the meters and the export.
+      attachMasterChain(this.masterGain);
     }
   }
 

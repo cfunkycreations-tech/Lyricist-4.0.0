@@ -181,23 +181,43 @@
   border-radius: 1px;
 }
 
-/* Brushed Nickel Slider Cap */
+/* Authentic Brushed Nickel Slider Cap */
 .hw-fader__cap {
   position: absolute;
   left: 50%;
   transform: translate(-50%, 50%);
-  width: 32px;
-  height: 20px;
-  background: var(--gm-fader-cap, linear-gradient(180deg, #E5E5E5 0%, #A0A0A0 50%, #6E6E6E 100%));
-  border: 1px solid #282828;
+  width: 34px;
+  height: 22px;
+  background: 
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(0, 0, 0, 0.03) 1px,
+      rgba(255, 255, 255, 0.03) 2px
+    ),
+    linear-gradient(
+      180deg, 
+      #F5F3EF 0%, 
+      #DDD8D0 8%, 
+      #C6BFB5 22%, 
+      #EEEBE6 42%, 
+      #A8A095 50%, 
+      #8C8479 55%, 
+      #D5CFC6 75%, 
+      #9E968B 92%, 
+      #766E64 100%
+    );
+  border: 1px solid #4A443C;
   border-radius: 2px;
   box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.8),
-    0 2px 5px rgba(0, 0, 0, 0.75),
-    0 4px 8px rgba(0, 0, 0, 0.4);
+    inset 1px 1px 1px rgba(255, 255, 255, 0.9),
+    inset -1px -1px 1px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 1px rgba(180, 172, 162, 0.6),
+    0 2px 4px rgba(0, 0, 0, 0.8),
+    0 6px 12px rgba(0, 0, 0, 0.5);
   cursor: grab;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   z-index: 2;
@@ -206,38 +226,39 @@
 }
 
 .hw-fader__cap:hover {
-  filter: brightness(1.06);
+  filter: brightness(1.08);
   box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.85),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.8),
-    0 3px 6px rgba(0, 0, 0, 0.85),
-    0 0 4px rgba(255, 255, 255, 0.2);
+    inset 1px 1px 1px rgba(255, 255, 255, 1.0),
+    inset -1px -1px 1px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 1px rgba(210, 202, 192, 0.8),
+    0 3px 8px rgba(0, 0, 0, 0.9),
+    0 0 6px rgba(240, 248, 255, 0.3);
 }
 
 .hw-fader__cap:active,
 .hw-fader__cap--dragging {
   cursor: grabbing;
-  filter: brightness(1.12);
+  filter: brightness(1.15);
   box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.9),
-    0 2px 4px rgba(0, 0, 0, 0.9),
-    0 0 6px var(--gm-led-ice, #F0F8FF);
+    inset 1px 1px 1px rgba(255, 255, 255, 1.0),
+    inset -1px -1px 1px rgba(0, 0, 0, 0.8),
+    0 2px 5px rgba(0, 0, 0, 0.95),
+    0 0 8px var(--gm-led-ice, #F0F8FF);
 }
 
 .hw-fader__cap:focus-visible {
   box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.9),
+    inset 1px 1px 1px rgba(255, 255, 255, 1.0),
+    inset -1px -1px 1px rgba(0, 0, 0, 0.8),
     0 0 0 2px var(--gm-led-amber, #FF9900);
 }
 
-/* Horizontal Grip Ridge on Slider Cap */
+/* Precision Center Marker on Brushed Nickel Cap */
 .hw-fader__cap-ridge {
   width: 100%;
   height: 3px;
-  background: #151515;
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 255, 255, 0.35);
+  background: #111111;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.9), 0 1px 0 rgba(255, 255, 255, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -246,8 +267,9 @@
 
 .hw-fader__cap-line {
   width: 100%;
-  height: 1px;
+  height: 1.5px;
   background: #FFFFFF;
+  box-shadow: 0 0 3px #FFFFFF, 0 0 1px #000;
   opacity: 0.9;
 }
 

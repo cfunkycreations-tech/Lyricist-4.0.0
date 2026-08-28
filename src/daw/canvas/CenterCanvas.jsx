@@ -9,7 +9,10 @@ import './CenterCanvas.css';
  * Host container with view mode switcher: Timeline Arranger, Lyric Forge, Mixer Console, or Split View.
  */
 const CenterCanvas = ({ onEditClip }) => {
-  const [viewMode, setViewMode] = useState('split'); // 'timeline', 'lyric', 'mixer', 'split'
+  // The lyric page is the reason the app exists, so it owns the canvas by
+  // default. Split view squeezed it next to the arranger and left the writing
+  // surface too narrow to actually write in.
+  const [viewMode, setViewMode] = useState('lyric'); // 'timeline', 'lyric', 'mixer', 'split'
 
   useEffect(() => {
     const handleCycle = () => {
