@@ -10,6 +10,8 @@ import { DAWProvider, useDAW } from './context/DAWContext';
 import DAWContextMenu from './components/DAWContextMenu';
 import keyCommandService from './services/KeyCommandService';
 import WaveformEditorModal from './components/WaveformEditorModal';
+import webMidiService from './services/WebMidiService';
+import GhostPilotHUD from './components/GhostPilotHUD';
 
 function DAWLayoutContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -19,6 +21,8 @@ function DAWLayoutContent() {
   const { togglePlay, toggleRecord, setPlayhead } = useDAW();
 
   useEffect(() => {
+    webMidiService.init();
+
     keyCommandService.init({
       'Space': () => togglePlay(),
       'r': () => toggleRecord(),
@@ -54,6 +58,7 @@ function DAWLayoutContent() {
         />
       )}
       <DAWContextMenu />
+      <GhostPilotHUD />
     </div>
   );
 }

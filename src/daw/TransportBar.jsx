@@ -1,9 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import MasterVUMeter from './components/MasterVUMeter';
 import { useDAW } from './context/DAWContext';
 import audioGraph from './engine/AudioGraph';
 import RenderQueueTray from './components/RenderQueueTray';
 import projectSessionService from './services/ProjectSessionService';
+import webMidiService from './services/WebMidiService';
 
 /**
  * TransportBar component for daw-shell top grid area.
@@ -14,10 +15,21 @@ export default function TransportBar({ onOpenSettings, onOpenExport }) {
   const { transport, togglePlay, stop, toggleRecord, setTransport, renderQueue, tracks, lyrics, loadProject } = useDAW();
   const [asioConnected] = useState(true);
   const [showQueue, setShowQueue] = useState(false);
+  const [midiActivity, setMidiActivity] = useState(false);
   const fileInputRef = useRef(null);
 
   const activeJobs = renderQueue ? renderQueue.filter(j => j.status === 'active') : [];
   const completedJobs = renderQueue ? renderQueue.filter(j => j.status === 'completed') : [];
+
+  useEffect(() => {
+    const onMidiActivity = () => {
+      setMidiActivity(true);
+      if (window.midiActivityTimeout) clearTimeout(window.midiActivityTimeout);
+      window.midiActivityTimeout = setTimeout(() => setMidiActivity(false), 150);
+    };
+    webMidiService.addEventListener(onMidiActivity);
+    return () => webMidiService.removeEventListener(onMidiActivity);
+  }, []);
 
   const handlePlayClick = () => {
     audioGraph.init();
@@ -213,6 +225,29 @@ export default function TransportBar({ onOpenSettings, onOpenExport }) {
         <button className="btn-hardware" title="Export Audio" onClick={onOpenExport}>
           ⚡ Export
         </button>
+
+        {/* Ghost Copilot Button */}
+        <button 
+          className="btn-hardware" 
+          title="Ghost Copilot"
+          style={{ color: 'var(--gm-amber, #FF9900)' }}
+        >
+          🤖 Ghost
+        </button>
+
+        {/* MIDI Activity LED */}
+        <div 
+          style={{
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            backgroundColor: midiActivity ? 'var(--gm-cyan, #00FFFF)' : '#111',
+            boxShadow: midiActivity ? '0 0 8px var(--gm-cyan, #00FFFF)' : 'inset 0 2px 4px rgba(0,0,0,0.5)',
+            border: '1px solid #333',
+            transition: 'background-color 0.1s, box-shadow 0.1s'
+          }}
+          title="MIDI Activity"
+        />
 
         {/* Settings Button */}
         <button className="btn-hardware" title="Funk Matrix & Settings" onClick={onOpenSettings}>

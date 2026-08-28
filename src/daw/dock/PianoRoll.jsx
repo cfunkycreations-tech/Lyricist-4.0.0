@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import midiSynth from '../engine/MidiSynth';
+import midiGrooveEngine from '../engine/MidiGrooveEngine';
 
 /**
  * PianoRoll Component - Interactive MIDI editor
@@ -7,6 +8,16 @@ import midiSynth from '../engine/MidiSynth';
 export default function PianoRoll() {
   const [activeTool, setActiveTool] = useState('Select');
   const [quantize, setQuantize] = useState('1/16');
+  const [arpPattern, setArpPattern] = useState('Off');
+  const [swing, setSwing] = useState(50);
+
+  const handleHumanize = () => {
+    // In a real app, we'd pass the actual selected notes here.
+    // For now we just call the engine as an example.
+    const mockNotes = []; 
+    const humanized = midiGrooveEngine.humanize(mockNotes, 5, 10);
+    console.log('Humanized notes:', humanized);
+  };
 
   // Generate piano keys
   const keys = Array.from({ length: 88 }).map((_, i) => {
@@ -60,12 +71,21 @@ export default function PianoRoll() {
           </select>
           <span style={styles.label}>Cutoff:</span>
           <input type="range" min="100" max="5000" defaultValue="1000" style={styles.slider} onChange={e => midiSynth.setPreset({ cutoff: Number(e.target.value) })} />
-          <span style={styles.label}>Res:</span>
-          <input type="range" min="0" max="20" step="0.1" defaultValue="1" style={styles.slider} onChange={e => midiSynth.setPreset({ resonance: Number(e.target.value) })} />
-          <span style={styles.label}>Atk:</span>
-          <input type="range" min="0" max="2" step="0.01" defaultValue="0.05" style={styles.slider} onChange={e => midiSynth.setPreset({ attack: Number(e.target.value) })} />
-          <span style={styles.label}>Rel:</span>
-          <input type="range" min="0" max="5" step="0.1" defaultValue="0.5" style={styles.slider} onChange={e => midiSynth.setPreset({ release: Number(e.target.value) })} />
+        </div>
+        <div style={{ ...styles.toolGroup, marginLeft: 'auto', borderLeft: '1px solid #444', paddingLeft: '16px' }}>
+          <span style={{...styles.label, color: 'var(--gm-amber, #FF9900)'}}>Groove & Arp:</span>
+          <select style={styles.select} value={arpPattern} onChange={e => setArpPattern(e.target.value)}>
+            <option value="Off">Arp: Off</option>
+            <option value="Up">Up</option>
+            <option value="Down">Down</option>
+            <option value="Up/Down">Up/Down</option>
+            <option value="Random">Random</option>
+          </select>
+          <span style={styles.label}>Swing %:</span>
+          <input type="range" min="50" max="75" value={swing} style={styles.slider} onChange={e => setSwing(Number(e.target.value))} title={`${swing}%`} />
+          <button style={{...styles.toolBtn, backgroundColor: '#222', color: 'var(--gm-ice-white, #F0F8FF)'}} onClick={handleHumanize}>
+            ⚡ Humanize
+          </button>
         </div>
       </div>
 

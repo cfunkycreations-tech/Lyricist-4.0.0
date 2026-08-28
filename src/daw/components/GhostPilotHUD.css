@@ -1,0 +1,206 @@
+.ghost-pilot-hud {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  font-family: 'Inter', 'Roboto', sans-serif;
+  color: var(--gm-text-primary, #e0e0e0);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.ghost-pilot-pill {
+  background: var(--gm-bg-surface, #1a1a1a);
+  border: 1px solid var(--gm-border, #333);
+  border-radius: 24px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  user-select: none;
+}
+
+.ghost-pilot-pill:hover {
+  background: var(--gm-bg-hover, #222);
+}
+
+.led-ring {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+  transition: color 0.3s ease;
+}
+
+.led-idle { color: var(--gm-led-white, #F0F8FF); }
+.led-processing { color: var(--gm-led-amber, #FF9900); }
+.led-error { color: var(--gm-led-red, #E63946); }
+
+.pill-text {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.ghost-pilot-console {
+  background: var(--gm-bg-surface, #1a1a1a);
+  border: 1px solid var(--gm-border, #333);
+  border-radius: 8px;
+  width: 380px;
+  max-height: 500px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.console-header {
+  padding: 12px 16px;
+  background: var(--gm-bg-header, #242424);
+  border-bottom: 1px solid var(--gm-border, #333);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.console-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--gm-text-secondary, #999);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: var(--gm-text-primary, #e0e0e0);
+}
+
+.console-body {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 200px;
+  background: var(--gm-bg-main, #121212);
+}
+
+.chat-card {
+  background: var(--gm-bg-card, #2a2a2a);
+  border: 1px solid var(--gm-border, #333);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.chat-card.user {
+  align-self: flex-end;
+  background: var(--gm-bg-user-msg, #303030);
+  border-color: var(--gm-border-highlight, #444);
+}
+
+.chat-card.system {
+  align-self: flex-start;
+  border-left: 3px solid var(--gm-led-white, #F0F8FF);
+}
+
+.chat-card.system.success {
+  border-left-color: var(--gm-led-white, #F0F8FF);
+}
+
+.chat-card.system.error {
+  border-left-color: var(--gm-led-red, #E63946);
+}
+
+.chat-timestamp {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--gm-text-muted, #666);
+  margin-top: 4px;
+  text-align: right;
+}
+
+.quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--gm-bg-surface, #1a1a1a);
+  border-top: 1px solid var(--gm-border, #333);
+}
+
+.chip {
+  background: var(--gm-bg-button, #242424);
+  border: 1px solid var(--gm-border, #333);
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--gm-text-secondary, #999);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.chip:hover {
+  background: var(--gm-bg-button-hover, #333);
+  color: var(--gm-text-primary, #e0e0e0);
+  border-color: var(--gm-border-highlight, #555);
+}
+
+.console-footer {
+  padding: 12px 16px;
+  background: var(--gm-bg-surface, #1a1a1a);
+  border-top: 1px solid var(--gm-border, #333);
+  display: flex;
+  gap: 8px;
+}
+
+.command-input {
+  flex: 1;
+  background: var(--gm-bg-input, #0a0a0a);
+  border: 1px solid var(--gm-border, #333);
+  border-radius: 4px;
+  padding: 8px 12px;
+  color: var(--gm-text-primary, #e0e0e0);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+}
+
+.command-input:focus {
+  outline: none;
+  border-color: var(--gm-led-white, #F0F8FF);
+}
+
+.submit-btn {
+  background: var(--gm-bg-button, #242424);
+  border: 1px solid var(--gm-border, #333);
+  border-radius: 4px;
+  padding: 0 16px;
+  color: var(--gm-text-primary, #e0e0e0);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: var(--gm-bg-button-hover, #333);
+  border-color: var(--gm-led-white, #F0F8FF);
+}
+
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
