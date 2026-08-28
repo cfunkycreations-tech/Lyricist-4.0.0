@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TimelineArranger from './TimelineArranger';
 import LyricForge from './LyricForge';
 import './CenterCanvas.css';
@@ -9,6 +9,18 @@ import './CenterCanvas.css';
  */
 const CenterCanvas = () => {
   const [viewMode, setViewMode] = useState('split'); // 'timeline', 'lyric', 'split'
+
+  useEffect(() => {
+    const handleCycle = () => {
+      setViewMode(prev => {
+        if (prev === 'timeline') return 'lyric';
+        if (prev === 'lyric') return 'split';
+        return 'timeline';
+      });
+    };
+    window.addEventListener('cycleViewMode', handleCycle);
+    return () => window.removeEventListener('cycleViewMode', handleCycle);
+  }, []);
 
   return (
     <div className="center-canvas-container">

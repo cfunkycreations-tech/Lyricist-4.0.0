@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import midiSynth from '../engine/MidiSynth';
 
 /**
  * PianoRoll Component - Interactive MIDI editor
@@ -49,6 +50,23 @@ export default function PianoRoll() {
             </button>
           ))}
         </div>
+        <div style={styles.toolGroup}>
+          <span style={styles.label}>Waveform:</span>
+          <select style={styles.select} onChange={e => midiSynth.setPreset({ waveform: e.target.value })}>
+            <option value="sawtooth">Saw</option>
+            <option value="square">Square</option>
+            <option value="triangle">Triangle</option>
+            <option value="sine">Sine</option>
+          </select>
+          <span style={styles.label}>Cutoff:</span>
+          <input type="range" min="100" max="5000" defaultValue="1000" style={styles.slider} onChange={e => midiSynth.setPreset({ cutoff: Number(e.target.value) })} />
+          <span style={styles.label}>Res:</span>
+          <input type="range" min="0" max="20" step="0.1" defaultValue="1" style={styles.slider} onChange={e => midiSynth.setPreset({ resonance: Number(e.target.value) })} />
+          <span style={styles.label}>Atk:</span>
+          <input type="range" min="0" max="2" step="0.01" defaultValue="0.05" style={styles.slider} onChange={e => midiSynth.setPreset({ attack: Number(e.target.value) })} />
+          <span style={styles.label}>Rel:</span>
+          <input type="range" min="0" max="5" step="0.1" defaultValue="0.5" style={styles.slider} onChange={e => midiSynth.setPreset({ release: Number(e.target.value) })} />
+        </div>
       </div>
 
       <div style={styles.editorArea}>
@@ -56,6 +74,9 @@ export default function PianoRoll() {
           {keys.map((key) => (
             <div 
               key={key.noteNum} 
+              onMouseDown={() => midiSynth.noteOn(key.noteNum, 100)}
+              onMouseUp={() => midiSynth.noteOff(key.noteNum)}
+              onMouseLeave={() => midiSynth.noteOff(key.noteNum)}
               style={{
                 ...styles.key,
                 backgroundColor: key.isBlack ? '#111' : '#eee',
@@ -72,8 +93,18 @@ export default function PianoRoll() {
         <div style={styles.grid}>
           {/* Note Grid Canvas placeholder */}
           <div style={styles.gridCanvas}>
-            <div style={{...styles.noteEvent, top: '240px', left: '100px', width: '120px'}} />
-            <div style={{...styles.noteEvent, top: '288px', left: '220px', width: '60px'}} />
+            <div 
+              onMouseDown={() => midiSynth.noteOn(72, 100)} 
+              onMouseUp={() => midiSynth.noteOff(72)} 
+              onMouseLeave={() => midiSynth.noteOff(72)} 
+              style={{...styles.noteEvent, top: '240px', left: '100px', width: '120px'}} 
+            />
+            <div 
+              onMouseDown={() => midiSynth.noteOn(70, 80)} 
+              onMouseUp={() => midiSynth.noteOff(70)} 
+              onMouseLeave={() => midiSynth.noteOff(70)} 
+              style={{...styles.noteEvent, top: '288px', left: '220px', width: '60px'}} 
+            />
           </div>
           
           <div style={styles.velocityLane}>
@@ -122,6 +153,17 @@ const styles = {
   label: {
     fontSize: '12px',
     color: '#888',
+  },
+  select: {
+    backgroundColor: '#222',
+    color: '#fff',
+    border: '1px solid #444',
+    borderRadius: '4px',
+    padding: '2px 4px',
+    fontSize: '12px',
+  },
+  slider: {
+    width: '60px',
   },
   editorArea: {
     display: 'flex',

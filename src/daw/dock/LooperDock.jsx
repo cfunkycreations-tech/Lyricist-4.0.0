@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import looperEngine from '../engine/LooperEngine';
 
 /**
  * LooperDock Component - 4-Track Hardware Looper (RC-Funk style)
@@ -10,6 +11,10 @@ export default function LooperDock() {
     { id: 3, state: 'stopped', level: 60, pan: 20 },
     { id: 4, state: 'empty', level: 0, pan: 0 },
   ]);
+
+  const loadDemoStacks = () => {
+    setTracks(looperEngine.generateDemoLoop());
+  };
 
   const getStateColor = (state) => {
     switch (state) {
@@ -28,6 +33,9 @@ export default function LooperDock() {
           <span style={styles.bpm}>120.0 BPM</span>
           <button style={styles.lockBtn}>🔒</button>
         </div>
+        <button style={styles.demoBtn} onClick={loadDemoStacks}>
+          Load Demo Stacks
+        </button>
       </div>
       
       <div style={styles.tracksContainer}>
@@ -36,15 +44,15 @@ export default function LooperDock() {
             <div style={styles.trackHeader}>TRACK {track.id}</div>
             
             <div style={styles.transport}>
-              <button style={{...styles.btn, color: 'var(--gm-crimson, #E63946)'}}>●</button>
-              <button style={{...styles.btn, color: 'var(--gm-amber, #FF9900)'}}>▶</button>
-              <button style={{...styles.btn, color: '#aaa'}}>■</button>
+              <button onClick={() => looperEngine.record(track.id)} style={{...styles.btn, color: 'var(--gm-crimson, #E63946)'}}>●</button>
+              <button onClick={() => looperEngine.play(track.id)} style={{...styles.btn, color: 'var(--gm-amber, #FF9900)'}}>▶</button>
+              <button onClick={() => looperEngine.clear(track.id)} style={{...styles.btn, color: '#aaa'}}>■</button>
             </div>
 
             <div style={styles.modifiers}>
-              <button style={styles.modBtn}>REV</button>
-              <button style={styles.modBtn}>1/2X</button>
-              <button style={styles.modBtn}>CLR</button>
+              <button onClick={() => looperEngine.reverse(track.id)} style={styles.modBtn}>REV</button>
+              <button onClick={() => looperEngine.halfSpeed(track.id)} style={styles.modBtn}>1/2X</button>
+              <button onClick={() => looperEngine.clear(track.id)} style={styles.modBtn}>CLR</button>
             </div>
 
             <div style={styles.faderSection}>
@@ -97,6 +105,17 @@ const styles = {
     color: '#888',
     textAlign: 'center',
     letterSpacing: '1px',
+  },
+  demoBtn: {
+    backgroundColor: 'var(--gm-amber, #FF9900)',
+    color: '#000',
+    border: 'none',
+    padding: '8px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+    fontSize: '12px',
+    marginTop: 'auto',
   },
   bpmLock: {
     display: 'flex',
