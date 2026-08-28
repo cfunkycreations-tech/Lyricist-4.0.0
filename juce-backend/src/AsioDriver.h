@@ -25,9 +25,13 @@ public:
 
     /**
      * @brief Enumerates available audio drivers (filtering for ASIO devices when available).
+     *
+     * NOT const: this calls scanForDevices() on each device type, which mutates the
+     * driver list, and getAvailableDeviceTypes() is itself non-const in JUCE 8.
+     *
      * @return juce::StringArray list of driver/device names.
      */
-    juce::StringArray enumerateDrivers() const;
+    juce::StringArray enumerateDrivers();
 
     /**
      * @brief Opens and initialises the specified audio driver with target sample rate and buffer size.

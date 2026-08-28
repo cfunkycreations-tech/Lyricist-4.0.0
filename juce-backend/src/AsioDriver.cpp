@@ -8,7 +8,11 @@
 AsioDriver::AsioDriver()
 {
     // Register available audio device types (ASIO, DirectSound, WASAPI, etc.)
-    deviceManager.createAudioDeviceTypesIfNeeded();
+    //
+    // createAudioDeviceTypesIfNeeded() is private in JUCE 8. getAvailableDeviceTypes()
+    // is the public entry point that triggers the same lazy initialisation, so calling
+    // it here and discarding the result builds the device-type list exactly as intended.
+    deviceManager.getAvailableDeviceTypes();
 }
 
 AsioDriver::~AsioDriver()
@@ -16,7 +20,7 @@ AsioDriver::~AsioDriver()
     closeDriver();
 }
 
-juce::StringArray AsioDriver::enumerateDrivers() const
+juce::StringArray AsioDriver::enumerateDrivers()
 {
     juce::StringArray drivers;
 

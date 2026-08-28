@@ -7,10 +7,11 @@
 #include <iostream>
 #include <string>
 
-IpcBridge::IpcBridge(AsioDriver& asio, Vst3Scanner& vst3)
+IpcBridge::IpcBridge(AsioDriver& asio, Vst3Scanner& vst3, PluginHost& host)
     : juce::Thread("LyricistIpcBridgeThread"),
       asioDriver(asio),
-      vst3Scanner(vst3)
+      vst3Scanner(vst3),
+      pluginHost(host)
 {
 }
 
@@ -223,6 +224,132 @@ void IpcBridge::processCommand(const juce::String& line)
         auto* resp = new juce::DynamicObject();
         resp->setProperty("id", reqId);
         resp->setProperty("result", juce::var(res));
+        sendResponse(juce::var(resp));
+    }
+    else if (method.startsWith("plugin.") || method.startsWith("audio."))
+    {
+        // Plugin work touches editors and the graph, so it must happen on the
+        // message thread. The IPC reader runs on its own thread, so hop across
+        // and wait for the result before replying.
+        juce::var resultVar;
+        juce::String errorText;
+
+        auto* pObj = params.isObject() ? params.getDynamicObject() : nullptr;
+        const juce::String instanceId = pObj != nullptr ? pObj->getProperty("id").toString() : juce::String();
+
+        {
+            const juce::MessageManagerLock lock;
+            if (lock.lockWasGained())
+            {
+                if (method == "plugin.load")
+                {
+                    const juce::String path = pObj != nullptr ? pObj->getProperty("path").toString() : juce::String();
+                    const juce::String newId = pluginHost.loadPlugin(path, errorText);
+                    if (newId.isNotEmpty())
+                    {
+                        auto* res = new juce::DynamicObject();
+                        res->setProperty("id", newId);
+                        res->setProperty("loaded", pluginHost.getLoadedPlugins());
+                        resultVar = juce::var(res);
+                    }
+                }
+                else if (method == "plugin.unload")
+                {
+                    auto* res = new juce::DynamicObject();
+                    res->setProperty("removed", pluginHost.unloadPlugin(instanceId));
+                    resultVar = juce::var(res);
+                }
+                else if (method == "plugin.showEditor")
+                {
+                    const bool shown = pluginHost.showEditor(instanceId, errorText);
+                    if (shown)
+                    {
+                        auto* res = new juce::DynamicObject();
+                        res->setProperty("shown", true);
+                        resultVar = juce::var(res);
+                    }
+                }
+                else if (method == "plugin.hideEditor")
+                {
+                    pluginHost.hideEditor(instanceId);
+                    auto* res = new juce::DynamicObject();
+                    res->setProperty("hidden", true);
+                    resultVar = juce::var(res);
+                }
+                else if (method == "plugin.list")
+                {
+                    auto* res = new juce::DynamicObject();
+                    res->setProperty("plugins", pluginHost.getLoadedPlugins());
+                    resultVar = juce::var(res);
+                }
+                else if (method == "plugin.noteOn")
+                {
+                    pluginHost.noteOn(instanceId,
+                                      (int) pObj->getProperty("note"),
+                                      pObj->hasProperty("velocity") ? (int) pObj->getProperty("velocity") : 100);
+                    auto* res = new juce::DynamicObject();
+                    res->setProperty("ok", true);
+                    resultVar = juce::var(res);
+                }
+                else if (method == "plugin.noteOff")
+                {
+                    pluginHost.noteOff(instanceId, (int) pObj->getProperty("note"));
+                    auto* res = new juce::DynamicObject();
+                    res->setProperty("ok", true);
+                    resultVar = juce::var(res);
+                }
+                else if (method == "plugin.getParams")
+                {
+                    auto* res = new juce::DynamicObject();
+                    res->setProperty("params", pluginHost.getParameters(instanceId));
+                    resultVar = juce::var(res);
+                }
+                else if (method == "plugin.setParam")
+                {
+                    auto* res = new juce::DynamicObject();
+                    res->setProperty("ok", pluginHost.setParameter(instanceId,
+                                                                   (int) pObj->getProperty("index"),
+                                                                   (float) (double) pObj->getProperty("value")));
+                    resultVar = juce::var(res);
+                }
+                else if (method == "audio.start")
+                {
+                    errorText = pluginHost.startAudio();
+                    if (errorText.isEmpty())
+                        resultVar = pluginHost.getAudioStatus();
+                }
+                else if (method == "audio.stop")
+                {
+                    pluginHost.stopAudio();
+                    resultVar = pluginHost.getAudioStatus();
+                }
+                else if (method == "audio.status")
+                {
+                    resultVar = pluginHost.getAudioStatus();
+                }
+                else
+                {
+                    errorText = "Unknown method: " + method;
+                }
+            }
+            else
+            {
+                errorText = "Could not reach the message thread.";
+            }
+        }
+
+        auto* resp = new juce::DynamicObject();
+        resp->setProperty("id", reqId);
+        if (resultVar.isVoid())
+        {
+            auto* err = new juce::DynamicObject();
+            err->setProperty("message", errorText.isNotEmpty() ? errorText : juce::String("The command failed."));
+            resp->setProperty("error", juce::var(err));
+        }
+        else
+        {
+            resp->setProperty("result", resultVar);
+        }
         sendResponse(juce::var(resp));
     }
     else if (method == "engine.ping")

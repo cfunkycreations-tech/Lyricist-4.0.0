@@ -11,6 +11,7 @@
 #include "IpcBridge.h"
 #include "AsioDriver.h"
 #include "Vst3Scanner.h"
+#include "PluginHost.h"
 
 /**
  * @class LyricistEngineApp
@@ -31,7 +32,8 @@ public:
         // Initialise core subsystems
         asioDriver = std::make_unique<AsioDriver>();
         vst3Scanner = std::make_unique<Vst3Scanner>();
-        ipcBridge = std::make_unique<IpcBridge>(*asioDriver, *vst3Scanner);
+        pluginHost = std::make_unique<PluginHost>(*vst3Scanner);
+        ipcBridge = std::make_unique<IpcBridge>(*asioDriver, *vst3Scanner, *pluginHost);
 
         // Start listening for JSON-RPC commands on stdin
         ipcBridge->start();
@@ -41,6 +43,7 @@ public:
     {
         // Teardown subsystems in reverse dependency order
         ipcBridge.reset();
+        pluginHost.reset();
         vst3Scanner.reset();
         asioDriver.reset();
     }
@@ -52,6 +55,13 @@ public:
         quit();
     }
 
+    // Pure virtual on JUCEApplicationBase (JUCEApplication supplies defaults, this
+    // class does not derive from it). Without both, LyricistEngineApp stays abstract
+    // and START_JUCE_APPLICATION fails with C2259. The engine is a background audio
+    // host with no app-lifecycle work to do on suspend/resume, so these are no-ops.
+    void suspended() override {}
+    void resumed() override {}
+
     void unhandledException(const std::exception* /*e*/,
                             const juce::String& /*sourceFilename*/,
                             int /*lineNumber*/) override
@@ -62,6 +72,7 @@ public:
 private:
     std::unique_ptr<AsioDriver>  asioDriver;
     std::unique_ptr<Vst3Scanner> vst3Scanner;
+    std::unique_ptr<PluginHost>  pluginHost;
     std::unique_ptr<IpcBridge>   ipcBridge;
 };
 

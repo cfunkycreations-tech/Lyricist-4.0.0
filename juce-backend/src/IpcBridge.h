@@ -4,6 +4,7 @@
 #include <juce_events/juce_events.h>
 #include "AsioDriver.h"
 #include "Vst3Scanner.h"
+#include "PluginHost.h"
 
 /**
  * @class IpcBridge
@@ -20,8 +21,9 @@ public:
      * @brief Constructs the IPC bridge with references to audio and plugin subsystems.
      * @param asio Reference to the active ASIO driver manager.
      * @param vst3 Reference to the active VST3 scanner.
+     * @param host Reference to the live plugin host.
      */
-    IpcBridge(AsioDriver& asio, Vst3Scanner& vst3);
+    IpcBridge(AsioDriver& asio, Vst3Scanner& vst3, PluginHost& host);
 
     /**
      * @brief Destructor stopping the worker thread before destruction.
@@ -58,6 +60,7 @@ private:
 
     AsioDriver&            asioDriver;
     Vst3Scanner&           vst3Scanner;
+    PluginHost&            pluginHost;
     juce::CriticalSection  outputLock;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(IpcBridge)
