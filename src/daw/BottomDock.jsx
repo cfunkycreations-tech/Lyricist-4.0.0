@@ -5,6 +5,7 @@ import LooperDock from './dock/LooperDock';
 import TapeSlicer from './dock/TapeSlicer';
 import StemSeparator from './dock/StemSeparator';
 import PluginHostEditor from './dock/PluginHostEditor';
+import ChordPalette from './dock/ChordPalette';
 
 /**
  * BottomDock Component - Tabbed resizable dock for DAW modules
@@ -14,7 +15,7 @@ export default function BottomDock() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [height, setHeight] = useState(300);
 
-  const tabs = ['VST3 Chains', 'Piano Roll', 'Looper', 'Tape Slicer', 'Stems', 'Plugin Editor'];
+  const tabs = ['VST3 Chains', 'Piano Roll', 'Looper', 'Tape Slicer', 'Stems', 'Plugin Editor', 'Chords'];
 
   const renderContent = () => {
     switch(activeTab) {
@@ -24,6 +25,7 @@ export default function BottomDock() {
       case 'Tape Slicer': return <TapeSlicer />;
       case 'Stems': return <StemSeparator />;
       case 'Plugin Editor': return <PluginHostEditor />;
+      case 'Chords': return <ChordPalette />;
       default: return null;
     }
   };

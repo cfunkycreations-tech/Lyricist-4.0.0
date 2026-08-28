@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import './LyricForge.css';
 import { useDAW } from '../context/DAWContext';
 import funkMatrixEngine from '../engine/FunkMatrixEngine';
+import rhymeAnalyzer from '../engine/RhymeAnalyzer';
+import RhymeHeatmap from './RhymeHeatmap';
 
 /**
  * LyricForge Component
@@ -22,6 +24,8 @@ export default function LyricForge() {
   const activeSection = lyrics.find(s => s.id === activeSectionId) || lyrics[0] || {
     id: 'sec-1', type: 'verse', energy: 6, bars: 16, lines: []
   };
+
+  const { lines: analyzedLines, flowConsistency } = rhymeAnalyzer.analyzeLines(activeSection.lines || []);
 
   const handleLineChange = (lineId, text) => {
     updateLyricLine(activeSection.id, lineId, text);
@@ -117,7 +121,7 @@ export default function LyricForge() {
           Precision Lyric Line Editor (<span style={{ textTransform: 'capitalize' }}>{activeSection.type}</span>)
         </div>
         <div className="lyric-editor">
-          {activeSection.lines && activeSection.lines.map((line, idx) => (
+          {analyzedLines.map((line, idx) => (
             <div 
               key={line.id} 
               className="lyric-line" 
@@ -125,8 +129,14 @@ export default function LyricForge() {
               data-context-type="lyric"
               data-context-id={line.id}
             >
-              <div className="syl-pill" title="Syllable Count">{line.syllables || 0}</div>
-              <div className="rhyme-tag" title="Rhyme Scheme Tag">{line.rhymeTag || String.fromCharCode(65 + (idx % 4))}</div>
+              <div className="syl-pill" title="Syllable Count">{line.syllables}</div>
+              <div 
+                className="rhyme-tag" 
+                title="Rhyme Scheme Tag"
+                style={{ backgroundColor: line.rhymeColor, color: line.rhymeTag ? '#111' : 'inherit' }}
+              >
+                {line.rhymeTag || '-'}
+              </div>
               <div className="cadence-meter" title="Cadence Rhythm Grid">
                 {[1, 2, 3, 4].map(c => (
                   <div 
@@ -166,6 +176,10 @@ export default function LyricForge() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="lf-inspect-col" style={{ width: '300px', flexShrink: 0 }}>
+        <RhymeHeatmap analyzedLines={analyzedLines} flowConsistency={flowConsistency} />
       </div>
     </div>
   );
