@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './GhostPilotHUD.css';
 import ghostPilotDAWBridge from '../services/GhostPilotDAWBridge';
 import voiceControlService from '../services/VoiceControlService';
+import autoMixerService from '../services/AutoMixerService';
 
 /**
  * GhostPilotHUD
@@ -100,6 +101,28 @@ const GhostPilotHUD = () => {
     { icon: '🎹', text: 'Add Neo-Soul Chords', cmd: 'generate neo-soul chords' },
     { icon: '🎙️', text: 'Solo Vocals', cmd: 'solo vocals' },
     { icon: '✍️', text: 'Suggest Rhymes', cmd: 'suggest rhymes for cold' },
+    { 
+      icon: '⚡', 
+      text: 'Auto-Mix Session', 
+      action: () => {
+        setStatus('processing');
+        // Dummy tracks for demonstration since we don't have access to the real session state here easily
+        const dummyTracks = [
+          { id: 1, name: 'Kick Drum' },
+          { id: 2, name: 'Synth Bass' },
+          { id: 3, name: 'Lead Vocal' }
+        ];
+        const report = autoMixerService.analyzeAndAutoMix(dummyTracks, () => {}, () => {});
+        setStatus('idle');
+        setMessages((prev) => [...prev, {
+          id: Date.now(),
+          type: 'system',
+          text: `Auto-Mix Complete: ${report.summary}`,
+          success: true,
+          timestamp: new Date()
+        }]);
+      }
+    }
   ];
 
   if (!expanded) {
@@ -136,7 +159,7 @@ const GhostPilotHUD = () => {
 
         <div className="quick-chips">
           {quickPrompts.map((p, i) => (
-            <button key={i} className="chip" onClick={() => handleCommand(p.cmd)}>
+            <button key={i} className="chip" onClick={() => p.action ? p.action() : handleCommand(p.cmd)}>
               {p.icon} {p.text}
             </button>
           ))}

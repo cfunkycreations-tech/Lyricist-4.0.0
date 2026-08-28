@@ -9,6 +9,7 @@ import funkMatrixEngine from '../engine/FunkMatrixEngine';
 import audioGraph from '../engine/AudioGraph';
 import audioRecorder from '../engine/AudioRecorder';
 import audioImportService from '../services/AudioImportService';
+import TakeLanes from './TakeLanes';
 
 /**
  * TimelineArranger Component
@@ -32,6 +33,7 @@ export default function TimelineArranger({ onEditClip }) {
   const [generatingTrackId, setGeneratingTrackId] = useState(null);
   const [livePeak, setLivePeak] = useState(0);
   const [automationExpanded, setAutomationExpanded] = useState({});
+  const [takesExpanded, setTakesExpanded] = useState({});
   const [isDragging, setIsDragging] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
@@ -71,6 +73,13 @@ export default function TimelineArranger({ onEditClip }) {
 
   const toggleAutomation = (trackId) => {
     setAutomationExpanded(prev => ({
+      ...prev,
+      [trackId]: !prev[trackId]
+    }));
+  };
+
+  const toggleTakes = (trackId) => {
+    setTakesExpanded(prev => ({
       ...prev,
       [trackId]: !prev[trackId]
     }));
@@ -317,14 +326,24 @@ export default function TimelineArranger({ onEditClip }) {
                   </button>
                 )}
 
-                <button 
-                  className={`btn-icon ${automationExpanded[track.id] ? 'active' : ''}`} 
-                  onClick={() => toggleAutomation(track.id)}
-                  title="Toggle Automation"
-                  style={{ fontSize: '10px', marginTop: '4px' }}
-                >
-                  Auto
-                </button>
+                <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                  <button 
+                    className={`btn-icon ${automationExpanded[track.id] ? 'active' : ''}`} 
+                    onClick={() => toggleAutomation(track.id)}
+                    title="Toggle Automation"
+                    style={{ fontSize: '10px' }}
+                  >
+                    Auto
+                  </button>
+                  <button 
+                    className={`btn-icon ${takesExpanded[track.id] ? 'active' : ''}`} 
+                    onClick={() => toggleTakes(track.id)}
+                    title="Toggle Takes"
+                    style={{ fontSize: '10px' }}
+                  >
+                    Takes
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -417,6 +436,13 @@ export default function TimelineArranger({ onEditClip }) {
                   totalBars={totalBars} 
                   barWidth={barWidth} 
                   currentPlayhead={transport.playhead} 
+                />
+              )}
+              {takesExpanded[track.id] && (
+                <TakeLanes 
+                  track={track} 
+                  totalBars={totalBars} 
+                  barWidth={barWidth} 
                 />
               )}
             </div>
