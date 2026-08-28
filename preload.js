@@ -101,4 +101,9 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
     ipcRenderer.on('demucs-progress', h);
     return () => ipcRenderer.removeListener('demucs-progress', h);
   },
+
+  // Ghost Pilot OS-level hardware automation bridge
+  pilotMove: (x, y) => ipcRenderer.invoke('pilot-move', { x, y }),
+  pilotClick: () => ipcRenderer.invoke('pilot-click'),
+  pilotType: (text) => ipcRenderer.invoke('pilot-type', { text }),
 });

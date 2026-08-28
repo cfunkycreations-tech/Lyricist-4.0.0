@@ -12,7 +12,7 @@ import TabBackground from '../common/TabBackground.jsx';
 const STORE_KEY = 'lyricistToolsHub_v1';
 
 const SEED_TOOLS = [
-  { id: 'cfunky-lyricist', name: 'Lyricist', url: 'https://cfunkycreationsllc.com', category: 'Music', votes: 12, seeded: true, description: 'This very app — AI songwriting studio with Ghost Rider artist analysis and Song Forge cover art. Always free.' },
+  { id: 'cfunky-lyricist', name: 'Lyricist', url: 'https://cfunkycreationsllc.com', category: 'Music', votes: 12, seeded: true, description: 'This very app — the Lyricist Pro songwriting workstation, with Ghost Rider artist analysis and Song Forge cover art.' },
   { id: 'suno', name: 'Suno', url: 'https://suno.com', category: 'Music', votes: 10, seeded: true, description: 'Generate full songs — vocals, instruments, mix — from a text prompt. Free tier available.' },
   { id: 'basic-pitch', name: 'Basic Pitch (Spotify)', url: 'https://basicpitch.spotify.com', category: 'Music', votes: 8, seeded: true, description: 'Open-source audio-to-MIDI converter — the same model powering Lyricist\'s MIDI Studio.' },
   { id: 'butterchurn', name: 'Butterchurn', url: 'https://butterchurnviz.com', category: 'Music', votes: 6, seeded: true, description: 'Open-source WebGL port of Winamp\'s Milkdrop 2 visualizer — powering the MIDI Studio visuals.' },
@@ -110,7 +110,7 @@ export default function ToolsHub() {
           <div style={{ marginRight: 'auto' }}>
             <h3 style={{ fontSize: '1.05rem', margin: 0 }}>🧰 Community AI Tools Hub</h3>
             <p style={{ fontSize: '0.72rem', color: 'rgba(196,181,253,0.7)', margin: '4px 0 0' }}>
-              Free AI tools for the masses — share the ones you love, upvote the ones that earn it.
+              A shared shelf of AI tools — add the ones you rely on, upvote the ones that earn it.
             </p>
           </div>
 

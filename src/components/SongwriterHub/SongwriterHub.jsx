@@ -93,7 +93,7 @@ export default function SongwriterHub({ ghostRiderData }) {
       const lines = ghostRiderData.lyrics.split('\n').filter((l) => l.trim());
       const fromQuantum = ghostRiderData.source === 'quantum';
       const label = fromQuantum
-        ? 'Quantum Lab Verse'
+        ? 'Matrix Verse'
         : `Ghost Rider Verse (${ghostRiderData.artist || 'style'})`;
       store.setFullLyrics([
         {

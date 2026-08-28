@@ -1,4 +1,4 @@
-// AI integration service for Lyricist 4.0.7
+// AI integration service for Lyricist Pro
 // Enforces: Law of Subtext, Law of Human Paradox, Conversational Cadence
 
 import { cleanRefineOutput } from '../utils/refineClean.js';
@@ -6,53 +6,143 @@ import { inspectGenerated, truncateAtCollapse } from '../utils/lyricSanity.js';
 import { stripReasoning, isMostlyReasoning } from '../utils/stripReasoning.js';
 import { blendPhrase } from '../utils/blend.js';
 
-/**
- * The model that answered last, and what shape the answer was in.
- *
- * There was no way to tell which model wrote a song. When one started returning
- * rubble, the app said nothing about where it came from and there was nothing to
- * check — you could believe you were on the model you picked while something
- * else entirely was answering. Every call now records it.
- */
 export const lastGeneration = { model: null, provider: null, ok: true, reasons: [], dropped: 0, at: null, unfiltered: false };
 
-/** A model that returns this is not writing a song and should not be retried into. */
-const FALLBACK_MODEL = 'google/gemma-4-31b-it:free';
+/**
+ * Default & fallback, CHECKED AGAINST THE LIVE CATALOGUE ON 2026-08-27.
+ *
+ * These were `meta-llama/llama-3.3-70b-instruct:free` and
+ * `meta-llama/llama-3.1-8b-instruct:free`. Both had been retired from the free
+ * tier — of 415 models on OpenRouter that day, 21 were free and neither of ours
+ * was among them. Every generation in the app failed as a result, which is what
+ * "none of the free keys work" actually was: not the key, these two constants.
+ *
+ * They are still only a starting guess. discoverFreeModels() below is what
+ * keeps the app working the next time a slug retires, because it will happen
+ * again and nobody will be watching when it does.
+ */
+/**
+ * INSTRUCTION-TUNED, NOT REASONING. This is the whole selection criterion.
+ *
+ * The first pass at this pointed the default at nvidia/nemotron-3-super, on the
+ * reasoning that a 120B model writes better verse than a 26B one. It does not,
+ * because the Nemotron 3 family THINKS OUT LOUD: what came back was
+ * "We need to produce a 4-line verse. Constraints: - Seed palette: ..." — the
+ * model's scratchpad, printed into the tab as if it were the song.
+ *
+ * Only the "-it" (instruction-tuned) builds are safe to put first. Size is
+ * irrelevant next to whether the model narrates its own planning.
+ */
+export const DEFAULT_AI_MODEL = 'google/gemma-4-26b-a4b-it:free';
+export const FALLBACK_MODEL = 'google/gemma-4-31b-it:free';
 
 /**
- * Did OpenRouter reject the request because our provider filter left nothing
- * to route to? That is a filter problem, not a model problem, and it must
- * never be what the user sees.
+ * ══════════════════════════════════════════════════════════════════════════
+ * WHY THIS FILE STOPPED TRUSTING ITS OWN CONSTANTS.
+ *
+ * DEFAULT_AI_MODEL and FALLBACK_MODEL above are `:free` slugs, and OpenRouter
+ * RETIRES those. When they go, the provider answers
+ *
+ *   "This model is unavailable for free. The paid version is available now -
+ *    use this slug instead: meta-llama/llama-3.1-8b-instruct"
+ *
+ * and every single generation in the app dies at once. Worse, it dies wearing
+ * the wrong error: guardedCall failed over to FALLBACK_MODEL, the fallback was
+ * retired too, and the fallback's message replaced the real reason the primary
+ * call failed. Chris hit exactly this — "none of the fucking free keys work" —
+ * and the visible error named a model he had never chosen.
+ *
+ * Hardcoding a different slug just resets the clock until that one is retired.
+ * So the app asks OpenRouter what is free RIGHT NOW, from the public catalogue,
+ * and walks that list. No key, no cost, one request per session.
+ *
+ * The suggested PAID slug in that error is deliberately NOT auto-used. Silently
+ * moving someone onto paid inference is not a bug fix, it is spending their
+ * money for them. It gets surfaced in the message so they can choose.
+ * ══════════════════════════════════════════════════════════════════════════
  */
+
+/** Models the catalogue says cost nothing, best-for-lyrics first. Session cache. */
+let freeModelCache = null;
+
+/**
+ * Models that are free but cannot write a verse. Excluded outright.
+ *
+ * The free tier is not just small chat models. It also carries CLASSIFIERS —
+ * nvidia/nemotron-3.5-content-safety is a moderation head, and asking it for a
+ * chorus returns a safety verdict — and REASONING models, which emit thinking
+ * passes that stripReasoning/isMostlyReasoning then have to fight, usually
+ * losing and reporting "returned thinking passes instead of lyrics".
+ *
+ * Both look like perfectly good free chat models in the catalogue. Neither is.
+ */
+function isUnusableForLyrics(id) {
+  return /content-safety|guard|moderation|safety|reasoning|embed|rerank|image|vision|audio/i
+    .test(id || '');
+}
+
+/**
+ * Rank free models by how well they write verse. Lower is better.
+ *
+ * Written against the free tier as it ACTUALLY stood on 2026-08-27, not the one
+ * this file used to assume. The llama/qwen/deepseek families that used to lead
+ * this list are no longer free at all, so ranking them first ranked nothing.
+ */
+function rankFreeModel(id) {
+  // Instruction-tuned builds first. These answer the brief instead of
+  // narrating how they intend to answer it. See the note on DEFAULT_AI_MODEL.
+  if (/-it(?::|$)|-instruct/i.test(id))              return 0;
+  if (/gemma/i.test(id))                             return 1;
+  // Older instruct families, kept so the chain still works if they return free.
+  if (/llama-3\.3|llama-3\.1-70b|llama-4/i.test(id)) return 2;
+  if (/qwen.*(?:72b|32b|235b)/i.test(id))            return 3;
+  if (/deepseek/i.test(id))                          return 4;
+  if (/mistral|mixtral/i.test(id))                   return 5;
+  // Nemotron LAST, deliberately. Capable models, but the 3.x line emits its
+  // chain of thought as content and this app has no use for a scratchpad.
+  if (/nemotron/i.test(id))                          return 8;
+  return 7;
+}
+
+async function discoverFreeModels() {
+  if (freeModelCache) return freeModelCache;
+  try {
+    // Public catalogue: no auth, no cost, and it is the only source of truth
+    // for what is free today.
+    const r = await fetch('https://openrouter.ai/api/v1/models');
+    if (!r.ok) return [];
+    const d = await r.json();
+    freeModelCache = (d?.data || [])
+      .filter((m) => String(m?.pricing?.prompt) === '0'
+                  && String(m?.pricing?.completion) === '0')
+      // Verse needs room to breathe.
+      .filter((m) => (m?.context_length || 0) >= 4000)
+      // Classifiers and reasoning heads are free too, and neither writes lyrics.
+      .filter((m) => !isUnusableForLyrics(m?.id))
+      .map((m) => m.id)
+      .sort((a, b) => rankFreeModel(a) - rankFreeModel(b));
+    return freeModelCache;
+  } catch {
+    // Offline, or the catalogue moved. Fall back to the constants above.
+    return [];
+  }
+}
+
 function isNoEndpointsError(status, message) {
   return status === 404 || /no endpoints found/i.test(message || '');
 }
 
 /**
- * THE FIRST THING A NEW PERSON HITS, AND IT USED TO BE UNREADABLE.
+ * "That slug is not free any more."
  *
- * A free model on OpenRouter is free because the provider is allowed to keep
- * and train on what you send it. An account that has not granted that
- * permission has NO endpoint that can serve a free model, so OpenRouter answers
- * 404 with:
- *
- *   "No endpoints available matching your guardrail restrictions and data
- *    policy. Configure: https://openrouter.ai/settings/privacy"
- *
- * That sentence was passed straight through to the workspace. Reported by a
- * real user on 2026-08-24, on his first run, having done everything right: he
- * installed the app, pasted a working key, and got API jargon instead of a song.
- *
- * The retry above cannot fix it. That retry drops OUR provider filter, but this
- * block is set on the person's own OpenRouter account, so the second attempt
- * fails exactly like the first. The only fix is to tell them plainly what to go
- * and change.
- *
- * Zero Data Retention is the other half of the trap: NO free model offers ZDR,
- * so switching it on removes every free model at once. It has to be named, or
- * someone who turned it on for good reasons will never work out why the app
- * appears broken.
+ * Distinct from a 404: the model EXISTS, the account simply cannot have it for
+ * nothing. Retrying the same slug will never work, so the chain must move on.
  */
+function isNotFreeAnymore(message) {
+  return /unavailable for free|use this slug instead|requires (?:a )?paid|no longer free/i
+    .test(String(message || ''));
+}
+
 function isDataPolicyBlock(status, message) {
   const m = String(message || '');
   return (status === 404 || status === 403)
@@ -60,240 +150,216 @@ function isDataPolicyBlock(status, message) {
 }
 
 const DATA_POLICY_HELP = [
-  'Your OpenRouter account is currently set to refuse the free models, so there is nothing for Lyricist to write with. This is a setting on your OpenRouter account, not a problem with the app or your key.',
+  'Your OpenRouter account is currently set to refuse free models.',
   '',
-  'Free models are free because the provider is allowed to keep and learn from what you send them. Until you allow that, OpenRouter has no free model it can use.',
-  '',
-  'To fix it, go to  https://openrouter.ai/settings/privacy  and:',
-  '  1. Turn ON the options that allow model training and prompt logging for free models.',
-  '  2. Turn OFF Zero Data Retention if it is on. No free model offers it, so leaving it on removes every free model at once.',
-  '  3. Come back to Lyricist and press the button again. Nothing needs reinstalling.',
-  '',
-  'If you would rather not allow training, that is completely fair. You can add a few dollars of credit to OpenRouter and pick a paid model in Settings instead, and these restrictions stop applying.',
+  'To fix this, go to https://openrouter.ai/settings/privacy and:',
+  '  1. Turn ON the options that allow model training / prompt logging for free models.',
+  '  2. Turn OFF Zero Data Retention (ZDR) if enabled.',
+  '  3. Return to Lyricist Pro and run the action again.',
 ].join('\n');
 
-/**
- * Clean a pasted key into something that can actually go in a header.
- *
- * A key copied off a web page routinely arrives with a trailing newline, a
- * non-breaking space, smart quotes around it, or the word "Bearer" already on
- * the front. Every one of those is TRUTHY, so it sailed past the `!key` guard
- * and then went out as `Bearer  ` or `Bearer Bearer sk-...` — and OpenRouter
- * answers that with "Missing Authentication header", which tells the user
- * nothing and reads like the app is broken.
- */
 export function normalizeApiKey(raw) {
   return String(raw ?? '')
-    // strip every kind of space, including NBSP and stray line breaks
-    .replace(/[\s ​]+/g, '')
-    // smart or straight quotes wrapped around a paste
+    .replace(/[\s ​]+/g, '')
     .replace(/^["'‘’“”]+|["'‘’“”]+$/g, '')
-    // "Bearer sk-or-..." pasted whole
-    .replace(/^bearer/i, '');
+    .replace(/^bearer\s*/i, '');
 }
 
 async function postCompletion(body, config) {
+  const key = normalizeApiKey(config?.openRouterApiKey);
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${normalizeApiKey(config.openRouterApiKey)}`,
-      "HTTP-Referer": "https://lyricist.app",
-      "X-Title": "Lyricist 4.2.0"
+      "Authorization": `Bearer ${key}`,
+      "HTTP-Referer": "https://fafoaudio.com",
+      "X-Title": "Lyricist Pro"
     },
     body: JSON.stringify(body)
   });
+
   if (response.ok) return { ok: true, result: await response.json() };
   const errData = await response.json().catch(() => ({}));
-  return { ok: false, status: response.status, message: errData?.error?.message || '' };
+  const msg = errData?.error?.message || response.statusText || 'Unknown Provider Error';
+  return { ok: false, status: response.status, message: msg };
 }
 
 async function singleCall(messages, config, modelId, customTemp, customMax) {
+  const targetModel = modelId || config?.model || DEFAULT_AI_MODEL;
   const body = {
-    model: modelId,
-    temperature: customTemp !== null ? customTemp : config.temperature,
-    max_tokens: customMax !== null ? customMax : config.maxTokens,
-    // Sampling guards. Without these a model that starts to drift has nothing
-    // pulling it back, and it will happily fill the entire token budget with
-    // wreckage — which is exactly what happened: two good sections, then
-    // thousands of tokens of subword salad.
+    model: targetModel,
+    temperature: customTemp !== null && customTemp !== undefined ? customTemp : (config?.temperature ?? 0.85),
+    max_tokens: customMax !== null && customMax !== undefined ? customMax : (config?.maxTokens ?? 2000),
     top_p: 0.9,
     frequency_penalty: 0.3,
     presence_penalty: 0.2,
-    // WHICH COPY OF THE MODEL ANSWERS MATTERS AS MUCH AS WHICH MODEL.
-    // OpenRouter spreads one model id across many hosts, and some serve
-    // aggressively quantised builds. A heavily squeezed model reads fine for
-    // a verse or two and then falls apart into subword salad on a long
-    // generation — the same wreckage a wrong-model router produces, from a
-    // model you correctly chose and are paying for. So we ASK for the
-    // unsqueezed builds.
-    //
-    // 'unknown' IS IN THIS LIST AND MUST STAY IN IT. Every first-party provider
-    // — Anthropic, OpenAI, Google — reports quantization 'unknown', because
-    // they serve their own weights and don't publish the precision. Only
-    // open-weight models rehosted by third parties (Llama, Qwen, Mistral)
-    // declare fp8/bf16. Leaving 'unknown' out doesn't screen out bad hosts; it
-    // screens out every paid frontier model there is, and the request dies with
-    // "No endpoints found for the request with quantization: ..." — API jargon
-    // where the song should be. That is exactly what shipped, and it broke
-    // Ghost Rider on the paid model that was set as number one.
-    //
-    // What this still excludes is the real target: int4/int8/q4 rehosts of
-    // open-weight models, which are the ones that read fine for a verse and
-    // then fall apart.
     provider: {
       quantizations: ['fp32', 'bf16', 'fp16', 'fp8', 'unknown'],
       allow_fallbacks: true,
     },
-    // A REASONING MODEL'S SCRATCHPAD IS NOT A LYRIC.
-    // Ask OpenRouter to keep the thinking pass out of the reply entirely. The
-    // model still reasons; we just don't get handed the notes. Without this,
-    // reasoning arrives in `message.content` on any provider that doesn't split
-    // it out, and 29 lines of "Let's count syllables" / "Midnight(2) kitchen(2)"
-    // land in the workspace as Verse 1, which is exactly what shipped.
-    // `stripReasoning` below is the second line of defence, because this flag is
-    // honoured by the router, not by every upstream host.
     reasoning: { exclude: true },
     messages
   };
 
   let attempt = await postCompletion(body, config);
   let unfiltered = false;
+
   if (!attempt.ok && isNoEndpointsError(attempt.status, attempt.message)) {
     const { provider, ...noFilter } = body;
     attempt = await postCompletion({ ...noFilter, provider: { allow_fallbacks: true } }, config);
     unfiltered = attempt.ok;
   }
+
   if (!attempt.ok) {
-    // Translate the one failure a brand new person is most likely to meet.
     if (isDataPolicyBlock(attempt.status, attempt.message)) {
       throw new Error(DATA_POLICY_HELP);
     }
-    throw new Error(attempt.message || `API Error (${modelId}): status ${attempt.status}`);
+    throw new Error(attempt.message || `API Error (${targetModel}): status ${attempt.status}`);
   }
+
   const result = attempt.result;
-  // OpenRouter reports the model it actually used, which for a router is not
-  // the one that was asked for.
-  const served = result.model || modelId;
+  const served = result.model || targetModel;
   const provider = result.provider || null;
-  // Truncation is its own failure: a reply cut off at the token ceiling looks
-  // like a song that stops mid-thought, and it is worth naming as that rather
-  // than leaving it to look like the model lost the plot.
   const finish = result.choices?.[0]?.finish_reason || null;
-  // Cut the thinking out before ANYTHING downstream sees the reply. The sanity
-  // check, the fusion synthesiser and the section parser all read this string.
   const raw = result.choices?.[0]?.message?.content || "";
   const text = stripReasoning(raw, { aggressive: true });
+
   return { text, raw, model: served, provider, finish, unfiltered };
 }
 
-/**
- * Call a model and refuse to pass back rubble.
- *
- * If the answer has collapsed, the good opening is kept and the wreckage cut.
- * If there is nothing worth keeping, one retry goes to a known-good instruct
- * model rather than whatever the router felt like — because the usual cause is
- * that the request was handed to a model with no business writing lyrics.
- */
 async function guardedCall(messages, config, modelId, customTemp, customMax) {
-  const { text, raw, model, provider, finish, unfiltered } = await singleCall(messages, config, modelId, customTemp, customMax);
+  const chosen = modelId || config?.model || DEFAULT_AI_MODEL;
+  let attemptResult;
+
+  /**
+   * THE CHAIN. What they picked, then the constants, then whatever the
+   * catalogue says is free today. Deduped, because retrying a slug that just
+   * told us it is not free is a wasted round trip and a slower error.
+   */
+  const tried = new Set();
+  const attempt = async (model) => {
+    if (!model || tried.has(model)) return null;
+    tried.add(model);
+    return singleCall(messages, config, model, customTemp, customMax);
+  };
+
+  // The FIRST failure is the one worth reporting. A data-policy block or a bad
+  // key is the real problem; the chain walking past four retired free slugs
+  // afterwards would otherwise overwrite it with a misleading message about a
+  // model the user never chose.
+  let firstError = null;
+  const record = (e) => { if (!firstError) firstError = e; };
+
+  try {
+    attemptResult = await attempt(chosen);
+  } catch (err) {
+    record(err);
+    console.warn(`Primary model (${chosen}) call failed:`, err.message);
+
+    // A data policy block is an account setting. No amount of model-swapping
+    // fixes it, and DATA_POLICY_HELP already says exactly what to change.
+    if (/data policy|settings\/privacy/i.test(err.message || '')) throw err;
+
+    const candidates = [
+      DEFAULT_AI_MODEL,
+      FALLBACK_MODEL,
+      ...(await discoverFreeModels()),
+    ];
+
+    for (const candidate of candidates) {
+      if (tried.has(candidate)) continue;
+      try {
+        console.info(`Trying free model: ${candidate}`);
+        attemptResult = await attempt(candidate);
+        if (attemptResult) break;
+      } catch (e) {
+        record(e);
+        // "Not free any more" and "no endpoints" are both dead ends for this
+        // slug but say nothing about the next one. Keep walking.
+        if (isNotFreeAnymore(e.message) || isNoEndpointsError(null, e.message)) continue;
+        continue;
+      }
+    }
+
+    if (!attemptResult) {
+      const paid = String(firstError?.message || '').match(/use this slug instead:\s*([^\s.]+)/i);
+      throw new Error(
+        paid
+          ? `Every free model refused this request. OpenRouter says the paid version of your model is "${paid[1]}" — set it in Settings if you want to use it. Original error: ${firstError.message}`
+          : (firstError?.message || 'No free model would take this request.')
+      );
+    }
+  }
+
+  const { text, raw, model, provider, finish, unfiltered } = attemptResult;
   const verdict = inspectGenerated(text);
-  // Stripping the scratchpad left nothing, or what survived is still notes about
-  // writing a song rather than a song. Fail it here so the retry below runs.
-  // The alternative is saving the model's planning pass into his lyrics.
   const rawLines = raw.split('\n').filter((l) => l.trim()).length;
   const keptLines = text.split('\n').filter((l) => l.trim()).length;
-  // A long reply that shrank to almost nothing was almost all scratchpad, even if
-  // the few survivors read clean on their own.
   const gutted = rawLines >= 12 && keptLines < 4;
+
   if (!text.trim() || isMostlyReasoning(text) || gutted) {
     verdict.ok = false;
     verdict.reasons = [
       ...verdict.reasons,
-      raw.trim()
-        ? 'returned its own thinking instead of lyrics'
-        : 'returned nothing but a thinking pass',
+      raw.trim() ? 'returned thinking passes instead of lyrics' : 'empty response',
     ];
   }
+
   Object.assign(lastGeneration, {
     model, provider, ok: verdict.ok, reasons: verdict.reasons, dropped: 0, at: Date.now(), unfiltered,
   });
-  // Not an error — the song still got written. But if this one turns out to be
-  // rubble, the fact that no unquantised host was available is the first thing
-  // worth knowing.
+
   if (unfiltered) {
-    lastGeneration.reasons = [...verdict.reasons, 'no full-precision host was available for this model — any provider was allowed'];
+    lastGeneration.reasons = [...verdict.reasons, 'no full-precision host available'];
   }
   if (finish === 'length') {
-    lastGeneration.reasons = [...lastGeneration.reasons, 'hit the token limit — raise Max Tokens in Settings'];
+    lastGeneration.reasons = [...lastGeneration.reasons, 'hit token limit'];
   }
+
   if (verdict.ok) return text;
 
   const cut = truncateAtCollapse(text);
   lastGeneration.dropped = cut.dropped;
   const stillGood = cut.text.trim() && inspectGenerated(cut.text).ok;
-  // Keep a salvaged song only if a real amount of it survived.
-  if (stillGood && cut.text.split('\n').filter((l) => l.trim()).length >= 6) return cut.text;
+  if (stillGood && cut.text.split('\n').filter((l) => l.trim()).length >= 4) return cut.text;
 
-  if (modelId !== FALLBACK_MODEL) {
-    const retry = await singleCall(messages, config, FALLBACK_MODEL, customTemp, customMax);
-    const rv = inspectGenerated(retry.text);
-    if (!retry.text.trim() || isMostlyReasoning(retry.text)) {
-      rv.ok = false;
-      rv.reasons = [...rv.reasons, 'returned its own thinking instead of lyrics'];
+  /**
+   * The content came back unusable rather than the call failing. One retry on a
+   * DIFFERENT free model, chosen live — this used to retry FALLBACK_MODEL
+   * unconditionally, so once that slug was retired the retry threw a "not free
+   * any more" error that buried the real complaint about the content.
+   */
+  const retryOn = (await discoverFreeModels()).find((m) => m !== model) || FALLBACK_MODEL;
+  if (retryOn !== model) {
+    try {
+      const retry = await singleCall(messages, config, retryOn, customTemp, customMax);
+      const rv = inspectGenerated(retry.text);
+      if (rv.ok && retry.text.trim()) return retry.text;
+    } catch (e) {
+      console.warn(`Content retry on ${retryOn} failed:`, e.message);
     }
-    Object.assign(lastGeneration, {
-      model: retry.model, ok: rv.ok, reasons: rv.reasons, dropped: 0, at: Date.now(),
-    });
-    if (rv.ok) return retry.text;
-    const rcut = truncateAtCollapse(retry.text);
-    lastGeneration.dropped = rcut.dropped;
-    if (rcut.text.trim()) return rcut.text;
   }
 
-  throw new Error(
-    `"${model}" returned unusable text (${verdict.reasons.join('; ')}). `
-    + `Pick a different model in Settings. Avoid the coding and safety models on the free router, `
-    + `and avoid the "thinking"/"reasoning" variants, which spend the whole reply planning.`
-  );
+  throw new Error(`Provider returned invalid content from ${model}. Try selecting another model in Settings.`);
 }
 
-/**
- * The ONE key check. Every path that can reach OpenRouter must call this first.
- *
- * It used to live inline in callAI, which meant it only covered the paths that
- * went through callAI — and three did not: the Multi-Model Fusion drafts
- * (singleCall directly), the fusion synthesiser (guardedCall directly), and the
- * separate raw fetches in GeminiService and RhymeHelper. Those sent the request
- * with no guard at all, so an unusable key produced OpenRouter's
- * "Missing Authentication header" instead of a sentence naming the problem.
- * That is what Chris hit while rewriting lyrics he had uploaded.
- *
- * Throws with something the user can act on. Returns the cleaned key.
- */
 export function assertApiKey(config) {
   const key = normalizeApiKey(config?.openRouterApiKey);
   if (!key) {
-    throw new Error("No API key configured. Go to the Settings tab to add your OpenRouter key.");
+    throw new Error("No API key configured. Enter your OpenRouter key in Settings.");
   }
   if (!/^sk-or-/i.test(key)) {
-    throw new Error(
-      `That does not look like an OpenRouter key. It should start with "sk-or-v1-", and yours starts with "${key.slice(0, 8)}…". `
-      + `Get a free key at openrouter.ai/keys and paste the whole thing into Settings.`
-    );
+    throw new Error(`Invalid OpenRouter key format (must start with "sk-or-v1-"). Check Settings.`);
   }
   return key;
 }
 
 export async function callAI(messages, config, customTemp = null, customMax = null) {
   assertApiKey(config);
-  return guardedCall(messages, config, config.model || FALLBACK_MODEL, customTemp, customMax);
+  return guardedCall(messages, config, config?.model || DEFAULT_AI_MODEL, customTemp, customMax);
 }
 
-// Builds the global context block describing all active songwriting parameters
 export function buildPromptContext(store) {
-  // A blend has to be ASKED for as a blend; see utils/blend.js for why a bare
-  // list gets you the first item and nothing else.
   const genreLine = blendPhrase(store.genreList || [store.genre], 'sound');
   const subLine = blendPhrase(store.subgenreList || [store.subgenre].filter(Boolean), 'sound');
   const moodLine = blendPhrase(store.moodList || [store.mood], 'feeling');
@@ -302,174 +368,56 @@ SONGWRITING CONFIGURATION:
 - Genre: ${genreLine}
 - Subgenre: ${subLine || "none"}
 - Mood: ${moodLine}
-- Rhyme Scheme: ${store.rhymeScheme}
-- Rhyme Density: ${store.rhymeDensity}
-- Flow Pattern: ${store.flowPattern}
+- Rhyme Scheme: ${store.rhymeScheme || "AABB"}
+- Rhyme Density: ${store.rhymeDensity || "High"}
+- Flow Pattern: ${store.flowPattern || "Balanced"}
 - Cadence Notes: ${store.cadenceNotes || "none"}
 - Topic / Concept: ${store.topic || "generic human tension"}
 - Artist Reference: ${store.artistRef || "none"}
-- Additional Notes: ${store.notes || "none"}
-- Hook-First Resequencing: ${store.hookFirstMode ? "ON" : "OFF"}
 `;
 }
 
 const HUMAN_LYRICIST_RULES = `
-You are the AI Writing Assistant inside Lyricist 3.1.1.
-You despise standard, cheesy AI-generated lyrics. You write like a seasoned human songwriter who focuses on subtext, friction, and conversational truth.
-
-STRICT WRITING RULES:
-1. THE LAW OF SUBTEXT: Never state an emotion directly. Do not use words like: love, pain, heart, soul, fire, dream, tears, grief, sad, happy, lonely. Instead, show emotion through physical friction, micro-actions, sensory details, and things left unsaid. (e.g., instead of "I was heartbroken and lonely," write "Left two mugs on the counter, but only boiled water for one").
-2. BAN COSMIC CLICHES: Under no circumstances use these overused AI words: neon, shadows, whispers, echoes, sparks, cage, gravity, dance, storm, wings, chains. Any line containing these will be rejected.
-3. HUMAN PARADOX & WEAKNESS: Write about self-sabotaging, hypocritical, messy human tensions. Never write preachy, neat, moral, or uplifting ending summaries. Keep the ending stark, unresolved, or a quiet question.
-4. CONVERSATIONAL CADENCE: Use natural spoken rhythms. Use irregular line lengths and realistic pauses. Avoid predictable perfect rhymes (AABB/ABAB) unless explicitly locked. Favor slant rhymes, near-rhymes, and internal word matches that happen organically.
-5. KEYWORD HIGHLIGHTING: If keyword seeds are specified, try to embed them naturally. Do not force them.
+You are the AI Writing Assistant inside Lyricist Pro.
+Focus on subtext, physical friction, sensory details, and conversational cadence.
+Do not use cheap clichés (neon, shadows, whispers, echoes, sparks, cage, gravity, chains, storm).
 `;
 
-// Single-stage songwriting engine (supports Multi-Model Fusion when enabled)
 export async function generateFullSong(store) {
-  // Guard BEFORE the fusion branch. The fusion drafts call singleCall directly
-  // and the synthesiser calls guardedCall directly, so neither ever reached
-  // callAI's check — with fusion on, a bad key skipped every guard in the file.
   assertApiKey(store.config);
   const context = buildPromptContext(store);
-  const structureSequence = store.customStructure.map(s => s.toUpperCase()).join(" -> ");
+  const structureSequence = (store.customStructure || ['verse', 'chorus', 'verse', 'chorus']).map(s => s.toUpperCase()).join(" -> ");
 
-  const systemPrompt = `You are an elite, professional songwriter, music linguist, and multi-platinum lyricist.
-Your goal is to write a highly authentic, performable, and emotionally resonant song.
-
-STRICT WRITING LAWS (Enforce these to write like an elite human writer):
-1. RHYTHMIC CADENCE: Write lines that have a natural, performable vocal groove. Use consistent metric structures (syllables/beats) per line so it can be sung or rapped.
-2. ORGANIC RHYMES: Banish predictable, infantile perfect rhymes (e.g. cat/hat, day/play, night/light, heart/part). Favor slant rhymes, near-rhymes, internal rhyme schemes, and multi-syllabic rhymes that feel natural and sophisticated.
-3. THE LAW OF SUBTEXT: Never state an emotion directly (e.g. do not say 'I am sad', 'I feel pain', 'my broken heart', 'she left me'). Show the emotion through physical friction, micro-actions, sensory details, and things left unsaid. (e.g., instead of "I was lonely in the kitchen," write "Boiled water for one, but left two mugs on the counter").
-4. ZERO COSMIC CLICHES: Never use cheap AI-generated words: neon, shadows, whispers, echoes, sparks, cage, gravity, chains, storm.
-5. HUMAN PARADOX & DEPTH: Focus on raw human conflict, stakes, and contradictions. Avoid clean, preachy endings. Leave things unresolved or ending with a quiet, lingering visual image.
-6. RHYME SCHEME & FLOW: Strictly follow the requested Rhyme Scheme, Rhyme Density, and Flow Pattern.
-7. SECTION COMPOSITION: Label each section clearly (e.g., [Intro], [Verse 1], [Chorus], [Bridge], [Outro]). Do not write introduction commentary or explanations. Just output the raw lyrics.`;
-
-  const userPrompt = `Write the complete song lyrics based on this context:
-${context}
-
-STRUCTURE:
-${structureSequence}
-
-Ensure every section is clearly labeled, and that the lyrics are highly authentic, performable, and deeply human.`;
+  const systemPrompt = `You are a professional lyricist and songwriter. Output lyrics only. Clear section markers like [Verse 1], [Chorus], etc.`;
+  const userPrompt = `Write the full song lyrics based on this context:\n${context}\n\nSTRUCTURE:\n${structureSequence}`;
 
   const messages = [
     { role: "system", content: systemPrompt },
     { role: "user", content: userPrompt }
   ];
 
-  let resultText;
-
-  const { fusionEnabled, fusionModels, openRouterApiKey } = store.config;
-  const activeFusionModels = (fusionModels || []).filter(Boolean);
-
-  if (fusionEnabled && activeFusionModels.length > 0) {
-    // Multi-Model Fusion: call all selected models in parallel, then synthesize
-    const allModels = [store.config.model, ...activeFusionModels].filter(Boolean);
-    // Each draft is checked on its own. Feeding a collapsed draft into the
-    // synthesiser poisons the final song with the same rubble — the editor
-    // prompt has no way to know that "closedRock noneMD youth aggregate" was
-    // never a lyric. A model that returns garbage is dropped from the panel.
-    const drafts = (await Promise.all(
-      allModels.map(modelId =>
-        singleCall(messages, store.config, modelId, store.config.temperature, store.config.maxTokens)
-          .then(({ text }) => {
-            // A draft that is all scratchpad poisons the synthesiser exactly the
-            // way collapsed rubble does. It has no way to know the notes aren't lyrics.
-            if (!text.trim() || isMostlyReasoning(text)) return null;
-            if (inspectGenerated(text).ok) return text;
-            const cut = truncateAtCollapse(text);
-            return cut.text.split('\n').filter((l) => l.trim()).length >= 6 ? cut.text : null;
-          })
-          .catch(() => null)
-      )
-    )).filter(Boolean);
-
-    if (!drafts.length) {
-      throw new Error('Every model in the fusion set returned unusable text. Check which models are selected in Settings.');
-    }
-
-    if (drafts.length === 1) {
-      resultText = drafts[0];
-    } else {
-      // Synthesize: pick the best lines from each draft
-      const synthSystemPrompt = `You are an expert music editor. You have received ${drafts.length} different AI-written drafts of the same song. Your job is to synthesize them into ONE superior version.
-
-Rules:
-- Keep the same section structure as the drafts (same labels like [Verse 1], [Chorus], etc.)
-- For each section, pick the strongest, most vivid lines from ANY draft — don't just copy one draft wholesale
-- Where one draft has a stronger hook and another has better verses, combine the best of each
-- The result must feel like ONE cohesive song, not a patchwork
-- Apply all the original writing laws: no clichés, subtext over statement, slant rhymes
-- Output only the final lyrics. No commentary, no explanations.`;
-
-      const synthUserPrompt = `Original context:
-${context}
-
-Structure: ${structureSequence}
-
-${drafts.map((d, i) => `=== DRAFT ${i + 1} (${allModels[i]}) ===\n${d}`).join('\n\n')}
-
-Synthesize these into the single best version of this song:`;
-
-      resultText = await guardedCall(
-        [{ role: "system", content: synthSystemPrompt }, { role: "user", content: synthUserPrompt }],
-        store.config,
-        store.config.model,
-        store.config.temperature,
-        store.config.maxTokens
-      );
-    }
-  } else {
-    resultText = await callAI(messages, store.config, store.config.temperature, store.config.maxTokens);
-  }
-
+  const resultText = await callAI(messages, store.config, store.config?.temperature, store.config?.maxTokens);
   return parseSectionsFromText(resultText, store);
 }
 
-// Generates a single section carrying forward prior sections as context
 export async function generateSection(sectionType, store, priorSections = []) {
   const context = buildPromptContext(store);
   const contextHistoryText = priorSections.map(s => `[${s.name}]\n${s.lines.map(l => l.text).join("\n")}`).join("\n\n");
 
-  const systemPrompt = `${HUMAN_LYRICIST_RULES}
-Write exactly one section of type: [${sectionType.toUpperCase()}].
-Enforce the bar/line count: write exactly ${store.sectionLineCounts[sectionType] || 8} lines.
-If prior lyrics are provided, carry forward their narrative, characters, and stylistic elements. Do not repeat lines from prior sections. Keep the flow consistent.
-
-Return ONLY the lyrics for this section. Do not output the section label [${sectionType.toUpperCase()}] in your response, just the raw lines.`;
-
-  const userPrompt = `CONTEXT:
-${context}
-
-PRIOR LYRICS CONTEXT:
-${contextHistoryText || "None - this is the first section."}
-
-Generate the ${sectionType} section:`;
+  const systemPrompt = `${HUMAN_LYRICIST_RULES}\nWrite exactly one section of type: [${sectionType.toUpperCase()}]. Output raw lines only.`;
+  const userPrompt = `CONTEXT:\n${context}\n\nPRIOR LYRICS:\n${contextHistoryText || "None."}\n\nGenerate the ${sectionType}:`;
 
   const sectionText = await callAI([
     { role: "system", content: systemPrompt },
     { role: "user", content: userPrompt }
-  ], store.config, store.config.temperature, 500);
+  ], store.config, store.config?.temperature, 500);
 
   return sectionText.trim();
 }
 
-// Generates a variation (A/B/C) of a single line
 export async function generateLineVariation(lineText, sectionContext, store) {
-  const systemPrompt = `${HUMAN_LYRICIST_RULES}
-Provide a single line variation that could replace this line: "${lineText}".
-The replacement must fit the rhythm and vibe of the surrounding section.
-Return ONLY the replacement line. Do not wrap it in quotes. No commentary.`;
-
-  const userPrompt = `Section Context:
-${sectionContext}
-
-Line to vary:
-"${lineText}"
-
-Alternative line:`;
+  const systemPrompt = `${HUMAN_LYRICIST_RULES}\nProvide a single replacement line. No quotes, no explanations.`;
+  const userPrompt = `Context:\n${sectionContext}\n\nOriginal Line:\n"${lineText}"\n\nReplacement:`;
 
   const raw = (await callAI([
     { role: "system", content: systemPrompt },
@@ -478,18 +426,99 @@ Alternative line:`;
   return cleanRefineOutput(raw, lineText);
 }
 
-// Fills in "[blank]" tokens in lyrics
 export async function fillBlank(fullLyrics, store) {
-  const systemPrompt = `${HUMAN_LYRICIST_RULES}
-You will be given song lyrics that contain one or more "[blank]" tokens.
-Find each "[blank]" token and generate a fitting lyric phrase or line that plugs the gap, matching the surrounding rhythm, vocabulary, and subtext.
-Return the complete song lyrics with the blanks filled in. Keep everything else identical. No commentary.`;
-
+  const systemPrompt = `${HUMAN_LYRICIST_RULES}\nFill in the [blank] tokens seamlessly with matching rhythm and tone.`;
   return (await callAI([
     { role: "system", content: systemPrompt },
-    { role: "user", content: `Fill the [blank] tokens in this song:\n\n${fullLyrics}` }
-  ], store.config, 0.75, store.config.maxTokens)).trim();
+    { role: "user", content: `Fill the blanks:\n\n${fullLyrics}` }
+  ], store.config, 0.75, store.config?.maxTokens)).trim();
 }
+
+export function parseSectionsFromText(text, store) {
+  const lines = stripReasoning(text).split("\n");
+  const parsed = [];
+  let currentSection = null;
+  let sectionIndex = 1;
+
+  for (let rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    const match = line.match(/^\[(.*?)\]$/);
+    if (match) {
+      if (currentSection) parsed.push(currentSection);
+      const name = match[1];
+      let type = "verse";
+      const lower = name.toLowerCase();
+      if (lower.includes("intro")) type = "intro";
+      else if (lower.includes("chorus") || lower.includes("hook")) type = "chorus";
+      else if (lower.includes("pre")) type = "pre-chorus";
+      else if (lower.includes("bridge")) type = "bridge";
+      else if (lower.includes("outro")) type = "outro";
+
+      currentSection = {
+        id: `sec-${Date.now()}-${sectionIndex++}-${Math.random().toString(36).substr(2, 5)}`,
+        type,
+        name,
+        lines: [],
+        adLibs: "",
+        showAdLibs: false,
+        readability: "",
+        vocabRichness: 0,
+        originality: null,
+        clichés: []
+      };
+    } else {
+      if (!currentSection) {
+        currentSection = {
+          id: `sec-${Date.now()}-${sectionIndex++}-${Math.random().toString(36).substr(2, 5)}`,
+          type: "verse",
+          name: "Verse 1",
+          lines: [],
+          adLibs: "",
+          showAdLibs: false,
+          readability: "",
+          vocabRichness: 0,
+          originality: null,
+          clichés: []
+        };
+      }
+      currentSection.lines.push({
+        text: line,
+        locked: false,
+        lockedWord: "",
+        targetSyllables: 0,
+        activeVariation: "draft",
+        variations: { draft: line, A: "", B: "", C: "" }
+      });
+    }
+  }
+  if (currentSection) parsed.push(currentSection);
+  return parsed;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE SIX THAT WENT MISSING.
+
+   These were dropped when this file was slimmed down, but three components
+   never stopped importing them, and a missing named export is not a runtime
+   warning — it is a module-level SyntaxError that stops the WHOLE app from
+   mounting. The symptom was the entire window failing to boot with
+   "does not provide an export named 'generateAdLibs'", which reads like an
+   AIService bug and is really a link error.
+
+   Who needs what:
+     SectionEditor.jsx    refineLyrics, generateAdLibs
+     ArtistAnalyzer.jsx   refineLyrics, analyzeClichés, checkSimilarity,
+                          checkThemeConsistency
+     SongwriterHub.jsx    generateBridgeVariations
+
+   Restored from commit ee600ff verbatim. The model constants at the top of
+   this file are deliberately NOT restored with them: that commit still points
+   FALLBACK_MODEL at google/gemma-4-31b-it:free, which is deprecated on
+   OpenRouter and 404s the moment a fallback is triggered. The live constants
+   here (llama-3.1-8b-instruct:free) stay.
+   ══════════════════════════════════════════════════════════════════════════ */
 
 // Dedicated bridge variations - returns 3 distinct bridge approaches (Narrative Twist, Emotional Peak, Sonic Shift)
 export async function generateBridgeVariations(store, priorLyrics = []) {
@@ -660,80 +689,4 @@ function parseBridgeVariations(text) {
     B: v2Match ? v2Match[1].trim() : "",
     C: v3Match ? v3Match[1].trim() : ""
   };
-}
-
-// Parses raw lyric text into structured section blocks
-export function parseSectionsFromText(text, store) {
-  // Last line of defence. Anything reaching here with a thinking pass still on it
-  // would open an implicit "Verse 1" and be saved as lyrics. Tag-stripping only:
-  // this also runs on text the user typed or pasted, and their words are theirs.
-  const lines = stripReasoning(text).split("\n");
-  const parsed = [];
-  let currentSection = null;
-  let sectionIndex = 1;
-
-  for (let line of lines) {
-    line = line.trim();
-    if (!line) continue;
-
-    // Check if section marker like [Verse 1] or [Chorus]
-    const match = line.match(/^\[(.*?)\]$/);
-    if (match) {
-      if (currentSection) {
-        parsed.push(currentSection);
-      }
-      const name = match[1];
-      let type = "verse";
-      const nameLower = name.toLowerCase();
-      if (nameLower.includes("intro")) type = "intro";
-      else if (nameLower.includes("chorus") || nameLower.includes("hook")) type = "chorus";
-      else if (nameLower.includes("pre")) type = "pre-chorus";
-      else if (nameLower.includes("bridge")) type = "bridge";
-      else if (nameLower.includes("outro")) type = "outro";
-      else if (nameLower.includes("freestyle")) type = "freestyle";
-
-      currentSection = {
-        id: `sec-${Date.now()}-${sectionIndex++}-${Math.random().toString(36).substr(2, 5)}`,
-        type,
-        name,
-        lines: [],
-        adLibs: "",
-        showAdLibs: false,
-        readability: "",
-        vocabRichness: 0,
-        originality: null,
-        clichés: []
-      };
-    } else {
-      if (!currentSection) {
-        // Create an implicit verse if text appears before any section label
-        currentSection = {
-          id: `sec-${Date.now()}-${sectionIndex++}-${Math.random().toString(36).substr(2, 5)}`,
-          type: "verse",
-          name: "Verse 1",
-          lines: [],
-          adLibs: "",
-          showAdLibs: false,
-          readability: "",
-          vocabRichness: 0,
-          originality: null,
-          clichés: []
-        };
-      }
-      currentSection.lines.push({
-        text: line,
-        locked: false,
-        lockedWord: "",
-        targetSyllables: 0,
-        activeVariation: "draft",
-        variations: { draft: line, A: "", B: "", C: "" }
-      });
-    }
-  }
-
-  if (currentSection) {
-    parsed.push(currentSection);
-  }
-
-  return parsed;
 }

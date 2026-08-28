@@ -4,6 +4,8 @@
 export const APP_VERSION = '4.2.0';
 export const BUILD_NUMBER = '142';
 export const FULL_VERSION = '4.2.0.142';
-/** Shown in UI — never includes .001/.002 build pad */
-export const APP_TITLE = 'Lyricist 4.2.0';
-export const WINDOW_TITLE = 'Lyricist 4.2.0 Goes Quantum';
+/** Shown in UI — never includes .001/.002 build pad, and never a version.
+ *  The product is Lyricist Pro; 4.2.0 is what build this is, not what it is
+ *  called. Kept in step with the generator in scripts/release.mjs. */
+export const APP_TITLE = 'Lyricist Pro';
+export const WINDOW_TITLE = 'Lyricist Pro';

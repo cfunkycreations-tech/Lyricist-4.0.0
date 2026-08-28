@@ -5,9 +5,17 @@ import App from './App.jsx';
 import './index.css';
 import { registerPWA } from './web/registerPWA.js';
 import LandscapeSplash from './web/LandscapeSplash.jsx';
+import { initAnalytics } from './services/analytics.js';
 
 // Installable on a phone. No-op inside Electron - see the file.
 registerPWA();
+
+// Product analytics. Does nothing at all — no chunk fetched, no socket opened —
+// in a build with no VITE_POSTHOG_KEY, which is what makes the footer's
+// Air-Gapped Safe claim true for the commercial installer. See analytics.js for
+// what is and is not collected. Never awaited: a slow or blocked analytics load
+// must not delay the first paint.
+initAnalytics();
 
 // Surface boot errors instead of a silent black screen
 class BootErrorBoundary extends React.Component {

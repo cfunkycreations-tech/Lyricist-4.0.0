@@ -39,6 +39,9 @@
 }
 .gha-hd p { margin: 3px 0 0; font-size: 11.5px; line-height: 1.5; color: #64789B; }
 
+/* The header now carries two chips (Stow, Voice), stacked vertically so a
+   longer label doesn't push the h2 down or wrap. */
+.gha-hdbtns { display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto; }
 .gha-voice {
   flex: 0 0 auto; padding: 6px 11px; border-radius: 999px; cursor: pointer;
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 10.5px;

@@ -153,7 +153,7 @@ export default function ScrewShop() {
       <div className="screw-wrap">
         <header className="screw-top">
           <div>
-            <div className="screw-brand">Lyricist 4.2.0 &nbsp;/&nbsp; Goes Quantum</div>
+            <div className="screw-brand">Lyricist Pro</div>
             <h1 className="screw-title">Chopped &amp; Screwed</h1>
             <p className="screw-tag">
               Slow it down until the voice sinks, then chop it back up on the beat.

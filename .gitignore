@@ -19,6 +19,10 @@ yarn-error.log*
 .env
 .env.*
 *.local
+# ...except the template, which holds no secrets and is the only place the
+# build flags (Ghost Pilot gate, PostHog keys) are documented. Without this
+# exception `.env.*` above swallows it and the documentation never ships.
+!.env.example
 
 # Editor / OS cruft
 .vscode/

@@ -377,3 +377,50 @@
   color: rgba(160, 180, 210, 0.5);
   max-width: 720px;
 }
+
+/* ── CLOUD-ASSISTED FEATURE TRANSPARENCY BANNER ───────────────────────────
+   Stated before the engine picker, not after it. Deliberately a hairline
+   plate rather than a warning colour: this is disclosure, not an alarm — the
+   cloud path is a feature people paid for, and dressing it as a hazard would
+   be its own kind of dishonest. */
+.stemmer-transparency {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: var(--bg-panel);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: var(--border-hairline);
+  border-left: 2px solid var(--accent-neon);
+}
+
+.stemmer-transparency-mark {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  line-height: 1.2;
+  color: var(--accent-neon);
+  filter: drop-shadow(var(--glow-tight));
+}
+
+.stemmer-transparency b {
+  display: block;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-neon);
+  margin-bottom: 4px;
+}
+
+.stemmer-transparency span {
+  display: block;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.stemmer-transparency i { font-style: italic; color: var(--text-primary); }

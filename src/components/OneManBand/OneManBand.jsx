@@ -1003,7 +1003,7 @@ export default function OneManBand() {
 
         <header className="omb-top">
           <div>
-            <div className="omb-brand">Lyricist 4.2.0 &nbsp;/&nbsp; Goes Quantum</div>
+            <div className="omb-brand">Lyricist Pro</div>
             <h1 className="omb-title">One Man Band</h1>
             <p className="omb-tag">
               Your words, sung by a full band. <b>Free forever.</b> Faster if you have the hardware.

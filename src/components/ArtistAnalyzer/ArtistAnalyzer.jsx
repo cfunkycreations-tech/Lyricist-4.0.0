@@ -529,12 +529,12 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                             'lyricistStyleDNAPressure',
                             JSON.stringify({ ...styleDNA, artist: artist.trim(), savedAt: Date.now() })
                           );
-                          alert('Style DNA sent to Quantum Lab pressure chamber.\nOpen Quantum Lab → panel 8 Style → Load Style DNA pressure.');
+                          alert('Style DNA sent to the Matrix pressure chamber.\nOpen The Matrix → Advanced Studio → 8 Style → Load Style DNA pressure.');
                         } catch (e) {
                           alert('Could not save Style DNA: ' + (e?.message || e));
                         }
                       }}
-                      data-help="Sends this Style DNA into Quantum Lab as a pressure field (rhythm, density, emotional temp, image motifs) — new lyrics under that physics, never plagiarized bars."
+                      data-help="Sends this Style DNA into The Matrix as a pressure field (rhythm, density, emotional temp, image motifs) — new lyrics under that physics, never plagiarized bars."
                       style={{
                         padding: '8px 14px',
                         borderRadius: 8,

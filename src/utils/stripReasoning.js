@@ -71,6 +71,24 @@ const META_HARD = [
   /\b(?:e\.g\.|i\.e\.|etc\.?)(?:\s|$|,)/i,
   // The short self-directions between steps: "We'll need to count." "Let's craft."
   /^(?:we|i|let'?s|let\s+me)\s*(?:'ll|'d|will|should|must|can|need\s+to|now)?\s*(?:need\s+to\s+)?(?:count|recount|check|verify|revise|adjust|craft|draft|proceed|continue|rewrite)\s*\.?$/i,
+
+  /* ── RESTATING THE BRIEF ────────────────────────────────────────────────
+     A reasoning model opens by reciting the job back to itself:
+
+       "We need to produce a 4-line verse. Constraints:"
+       "- Seed palette: many words. Must include each of those seeds..."
+       "- Rhyme scheme: ABCD, meaning each line ends with a different rhyme?"
+
+     The rule above missed all of it: it only fires when the line ENDS on the
+     verb, and these run on into the restated constraint. The bulleted ones also
+     read as label lines, which excluded them from the ratio, so a full
+     scratchpad scored 89% truth and was saved into the tab as the verse.
+
+     Nobody sings any of these openings, so they are hard tells. */
+  /^\s*[-*]?\s*constraints?\s*:/i,
+  /^\s*[-*]?\s*(?:seed\s+palette|rhyme\s+scheme|stress\s+signature|end-?words?|section)\s*:/i,
+  /^(?:we|i)\s+(?:need|have|want|must|should)\s+to\s+\w+/i,
+  /\bso\s+(?:we|i)\s+(?:must|need\s+to|should)\b/i,
 ];
 
 /**

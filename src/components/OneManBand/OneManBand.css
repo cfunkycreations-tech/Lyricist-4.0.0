@@ -1,10 +1,11 @@
 /* ONE MAN BAND
    Chrome and black glass. Emerald leads, the old teal is pulled back toward
-   green. Every colour here comes from a variable so the Prism control can
-   rotate the whole tab at once — see PrismBackground.jsx. */
+   green. Every colour here comes from a variable so the Prism accent slider
+   can rotate the interface at once — see services/prismTheme.js. */
 
 .omb {
-  --omb-ground: #05070C;
+  /* Was #05070C, the app's old obsidian. Flat black now, 2026-08-27. */
+  --omb-ground: #000;
   --omb-panel: rgba(12, 17, 26, .44);
   --omb-line: var(--lx-line, hsla(158 60% 70% / .16));
   --omb-line-hot: var(--lx-line-hot, hsla(262 70% 70% / .30));
@@ -376,7 +377,10 @@
 .omb-take .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 @media (prefers-reduced-motion: reduce) {
-  .omb .prism-bg { display: none; }
+  /* .prism-bg used to be the WebGL background behind every tab; it was
+     stripped with the rest of the artwork on 2026-08-27, so this rule has
+     nothing left to hide. Kept in this shape (motion-reduce carve-outs) so
+     the next thing that moves has an obvious home. */
   .omb-dice.rolling { animation: none; }
 }
 

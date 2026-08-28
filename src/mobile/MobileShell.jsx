@@ -98,7 +98,7 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
           </>
         ) : (
           <>
-            <span className="mob-wordmark">LYRICIST <b>4.2.0</b></span>
+            <span className="mob-wordmark">LYRICIST <b>PRO</b></span>
             <span className="mob-bar-spacer" />
           </>
         )}
@@ -110,19 +110,24 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
             and the tour is how a first-time user learns there are eighteen
             tools behind that grid. It comes back here, in the bar, on every
             screen. */}
-        <button
-          className="mob-icon-btn"
-          onClick={() => { setSheet(false); if (onWizard) onWizard(); }}
-          aria-label="Take the guided tour"
-          title="Take the tour"
-        >
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8" />
-            <path d="M9.2 9.2a2.8 2.8 0 1 1 3.6 2.7c-.6.2-.9.7-.9 1.3v.4"
-                  fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            <circle cx="12" cy="17" r="1.1" fill="currentColor" />
-          </svg>
-        </button>
+        {/* Hidden while the guided tour is parked: App.jsx passes onWizard as
+            null, so there is nothing behind this button. A control that does
+            nothing is worse than an absent one. */}
+        {onWizard && (
+          <button
+            className="mob-icon-btn"
+            onClick={() => { setSheet(false); onWizard(); }}
+            aria-label="Take the guided tour"
+            title="Take the tour"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8" />
+              <path d="M9.2 9.2a2.8 2.8 0 1 1 3.6 2.7c-.6.2-.9.7-.9 1.3v.4"
+                    fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              <circle cx="12" cy="17" r="1.1" fill="currentColor" />
+            </svg>
+          </button>
+        )}
 
         <button className="mob-icon-btn" onClick={() => setSheet((v) => !v)} aria-label="All tools">
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
@@ -155,13 +160,20 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
           {/* Spelled out on the launcher too. The icon in the bar is for people
               who already know what it is; this is for the person who has just
               opened the app for the first time and needs telling. */}
-          <button className="mob-pill mob-pill-tour" onClick={() => onWizard && onWizard()}>
-            ✨ Take the tour
-          </button>
-          <span className="mob-support-line">Free AI tools for the masses</span>
-          <a className="mob-pill" href="https://paypal.me/funkchris" target="_blank" rel="noopener noreferrer">PayPal</a>
-          <a className="mob-pill" href="https://cash.app/$cfunkycreations" target="_blank" rel="noopener noreferrer">Cash App</a>
-          <a className="mob-pill" href="https://buymeacoffee.com/cfunkycream" target="_blank" rel="noopener noreferrer">Buy Me a Coffee</a>
+          {onWizard && (
+            <button className="mob-pill mob-pill-tour" onClick={onWizard}>
+              ✨ Take the tour
+            </button>
+          )}
+          {/* The three payment links that used to sit here are gone with the
+              rest of the donationware. What is left is the same status deck the
+              desktop footer carries, folded onto one line. */}
+          <span className="mob-support-line">
+            Funk Audio File OpSec (FAFO) · Austin, Texas
+          </span>
+          <span className="mob-support-line">
+            Lyricist Pro · Engine: Local/Hybrid · Air-Gapped Safe
+          </span>
         </div>
       </div>
 

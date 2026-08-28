@@ -8,6 +8,7 @@ import { listRecordings, saveRecording } from '../../services/RecordingsStore.js
 import { masterTrack, MASTERING_PRESETS, DEFAULT_MASTERING } from '../../services/MasteringService.js';
 import { generateImage, MANDATORY_MEDALLION_FRAME } from '../../services/GeminiService.js';
 import { resumeAudio } from '../../services/audioEngine.js';
+import { track } from '../../services/analytics.js';
 
 import TabBackground from '../common/TabBackground.jsx';
 // Mastering Studio — Lyricist 4.1.3
@@ -230,8 +231,12 @@ export default function MasteringStudio() {
         }
         files.push({ filename: 'tracklist.txt', bytes: new TextEncoder().encode(tracklist) });
         const res = await window.lyricistAPI.saveAlbum(meta.title || 'Untitled Album', files);
-        if (res?.ok) flash(`✓ Album exported: ${res.path}`);
-        else setError(`Export failed: ${res?.error || 'unknown error'}`);
+        if (res?.ok) {
+          flash(`✓ Album exported: ${res.path}`);
+          // Track count and preset only. NOT res.path — that is the user's
+          // Documents folder and carries their Windows account name.
+          track('song_exported', { destination: 'disk', track_count: tracks.length, preset, has_cover: Boolean(cover) });
+        } else setError(`Export failed: ${res?.error || 'unknown error'}`);
       } else {
         // Browser fallback: sequential downloads.
         const dl = (blob, name) => {
@@ -244,6 +249,7 @@ export default function MasteringStudio() {
         if (cover) dl(await (await fetch(cover.dataUrl)).blob(), 'cover.png');
         dl(new Blob([tracklist], { type: 'text/plain' }), 'tracklist.txt');
         flash('✓ Album files downloading');
+        track('song_exported', { destination: 'download', track_count: tracks.length, preset, has_cover: Boolean(cover) });
       }
     } catch (e) {
       setError(`Export failed: ${e.message}`);

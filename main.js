@@ -1,10 +1,89 @@
-const { app, BrowserWindow, session, ipcMain, Menu, MenuItem, clipboard, shell } = require('electron');
+const { app, BrowserWindow, session, ipcMain, Menu, MenuItem, clipboard, shell, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const demucsLocal = require('./demucsLocal');
 const comfySetup = require('./comfySetup');
 const kaggleCloud = require('./kaggleCloud');
 const captionSkill = require('./captionSkill');
+
+/* ══════════════════════════════════════════════════════════════════════════
+   GHOST PILOT — OS HARDWARE AUTOMATION.  INTERNAL / CREATOR BUILD ONLY.
+
+   This is the hand that drives the app for a recording: the real Windows mouse
+   and keyboard, so the cursor on camera is the actual system cursor a viewer
+   would see, not a drawn one. It is the engine behind the automated content
+   pipeline — run each tab, walk through it like a person doing a tutorial.
+
+   TWO RULES, both enforced here.
+
+   1. IT NEVER SHIPS TO A CUSTOMER. @nut-tree-fork/nut-js is a devDependency, so
+      electron-builder leaves it out of the packaged app entirely. If this file
+      had `require('@nut-tree-fork/nut-js')` at the top, a customer build would
+      throw "Cannot find module" at boot — because the module is deliberately
+      absent. So the require is LAZY, inside pilot(), reached only when the gate
+      below is open. A customer build never calls it, never loads it, never
+      needs it on disk.
+
+   2. IT IS ONLY ARMED IN THE CREATOR BUILD. `!app.isPackaged` is the dev/creator
+      session you record in; the env flag is the escape hatch for a packaged
+      creator build. In the shipped customer app both are false, every handler
+      short-circuits, and nut-js is never touched.
+   ══════════════════════════════════════════════════════════════════════════ */
+const PILOT_ENABLED = !app.isPackaged || process.env.VITE_FAFO_INTERNAL_BUILD === 'true';
+
+let _pilot = null;
+function pilot() {
+  // Lazy on purpose — see rule 1 above. Only the creator build ever gets here.
+  if (_pilot) return _pilot;
+  const { mouse, keyboard, straightTo, Point, Button } = require('@nut-tree-fork/nut-js');
+  mouse.config.mouseSpeed = 800;      // humanize the glide
+  keyboard.config.autoDelayMs = 50;   // humanize the typing cadence
+  _pilot = { mouse, keyboard, straightTo, Point, Button };
+  return _pilot;
+}
+
+/* THE COORDINATE FIX.
+
+   The renderer hands us a point in VIEWPORT CSS pixels (the centre of the
+   target element's bounding rect). Two conversions turn that into the physical
+   pixel nut-js needs, and doing them HERE is the whole point:
+
+     + getContentBounds() gives the window's CONTENT-area origin in DIP. Using
+       it instead of window.screenX/screenY in the renderer removes the
+       title-bar offset — screenY points at the top of the frame, the viewport
+       starts below it, and the old math ignored the gap so every click landed
+       high by the title-bar height.
+     + dipToScreenPoint() applies the display's scale factor. On a 150% monitor
+       a DIP point and a physical point are not the same pixel, and Electron's
+       own screen API is the only thing that knows the factor for the display
+       the window is actually on (multi-monitor safe). */
+function toScreenPoint(sender, viewX, viewY) {
+  const win = BrowserWindow.fromWebContents(sender);
+  const b = win.getContentBounds();                        // DIP, content area
+  return screen.dipToScreenPoint({ x: b.x + viewX, y: b.y + viewY });
+}
+
+ipcMain.handle('pilot-move', async (event, { x, y }) => {
+  if (!PILOT_ENABLED) return { ok: false, error: 'Ghost Pilot is disabled in this build.' };
+  const { mouse, straightTo, Point } = pilot();
+  const p = toScreenPoint(event.sender, x, y);
+  await mouse.move(straightTo(new Point(p.x, p.y)));
+  return { ok: true };
+});
+
+ipcMain.handle('pilot-click', async () => {
+  if (!PILOT_ENABLED) return { ok: false, error: 'Ghost Pilot is disabled in this build.' };
+  const { mouse, Button } = pilot();
+  await mouse.click(Button.LEFT);
+  return { ok: true };
+});
+
+ipcMain.handle('pilot-type', async (event, { text }) => {
+  if (!PILOT_ENABLED) return { ok: false, error: 'Ghost Pilot is disabled in this build.' };
+  const { keyboard } = pilot();
+  await keyboard.type(text);
+  return { ok: true };
+});
 
 // One copy at a time. A second instance can't take the profile lock the first
 // one holds, so its storage comes up broken and the window can land black —
@@ -984,10 +1063,13 @@ function createWindow() {
     // window shrink to the mobile breakpoint and grow without limit.
     minWidth: 420,
     minHeight: 640,
-    backgroundColor: '#07050f',
+    // Matches --bg-obsidian, so the frame that paints before the renderer boots
+    // is the same colour as the app rather than a purple flash.
+    backgroundColor: '#05070C',
     icon: path.join(__dirname, 'src/assets/icon.ico'),
-    // Window title stays product version (4.2.0) — build pad is for installer filenames only
-    title: 'Lyricist 4.2.0 Goes Quantum',
+    // The product name, with no version in it. The build pad is for installer
+    // filenames only, and the version belongs in About, not in the title bar.
+    title: 'Lyricist Pro',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

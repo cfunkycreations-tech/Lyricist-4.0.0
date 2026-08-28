@@ -121,7 +121,7 @@ const TAB_NOTES = {
     + 'takes, take numbers, and where it runs (free cloud, Kaggle, this computer).',
   analyzer: 'Ghost Rider: studies an artist’s style and gives you Style DNA to write with.',
   songforge: 'Song Forge: writes a whole song and paints cover art from a theme.',
-  quantum: 'Quantum Lab: a lattice of your own keywords that generates lyric options.',
+  quantum: 'The Matrix: a semantic grid of your own keywords. One button spreads, locks and writes two verses from it.',
   collab: 'Collaboration: write with someone else in real time using a room code.',
   loopstation: 'RC-Funk 5000: a live four track looper with effects.',
   stemmer: 'Stemmer: splits a finished mix into vocals, drums, bass, guitar, keys and other.',
@@ -134,7 +134,7 @@ const TAB_NOTES = {
   dictionary: 'Dictionary: meanings and pronunciation, free.',
   toolshub: 'AI Tools Hub: links to other tools.',
   scratchpad: 'Scratch Pad: a plain notebook that saves itself.',
-  settings: 'Settings: the OpenRouter key, the voice folder, the prism, donations.',
+  settings: 'Settings: your BYOK routing key, the model picker, the voice, and the Razor Neon accent slider.',
 };
 
 /**
@@ -190,8 +190,9 @@ function systemPrompt(tab, context) {
    * words at risk, so it does not also get to decide when they come back.
    */
   const actions = availableGhostActions().filter((n) => !HIDDEN_FROM_MODEL.has(n));
-  return `You are the Ghost: the guide living inside Lyricist 4.2.0, a free songwriting studio
-made by Chris Funk of CFunky Creations. You are talking to the person using it.
+  return `You are the Ghost: the guide living inside Lyricist Pro, a commercial songwriting
+workstation built by Funk Audio File OpSec (FAFO) in Austin, Texas. You are talking to the
+person using it.
 
 WHO YOU ARE TALKING TO. Songwriters, often beginners, often not technical. Never
 use jargon without saying what it means. Never tell someone to edit a file, run a
@@ -297,6 +298,20 @@ ACTION NOTES:
     actually emitted the action. Saying "tap the button below" without emitting
     it leaves them looking at no button. Just say you are starting it.
   stop {} stops a run.
+
+  set_voice {"name":"woman"|"man"|"ghost"} switches the voice you speak in.
+    The next words that come out of your reply are heard in that voice. Emit
+    this FIRST when the person asks you to speak in a particular voice.
+  run_matrix_walkthrough {"withObs":true} plays a scripted Matrix demo — the
+    on-screen cursor moves to Load-into-Matrix and Auto-Craft, presses each,
+    and you narrate every step out loud in the current voice. With withObs:true
+    OBS starts recording before the run and stops after. Emit this when the
+    person asks you to "run The Matrix", "record a Matrix demo", or "show me
+    the Matrix" — do NOT try to script the individual clicks yourself; this
+    action IS the demo, and it lines up voice and cursor for you.
+  obs_record_start {} / obs_record_stop {} start and stop the OBS recording via
+    the WebSocket at localhost:4455. Use these on their own when the person
+    wants to bookend something the walkthrough does not cover.
 
 NEVER describe a button, a tap or a change you are not also emitting as a <do>
 line. Talking about doing something is not doing it. Do not emit an action that
@@ -441,7 +456,7 @@ export async function askGhost({ history = [], question, config, tab = 'songwrit
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
       'HTTP-Referer': 'https://lyricist.app',
-      'X-Title': 'Lyricist 4.2.0',
+      'X-Title': 'Lyricist Pro',
     },
     body: JSON.stringify({
       model: id,

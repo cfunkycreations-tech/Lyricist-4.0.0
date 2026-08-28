@@ -1,8 +1,13 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { getGhostDemo } from './ghostDemoScripts.js';
 import { captureAll, restoreAll } from '../../services/demoSafety.js';
-// User art (true alpha): V:\assets\upscaled\ghost.demo.png
-import ghostGuideImg from '../../assets/ghost.demo.png';
+// The ghost portrait (ghost.demo.png) was stripped 2026-08-27 with the rest of
+// the artwork. Chris, later same day, watching a test recording: *"if you built
+// it right, I don't want the cursor to say remote on it. It needs to look like
+// a person is actually guiding, driving the mouse."* — so the "Remote" name tag
+// went too. What is left is a plain SVG pointer that looks and moves like any
+// other cursor a viewer might be watching. The .png file is left in src/assets/
+// untouched but no longer imported.
 import './GhostDemo.css';
 
 /**
@@ -176,7 +181,7 @@ export default function GhostDemo({ tabId, onClose }) {
   const [highlight, setHighlight] = useState(null);
   const [clickPulse, setClickPulse] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [statusLine, setStatusLine] = useState('Remote operator connecting…');
+  const [statusLine, setStatusLine] = useState('Connecting…');
   const cancelRef = useRef(false);
   const snapshotRef = useRef(null);
 
@@ -398,9 +403,9 @@ export default function GhostDemo({ tabId, onClose }) {
 
   const runDemo = useCallback(async (runId) => {
     if (!demo) {
-      setStatusLine('This tab uses Tips hover — no remote demo needed.');
+      setStatusLine('This tab uses Tips hover — no walkthrough needed.');
       setBubble({
-        text: 'Dictionary, Thesaurus, and the simple tools don’t get a remote demo. Use Tips ON and hover. Ghost Demo is for Quantum Lab, Ghost Rider, Song Forge, RC-Funk 5000, MIDI, Mastering, and the other hard tabs.',
+        text: 'Dictionary, Thesaurus, and the simple tools don’t get a walkthrough. Use Tips ON and hover. Ghost Demo is for Quantum Lab, Ghost Rider, Song Forge, RC-Funk 5000, MIDI, Mastering, and the other hard tabs.',
         x: Math.max(16, window.innerWidth / 2 - 170),
         y: Math.max(90, window.innerHeight / 2 - 50),
         visible: true,
@@ -416,7 +421,7 @@ export default function GhostDemo({ tabId, onClose }) {
     // Quantum Lab lattice the user had filled in. Restored in finishDemo().
     snapshotRef.current = captureAll();
 
-    setStatusLine(`Remote operator running: ${demo.title}`);
+    setStatusLine(`Running: ${demo.title}`);
     cursorRef.current = { x: window.innerWidth * 0.62, y: window.innerHeight * 0.28 };
     setCursor(cursorRef.current);
 
@@ -534,7 +539,7 @@ export default function GhostDemo({ tabId, onClose }) {
       setHighlight(null);
       restoreWork();
       setBubble({
-        text: `Remote demo finished for ${demo.title}. Your own work has been put back exactly as you left it — the demo never keeps anything. Play Demo again anytime while Ghost Demo is On.`,
+        text: `Walkthrough finished for ${demo.title}. Your own work has been put back exactly as you left it — the demo never keeps anything. Play Demo again anytime while Ghost Demo is On.`,
         x: Math.max(16, window.innerWidth / 2 - 170),
         y: Math.max(70, window.innerHeight / 2 - 40),
         visible: true,
@@ -585,7 +590,7 @@ export default function GhostDemo({ tabId, onClose }) {
   };
 
   return (
-    <div className="ghost-demo-root" role="dialog" aria-label="Ghost remote demo">
+    <div className="ghost-demo-root" role="dialog" aria-label="Ghost walkthrough">
       {/* Dim overlay does NOT block the UI — ghost clicks pass through to real controls */}
       <div className="ghost-demo-scrim" aria-hidden />
 
@@ -606,18 +611,11 @@ export default function GhostDemo({ tabId, onClose }) {
         className={`ghost-demo-operator ${clickPulse ? 'is-click' : ''}`}
         style={{ left: cursor.x, top: cursor.y }}
       >
-        <div className="ghost-demo-figure" aria-hidden>
-          {/* Full transparent ghost art — no circular bubble crop */}
-          <div className="ghost-demo-sprite-wrap">
-            <img
-              src={ghostGuideImg}
-              alt="Ghost guide"
-              className="ghost-demo-sprite"
-              draggable={false}
-            />
-          </div>
-          <span className="ghost-demo-ghost-label">Remote</span>
-        </div>
+        {/* The transparent ghost art and the "Remote" name tag both used to
+            hang off the cursor here. Both are gone: Chris does not want the
+            recording to betray that a canned operator is driving, and a name
+            tag hovering next to a pointer is the tell. The cursor stands
+            alone now, and looks like any other cursor on screen. */}
         <div className="ghost-demo-cursor" aria-hidden>
           <svg width="32" height="32" viewBox="0 0 24 24">
             <path
@@ -632,7 +630,7 @@ export default function GhostDemo({ tabId, onClose }) {
 
       {bubble.visible && (
         <div className="ghost-demo-bubble" style={{ left: bubble.x, top: bubble.y }}>
-          <div className="ghost-demo-bubble-name">Remote operator</div>
+          <div className="ghost-demo-bubble-name">Ghost</div>
           <div className="ghost-demo-bubble-text">{bubble.text}</div>
           <div className="ghost-demo-bubble-meta">
             {demo
@@ -644,8 +642,7 @@ export default function GhostDemo({ tabId, onClose }) {
 
       <div className="ghost-demo-bar">
         <span className="ghost-demo-bar-title">
-          <img src={ghostGuideImg} alt="" className="ghost-demo-bar-avatar" />
-          Remote demo — {demo?.title || 'Tips'} · {statusLine}
+          Ghost walkthrough — {demo?.title || 'Tips'} · {statusLine}
         </span>
         {/* Speed is a visible, labelled control — not a preference buried in
             Settings. Medium is the default. */}

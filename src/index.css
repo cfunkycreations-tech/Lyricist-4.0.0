@@ -26,92 +26,147 @@
   font-style: normal;
 }
 
-/* ── Font roles ──
-   Audiowide     → LYRICIST main title, lyrics text, textareas, written content
-   Kalnia Glaze  → all UI labels, tabs, buttons, section headings
-── */
-body, button, input, select, label {
-  font-family: 'Metamorphous', 'Space Grotesk', sans-serif;
-}
-textarea, .lyric-line, .lyric-output, .lyric-text, [contenteditable] {
-  font-family: 'Audiowide', 'Orbitron', 'JetBrains Mono', monospace;
-}
-/* 4.2.0 — LYRICIST header title: Audiowide bold + full chrome rules below */
+/* ══ FONT ROLES — OBSIDIAN & RAZOR NEON ═══════════════════════════════════
+   Three faces, three jobs, and nothing crosses over:
 
-/* ── Quantum Neon brand (4.2.0): electric blue · purple · emerald · metallic gold · mirror silver ── */
+     Space Grotesk   UI labels, menus, buttons, body copy, lyrics
+     Audiowide/Orbitron  display headers and section marks ONLY
+     JetBrains Mono  metrics, code, phonetics, clocks — anything numeric
+
+   WHAT CHANGED AND WHY. Metamorphous — a blackletter-adjacent display face —
+   was set on body, button, input, select and label, i.e. on every piece of
+   chrome in the app. Audiowide was set on every textarea and every lyric line.
+   Both are display faces: they are drawn to be read at 40px in a title, not at
+   13px in a control you use for six hours. Audiowide has no lowercase
+   descender variation and near-identical l/I/1, which is the worst possible
+   property for a box you type lyrics into.
+
+   So the display faces are now confined to headers and marks, which is the one
+   place they were always right, and the workstation reads in Space Grotesk.
+   ══════════════════════════════════════════════════════════════════════════ */
+body, button, input, select, label, textarea {
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+}
+.lyric-line, .lyric-output, .lyric-text, [contenteditable] {
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+}
+/* Metrics, code, phonetics, clocks. */
+.ql-mono, .metric, .mono, code, kbd, samp, pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ══ OBSIDIAN & RAZOR NEON — the design system ════════════════════════════
+   One surface colour, one hairline, one switchable accent. Everything else in
+   this stylesheet is downstream of these eleven values.
+
+   THE ACCENT IS A VARIABLE ON PURPOSE. --accent-neon is rewritten at runtime
+   by services/prismTheme.js from the full-spectrum slider in Settings, so the
+   whole interface — borders, glows, focus rings, scrollbars, the tab underline
+   — rotates together. Anything that hardcodes a hex instead of reading this is
+   a piece of UI that will disagree with the rest of the app the moment the
+   slider moves.
+
+   GLOWS ARE TIGHT AND CONTROLLED. --glow-tight is 8px. The old system stacked
+   16px + 32px + 48px diffuse drop-shadows on titles, which is a light smudge,
+   not a stroke. A razor-neon edge is a 1px line with just enough bloom to read
+   as lit.
+   ══════════════════════════════════════════════════════════════════════════ */
 :root {
-  --neon-blue: #00f0ff;
-  --neon-purple: #c026ff;
-  --neon-emerald: #00ff9c;
-  --emerald-edge: #00ff9c;   /* laser-thin outline on white titles */
-  --gold-hi: #e0f2fe;
-  --gold-mid: #00e5ff;
-  --gold-deep: #9a6b0a;
-  --gold-lo: #5c3d08;
-  --silver: #f2f5fa;
-  --silver-mid: #b8c0ce;
-  --chrome-hi: #ffffff;
-  --chrome-mid: #c5ccd8;
-  --chrome-lo: #5a6270;
-  --bg-deep: #04060f;
-  --bg-panel: #0a1020;
+  /* FLAT BLACK — Chris's call, 2026-08-27: "leave it jet black. Actually, flat
+     black." The old obsidian was #05070C, a hair off zero to give an OLED
+     something to grade — but every piece of artwork the app used to layer on
+     top of it is gone now, and a shade-of-almost-black behind nothing reads
+     as broken. Pure black is the whole floor. The neon pinstripe under the
+     active tab still reads --accent-neon, so the accent slider is untouched. */
+  --bg-obsidian: #000;
+  --bg-slate: #0D111A;
+  --bg-panel: rgba(13, 17, 26, 0.85);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-hairline: 1px solid rgba(255, 255, 255, 0.12);
+
+  /* Switchable Razor Neon accent. Default: electric cyan.
+     THESE FIVE ARE THE ONLY HARDCODED HEXES ALLOWED IN THIS FILE. */
+  --accent-neon: #00F0FF;
+  --accent-amber: #FF9900;
+  --accent-violet: #A855F7;
+  --accent-emerald: #10F0A0;
+  --accent-crimson: #FF1A1A;
+
+  --glow-tight: 0 0 8px var(--accent-neon);
+
+  /* The accent as bare components, so a rule can ask for it at any alpha.
+     prismTheme.js keeps this in step with --accent-neon on every repaint. */
+  --accent-rgb: 0, 240, 255;
+
+  /* Text. Three steps and no more: primary, secondary, and the dim one used
+     for hints nobody has to read. */
+  --text-primary: #E8EEF8;
+  --text-secondary: rgba(200, 214, 235, 0.72);
+  --text-dim: rgba(160, 178, 205, 0.45);
+
+  /* ── Legacy aliases ───────────────────────────────────────────────────
+     Roughly forty components still say var(--neon-blue) or var(--bg-panel).
+     Pointing the old names at the new tokens converts all of them at once and
+     keeps the accent slider driving them. New code should use the tokens
+     above; these exist so nothing had to be touched twice. */
+  --neon-blue: var(--accent-neon);
+  --neon-purple: var(--accent-violet);
+  --neon-emerald: var(--accent-emerald);
+  --emerald-edge: var(--accent-neon);
+  --gold-hi: #E0F2FE;
+  --gold-mid: var(--accent-neon);
+  --gold-deep: #1E2836;
+  --gold-lo: #141B26;
+  --silver: #F2F5FA;
+  --silver-mid: #B8C0CE;
+  --chrome-hi: #FFFFFF;
+  --chrome-mid: #C5CCD8;
+  --chrome-lo: #5A6270;
+  --bg-deep: var(--bg-obsidian);
 }
 
+/* THE CANVAS IS FLAT MATTE OBSIDIAN. It used to carry three stacked radial
+   gradients — cyan, purple and a green wash through the middle — which is the
+   "muddy" the brief names. On an OLED panel a flat #05070C reads as depth;
+   three overlapping 14% veils read as grime. */
 #root {
-  background:
-    radial-gradient(80% 50% at 15% -8%, rgba(0, 240, 255, 0.16) 0%, transparent 58%),
-    radial-gradient(65% 48% at 88% 108%, rgba(192, 38, 255, 0.14) 0%, transparent 55%),
-    radial-gradient(55% 50% at 50% 48%, rgba(0, 255, 156, 0.1) 0%, transparent 70%),
-    #04060f;
+  background: var(--bg-obsidian);
   min-height: 100vh;
 }
 
 /*
-  MAIN TITLE — LYRICIST 4.2.0
-  Left→right: electric neon blue → neon purple → neon emerald (equal thirds, fully visible).
-  Mirror chrome: white specular ridges + steel valleys so letters look polished metal,
-  raised emboss (flat top, depth underneath) via stacked drop-shadows.
+  DISPLAY TITLE — LYRICIST PRO.
+
+  Was: a fourteen-stop blue→purple→emerald rainbow under six stacked emboss
+  shadows and three diffuse 16/32/48px colour glows. Fourteen stops on one word
+  is a sticker, and 48px of coloured bloom is the light-smudge the brief rules
+  out by name.
+
+  Now: a two-stop wash of the live accent into white, one hairline lift, and one
+  8px glow. It rotates with the accent slider because it reads --accent-neon
+  rather than three hardcoded hexes.
 */
 .gradient-title,
 .chrome-title,
 h1.gradient-title {
   font-family: 'Audiowide', 'Orbitron', sans-serif !important;
   font-weight: 700 !important;
+  letter-spacing: 0.02em;
   color: transparent !important;
   background-image: linear-gradient(
     100deg,
-    /* BLUE third — chrome specular into electric blue neon */
     #ffffff 0%,
-    #b8ffff 4%,
-    #00f7ff 10%,
-    #00e5ff 18%,
-    #00b8ff 26%,
-    /* PURPLE third — hot neon purple, not washed out */
-    #7c3aed 34%,
-    #c026ff 42%,
-    #e879f9 50%,
-    #a855f7 58%,
-    /* EMERALD third — loud neon green */
-    #22c55e 68%,
-    #00ff9c 78%,
-    #34f5b0 88%,
-    #a7ffe0 94%,
-    #10f0a0 100%
+    var(--accent-neon) 42%,
+    #ffffff 72%,
+    var(--accent-neon) 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  /* Raised emboss: white rim on top face, hard dark steps below = metal letter sitting up */
   filter:
-    drop-shadow(0 1px 0 rgba(255, 255, 255, 0.95))
-    drop-shadow(0 2px 0 rgba(210, 220, 235, 0.55))
-    drop-shadow(0 3px 0 rgba(40, 48, 64, 0.85))
-    drop-shadow(0 4px 0 rgba(0, 0, 0, 0.75))
-    drop-shadow(0 6px 0 rgba(0, 0, 0, 0.45))
-    drop-shadow(0 10px 18px rgba(0, 0, 0, 0.55))
-    drop-shadow(0 0 16px rgba(0, 240, 255, 0.7))
-    drop-shadow(0 0 32px rgba(192, 38, 255, 0.55))
-    drop-shadow(0 0 48px rgba(0, 255, 156, 0.45));
+    drop-shadow(0 1px 0 rgba(0, 0, 0, 0.85))
+    drop-shadow(0 0 8px rgba(var(--accent-rgb), 0.55));
   text-shadow: none !important;
 }
 
@@ -144,136 +199,113 @@ h1.gradient-title {
   text-shadow: none !important;
 }
 
-/* Accent tagline — electric blue → purple → emerald (no yellow/gold) */
+/* Accent tagline — one accent, one hairline lift. */
 .tagline-gold,
 .gold-chrome,
 .chrome-gold {
   color: transparent !important;
-  background-image: linear-gradient(
-    105deg,
-    #00e5ff 0%,
-    #a855f7 50%,
-    #10f0a0 100%
-  );
+  background-image: linear-gradient(105deg, var(--accent-neon) 0%, #ffffff 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter:
-    drop-shadow(0 1px 0 rgba(255, 255, 255, 0.35))
-    drop-shadow(0 2px 0 rgba(0, 0, 0, 0.45))
-    drop-shadow(0 0 12px rgba(0, 229, 255, 0.45))
-    drop-shadow(0 0 20px rgba(168, 85, 247, 0.35));
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.55));
   text-shadow: none !important;
 }
 
-.btn-neon-purple {
-  background: linear-gradient(135deg, #7c3aed, #a855f7, #c084fc);
-  transition: box-shadow .2s, transform .1s;
-  box-shadow: 0 0 12px rgba(168, 85, 247, 0.55);
-  color: #fff;
-}
-
-.btn-neon-purple:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 0 22px rgba(168, 85, 247, 0.85), 0 0 40px rgba(0, 229, 255, 0.25);
-}
-
+/* ── Buttons: razor strokes, not filled gradients ─────────────────────────
+   An enterprise control surface reads by EDGE. Both button classes were solid
+   three-stop gradients with a 22–40px double bloom on hover, which is why a
+   panel of six of them looked like a fairground. They are dark plates with a
+   1px accent stroke now, and the accent fills in on press. */
+.btn-neon-purple,
 .btn-neon-cyan {
-  background: linear-gradient(135deg, #0284c7, #00e5ff, #10f0a0);
-  transition: box-shadow .2s, transform .1s;
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.45);
-  color: #041018;
-  font-weight: 700;
+  background: var(--bg-panel);
+  border: 1px solid rgba(var(--accent-rgb), 0.45);
+  color: var(--text-primary);
+  font-weight: 600;
+  transition: border-color .15s, box-shadow .15s, background .15s, transform .1s;
 }
 
+.btn-neon-purple:hover:not(:disabled),
 .btn-neon-cyan:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 0 22px rgba(0, 229, 255, 0.75), 0 0 40px rgba(16, 240, 160, 0.3);
+  border-color: var(--accent-neon);
+  background: rgba(var(--accent-rgb), 0.1);
+  box-shadow: var(--glow-tight);
+}
+
+.btn-neon-purple:active:not(:disabled),
+.btn-neon-cyan:active:not(:disabled) {
+  transform: none;
+  background: rgba(var(--accent-rgb), 0.18);
 }
 
 .input-cosmic {
-  color: #e8eef8;
-  background: rgba(8, 14, 28, 0.75);
-  border: 1px solid rgba(0, 229, 255, 0.22);
-  transition: border-color .2s, box-shadow .2s;
+  color: var(--text-primary);
+  background: rgba(5, 7, 12, 0.75);
+  border: 1px solid var(--border-subtle);
+  transition: border-color .15s, box-shadow .15s;
 }
 
 .input-cosmic::placeholder {
-  color: rgba(148, 163, 184, 0.45);
+  color: var(--text-dim);
 }
 
 .input-cosmic:hover {
-  border-color: rgba(168, 85, 247, 0.5);
+  border-color: rgba(var(--accent-rgb), 0.35);
 }
 
 .input-cosmic:focus {
-  border-color: rgba(0, 229, 255, 0.75);
+  border-color: var(--accent-neon);
   outline: none;
-  box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.35), 0 0 14px rgba(168, 85, 247, 0.25);
+  box-shadow: var(--glow-tight);
 }
 
 .tab-glow-line {
-  background: linear-gradient(90deg, #00e5ff, #a855f7, #10f0a0);
-  box-shadow: 0 0 10px rgba(0, 229, 255, 0.55);
+  background: var(--accent-neon);
+  box-shadow: var(--glow-tight);
 }
 
 .sidebar-cosmic {
-  background: rgba(6, 10, 22, 0.92);
-  border-right: 1px solid rgba(0, 229, 255, 0.15);
-  box-shadow: inset -1px 0 20px rgba(168, 85, 247, 0.08);
+  background: var(--bg-panel);
+  border-right: var(--border-hairline);
 }
 
 .header-cosmic {
-  background: #000000;
-  border-bottom: 1px solid rgba(0, 229, 255, 0.28);
-  box-shadow: 0 1px 24px rgba(168, 85, 247, 0.18);
+  background: var(--bg-obsidian);
+  border-bottom: var(--border-hairline);
 }
 
 .output-cosmic {
-  background: rgba(4, 8, 18, 0.72);
+  background: rgba(13, 17, 26, 0.6);
 }
 
 .card-cosmic {
-  background: rgba(10, 16, 32, 0.82);
-  border: 1px solid rgba(0, 229, 255, 0.16);
-  transition: border-color .2s, box-shadow .2s;
+  background: var(--bg-panel);
+  border: var(--border-hairline);
+  transition: border-color .15s, box-shadow .15s;
 }
 
 .card-cosmic:hover {
-  border-color: rgba(168, 85, 247, 0.45);
-  box-shadow: 0 0 16px rgba(0, 229, 255, 0.12);
+  border-color: rgba(var(--accent-rgb), 0.4);
+  box-shadow: var(--glow-tight);
 }
 
-.pill-purple {
-  color: #d8b4fe;
-  background: rgba(168, 85, 247, 0.18);
-  border: 1px solid rgba(168, 85, 247, 0.5);
-}
-
-.pill-cyan {
-  color: #67e8f9;
-  background: rgba(0, 229, 255, 0.12);
-  border: 1px solid rgba(0, 229, 255, 0.45);
-}
-
-.pill-green {
-  color: #6ee7b7;
-  background: rgba(16, 240, 160, 0.12);
-  border: 1px solid rgba(16, 240, 160, 0.45);
-}
-
-.pill-red {
-  color: #f87171;
-  background: rgba(220, 38, 38, 0.14);
-  border: 1px solid rgba(248, 113, 113, 0.45);
-}
-
+/* Status pills. Dark plate, 1px stroke, coloured text — the colour carries the
+   meaning, the plate never does. */
+.pill-purple,
+.pill-cyan,
+.pill-green,
+.pill-red,
 .pill-gold {
-  color: #00e5ff;
-  background: linear-gradient(135deg, rgba(255, 244, 194, 0.12), rgba(184, 134, 11, 0.18));
-  border: 1px solid rgba(0, 229, 255, 0.55);
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: var(--bg-slate);
+  border: 1px solid currentColor;
 }
+.pill-purple { color: var(--accent-violet); }
+.pill-cyan   { color: var(--accent-neon); }
+.pill-green  { color: var(--accent-emerald); }
+.pill-red    { color: var(--accent-crimson); }
+.pill-gold   { color: var(--accent-amber); }
 
 *, :before, :after, ::backdrop {
   box-sizing: border-box;
@@ -293,8 +325,8 @@ html, :host {
 body {
   line-height: inherit;
   margin: 0;
-  color: #e8eef8;
-  background: #04060f;
+  color: var(--text-primary);
+  background: var(--bg-obsidian);
   height: 100%;
 }
 
@@ -311,22 +343,22 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #00e5ff, #a855f7);
+  background: rgba(var(--accent-rgb), 0.4);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #10f0a0, #a855f7);
+  background: var(--accent-neon);
 }
 
 ::selection {
-  color: #fff;
-  background: rgba(168, 85, 247, 0.45);
+  color: var(--bg-obsidian);
+  background: var(--accent-neon);
 }
 
 select option {
-  color: #e8eef8;
-  background: #0a1020;
+  color: var(--text-primary);
+  background: var(--bg-slate);
 }
 
 .fixed { position: fixed; }
@@ -373,26 +405,68 @@ select option {
 
 .offtheme-highlight {
   background: rgba(245, 158, 11, 0.15);
-  border-bottom: 2px dashed #a855f7;
+  border-bottom: 2px dashed var(--accent-violet);
 }
 
-.rhyme-highlight-1 { background-color: rgba(168, 85, 247, 0.25); border-radius: 3px; }
+.rhyme-highlight-1 { background-color: rgba(var(--accent-rgb), 0.25); border-radius: 3px; }
 .rhyme-highlight-2 { background-color: rgba(34, 211, 238, 0.25); border-radius: 3px; }
 .rhyme-highlight-3 { background-color: rgba(232, 121, 249, 0.25); border-radius: 3px; }
 .rhyme-highlight-4 { background-color: rgba(52, 211, 153, 0.25); border-radius: 3px; }
 .rhyme-highlight-5 { background-color: rgba(248, 113, 113, 0.25); border-radius: 3px; }
 
-/* Glassmorphism card */
+/* ── THE FULL-SPECTRUM ACCENT SLIDER (Settings) ───────────────────────────
+   The rail IS the spectrum, at the same saturation and lightness the accent
+   generator uses, starting at 184° so the left end is the default electric
+   cyan. Aim at a colour, get that colour. The stops are hardcoded because
+   this one rail must NOT rotate with the accent — a spectrum that moves with
+   the value you are picking is unusable. */
+.prism-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 10px;
+  border-radius: 999px;
+  border: var(--border-hairline);
+  outline: none;
+  cursor: pointer;
+  background: linear-gradient(90deg,
+    hsl(184 100% 50%) 0%,   hsl(235 100% 50%) 14%,
+    hsl(286 100% 50%) 28%,  hsl(337 100% 50%) 42%,
+    hsl(28 100% 50%) 57%,   hsl(79 100% 50%) 71%,
+    hsl(130 100% 50%) 85%,  hsl(184 100% 50%) 100%);
+}
+.prism-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg-obsidian);
+  border: 2px solid #fff;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+  cursor: pointer;
+}
+.prism-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg-obsidian);
+  border: 2px solid #fff;
+  cursor: pointer;
+}
+
+/* The panel. One definition, used by every surface in the app. */
 .glass-panel {
-  background: rgba(13, 8, 28, 0.7);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--bg-panel);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: var(--border-hairline);
   border-radius: 12px;
 }
 
 /* Animations */
 @keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 12px rgba(124, 58, 237, 0.4); }
-  50% { box-shadow: 0 0 24px rgba(124, 58, 237, 0.8); }
+  0%, 100% { box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.4); }
+  50% { box-shadow: 0 0 24px rgba(var(--accent-rgb), 0.8); }
 }
 
 .pulse-glow {
@@ -415,9 +489,9 @@ select option {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(139, 92, 246, 0.25);
+  background: rgba(var(--accent-rgb), 0.25);
   color: #d6c8ff;
-  border: 1px solid rgba(168, 85, 247, 0.5);
+  border: 1px solid rgba(var(--accent-rgb), 0.5);
   font-weight: 700;
   font-family: 'Space Grotesk', sans-serif;
   line-height: 1;
@@ -427,9 +501,9 @@ select option {
 
 .help-tip:hover .help-tip-mark,
 .help-tip:focus .help-tip-mark {
-  background: rgba(168, 85, 247, 0.55);
+  background: rgba(var(--accent-rgb), 0.55);
   color: #fff;
-  box-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
+  box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.6);
 }
 
 .help-tip-bubble {
@@ -444,8 +518,8 @@ select option {
   border-radius: 8px;
   background: rgba(20, 12, 38, 0.98);
   color: #e8e0ff;
-  border: 1px solid rgba(0, 229, 255, 0.45);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 12px rgba(168, 85, 247, 0.4);
+  border: 1px solid rgba(var(--accent-rgb), 0.45);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 12px rgba(var(--accent-rgb), 0.4);
   font-size: 0.72rem;
   line-height: 1.45;
   font-weight: 400;
@@ -464,7 +538,7 @@ select option {
   left: 50%;
   transform: translateX(-50%);
   border: 5px solid transparent;
-  border-top-color: rgba(0, 229, 255, 0.55);
+  border-top-color: rgba(var(--accent-rgb), 0.55);
 }
 
 /* Floating bubble shown by HelpLayer when hovering any [data-help] element */
@@ -475,8 +549,8 @@ select option {
   border-radius: 10px;
   background: rgba(14, 8, 28, 0.98);
   color: #f0e8ff;
-  border: 1px solid rgba(0, 229, 255, 0.5);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6), 0 0 16px rgba(168, 85, 247, 0.4), 0 0 8px rgba(16, 240, 160, 0.15);
+  border: 1px solid rgba(var(--accent-rgb), 0.5);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6), 0 0 16px rgba(var(--accent-rgb), 0.4), 0 0 8px rgba(16, 240, 160, 0.15);
   font-size: 0.8rem;
   line-height: 1.55;
   font-weight: 400;
@@ -505,12 +579,12 @@ select option {
 
 .help-layer-arrow.down {
   top: 100%;
-  border-top-color: rgba(0, 229, 255, 0.55);
+  border-top-color: rgba(var(--accent-rgb), 0.55);
 }
 
 .help-layer-arrow.up {
   bottom: 100%;
-  border-bottom-color: rgba(0, 229, 255, 0.55);
+  border-bottom-color: rgba(var(--accent-rgb), 0.55);
 }
 
 /* Tips on: help cursor only — no dashed outlines (those looked messy on tabs/buttons) */
@@ -518,14 +592,14 @@ body.tips-on [data-help] {
   cursor: help;
 }
 
-/* ── Browser-style curved tabs — neon brand ───────────────── */
+/* ── Tab strip — razor-thin neon on the active tab only ───────────────── */
 .tab-nav-scroll {
   display: flex;
   align-items: flex-end;
   gap: 3px;
   padding: 8px 10px 0;
-  background: linear-gradient(180deg, #080e1c 0%, #04060f 100%);
-  border-bottom: 1px solid rgba(0, 229, 255, 0.28);
+  background: var(--bg-obsidian);
+  border-bottom: var(--border-hairline);
   flex-shrink: 0;
   overflow-x: auto;
   overflow-y: hidden;
@@ -536,14 +610,14 @@ body.tips-on [data-help] {
   white-space: nowrap;
   padding: 10px 20px 11px;
   font-size: 0.8rem;
-  font-weight: 700;
-  font-family: 'Metamorphous', sans-serif;
+  font-weight: 600;
+  font-family: 'Space Grotesk', sans-serif;
   letter-spacing: 0.04em;
   border: 1px solid transparent;
   border-bottom: none;
   border-radius: 12px 12px 0 0;
-  background: rgba(12, 18, 36, 0.55);
-  color: rgba(180, 200, 230, 0.62);
+  background: transparent;
+  color: var(--text-dim);
   cursor: pointer;
   transition: background 0.15s, color 0.15s, box-shadow 0.15s, transform 0.12s;
   margin-bottom: -1px;
@@ -589,31 +663,27 @@ body.tips-on [data-help] {
 
 .tab-browser:hover .tab-browser-icon {
   opacity: 1;
-  filter: saturate(1.1) drop-shadow(0 0 6px rgba(0, 229, 255, 0.5));
+  filter: saturate(1.1);
 }
 
 .tab-browser.is-active .tab-browser-icon {
   opacity: 1;
-  filter: saturate(1.15) drop-shadow(0 0 8px rgba(0, 229, 255, 0.6));
+  filter: saturate(1.15) drop-shadow(var(--glow-tight));
 }
 
 .tab-browser:hover {
-  background: rgba(20, 32, 64, 0.8);
-  color: #e8eef8;
-  text-shadow: 0 0 10px rgba(0, 229, 255, 0.35);
+  background: var(--bg-slate);
+  color: var(--text-primary);
 }
+/* One razor stroke and a dark plate. The old active tab carried a two-stop
+   teal→indigo fill, a 16px + 24px double bloom and two text shadows; the tab
+   was shouting louder than the tool it opened. */
 .tab-browser.is-active {
-  background: linear-gradient(180deg, rgba(0, 120, 160, 0.35) 0%, rgba(20, 14, 48, 0.95) 100%);
-  color: #e8eef8;
-  border-color: rgba(0, 229, 255, 0.4);
+  background: var(--bg-slate);
+  color: var(--text-primary);
+  border-color: rgba(var(--accent-rgb), 0.5);
   border-bottom-color: transparent;
-  box-shadow:
-    0 -2px 16px rgba(0, 229, 255, 0.22),
-    0 -2px 24px rgba(168, 85, 247, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.35),
-    0 0 12px rgba(0, 229, 255, 0.45);
+  box-shadow: var(--glow-tight);
   z-index: 2;
 }
 .tab-browser.is-active::after {
@@ -622,72 +692,62 @@ body.tips-on [data-help] {
   left: 12px;
   right: 12px;
   bottom: 0;
-  height: 2px;
-  border-radius: 2px 2px 0 0;
-  background: linear-gradient(90deg, #00f0ff, #c026ff, #00ff9c);
-  box-shadow: 0 0 12px rgba(0, 240, 255, 0.7);
+  height: 1px;
+  background: var(--accent-neon);
+  box-shadow: var(--glow-tight);
 }
 
-/* ── Headings + labels: white fill, laser-thin electric emerald edge ──
-   The letterform stays white; only the outline is emerald, drawn hairline
-   thin and lit from behind so it reads as a glowing edge rather than a
-   coloured word. paint-order keeps the stroke behind the fill so the white
-   interior never gets eaten by the outline. */
+/* ── Section marks ────────────────────────────────────────────────────────
+   Headings were white letterforms wearing a 0.6px emerald outline and THREE
+   stacked green glows out to 20px. That treatment is the single loudest thing
+   in the old interface and it ran on every h1 through h4 in the app — a form
+   label and a page title got identical neon.
+
+   A section mark is a mark: display face, wide tracking, uppercase, the accent
+   colour, and one hairline rule under it. No stroke, no stacked bloom. */
 h1:not(.gradient-title):not(.chrome-title),
 h2, h3, h4 {
-  color: #ffffff;
-  -webkit-text-stroke: 0.6px var(--emerald-edge);
-  text-stroke: 0.6px var(--emerald-edge);
-  paint-order: stroke fill;
-  text-shadow:
-    0 0 3px rgba(0, 255, 156, 0.75),
-    0 0 9px rgba(0, 255, 156, 0.45),
-    0 0 20px rgba(0, 255, 156, 0.22),
-    0 2px 0 rgba(0, 0, 0, 0.5);
+  font-family: 'Audiowide', 'Orbitron', sans-serif;
+  color: var(--text-primary);
+  letter-spacing: 0.06em;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
 }
 
-/* Reusable: put the same emerald edge on any white text. */
-.emerald-edge {
-  color: #ffffff;
-  -webkit-text-stroke: 0.6px var(--emerald-edge);
-  text-stroke: 0.6px var(--emerald-edge);
-  paint-order: stroke fill;
-  text-shadow:
-    0 0 3px rgba(0, 255, 156, 0.75),
-    0 0 9px rgba(0, 255, 156, 0.45),
-    0 0 20px rgba(0, 255, 156, 0.22);
+/* Reusable: the accent-edged mark, for anything that needs to read as a
+   heading without being one. */
+.emerald-edge,
+.section-mark {
+  font-family: 'Audiowide', 'Orbitron', sans-serif;
+  color: var(--accent-neon);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-shadow: var(--glow-tight);
 }
 
 .text-glow {
-  text-shadow:
-    0 0 8px rgba(0, 240, 255, 0.55),
-    0 0 18px rgba(192, 38, 255, 0.35);
+  text-shadow: var(--glow-tight);
 }
 
-.pill-purple, .pill-cyan, .pill-green, .pill-red {
-  text-shadow: 0 0 6px rgba(0, 240, 255, 0.3);
-}
-
-/* Labels were yellow — now raised mirror SILVER */
+/* Labels. Plain, secondary, and legible — they were carrying a three-step
+   white-on-black emboss that made every form in the app look pressed into
+   metal. */
 label {
-  color: #e8eef8 !important;
-  text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.75),
-    0 2px 0 rgba(0, 0, 0, 0.55),
-    0 3px 1px rgba(0, 0, 0, 0.35) !important;
+  color: var(--text-secondary) !important;
+  text-shadow: none !important;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
 }
 
-/*
-  Audiowide body text — solid color only.
-  NO emboss / text-shadow on lyric lines (that created a ghost second copy of every word).
-*/
+/* Written content: solid colour, no shadow. A text-shadow on an input paints a
+   ghost second copy of every character, which is exactly what happened here
+   before and is why this rule is aggressive. */
 textarea,
 .lyric-line,
 .lyric-output,
 .lyric-text,
 [contenteditable] {
-  font-family: 'Audiowide', 'Orbitron', 'JetBrains Mono', monospace;
-  color: #e8eef8;
+  color: var(--text-primary);
   text-shadow: none;
 }
 
@@ -707,7 +767,7 @@ textarea,
 .lyric-line-row input[type="text"],
 .lyric-line-row input:not([type]),
 input.lyric-line-input {
-  font-family: 'Audiowide', 'Orbitron', sans-serif !important;
+  font-family: 'Space Grotesk', sans-serif !important;
   color: #e8eef8 !important;
   -webkit-text-fill-color: #e8eef8 !important;
   text-shadow: none !important;
@@ -729,28 +789,15 @@ input.lyric-line-input {
   display: none !important;
 }
 
-/* Display Audiowide titles that aren't the main neon wordmark */
+/* Secondary display marks — section titles that are not the wordmark. */
 .audiowide-chrome,
 .ql-tagline-text {
   font-family: 'Audiowide', 'Orbitron', sans-serif;
-  color: transparent !important;
-  background-image: linear-gradient(
-    175deg,
-    #ffffff 0%,
-    #f8fafc 8%,
-    #94a3b8 26%,
-    #f1f5f9 40%,
-    #64748b 55%,
-    #e2e8f0 72%,
-    #ffffff 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter:
-    drop-shadow(0 1px 0 rgba(255, 255, 255, 0.85))
-    drop-shadow(0 2px 0 rgba(0, 0, 0, 0.55))
-    drop-shadow(0 3px 0 rgba(0, 0, 0, 0.3));
+  color: var(--text-primary) !important;
+  letter-spacing: 0.08em;
+  background-image: none;
+  -webkit-text-fill-color: currentColor;
+  filter: none;
   text-shadow: none !important;
   -webkit-text-stroke: 0 !important;
 }
@@ -810,9 +857,9 @@ input.lyric-line-input {
   overflow: hidden;
   background: radial-gradient(circle, #1a0f28 0%, #07050f 100%);
   box-shadow:
-    0 0 22px rgba(255, 45, 149, 0.55),
-    0 0 55px rgba(0, 229, 255, 0.3),
-    inset 0 0 0 3px rgba(255, 45, 149, 0.6);
+    0 0 22px rgba(var(--accent-rgb), 0.55),
+    0 0 55px rgba(var(--accent-rgb), 0.3),
+    inset 0 0 0 3px rgba(var(--accent-rgb), 0.6);
 }
 
 .songforge-medallion img {
@@ -869,7 +916,7 @@ input.lyric-line-input {
 
 /* ════════════════════════════════════════════════════════════════════
    4.1.3 NEW FEATURES — additive styles only. Inherits the Austin Sunset
-   neon magenta (#ff2d95) / orange (#00e5ff) system defined above.
+   neon magenta (var(--accent-neon)) / orange (var(--accent-neon)) system defined above.
    ════════════════════════════════════════════════════════════════════ */
 
 /* ── Persistent Suno audio player ── */
@@ -882,8 +929,8 @@ input.lyric-line-input {
   padding: 8px 46px 8px 14px;
   flex-shrink: 0;
   background: rgba(8, 4, 16, 0.97);
-  border-top: 1px solid rgba(255, 45, 149, 0.45);
-  box-shadow: 0 -1px 18px rgba(255, 45, 149, 0.18), 0 -1px 40px rgba(0, 229, 255, 0.08);
+  border-top: 1px solid rgba(var(--accent-rgb), 0.45);
+  box-shadow: 0 -1px 18px rgba(var(--accent-rgb), 0.18), 0 -1px 40px rgba(var(--accent-rgb), 0.08);
   z-index: 50;
 }
 .suno-player--collapsed { padding: 3px 46px 3px 14px; min-height: 14px; }
@@ -891,19 +938,19 @@ input.lyric-line-input {
   position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
   display: flex; align-items: center; justify-content: center;
   width: 24px; height: 24px; border-radius: 50%;
-  background: rgba(255, 45, 149, 0.12); color: #ff7eb6;
-  border: 1px solid rgba(255, 45, 149, 0.4); cursor: pointer;
+  background: rgba(var(--accent-rgb), 0.12); color: var(--accent-neon);
+  border: 1px solid rgba(var(--accent-rgb), 0.4); cursor: pointer;
 }
 .suno-track-info { display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1 1 180px; }
 .suno-track-name {
-  font-size: 0.74rem; font-weight: 700; color: #00e5ff;
-  text-shadow: 0 0 8px rgba(0, 229, 255, 0.55);
+  font-size: 0.74rem; font-weight: 700; color: var(--accent-neon);
+  text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.55);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   font-family: 'Audiowide', 'Orbitron', sans-serif;
 }
 .suno-eq { display: flex; align-items: flex-end; gap: 2px; height: 14px; flex-shrink: 0; }
-.suno-eq-bar { width: 3px; height: 4px; border-radius: 2px; background: linear-gradient(180deg, #00e5ff, #ff2d95); opacity: 0.35; }
-.suno-eq-bar.on { animation: sunoEq 0.7s ease-in-out infinite alternate; opacity: 1; box-shadow: 0 0 6px rgba(255, 45, 149, 0.8); }
+.suno-eq-bar { width: 3px; height: 4px; border-radius: 2px; background: linear-gradient(180deg, var(--accent-neon), var(--accent-neon)); opacity: 0.35; }
+.suno-eq-bar.on { animation: sunoEq 0.7s ease-in-out infinite alternate; opacity: 1; box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.8); }
 .suno-eq-bar.on:nth-child(2) { animation-delay: 0.18s; }
 .suno-eq-bar.on:nth-child(3) { animation-delay: 0.36s; }
 @keyframes sunoEq { from { height: 4px; } to { height: 14px; } }
@@ -911,24 +958,24 @@ input.lyric-line-input {
 .suno-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 28px; height: 28px; border-radius: 50%;
-  background: rgba(255, 45, 149, 0.1); color: #ff7eb6;
-  border: 1px solid rgba(255, 45, 149, 0.35);
+  background: rgba(var(--accent-rgb), 0.1); color: var(--accent-neon);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
   cursor: pointer; transition: all 0.15s; flex-shrink: 0;
 }
-.suno-btn:hover:not(:disabled) { color: #fff; background: rgba(255, 45, 149, 0.3); box-shadow: 0 0 10px rgba(255, 45, 149, 0.6); }
+.suno-btn:hover:not(:disabled) { color: #fff; background: rgba(var(--accent-rgb), 0.3); box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.6); }
 .suno-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .suno-btn--play {
   width: 36px; height: 36px; color: #fff; border: none;
-  background: linear-gradient(135deg, #ff2d95, #a855f7, #00e5ff);
-  box-shadow: 0 0 12px rgba(255, 45, 149, 0.55);
+  background: linear-gradient(135deg, var(--accent-neon), var(--accent-violet), var(--accent-neon));
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.55);
 }
 .suno-seek { display: flex; align-items: center; gap: 8px; flex: 3 1 220px; min-width: 140px; }
-.suno-time { font-size: 0.62rem; color: rgba(0, 229, 255, 0.85); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
-.suno-range { -webkit-appearance: none; appearance: none; flex: 1; height: 4px; border-radius: 4px; background: rgba(255, 45, 149, 0.22); outline: none; cursor: pointer; }
+.suno-time { font-size: 0.62rem; color: rgba(var(--accent-rgb), 0.85); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+.suno-range { -webkit-appearance: none; appearance: none; flex: 1; height: 4px; border-radius: 4px; background: rgba(var(--accent-rgb), 0.22); outline: none; cursor: pointer; }
 .suno-range::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none; width: 12px; height: 12px; border-radius: 50%;
-  background: linear-gradient(135deg, #ff2d95, #00e5ff);
-  box-shadow: 0 0 8px rgba(255, 45, 149, 0.9);
+  background: linear-gradient(135deg, var(--accent-neon), var(--accent-neon));
+  box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.9);
 }
 .suno-volume { display: flex; align-items: center; gap: 6px; flex: 0 1 130px; min-width: 96px; }
 .suno-range--vol { max-width: 90px; }
@@ -936,29 +983,29 @@ input.lyric-line-input {
 .suno-chip {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 4px 10px; border-radius: 9999px; font-size: 0.66rem; font-weight: 700;
-  background: rgba(0, 229, 255, 0.1); color: #00e5ff;
-  border: 1px solid rgba(0, 229, 255, 0.4); cursor: pointer; transition: all 0.15s;
+  background: rgba(var(--accent-rgb), 0.1); color: var(--accent-neon);
+  border: 1px solid rgba(var(--accent-rgb), 0.4); cursor: pointer; transition: all 0.15s;
 }
-.suno-chip:hover { color: #fff; box-shadow: 0 0 10px rgba(0, 229, 255, 0.5); }
-.suno-chip--go { background: linear-gradient(135deg, #ff2d95, #00e5ff); color: #fff; border: none; }
+.suno-chip:hover { color: #fff; box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.5); }
+.suno-chip--go { background: linear-gradient(135deg, var(--accent-neon), var(--accent-neon)); color: #fff; border: none; }
 .suno-popover {
   position: absolute; bottom: calc(100% + 6px); right: 12px; z-index: 60;
   display: flex; gap: 8px; align-items: center;
   width: min(420px, calc(100vw - 24px)); padding: 10px;
-  background: rgba(14, 7, 24, 0.98); border: 1px solid rgba(255, 45, 149, 0.5);
-  border-radius: 10px; box-shadow: 0 -6px 30px rgba(0, 0, 0, 0.6), 0 0 16px rgba(255, 45, 149, 0.25);
+  background: rgba(14, 7, 24, 0.98); border: 1px solid rgba(var(--accent-rgb), 0.5);
+  border-radius: 10px; box-shadow: 0 -6px 30px rgba(0, 0, 0, 0.6), 0 0 16px rgba(var(--accent-rgb), 0.25);
 }
 .suno-popover--list { flex-direction: column; align-items: stretch; gap: 4px; max-height: 260px; overflow-y: auto; }
 .suno-empty { font-size: 0.72rem; color: rgba(196, 181, 253, 0.6); text-align: center; padding: 8px; }
 .suno-row { display: flex; align-items: center; gap: 6px; }
-.suno-row--active .suno-row-name { color: #ff2d95; text-shadow: 0 0 8px rgba(255, 45, 149, 0.7); }
+.suno-row--active .suno-row-name { color: var(--accent-neon); text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.7); }
 .suno-row-name {
   flex: 1; text-align: left; background: none; border: none; cursor: pointer;
   font-size: 0.72rem; color: #e8e0ff; padding: 5px 6px; border-radius: 6px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.suno-row-name:hover { background: rgba(255, 45, 149, 0.12); }
-.suno-row-kind { margin-left: 8px; font-size: 0.56rem; color: rgba(0, 229, 255, 0.6); text-transform: uppercase; letter-spacing: 0.08em; }
+.suno-row-name:hover { background: rgba(var(--accent-rgb), 0.12); }
+.suno-row-kind { margin-left: 8px; font-size: 0.56rem; color: rgba(var(--accent-rgb), 0.6); text-transform: uppercase; letter-spacing: 0.08em; }
 .suno-error { width: 100%; font-size: 0.66rem; color: #f87171; }
 @media (max-width: 700px) {
   .suno-player { gap: 8px 10px; }
@@ -971,24 +1018,24 @@ input.lyric-line-input {
   width: 300px; flex-shrink: 0; overflow-y: auto;
   padding: clamp(12px, 1.5vw, 20px);
   display: flex; flex-direction: column; gap: 14px;
-  background: rgba(0, 0, 0, 0.55); border-right: 1px solid rgba(255, 45, 149, 0.2);
+  background: rgba(0, 0, 0, 0.55); border-right: 1px solid rgba(var(--accent-rgb), 0.2);
 }
 .midi-main { flex: 1; min-width: 0; overflow-y: auto; padding: clamp(12px, 1.6vw, 26px); display: flex; flex-direction: column; gap: 16px; }
 .midi-record-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #f87171; box-shadow: 0 0 10px #f87171; animation: pulseGlow 1s infinite; }
 .seq-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 .seq-roll-wrap {
   position: relative; overflow: auto; border-radius: 10px;
-  border: 1px solid rgba(255, 45, 149, 0.3);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
   background: #07040d;
-  box-shadow: inset 0 0 30px rgba(255, 45, 149, 0.06);
+  box-shadow: inset 0 0 30px rgba(var(--accent-rgb), 0.06);
   max-height: 420px;
   outline: none;
   user-select: none;
 }
 .seq-note {
   position: absolute; border-radius: 3px; cursor: pointer;
-  background: linear-gradient(90deg, #ff2d95, #c026ff);
-  box-shadow: 0 0 6px rgba(255, 45, 149, 0.65);
+  background: linear-gradient(90deg, var(--accent-neon), var(--accent-violet));
+  box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.65);
   border: 1px solid rgba(255, 255, 255, 0.25);
 }
 .seq-note--selected { outline: 2px solid #00c2ff; box-shadow: 0 0 12px rgba(0, 194, 255, 0.9); z-index: 3; }
@@ -1003,7 +1050,7 @@ input.lyric-line-input {
 .seq-note:hover .seq-note-grip { opacity: 1; }
 
 /* Tool palette */
-.seq-tools { display: inline-flex; gap: 4px; padding: 3px; border-radius: 9px; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 45, 149, 0.25); }
+.seq-tools { display: inline-flex; gap: 4px; padding: 3px; border-radius: 9px; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(var(--accent-rgb), 0.25); }
 .seq-tool {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 5px 10px; border-radius: 7px; cursor: pointer;
@@ -1011,20 +1058,20 @@ input.lyric-line-input {
   background: transparent; border: 1px solid transparent;
   transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
-.seq-tool:hover { background: rgba(192, 38, 255, 0.16); color: #fff; }
+.seq-tool:hover { background: rgba(var(--accent-rgb), 0.16); color: #fff; }
 .seq-tool--on {
   color: #fff;
-  background: linear-gradient(90deg, rgba(255, 45, 149, 0.5), rgba(192, 38, 255, 0.5));
-  border-color: rgba(0, 229, 255, 0.55);
-  box-shadow: 0 0 12px rgba(255, 45, 149, 0.45);
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.5), rgba(var(--accent-rgb), 0.5));
+  border-color: rgba(var(--accent-rgb), 0.55);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.45);
 }
 
 /* Velocity lane */
 .seq-vel-wrap {
   position: relative; overflow-x: auto; overflow-y: hidden; border-radius: 10px;
-  border: 1px solid rgba(0, 229, 255, 0.22);
+  border: 1px solid rgba(var(--accent-rgb), 0.22);
   background: #05030a;
-  box-shadow: inset 0 0 24px rgba(0, 229, 255, 0.05);
+  box-shadow: inset 0 0 24px rgba(var(--accent-rgb), 0.05);
   user-select: none;
 }
 .seq-vel-wrap::-webkit-scrollbar { height: 0; }
@@ -1032,30 +1079,30 @@ input.lyric-line-input {
   position: absolute; left: 0; top: 0; bottom: 0; z-index: 2;
   display: flex; align-items: center; justify-content: center;
   font-size: 8px; letter-spacing: 0.14em; font-family: 'JetBrains Mono', monospace;
-  color: rgba(0, 229, 255, 0.8);
+  color: rgba(var(--accent-rgb), 0.8);
   background: linear-gradient(90deg, #0d0a18, #191330);
-  border-right: 1px solid rgba(0, 229, 255, 0.18);
+  border-right: 1px solid rgba(var(--accent-rgb), 0.18);
 }
 .seq-vel-bar {
   position: absolute; bottom: 0; border-radius: 2px 2px 0 0; cursor: ns-resize;
-  background: linear-gradient(180deg, #00e5ff, #c026ff);
-  box-shadow: 0 0 6px rgba(0, 229, 255, 0.5);
+  background: linear-gradient(180deg, var(--accent-neon), var(--accent-violet));
+  box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.5);
 }
-.seq-vel-bar:hover { background: linear-gradient(180deg, #7dfcff, #ff2d95); }
+.seq-vel-bar:hover { background: linear-gradient(180deg, #7dfcff, var(--accent-neon)); }
 .seq-vel-bar--selected { background: linear-gradient(180deg, #fff, #00c2ff); box-shadow: 0 0 10px rgba(0, 194, 255, 0.9); z-index: 3; }
-.seq-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #00e5ff; box-shadow: 0 0 10px rgba(0, 229, 255, 0.9); pointer-events: none; z-index: 4; }
+.seq-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent-neon); box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.9); pointer-events: none; z-index: 4; }
 .viz-canvas-wrap {
   position: relative; width: 100%; aspect-ratio: 16 / 7; min-height: 180px;
   border-radius: 12px; overflow: hidden;
-  border: 1px solid rgba(255, 45, 149, 0.35);
-  box-shadow: 0 0 22px rgba(255, 45, 149, 0.25), 0 0 55px rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  box-shadow: 0 0 22px rgba(var(--accent-rgb), 0.25), 0 0 55px rgba(var(--accent-rgb), 0.12);
   background: #000;
 }
 .viz-canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .viz-overlay { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; z-index: 2; }
 @media (max-width: 900px) {
   .midi-shell { flex-direction: column; overflow-y: auto; }
-  .midi-sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(255, 45, 149, 0.2); }
+  .midi-sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(var(--accent-rgb), 0.2); }
 }
 @media (min-width: 1800px) {
   .midi-main { max-width: 1800px; margin: 0 auto; width: 100%; }
@@ -1072,12 +1119,12 @@ input.lyric-line-input {
 .toolshub-vote {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   padding: 6px 10px; border-radius: 10px; cursor: pointer;
-  background: rgba(255, 45, 149, 0.1); color: #ff7eb6;
-  border: 1px solid rgba(255, 45, 149, 0.4);
+  background: rgba(var(--accent-rgb), 0.1); color: var(--accent-neon);
+  border: 1px solid rgba(var(--accent-rgb), 0.4);
   font-weight: 800; font-size: 0.8rem; transition: all 0.15s; flex-shrink: 0;
 }
-.toolshub-vote:hover { box-shadow: 0 0 12px rgba(255, 45, 149, 0.55); color: #fff; }
-.toolshub-vote--voted { background: linear-gradient(135deg, #ff2d95, #00e5ff); color: #fff; border: none; box-shadow: 0 0 12px rgba(255, 45, 149, 0.55); }
+.toolshub-vote:hover { box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.55); color: #fff; }
+.toolshub-vote--voted { background: linear-gradient(135deg, var(--accent-neon), var(--accent-neon)); color: #fff; border: none; box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.55); }
 @media (min-width: 1800px) {
   .toolshub-main { max-width: 1800px; margin: 0 auto; width: 100%; }
 }
@@ -1088,18 +1135,18 @@ input.lyric-line-input {
   width: 300px; flex-shrink: 0; overflow-y: auto;
   padding: clamp(12px, 1.5vw, 20px);
   display: flex; flex-direction: column; gap: 14px;
-  background: rgba(0, 0, 0, 0.55); border-right: 1px solid rgba(255, 45, 149, 0.2);
+  background: rgba(0, 0, 0, 0.55); border-right: 1px solid rgba(var(--accent-rgb), 0.2);
 }
 .booth-main { flex: 1; min-width: 0; overflow-y: auto; padding: clamp(12px, 1.8vw, 28px); }
 .booth-meter {
   height: 12px; border-radius: 9999px; overflow: hidden;
-  background: rgba(255, 45, 149, 0.12);
-  border: 1px solid rgba(255, 45, 149, 0.35);
+  background: rgba(var(--accent-rgb), 0.12);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
 }
 .booth-meter-fill {
   height: 100%; border-radius: 9999px;
-  background: linear-gradient(90deg, #00e5ff, #ff2d95);
-  box-shadow: 0 0 12px rgba(255, 45, 149, 0.8);
+  background: linear-gradient(90deg, var(--accent-neon), var(--accent-neon));
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.8);
   transition: width 0.06s linear;
 }
 .booth-row {
@@ -1107,8 +1154,8 @@ input.lyric-line-input {
   border-radius: 10px; padding: 10px 14px; margin-bottom: 8px;
 }
 .booth-row-name {
-  font-size: 0.82rem; font-weight: 700; color: #00e5ff;
-  text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+  font-size: 0.82rem; font-weight: 700; color: var(--accent-neon);
+  text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.5);
   font-family: 'Audiowide', 'Orbitron', sans-serif;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   display: flex; align-items: center; gap: 6px;
@@ -1116,12 +1163,12 @@ input.lyric-line-input {
 .booth-icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 18px; height: 18px; border-radius: 50%; border: none;
-  background: rgba(255, 45, 149, 0.12); color: #ff7eb6; cursor: pointer; flex-shrink: 0;
+  background: rgba(var(--accent-rgb), 0.12); color: var(--accent-neon); cursor: pointer; flex-shrink: 0;
 }
 .booth-row-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 @media (max-width: 900px) {
   .booth-shell { flex-direction: column; overflow-y: auto; }
-  .booth-sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(255, 45, 149, 0.2); }
+  .booth-sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(var(--accent-rgb), 0.2); }
 }
 @media (min-width: 1800px) {
   .booth-main { max-width: 1600px; margin: 0 auto; width: 100%; }
@@ -1133,7 +1180,7 @@ input.lyric-line-input {
   width: 300px; flex-shrink: 0; overflow-y: auto;
   padding: clamp(12px, 1.5vw, 20px);
   display: flex; flex-direction: column; gap: 14px;
-  background: rgba(0, 0, 0, 0.55); border-right: 1px solid rgba(0, 229, 255, 0.22);
+  background: rgba(0, 0, 0, 0.55); border-right: 1px solid rgba(var(--accent-rgb), 0.22);
 }
 .album-main { flex: 1; min-width: 0; overflow-y: auto; padding: clamp(12px, 1.8vw, 28px); }
 .album-track {
@@ -1143,22 +1190,22 @@ input.lyric-line-input {
 }
 .album-track:active { cursor: grabbing; }
 .album-track--dragging { opacity: 0.4; }
-.album-track--dragover { border-color: #00e5ff !important; box-shadow: 0 0 14px rgba(0, 229, 255, 0.5) !important; transform: scale(1.01); }
+.album-track--dragover { border-color: var(--accent-neon) !important; box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.5) !important; transform: scale(1.01); }
 .album-track-num {
   width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.78rem;
-  color: #fff; background: linear-gradient(135deg, #ff2d95, #00e5ff);
-  box-shadow: 0 0 10px rgba(255, 45, 149, 0.55);
+  color: #fff; background: linear-gradient(135deg, var(--accent-neon), var(--accent-neon));
+  box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.55);
 }
 .album-input {
-  background: transparent; border: none; border-bottom: 1px dashed rgba(255, 45, 149, 0.25);
+  background: transparent; border: none; border-bottom: 1px dashed rgba(var(--accent-rgb), 0.25);
   color: #e8e0ff; font-size: 0.8rem; outline: none; padding: 2px 0; min-width: 0;
 }
-.album-input:focus { border-bottom-color: #ff2d95; }
+.album-input:focus { border-bottom-color: var(--accent-neon); }
 @media (max-width: 900px) {
   .album-shell { flex-direction: column; overflow-y: auto; }
-  .album-sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(0, 229, 255, 0.22); }
+  .album-sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(var(--accent-rgb), 0.22); }
 }
 @media (min-width: 1800px) {
   .album-main { max-width: 1600px; margin: 0 auto; width: 100%; }
@@ -1168,13 +1215,13 @@ input.lyric-line-input {
    tabs off-screen once the bar is wider than the window (4.1.4). */
 .tab-nav-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,45,149,0.4) transparent;
+  scrollbar-color: rgba(var(--accent-rgb),0.4) transparent;
 }
 .tab-nav-scroll::-webkit-scrollbar {
   height: 6px;
 }
 .tab-nav-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255,45,149,0.4);
+  background: rgba(var(--accent-rgb),0.4);
   border-radius: 9999px;
 }
 .tab-nav-scroll::-webkit-scrollbar-track {
@@ -1186,49 +1233,28 @@ input.lyric-line-input {
 /* ══ THE PRISM ══════════════════════════════════════════════════════════
    The living background, on every tab and in the header.
 
-   This lives HERE and not in a component stylesheet on purpose. It was
-   originally written inside OneManBand.css, so the canvas only knew how to
-   fill itself on that one tab — everywhere else it fell back to a browser
-   default 300x150 static box and left most of the panel black. That is the
-   "real big gap with just blackness".
+   The .prism-bg rule that used to live here — the sizing box for the WebGL
+   shader behind every tab — was stripped with the rest of the artwork on
+   2026-08-27. Flat black now, everywhere. Kept the comment as a signpost so
+   the next full-bleed thing that lands has an obvious place to go. */
 
-   Any container holding one needs position other than static; every tab shell
-   in this app already sets position: relative for the old video. */
-.prism-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  z-index: 0;
-  pointer-events: none;
-}
-
-/* The shell is translucent so the motion carries all the way through instead
-   of stopping at the edge of each panel. Dark enough that text stays readable,
-   which is the only reason these are not fully clear. */
-.sidebar-cosmic {
-  background: rgba(6, 10, 22, 0.58) !important;
-  backdrop-filter: blur(14px) saturate(1.15);
+/* ── SURFACES ─────────────────────────────────────────────────────────────
+   One recipe for every panel in the app: #0D111A at 85%, a 14px backdrop blur,
+   and a 1px hairline. Panels stay slightly translucent so the black floor
+   still reads through them without the surface flattening onto it, and the
+   accent hairline still separates one panel from another. */
+.sidebar-cosmic,
+.output-cosmic,
+.card-cosmic,
+.ql-panel {
+  background: var(--bg-panel) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: var(--border-hairline);
 }
 
 .header-cosmic {
-  background: #05070C !important;
-}
-
-.output-cosmic {
-  background: rgba(4, 8, 18, 0.40);
-  backdrop-filter: blur(12px);
-}
-
-/* The panels let the motion through too. "I want it inside of all the boxes
-   where the videos used to be." Frosted rather than clear: the glass keeps
-   text readable while the wavy stuff still moves behind it, which is the same
-   treatment One Man Band already uses. */
-.card-cosmic {
-  background: rgba(10, 16, 32, 0.42) !important;
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  background: var(--bg-obsidian) !important;
 }
 
 /* The tab shells were pure black behind the old video. With a canvas they no
@@ -1237,23 +1263,140 @@ input.lyric-line-input {
   background: transparent !important;
 }
 
-/* ──────────────────────────────────────────────────────────────────────────
-   SUPPORT ROW — the donation buttons.
+/* ══════════════════════════════════════════════════════════════════════════
+   THE OPERATIONAL STATUS DECK.
 
-   This row sat on EVERY tab and was the single most common overflow in the
-   whole app: measured at 491px wide inside a 375px phone screen, on all 18
-   tabs at once. It had six buttons in one line with a hard maxWidth of 360px.
-   Now three (PayPal, Cash App, Buy Me a Coffee) and it wraps.
-   ────────────────────────────────────────────────────────────────────────── */
-.support-row { min-width: 0; }
-.support-row > * { flex: 0 1 auto; min-width: 0; }
-.support-row img { max-width: 100%; height: auto; }
+   This bar was the donation row: PayPal, Cash App and a remote Buy Me a Coffee
+   image, plus a 1.2 MB medallion and two lines of tip-jar copy, on all
+   eighteen tabs. It was also the single worst overflow in the app — 491px of
+   buttons inside a 375px phone.
 
-@media (max-width: 640px) {
-  /* Centre it and let it breathe rather than crushing against the right edge. */
-  .support-row { justify-content: center !important; gap: 8px !important; }
-  /* Real finger targets, not 5px-padded desktop pills. */
-  .support-row > a,
-  .support-row > button { padding: 9px 14px !important; font-size: 0.78rem !important; }
-  .support-row img { height: 34px !important; }
+   It is three nodes now. Left is who built it, centre is what the engine is
+   doing, right is licence and routing and is the only one that is a control.
+   Everything is monospace and tabular because a status deck is instruments,
+   and instruments do not reflow when a digit changes.
+
+   .support-row and every rule that propped it up went with the buttons. If a
+   future component still carries that class it renders as a plain flex row,
+   which is correct — there is nothing left for it to hold.
+   ══════════════════════════════════════════════════════════════════════════ */
+.app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-shrink: 0;
+  position: relative;
+  padding: 7px 16px;
+  background: var(--bg-obsidian);
+  border-top: var(--border-hairline);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.62rem;
+  line-height: 1.35;
+}
+
+.deck-node {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+/* Left: the org mark. A 4-letter monogram inside a hairline box, so the
+   organisation reads without an image file behind it. */
+.deck-mark {
+  flex-shrink: 0;
+  padding: 4px 7px;
+  border: var(--border-hairline);
+  border-radius: 4px;
+  color: var(--accent-neon);
+  letter-spacing: 0.18em;
+  font-weight: 500;
+  font-size: 0.6rem;
+}
+
+.deck-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
+}
+.deck-text b {
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.deck-text i {
+  font-style: normal;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+/* Centre: the product line. */
+.deck-centre {
+  gap: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.deck-title {
+  font-family: 'Audiowide', 'Orbitron', sans-serif;
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  color: var(--text-primary);
+}
+.deck-metric { color: var(--text-dim); }
+.deck-metric.deck-ok { color: var(--accent-emerald); }
+.deck-sep { color: var(--border-subtle); }
+
+/* Right: licence + routing. A button, because it opens Settings. */
+.deck-right {
+  padding: 5px 11px 5px 9px;
+  border: var(--border-hairline);
+  border-radius: 6px;
+  background: var(--bg-slate);
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+  font-family: inherit;
+  font-size: inherit;
+}
+.deck-right:hover {
+  border-color: rgba(var(--accent-rgb), 0.45);
+  box-shadow: var(--glow-tight);
+}
+
+/* The routing LED. Lit when a BYOK key is present and calls can actually
+   leave; dark when the licence is active but nothing is wired up yet. */
+.deck-led {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-dim);
+}
+.deck-right.is-live .deck-led {
+  background: var(--accent-emerald);
+  box-shadow: 0 0 6px var(--accent-emerald);
+}
+.deck-right.is-idle .deck-led {
+  background: var(--accent-amber);
+  box-shadow: 0 0 6px var(--accent-amber);
+}
+.deck-right.is-live .deck-text i { color: var(--accent-emerald); }
+.deck-right.is-idle .deck-text i { color: var(--accent-amber); }
+
+/* Narrow windows drop the centre node first: it is the only one carrying no
+   information you cannot get elsewhere. */
+@media (max-width: 900px) {
+  .deck-centre { display: none; }
+}
+@media (max-width: 560px) {
+  .app-footer { padding: 6px 10px; font-size: 0.56rem; }
+  .deck-mark { display: none; }
 }

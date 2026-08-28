@@ -76,8 +76,11 @@ export const APP_VERSION = '${baseVersion}';
 export const BUILD_NUMBER = '${buildPad}';
 export const FULL_VERSION = '${fullVersion}';
 /** Shown in UI — never includes .001/.002 build pad */
-export const APP_TITLE = 'Lyricist ${baseVersion}';
-export const WINDOW_TITLE = 'Lyricist ${baseVersion} Goes Quantum';
+/** The product name. Never carries a version — that is what APP_VERSION is for,
+ *  and "Lyricist 4.2.0" as a NAME was the 420 joke the commercial refactor
+ *  removed. Regenerating this file must not put it back. */
+export const APP_TITLE = 'Lyricist Pro';
+export const WINDOW_TITLE = 'Lyricist Pro';
 `;
 
 fs.writeFileSync(BUILD_INFO, buildInfoSrc, 'utf8');
@@ -90,7 +93,7 @@ const desktopOut =
     process.env.USERPROFILE || process.env.HOME || ROOT,
     'OneDrive',
     'Desktop',
-    'New Releases for Lyricist Goes Quantum'
+    'New Releases for Lyricist Pro'
   );
 
 fs.mkdirSync(desktopOut, { recursive: true });

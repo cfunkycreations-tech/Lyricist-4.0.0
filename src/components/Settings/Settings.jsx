@@ -4,16 +4,13 @@ import { useLyricStore, DEFAULT_CONFIG } from '../../context/LyricStore.jsx';
 import { Save, RefreshCw, Key, Shield, HelpCircle } from 'lucide-react';
 import { normalizeApiKey } from '../../services/AIService.js';
 import { IMAGE_MODELS, DEFAULT_IMAGE_MODEL } from '../../services/GeminiService.js';
+import { PRISM_NAMES, ACCENT_PRESETS, accentHex } from '../../services/prismTheme.js';
+import { isEnabled as analyticsEnabled, optIn, optOut } from '../../services/analytics.js';
 
-/**
- * Checked against the hues they actually produce. The lead starts at 158 and
- * its partner at 262, both rotating together, so the pair stays about a
- * hundred degrees apart on the wheel wherever you put the slider.
- */
-const PRISM_NAMES = [
-  'Emerald & Violet', 'Blue & Magenta', 'Violet & Ember',
-  'Rose & Lime', 'Amber & Green', 'Lime & Cyan', 'Emerald & Violet',
-];
+/* The names, the presets and the swatch colour all come from prismTheme.js
+   now. There were two copies of PRISM_NAMES — one here and one there — and
+   they had already drifted apart, so the label under the slider was naming a
+   colour pair the slider had stopped producing. One source, one truth. */
 
 const MODELS_CACHE_KEY = 'openrouter-models-cache';
 const MODELS_CACHE_TTL = 60 * 60 * 1000; // refresh from OpenRouter at most hourly
@@ -306,6 +303,14 @@ export default function Settings() {
   const [showGoogleKey, setShowGoogleKey] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  /* Usage stats switch. Defaults ON in a build that has a key, because that is
+     the build the operator deliberately configured — but the choice is stored
+     and analytics.js reads the same localStorage entry at boot, so opting out
+     survives a restart rather than lasting until the window closes. */
+  const [statsOn, setStatsOn] = useState(() => {
+    try { return localStorage.getItem('lyricist.analytics.optout') !== '1'; } catch { return true; }
+  });
+
   // How many of his own narration recordings the app found. Reported as a
   // count rather than a yes/no so a misnamed file shows up as a number that is
   // lower than he expects, instead of silently doing nothing.
@@ -479,10 +484,18 @@ export default function Settings() {
           One control, every colour in the app. It has to reach a WebGL canvas
           on every tab, so handleUpdate mirrors it to localStorage and fires an
           event rather than threading it through the React tree. */}
-      <div style={{ marginBottom: 18 }} data-help="Shifts every colour in Lyricist at once — the moving background and the interface together. Drag it anywhere you like; it is remembered.">
-        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(43,232,160,0.75)', marginBottom: 5, display: 'block' }}>
-          Prism — the colour of the whole app
+      <div style={{ marginBottom: 18 }} data-help="One control for the whole colour of Lyricist Pro. It rotates the razor-neon accent — every border, focus ring, glow, scrollbar and active tab — and the moving prism behind each tab, together, right around the spectrum. Remembered between sessions.">
+        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--accent-neon)', marginBottom: 5, display: 'block' }}>
+          Razor Neon — the accent for the whole app
         </label>
+
+        {/* THE FULL-SPECTRUM TRACK.
+            The slider paints the spectrum it actually produces. A grey rail
+            with a number next to it makes you drag and check, drag and check;
+            a rail showing the colours lets you aim. The stops are the same
+            hues prismTheme.js generates (100% saturation, 50% lightness,
+            starting at 184° so position zero is the default electric cyan),
+            so what you point at is what you get. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <input
             type="range"
@@ -490,7 +503,17 @@ export default function Settings() {
             max="100"
             value={Math.round((store.config.prism ?? 0) * 100)}
             onChange={(e) => handleUpdate('prism', Number(e.target.value) / 100)}
-            style={{ flex: 1, accentColor: '#2BE8A0' }}
+            className="prism-range"
+            style={{ flex: 1, accentColor: accentHex(store.config.prism ?? 0) }}
+          />
+          <span
+            aria-hidden="true"
+            style={{
+              width: 26, height: 26, borderRadius: 6, flexShrink: 0,
+              background: accentHex(store.config.prism ?? 0),
+              boxShadow: `0 0 8px ${accentHex(store.config.prism ?? 0)}`,
+              border: '1px solid rgba(255,255,255,0.12)',
+            }}
           />
           <button
             type="button"
@@ -511,16 +534,94 @@ export default function Settings() {
             Shift
           </button>
         </div>
-        <p style={{ fontSize: '0.65rem', color: 'rgba(148,130,200,0.45)', marginTop: 5, lineHeight: 1.5 }}>
+        {/* The five named accents from the design system, as one click each.
+            The slider is continuous and always will be — this is for the
+            person who wants "the amber one" and does not care where on the
+            wheel it lives. */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 9 }}>
+          {ACCENT_PRESETS.map((p) => (
+            <button
+              key={p.name}
+              type="button"
+              onClick={() => handleUpdate('prism', p.t)}
+              data-help={`Set the accent to ${p.name}.`}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '4px 10px', borderRadius: 999, cursor: 'pointer',
+                fontSize: '0.62rem', letterSpacing: '0.06em',
+                background: 'var(--bg-slate)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <span aria-hidden="true" style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: p.hex, boxShadow: `0 0 6px ${p.hex}`,
+              }} />
+              {p.name}
+            </button>
+          ))}
+        </div>
+
+        <p style={{ fontSize: '0.65rem', color: 'rgba(148,130,200,0.45)', marginTop: 7, lineHeight: 1.5 }}>
           {PRISM_NAMES[Math.round((store.config.prism ?? 0) * (PRISM_NAMES.length - 1))]}
-          {' — '}moves the background and the interface together. Left is home.
+          {' '}<span className="ql-mono">{accentHex(store.config.prism ?? 0).toUpperCase()}</span>
+          {' — '}moves the accent and the background prism together. Left is home.
         </p>
       </div>
 
+      {/* ── ANONYMOUS USAGE STATS ─────────────────────────────────────────
+          RENDERS ONLY IN A BUILD THAT ACTUALLY COLLECTS SOMETHING. In the
+          air-gapped commercial build analyticsEnabled() is false, posthog-js is
+          not even in the bundle, and this whole block is absent — a switch that
+          turns off something that was never on is worse than no switch: it
+          implies collection is happening.
+
+          The list is exhaustive on purpose. "We collect anonymous usage data"
+          is the sentence every product says and nobody believes; naming the
+          five events and naming what is excluded is the only version of this
+          disclosure worth writing. */}
+      {analyticsEnabled() && (
+        <div style={{ marginBottom: 18 }} data-help="Anonymous feature usage only — which tools get opened and which engines get run. Never your lyrics, keywords, prompts, file names or audio. Turning this off stops collection on this machine immediately.">
+          <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--accent-neon)', marginBottom: 5, display: 'block' }}>
+            Anonymous usage stats
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              const next = !statsOn;
+              setStatsOn(next);
+              try { localStorage.setItem('lyricist.analytics.optout', next ? '0' : '1'); } catch { /* private mode */ }
+              if (next) optIn(); else optOut();
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 9,
+              padding: '8px 14px', borderRadius: 8, cursor: 'pointer',
+              background: 'var(--bg-slate)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              color: 'var(--text-secondary)', fontSize: '0.74rem',
+            }}
+          >
+            <span aria-hidden="true" style={{
+              width: 8, height: 8, borderRadius: '50%',
+              background: statsOn ? 'var(--accent-emerald)' : 'var(--text-dim)',
+              boxShadow: statsOn ? '0 0 6px var(--accent-emerald)' : 'none',
+            }} />
+            {statsOn ? 'Sharing anonymous usage stats' : 'Not sharing — collection is off'}
+          </button>
+          <p style={{ fontSize: '0.65rem', color: 'rgba(148,130,200,0.45)', marginTop: 6, lineHeight: 1.55 }}>
+            Collected: which tab you opened, that a grid was loaded, that a verse was generated,
+            that an album was exported, that a stem split was requested — plus counts and engine
+            names. <b>Never collected:</b> your lyrics, keywords, prompts, model output, file names,
+            file paths, audio, or API keys.
+          </p>
+        </div>
+      )}
+
       {/* Stemmer cloud key (optional) */}
-      <div style={{ marginBottom: 18 }} data-help="Optional. Only needed if you use Stemmer in Cloud mode. Offline Stemmer works with no key and no GPU. Cloud mode runs Demucs on Replicate’s servers for higher-quality stems.">
+      <div style={{ marginBottom: 18 }} data-help="Optional. Only needed for high-fidelity Cloud stem extraction. Local and Offline modes work with no key and no GPU. Cloud mode runs Demucs on Replicate’s servers under your own key, which is how a 4 GB VRAM machine gets pro stems.">
         <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
-          Stemmer Cloud API Key (Replicate) — optional
+          Cloud Stem Extraction Key (Replicate) — optional
         </label>
         <div style={{ display: 'flex', gap: 8 }}>
           <input

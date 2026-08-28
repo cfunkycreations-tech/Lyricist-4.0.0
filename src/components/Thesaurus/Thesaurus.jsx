@@ -122,7 +122,7 @@ export default function Thesaurus() {
           onClick={lookUp}
           disabled={loading || !word.trim()}
           className="btn-neon-purple"
-          data-help="Looks up your word in a free word dictionary and shows words that mean the same, the opposite, and related ideas. Always free — no AI key needed."
+          data-help="Looks up your word in an open word dictionary and shows words that mean the same, the opposite, and related ideas. Runs without an API key."
           style={{
             padding: '7px 20px',
             borderRadius: 8,

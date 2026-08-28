@@ -517,10 +517,10 @@ export default function LoopStation() {
                 })
               );
             } catch { /* */ }
-            alert(`Groove sent to Quantum Lab.\nBPM ${bpm} → ~${targetSyllables} syllables/line.\nOpen Quantum Lab → panel 7 Loop → Pull groove.`);
+            alert(`Groove sent to The Matrix.\nBPM ${bpm} → ~${targetSyllables} syllables/line.\nOpen The Matrix → Advanced Studio → 7 Loop → Pull groove.`);
           }}
           className="rc-round-btn rc-round-red"
-          data-help="Sends this BPM as a groove target to Quantum Lab (syllable budget + stress bias). No audio upload — just the pocket."
+          data-help="Sends this BPM as a groove target to The Matrix (syllable budget + stress bias). No audio upload — just the pocket."
         >
           <span className="rc-round-icon">⚛</span>
           <span className="rc-round-label">Quantum</span>
@@ -535,7 +535,7 @@ export default function LoopStation() {
           <span className="rc-round-icon">💾</span>
           <span className="rc-round-label">{saving ? 'Saving…' : 'Save'}</span>
         </button>
-        <label style={{ fontSize: '0.8rem', color: 'rgba(200,190,220,0.75)', marginLeft: 8 }} data-help="Reference BPM for you — loops are free-time recordings. Also used for Quantum Lab groove handshake.">
+        <label style={{ fontSize: '0.8rem', color: 'rgba(200,190,220,0.75)', marginLeft: 8 }} data-help="Reference BPM for you — loops are free-time recordings. Also used for the Matrix groove handshake.">
           BPM ref{' '}
           <input type="number" min={40} max={220} value={bpm} onChange={(e) => setBpm(Number(e.target.value) || 90)} style={{ width: 64, marginLeft: 6, padding: 6, borderRadius: 6, border: '1px solid rgba(139,92,246,0.35)', background: '#0d081c', color: '#fff' }} />
         </label>

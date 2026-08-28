@@ -1,5 +1,5 @@
 // ============================================================
-// Wizard narration cards (Lyricist 4.2.0 Goes Quantum)
+// Wizard narration cards — Lyricist Pro
 // Companion narrator: Ava (en-US-AvaNeural).
 // MP3s: public/wizard-audio/card-01.mp3 … card-20.mp3
 //
@@ -7,14 +7,27 @@
 // the cards and the numbering of the files are NOT the same thing (Collaboration
 // was added last, so it plays card-17). Renaming a file without changing the
 // field that points at it is how a card ends up narrating the wrong tab.
+//
+// ⚠ THE NARRATION AUDIO IS STALE AFTER THE COMMERCIAL REBRAND.
+//
+// `script` is BOTH the on-screen text AND the words in the baked MP3. The text
+// below has been updated to Lyricist Pro / The Matrix; the twenty MP3s in
+// public/wizard-audio/ still say "Lyricist four two oh Goes Quantum" and
+// "Quantum Lab", because they are pre-rendered files, not synthesis at runtime.
+//
+// Until they are re-baked with the same narrator, the tour READS correct and
+// SOUNDS old on cards 1 and 7. That was the lesser of the two evils: leaving the
+// text alone would have kept the 420 branding on screen in the first thing a new
+// customer sees, which is the exact thing this refactor exists to remove.
+// Re-render card-01.mp3 and card-05.mp3 from the scripts below to close it.
 // ============================================================
 
 export const WIZARD_CARDS = [
   {
-    id: 1, icon: '🎵', title: 'Welcome to Lyricist 4.2.0 Goes Quantum', tab: null, audio: 'card-01.mp3',
-    script: `Welcome to Lyricist 4.2.0 Goes Quantum.
+    id: 1, icon: '🎵', title: 'Welcome to Lyricist Pro', tab: null, audio: 'card-01.mp3',
+    script: `Welcome to Lyricist Pro.
 
-This is your full songwriting studio. Write, shape style, forge full songs, loop live, master albums, and experiment in Quantum Lab. Built so you can start even if you have never finished a song before.
+This is your full songwriting workstation. Write, shape style, forge full songs, loop live, master albums, and engineer verse structure in The Matrix. Built so you can start even if you have never finished a song before.
 
 Before we tour the tabs, find the light bulb in the top right. That is Tips. Turn it on, hover any control, and it explains itself in plain English.
 
@@ -47,7 +60,7 @@ Now let me walk you through the lab.`
     id: 3, icon: '🎵', title: 'Songwriter: your main workspace', tab: 'songwriter', audio: 'card-02.mp3',
     script: `Songwriter. Your main workspace.
 
-This is where most of the work lands. Ideas become lines, lines become sections, and sections become a full song. Ghost Rider, Quantum Lab, and Song Forge can all send finished or seed material straight here.
+This is where most of the work lands. Ideas become lines, lines become sections, and sections become a full song. Ghost Rider, The Matrix, and Song Forge can all send finished or seed material straight here.
 
 Lyricist was built to bring people together through the craft, different backgrounds, one love of music.
 
@@ -83,19 +96,19 @@ Send the new lyrics one click into Songwriter, with style tags ready for tools l
 
 When the tank is empty, give it a theme or genre and it writes a complete song, then paints matching cover art. Song-first or art-first, both directions work.
 
-Quantum Lab can seed Song Forge too. Load your lattice words and end rhymes into Forge notes, then expand them into a full track and cover.
+The Matrix can seed Song Forge too. Load your grid words and end rhymes into Forge notes, then expand them into a full track and cover.
 
 One place to spark a whole release-ready idea fast.`
   },
   {
-    id: 7, icon: '⚛️', title: 'Quantum Lab: the lattice', tab: 'quantum', audio: 'card-05.mp3',
-    script: `Quantum Lab. The lattice.
+    id: 7, icon: '⚛️', title: 'The Matrix: verse structure', tab: 'quantum', audio: 'card-05.mp3',
+    script: `The Matrix.
 
-This is Lyricist going quantum. Type your own keywords, up to a full grid of words and short phrases. They stay yours. Spotlight heats a tile. Run twelve gens spreads energy. Crystallize settles the field without stealing your words.
+Type your own keywords, up to a full grid of words and short phrases. They stay yours through every transform.
 
-Then generate neural lyrics as multi-state options: State A and State B. Pick the one you like. One click sends it to Songwriter. Another click sends the lattice seed to Song Forge.
+Then press Auto-Craft Verse. One button spreads the energy across the grid, locks the field, and writes two neural verses from it: State A and State B. Pick the one you like. One click sends it to Songwriter. Another click sends the grid seed to Song Forge.
 
-Every control is a numbered button in the Lattice controls bar, right under the grid, steps one through six, left to right. Nothing to type, no commands to remember. Hover any button with Tips on for plain English, or press Help.
+Want to drive it yourself? Open Advanced Studio underneath. Spotlight heats a tile, Run twelve gens spreads energy, Crystallize settles the field without stealing your words, and the nine-suite feature hub and the inspectors are all in there.
 
 Play. Experiment. Collapse the state you love.`
   },

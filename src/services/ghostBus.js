@@ -98,3 +98,48 @@ export async function runGhostAction(name, args = {}) {
     return { ok: false, said: e?.message || `"${name}" did not work.` };
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   GHOST PILOT — the robotics door.
+
+   The registry above is the PUBLIC bus: tabs offer named actions, the Ghost
+   asks for them, and all of it ships to customers. What follows is the
+   INTERNAL side — the visual robotics layer that drives an on-screen cursor,
+   synthesises DOM events, narrates through the voice engine and remote-controls
+   OBS Studio, so marketing videos can be recorded hands-free.
+
+   IT MUST NOT SHIP. The machinery therefore does not live in this file, which
+   is statically imported by App.jsx and by half the tabs and consequently ends
+   up in the bundle no matter what any flag says. It lives in ghostPilot.js and
+   obsClient.js behind the dynamic import below, so that in a commercial build
+   `PILOT_ENABLED` folds to false, the import() becomes unreachable, and Rollup
+   emits no chunk for either module. See components/Ghost/GhostPilotLayer.jsx
+   for the full explanation of the mechanism.
+
+   What is left here is the door: one constant and one function, both of which
+   compile away to a stub that immediately reports the layer is not present.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+export const PILOT_ENABLED = import.meta.env.VITE_FAFO_INTERNAL_BUILD === 'true';
+
+const loadPilotModule = PILOT_ENABLED ? () => import('./ghostPilot.js') : null;
+let pilotModule = null;
+
+/**
+ * Run an array of GhostAction objects through the visual executor.
+ *
+ * Resolves { ok, error } rather than throwing, exactly like runGhostAction
+ * above and for the same reason: a script that cannot run is something to
+ * report, not an exception that takes the page with it.
+ */
+export async function runGhostPilot(actions) {
+  if (!loadPilotModule) {
+    return { ok: false, error: 'The Ghost Pilot robotics layer is not part of this build.' };
+  }
+  try {
+    pilotModule ||= await loadPilotModule();
+    return await pilotModule.runGhostScript(actions);
+  } catch (e) {
+    return { ok: false, error: e?.message || 'Ghost Pilot could not run that script.' };
+  }
+}

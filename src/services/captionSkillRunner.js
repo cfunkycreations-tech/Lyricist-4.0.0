@@ -81,7 +81,7 @@ async function askOne({ system, user, model, key, budget, signal }) {
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
       'HTTP-Referer': 'https://lyricist.app',
-      'X-Title': 'Lyricist 4.2.0',
+      'X-Title': 'Lyricist Pro',
     },
     body: JSON.stringify({
       model,

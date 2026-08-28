@@ -30,90 +30,118 @@ import { measureCell, collapseCell } from './quantumEngine.js';
  * truth meter, stress mode, loop handshake, style pressure, journal.
  */
 export default function QuantumFeaturesPanel({
-  section,
-  setSection,
-  links,
-  setLinks,
-  selectedId,
-  setSelectedId,
-  keywordDraft,
-  neuralA,
-  neuralB,
-  neuralPick,
-  setStatus,
-  activeSectionId,
-  setActiveSectionId,
-  songMap,
-  setSongMap,
-  contracts,
-  setContracts,
-  dnaUsed,
-  setDnaUsed,
-  stylePressure,
-  setStylePressure,
-  phoneticsOn,
-  setPhoneticsOn,
-  onTruthReport,
-  truthReport,
+  section = { lines: [] },
+  setSection = () => {},
+  links = [],
+  setLinks = () => {},
+  selectedId = null,
+  setSelectedId = () => {},
+  keywordDraft = '',
+  neuralA = '',
+  neuralB = '',
+  neuralPick = 'A',
+  setStatus = () => {},
+  activeSectionId = 'verse1',
+  setActiveSectionId = () => {},
+  songMap = {},
+  setSongMap = () => {},
+  contracts = [],
+  setContracts = () => {},
+  dnaUsed = null,
+  setDnaUsed = () => {},
+  stylePressure = null,
+  setStylePressure = () => {},
+  phoneticsOn = false,
+  setPhoneticsOn = () => {},
+  onTruthReport = () => {},
+  truthReport = null,
 }) {
-  const [dnaLib, setDnaLib] = useState(() => loadDNALibrary());
+  const [dnaLib, setDnaLib] = useState(() => {
+    try { return loadDNALibrary() || []; } catch { return []; }
+  });
   const [dnaName, setDnaName] = useState('');
   const [contractMode, setContractMode] = useState(false);
   const [contractPick, setContractPick] = useState(null);
   const [contractType, setContractType] = useState('rhyme');
-  const [journal, setJournal] = useState(() => loadJournal());
-  const [loopInfo, setLoopInfo] = useState(() => readLoopHandshake());
+  const [journal, setJournal] = useState(() => {
+    try { return loadJournal() || []; } catch { return []; }
+  });
+  const [loopInfo, setLoopInfo] = useState(() => {
+    try { return readLoopHandshake(); } catch { return null; }
+  });
   const [panel, setPanel] = useState('dna'); // dna | contracts | measure | song | truth | stress | loop | style | journal
 
+  const safeLines = section?.lines ?? [];
+
   const selected = useMemo(() => {
-    for (const ln of section.lines) {
-      const c = ln.cells.find((x) => x.id === selectedId);
+    if (!selectedId || !Array.isArray(safeLines)) return null;
+    for (const ln of safeLines) {
+      if (!ln?.cells) continue;
+      const c = ln.cells.find((x) => x?.id === selectedId);
       if (c) return c;
     }
     return null;
-  }, [section, selectedId]);
+  }, [safeLines, selectedId]);
 
   useEffect(() => {
-    setLoopInfo(readLoopHandshake());
+    try {
+      setLoopInfo(readLoopHandshake());
+    } catch {
+      setLoopInfo(null);
+    }
   }, [panel]);
 
   const refreshStyle = () => {
-    const s = readStylePressure();
-    setStylePressure(s);
+    try {
+      const s = readStylePressure();
+      setStylePressure(s);
+    } catch {
+      setStylePressure(null);
+    }
   };
 
   // ── DNA ──
   const doSaveDNA = () => {
+    if (!section || !safeLines.length) {
+      setStatus({ lead: 'DNA failed.', rest: ' No active section lines available to fingerprint.' });
+      return;
+    }
     const entry = saveDNAFromSection(section, dnaName);
     if (!entry) {
       setStatus({ lead: 'DNA failed.', rest: ' Could not fingerprint this section.' });
       return;
     }
-    setDnaLib(loadDNALibrary());
+    setDnaLib(loadDNALibrary() || []);
     setDnaName('');
     setStatus({ lead: 'DNA saved.', rest: ` “${entry.name}” stored — inject it into any section later.` });
   };
 
   const doInjectDNA = (entry) => {
-    const res = injectDNAOntoSection(section, entry.dna);
-    setSection(res.section);
-    setDnaUsed(entry);
-    setStatus({
-      lead: 'DNA injected.',
-      rest: ` Shape of “${entry.name}” applied (stress + rhyme slots). Your words stay; meter/rhyme plan shifts. Mutate for a sibling shape.`,
-    });
+    if (!entry?.dna) return;
+    const res = injectDNAOntoSection(section || { lines: [] }, entry.dna);
+    if (res?.section) {
+      setSection(res.section);
+      setDnaUsed(entry);
+      setStatus({
+        lead: 'DNA injected.',
+        rest: ` Shape of “${entry.name}” applied (stress + rhyme slots). Your words stay; meter/rhyme plan shifts. Mutate for a sibling shape.`,
+      });
+    }
   };
 
   const doMutateDNA = (entry) => {
+    if (!entry?.dna) return;
     const m = mutateStoredDNA(entry, Date.now() % 99);
-    const lib = loadDNALibrary();
+    const lib = loadDNALibrary() || [];
     lib.unshift(m);
     saveDNALibrary(lib);
-    setDnaLib(loadDNALibrary());
-    const res = injectDNAOntoSection(section, m.dna);
-    setSection(res.section);
-    setDnaUsed(m);
-    setStatus({ lead: 'DNA mutated + applied.', rest: ' Same family, flipped stress bits — a controlled variation.' });
+    setDnaLib(loadDNALibrary() || []);
+    const res = injectDNAOntoSection(section || { lines: [] }, m.dna);
+    if (res?.section) {
+      setSection(res.section);
+      setDnaUsed(m);
+      setStatus({ lead: 'DNA mutated + applied.', rest: ' Same family, flipped stress bits — a controlled variation.' });
+    }
   };
 
   // ── Contracts ──
@@ -139,26 +167,27 @@ export default function QuantumFeaturesPanel({
       return true;
     }
     const ctr = makeContract(contractPick, cellId, contractType, 0.9);
-    setContracts((prev) => [...prev, ctr]);
-    // also add to links for energy field
-    setLinks((prev) => [...prev, { aId: ctr.aId, bId: ctr.bId, type: ctr.type, strength: ctr.strength }]);
-    setContractPick(null);
-    setStatus({
-      lead: 'Contract forged.',
-      rest: ` ${contractType.toUpperCase()} link set. Crystallize / Generate will warn if it breaks.`,
-    });
+    if (ctr) {
+      setContracts((prev) => [...(prev || []), ctr]);
+      setLinks((prev) => [...(prev || []), { aId: ctr.aId, bId: ctr.bId, type: ctr.type, strength: ctr.strength }]);
+      setContractPick(null);
+      setStatus({
+        lead: 'Contract forged.',
+        rest: ` ${contractType.toUpperCase()} link set. Crystallize / Generate will warn if it breaks.`,
+      });
+    }
     return true;
   };
 
   const removeContract = (id) => {
-    setContracts((prev) => prev.filter((c) => c.id !== id));
+    setContracts((prev) => (prev || []).filter((c) => c.id !== id));
   };
 
   const auditContracts = () => {
-    const r = checkContracts(section, contracts);
-    if (r.ok) {
+    const r = checkContracts(section || { lines: [] }, contracts || []);
+    if (r?.ok) {
       setStatus({ lead: 'Contracts hold.', rest: ' All rhyme / contrast / callback links are satisfied.' });
-    } else {
+    } else if (r?.violations) {
       setStatus({
         lead: 'Contracts broken.',
         rest: ` ${r.violations.length} issue(s): ${r.violations.map((v) => `${v.aText}↔${v.bText}`).join('; ')}`,
@@ -170,38 +199,43 @@ export default function QuantumFeaturesPanel({
   // ── Measure / super ──
   const openSuper = () => {
     if (!selectedId) return;
-    const next = openCellSuperposition(section, selectedId);
-    setSection(next);
-    setStatus({
-      lead: 'Superposition open.',
-      rest: ' This tile holds several candidate words. Press Measure to collapse one (partners reweight if entangled).',
-    });
+    const next = openCellSuperposition(section || { lines: [] }, selectedId);
+    if (next) {
+      setSection(next);
+      setStatus({
+        lead: 'Superposition open.',
+        rest: ' This tile holds several candidate words. Press Measure to collapse one (partners reweight if entangled).',
+      });
+    }
   };
 
   const doMeasure = () => {
     if (!selectedId) return;
-    const res = measureCell(section, selectedId, links);
-    setSection(res.section);
-    setStatus({
-      lead: 'Collapsed.',
-      rest: res.collapsed?.text
-        ? ` Measured “${res.collapsed.text}”. ${res.reweighted?.length ? `Reweighted ${res.reweighted.length} partner(s).` : ''}`
-        : ' Tile was not in superposition — open candidates first.',
-    });
+    const res = measureCell(section || { lines: [] }, selectedId, links || []);
+    if (res?.section) {
+      setSection(res.section);
+      setStatus({
+        lead: 'Collapsed.',
+        rest: res.collapsed?.text
+          ? ` Measured “${res.collapsed.text}”. ${res.reweighted?.length ? `Reweighted ${res.reweighted.length} partner(s).` : ''}`
+          : ' Tile was not in superposition — open candidates first.',
+      });
+    }
   };
 
   const doCollapseMax = () => {
     if (!selectedId) return;
-    const res = collapseCell(section, selectedId);
-    setSection(res.section);
-    setStatus({ lead: 'Max collapse.', rest: ' Highest-amplitude candidate won (deterministic).' });
+    const res = collapseCell(section || { lines: [] }, selectedId);
+    if (res?.section) {
+      setSection(res.section);
+      setStatus({ lead: 'Max collapse.', rest: ' Highest-amplitude candidate won (deterministic).' });
+    }
   };
 
   // ── Multi-section ──
   const switchSongSection = (id) => {
-    // save current into songMap
     setSongMap((prev) => ({
-      ...prev,
+      ...(prev || {}),
       [activeSectionId]: {
         section,
         keywords: keywordDraft,
@@ -212,15 +246,16 @@ export default function QuantumFeaturesPanel({
         dnaUsed,
       },
     }));
-    const incoming = songMap[id];
+    const incoming = songMap?.[id];
     setActiveSectionId(id);
     if (incoming?.section) {
       setSection(incoming.section);
       setContracts(incoming.contracts || []);
       setDnaUsed(incoming.dnaUsed || null);
     }
+    const label = QUANTUM_SECTIONS?.find((s) => s.id === id)?.label || id;
     setStatus({
-      lead: `Section: ${QUANTUM_SECTIONS.find((s) => s.id === id)?.label || id}`,
+      lead: `Section: ${label}`,
       rest: ' Each section has its own lattice. Save DNA from Chorus, inject into Verse 2 for shared shape.',
     });
   };
@@ -229,17 +264,19 @@ export default function QuantumFeaturesPanel({
   const runTruth = () => {
     const verse = neuralPick === 'B' ? neuralB : neuralA;
     const report = computeTruthMeter({
-      section,
-      neuralText: verse,
-      keywordsRaw: keywordDraft,
+      section: section || { lines: [] },
+      neuralText: verse || '',
+      keywordsRaw: keywordDraft || '',
       dnaUsed,
-      contracts,
+      contracts: contracts || [],
     });
-    onTruthReport?.(report);
-    setStatus({
-      lead: `Truth ${Math.round(report.overall * 100)}%.`,
-      rest: ` ${report.notes[0] || ''}`,
-    });
+    if (report) {
+      onTruthReport?.(report);
+      setStatus({
+        lead: `Truth ${Math.round((report.overall || 0) * 100)}%.`,
+        rest: ` ${report.notes?.[0] || ''}`,
+      });
+    }
   };
 
   // ── Loop ──
@@ -253,12 +290,14 @@ export default function QuantumFeaturesPanel({
       });
       return;
     }
-    const res = applyLoopTargetsToSection(section, hs);
-    setSection(res.section);
-    setStatus({
-      lead: 'Groove applied.',
-      rest: ` BPM ${hs.bpm} → ~${hs.targetSyllables} syllables/line stress bias. Write to the pocket you looped.`,
-    });
+    const res = applyLoopTargetsToSection(section || { lines: [] }, hs);
+    if (res?.section) {
+      setSection(res.section);
+      setStatus({
+        lead: 'Groove applied.',
+        rest: ` BPM ${hs.bpm} → ~${hs.targetSyllables} syllables/line stress bias. Write to the pocket you looped.`,
+      });
+    }
   };
 
   // ── Style ──
@@ -272,12 +311,14 @@ export default function QuantumFeaturesPanel({
       });
       return;
     }
-    const res = applyStylePressureToSection(section, s);
-    setSection(res.section);
-    setStatus({
-      lead: 'Pressure chamber ON.',
-      rest: ` Field biased by ${s.artist || 'style'} — dens=${s.rhymeDensity}, temp=${s.emotionalTemp}. Neural generate will honor this.`,
-    });
+    const res = applyStylePressureToSection(section || { lines: [] }, s);
+    if (res?.section) {
+      setSection(res.section);
+      setStatus({
+        lead: 'Pressure chamber ON.',
+        rest: ` Field biased by ${s.artist || 'style'} — dens=${s.rhymeDensity}, temp=${s.emotionalTemp}. Neural generate will honor this.`,
+      });
+    }
   };
 
   const clearStyle = () => {
@@ -290,38 +331,39 @@ export default function QuantumFeaturesPanel({
   const snapshotNow = () => {
     const verse = neuralPick === 'B' ? neuralB : neuralA;
     const truth = truthReport || computeTruthMeter({
-      section,
-      neuralText: verse,
-      keywordsRaw: keywordDraft,
+      section: section || { lines: [] },
+      neuralText: verse || '',
+      keywordsRaw: keywordDraft || '',
       dnaUsed,
-      contracts,
+      contracts: contracts || [],
     });
     const frozen = [];
-    section.lines.forEach((ln) =>
-      ln.cells.forEach((c) => {
-        if (c.frozen) frozen.push(c.text);
+    safeLines.forEach((ln) =>
+      (ln?.cells || []).forEach((c) => {
+        if (c?.frozen) frozen.push(c.text);
       })
     );
     const entry = appendJournalEntry({
-      sectionName: QUANTUM_SECTIONS.find((s) => s.id === activeSectionId)?.label || activeSectionId,
+      sectionName: QUANTUM_SECTIONS?.find((s) => s.id === activeSectionId)?.label || activeSectionId,
       keywords: (keywordDraft || '').split(/[,\n|;]+/).map((t) => t.trim()).filter(Boolean),
       neuralPick,
       dnaName: dnaUsed?.name || null,
       styleArtist: stylePressure?.artist || null,
       frozen,
-      contractCount: contracts.length,
-      truthOverall: truth.overall,
-      latticeLines: snapshotLatticeLines(section),
+      contractCount: (contracts || []).length,
+      truthOverall: truth?.overall ?? 0,
+      latticeLines: snapshotLatticeLines(section || { lines: [] }),
       verse: verse || '',
-      notes: truth.notes,
+      notes: truth?.notes || [],
     });
     if (verse) pushVaultLines(verse.split('\n'));
-    setJournal(loadJournal());
+    setJournal(loadJournal() || []);
     setStatus({ lead: 'Journal saved.', rest: ' Provenance card stored — export anytime. Not slop: you can prove the craft path.' });
     return entry;
   };
 
   const exportJournal = (entry) => {
+    if (!entry) return;
     const text = formatJournalCard(entry);
     const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -344,7 +386,6 @@ export default function QuantumFeaturesPanel({
     { id: 'journal', label: '9 Journal' },
   ];
 
-  // expose contract tile handler via window-ish callback parent uses
   useEffect(() => {
     window.__qlContractHandler = onContractTile;
     window.__qlContractMode = contractMode;
@@ -388,8 +429,8 @@ export default function QuantumFeaturesPanel({
             </button>
           </div>
           <div className="ql-adv-list">
-            {dnaLib.length === 0 && <div className="ql-adv-empty">No saved DNA yet — crystallize something you love, then save.</div>}
-            {dnaLib.map((e) => (
+            {(!dnaLib || dnaLib.length === 0) && <div className="ql-adv-empty">No saved DNA yet — crystallize something you love, then save.</div>}
+            {(dnaLib || []).map((e) => (
               <div key={e.id} className="ql-adv-card">
                 <div>
                   <strong>{e.name}</strong>
@@ -408,7 +449,7 @@ export default function QuantumFeaturesPanel({
                     type="button"
                     className="ql-btn"
                     onClick={() => {
-                      const lib = dnaLib.filter((x) => x.id !== e.id);
+                      const lib = (dnaLib || []).filter((x) => x.id !== e.id);
                       saveDNALibrary(lib);
                       setDnaLib(lib);
                     }}
@@ -455,13 +496,13 @@ export default function QuantumFeaturesPanel({
             </div>
           )}
           <div className="ql-adv-list">
-            {contracts.length === 0 && <div className="ql-adv-empty">No manual contracts yet.</div>}
-            {contracts.map((c) => {
+            {(!contracts || contracts.length === 0) && <div className="ql-adv-empty">No manual contracts yet.</div>}
+            {(contracts || []).map((c) => {
               let aT = '?', bT = '?';
-              section.lines.forEach((ln) =>
-                ln.cells.forEach((cell) => {
-                  if (cell.id === c.aId) aT = cell.text;
-                  if (cell.id === c.bId) bT = cell.text;
+              safeLines.forEach((ln) =>
+                (ln?.cells || []).forEach((cell) => {
+                  if (cell?.id === c.aId) aT = cell.text;
+                  if (cell?.id === c.bId) bT = cell.text;
                 })
               );
               return (
@@ -500,10 +541,10 @@ export default function QuantumFeaturesPanel({
               Collapse to max
             </button>
           </div>
-          {selected?.isSuperposition && selected.candidates?.length > 0 && (
+          {selected?.isSuperposition && (selected.candidates || []).length > 0 && (
             <div className="ql-adv-cands">
               <div className="ql-adv-meta">Candidates for “{selected.text}”:</div>
-              {selected.candidates.map((c) => (
+              {(selected.candidates || []).map((c) => (
                 <div key={c.text} className="ql-adv-cand">
                   <span>{c.text}</span>
                   <span className="ql-adv-amp">{Math.round((c.amplitude || 0) * 100)}%</span>
@@ -525,7 +566,7 @@ export default function QuantumFeaturesPanel({
             Separate lattices per section. Save Chorus DNA → inject into Verse 2. Bridge can hold anti-structure.
           </p>
           <div className="ql-sec-strip">
-            {QUANTUM_SECTIONS.map((s) => (
+            {(QUANTUM_SECTIONS || []).map((s) => (
               <button
                 key={s.id}
                 type="button"
@@ -536,7 +577,9 @@ export default function QuantumFeaturesPanel({
               </button>
             ))}
           </div>
-          <div className="ql-adv-pill">Editing: {QUANTUM_SECTIONS.find((s) => s.id === activeSectionId)?.label}</div>
+          <div className="ql-adv-pill">
+            Editing: {QUANTUM_SECTIONS?.find((s) => s.id === activeSectionId)?.label || activeSectionId}
+          </div>
         </div>
       )}
 
@@ -553,20 +596,20 @@ export default function QuantumFeaturesPanel({
           {truthReport && (
             <div className="ql-truth">
               <div className="ql-truth-overall">
-                Overall <b>{Math.round(truthReport.overall * 100)}%</b>
+                Overall <b>{Math.round((truthReport.overall || 0) * 100)}%</b>
               </div>
               <div className="ql-truth-grid">
-                <div>Originality <b>{Math.round(truthReport.originality * 100)}%</b></div>
-                <div>Anti-cliché <b>{Math.round(truthReport.clicheScore * 100)}%</b></div>
+                <div>Originality <b>{Math.round((truthReport.originality || 0) * 100)}%</b></div>
+                <div>Anti-cliché <b>{Math.round((truthReport.clicheScore || 0) * 100)}%</b></div>
                 <div>
-                  Keywords <b>{truthReport.honored}/{truthReport.keywordTotal}</b>
+                  Keywords <b>{truthReport.honored || 0}/{truthReport.keywordTotal || 0}</b>
                 </div>
-                <div>DNA fidelity <b>{Math.round(truthReport.dnaFidelity * 100)}%</b></div>
-                <div>Contracts <b>{Math.round(truthReport.contractScore * 100)}%</b></div>
-                <div>Constraints <b>{Math.round(truthReport.constraintSat * 100)}%</b></div>
+                <div>DNA fidelity <b>{Math.round((truthReport.dnaFidelity || 0) * 100)}%</b></div>
+                <div>Contracts <b>{Math.round((truthReport.contractScore || 0) * 100)}%</b></div>
+                <div>Constraints <b>{Math.round((truthReport.constraintSat || 0) * 100)}%</b></div>
               </div>
               <ul className="ql-truth-notes">
-                {truthReport.notes.map((n, i) => (
+                {(truthReport.notes || []).map((n, i) => (
                   <li key={i}>{n}</li>
                 ))}
               </ul>
@@ -590,20 +633,23 @@ export default function QuantumFeaturesPanel({
           </button>
           {phoneticsOn && (
             <div className="ql-stress-table">
-              {section.lines.map((ln, i) => (
-                <div key={ln.id || i} className="ql-stress-row">
-                  <span className="ql-adv-meta">L{i + 1} [{ln.rhymeSchemeSlot}]</span>
-                  {ln.cells.map((c) => (
+              {safeLines.length === 0 && (
+                <div className="ql-adv-empty">No section lines available for stress inspection.</div>
+              )}
+              {safeLines.map((ln, i) => (
+                <div key={ln?.id || i} className="ql-stress-row">
+                  <span className="ql-adv-meta">L{i + 1} [{ln?.rhymeSchemeSlot || '-'}]</span>
+                  {(ln?.cells || []).map((c) => (
                     <button
-                      key={c.id}
+                      key={c?.id}
                       type="button"
-                      className={`ql-stress-chip ${c.id === selectedId ? 'is-on' : ''}`}
-                      onClick={() => setSelectedId(c.id)}
-                      title={c.rhymeClass}
+                      className={`ql-stress-chip ${c?.id === selectedId ? 'is-on' : ''}`}
+                      onClick={() => setSelectedId(c?.id)}
+                      title={c?.rhymeClass || ''}
                     >
-                      <span className="ql-stress-dot">{stressDots(c.stress)}</span>
-                      <span>{c.text}</span>
-                      <span className="ql-adv-meta">{rimeLabel(c.rhymeClass)}</span>
+                      <span className="ql-stress-dot">{stressDots(c?.stress)}</span>
+                      <span>{c?.text || ''}</span>
+                      <span className="ql-adv-meta">{rimeLabel(c?.rhymeClass)}</span>
                     </button>
                   ))}
                 </div>
@@ -684,8 +730,8 @@ export default function QuantumFeaturesPanel({
             Snapshot collapse now
           </button>
           <div className="ql-adv-list">
-            {journal.length === 0 && <div className="ql-adv-empty">No journal entries yet.</div>}
-            {journal.slice(0, 12).map((e) => (
+            {(!journal || journal.length === 0) && <div className="ql-adv-empty">No journal entries yet.</div>}
+            {(journal || []).slice(0, 12).map((e) => (
               <div key={e.id} className="ql-adv-card">
                 <div>
                   <strong>{e.sectionName}</strong>

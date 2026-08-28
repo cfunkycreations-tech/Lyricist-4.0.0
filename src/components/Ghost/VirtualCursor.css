@@ -1,0 +1,62 @@
+/* Ghost Pilot virtual cursor — INTERNAL MARKETING BUILD ONLY.
+   Imported by VirtualCursor.jsx, which is only ever reached through the
+   dynamic import in GhostPilotLayer.jsx. In the commercial build nothing
+   imports this file, so Vite never emits it into the stylesheet. */
+
+.ghost-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100000;
+  /* MUST STAY. This element covers the whole viewport's stacking context; with
+     hit testing on it would swallow every click in the application, including
+     the synthetic ones the executor dispatches. */
+  pointer-events: none;
+  /* The executor animates position frame by frame, so there is no CSS
+     transition on transform — a transition here would fight the easing curve
+     and add a second, slower lag on top of it. */
+  will-change: transform;
+  filter: drop-shadow(0 0 6px rgba(var(--accent-rgb, 0, 240, 255), 0.85))
+          drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7));
+  transition: scale 0.09s ease-out;
+}
+
+/* A press is a real, visible dip. On video a click with no cursor feedback
+   reads as the UI reacting on its own. */
+.ghost-cursor.is-pressed { scale: 0.82; }
+
+/* While typing the cursor holds a soft pulse so the viewer's eye stays on the
+   field that is filling in. */
+.ghost-cursor.is-typing { animation: ghost-cursor-type 0.9s ease-in-out infinite; }
+@keyframes ghost-cursor-type {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
+/* THE CLICK CONFIRMATION. An expanding ring at the cursor tip — the one piece
+   of feedback that makes a synthetic click legible in a screen recording.
+   Remounted per click via a changing React key; CSS will not replay an
+   animation on an element that never left the tree. */
+.ghost-cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 99999;
+  pointer-events: none;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-neon, #00F0FF);
+  animation: ghost-cursor-ping 0.5s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes ghost-cursor-ping {
+  from { opacity: 0.95; scale: 0.3; }
+  to   { opacity: 0;    scale: 3.4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost-cursor.is-typing { animation: none; }
+  .ghost-cursor-ring { animation-duration: 0.01s; }
+}

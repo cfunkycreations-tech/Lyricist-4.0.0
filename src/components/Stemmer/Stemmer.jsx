@@ -11,6 +11,7 @@ import { separateStemsCloud } from '../../services/stemmerCloud.js';
 import { separateStemsGPU, gpuAvailable, gpuName } from '../../services/stemmerEngineGpu.js';
 import { available as localAvailable, localStatus, localSetup, separateStemsLocal } from '../../services/stemmerLocal.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
+import { track } from '../../services/analytics.js';
 import './Stemmer.css';
 
 import TabBackground from '../common/TabBackground.jsx';
@@ -120,6 +121,16 @@ export default function Stemmer() {
     setBusy(true);
     setProgress(0);
     setLastMode(mode);
+
+    /* Which ENGINE was asked for, and roughly how long the track is. Never the
+       file name — that is the user's song title and often their own name — and
+       never the audio. See services/analytics.js; the sanitiser would drop a
+       filename anyway, but it should not be offered in the first place. */
+    track('stem_split_requested', {
+      mode,
+      device,
+      duration_bucket: file.size > 40e6 ? 'long' : file.size > 8e6 ? 'medium' : 'short',
+    });
 
     try {
       const ctx = getCtx();
@@ -426,10 +437,30 @@ export default function Stemmer() {
         </div>
       </div>
 
+      {/* ── CLOUD-ASSISTED FEATURE TRANSPARENCY ─────────────────────────────
+          Said up front, before the engine picker, not buried in the help text
+          underneath it. Two tabs in this app do work off this machine and a
+          customer is entitled to know which and why BEFORE they drop a file in,
+          not after they notice an upload. The reason is the honest one: Demucs
+          wants far more VRAM than the 4 GB hardware this product targets, so
+          high-fidelity separation is offloaded rather than made to crawl or
+          fail locally. */}
+      <div className="stemmer-transparency" data-help="Lyricist Pro tells you which engines run off this machine. Local and Offline never send your audio anywhere. Cloud sends the file you choose to Replicate under your own API key — nothing is uploaded until you pick Cloud and drop a file.">
+        <span className="stemmer-transparency-mark" aria-hidden="true">☁</span>
+        <div>
+          <b>Cloud Stem Extraction · BYO Replicate Key</b>
+          <span>
+            High-fidelity Demucs separation offloads to the Replicate API to preserve local machine
+            resources on 4&nbsp;GB VRAM hardware. It runs under <i>your</i> key and only when you
+            choose the Cloud engine. Local and Offline never leave this computer.
+          </span>
+        </div>
+      </div>
+
       {/* Engine: Local AI (real stems) · Cloud AI · Offline (fast/rough) */}
       <div
         className="stemmer-mode-bar"
-        data-help="Local AI = true separation on your own machine (Demucs), real isolated stems, free. Cloud AI = same quality on remote servers, needs a Replicate key. Offline = fast frequency split on your CPU/GPU, rough (stems bleed) — good for a quick preview, not true stems."
+        data-help="Local AI = true separation on your own machine (Demucs), real isolated stems, no key. Cloud AI = the same quality on Replicate's servers using your own key, which is how a 4 GB VRAM machine gets pro stems. Offline = fast frequency split on your CPU/GPU, rough (stems bleed) — good for a quick preview, not true isolation."
       >
         <span className="stemmer-mode-label">Engine</span>
         <button

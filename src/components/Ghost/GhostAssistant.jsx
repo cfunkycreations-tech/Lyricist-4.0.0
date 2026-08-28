@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './GhostAssistant.css';
 import { askGhost, splitActions } from '../../services/GhostService.js';
-import { runGhostAction, watchGhostActions, availableGhostActions } from '../../services/ghostBus.js';
+import { registerGhostAction, runGhostAction, watchGhostActions, availableGhostActions } from '../../services/ghostBus.js';
 import { speak, hush, loadVoice, voiceState, playSample, VOICES, getVoiceName, setVoiceName } from '../../services/GhostVoice.js';
 
 /**
@@ -32,6 +32,27 @@ const OPENERS = [
 ];
 
 const VOICE_KEY = 'lyricist.ghost.voice';
+
+/**
+ * STOW-AFTER-SENDING. For OBS work.
+ *
+ * Chris, 2026-08-27, mid-recording: *"I also want that ghost... ask the ghost
+ * box to be able to shut closed after I feed it a prompt telling it what to do.
+ * For instance, act like a person and you're filling the lattice because I'm
+ * gonna be recording that with OBS."*
+ *
+ * The box itself is the tell in a screen recording — a floating aside labelled
+ * "The Ghost" is the last thing an operator wants captured in their frame.
+ * Toggle Stow on, type the directive, press Enter, the aside closes. The Ghost
+ * still runs the actions; only its own UI gets out of the way.
+ *
+ * VOICE STAYS UNDER ITS OWN TOGGLE. An earlier revision of this file force-muted
+ * the voice while Stow was on — Chris caught it immediately: *"run the matrix
+ * and talk at the same time. That's the prompt."* The whole point of a voice
+ * during an OBS pass is narration; silencing it defeats the recording. Stow now
+ * only hides the panel. If a session wants both hidden, turn the voice off too.
+ */
+const STOW_KEY = 'lyricist.ghost.stow';
 
 /**
  * THE ONE THING IT ASKS FIRST.
@@ -79,12 +100,46 @@ export default function GhostAssistant({ tab, config, getContext }) {
   const [voiceOn, setVoiceOn] = useState(() => localStorage.getItem(VOICE_KEY) === '1');
   const [voiceNote, setVoiceNote] = useState('');
   const [voiceName, setVoiceName_] = useState(() => getVoiceName());
+  // See the note at STOW_KEY. Persisted, because a recording session usually
+  // means several submissions in a row, and re-arming it every time would
+  // defeat the point.
+  const [stow, setStow] = useState(() => localStorage.getItem(STOW_KEY) === '1');
   const [, bumpActions] = useState(0);
   const logRef = useRef(null);
   const abortRef = useRef(null);
 
   // The list of what it can press changes as tabs mount and unmount.
   useEffect(() => watchGhostActions(() => bumpActions((n) => n + 1)), []);
+
+  /**
+   * LET A PROMPT PICK THE VOICE.
+   *
+   * Chris, 2026-08-27, mid-recording: *"you gotta make it talk in the woman's
+   * voice, dummy."* Selecting a voice used to be a click in the picker, which
+   * is fine at a keyboard but wrong for a recording session: the pilot layer
+   * is meant to be driven by ONE prompt, and mid-run switching should be one
+   * of the things the model can dispatch. So the voice picker gets exposed on
+   * the ghost bus as an action.
+   *
+   * The `name` arg tolerates either an internal key ("woman") or a spoken word
+   * ("female"). Both map to `af_heart`. Turns Voice on if it was off, so a
+   * "talk in the woman's voice" prompt cannot silently no-op.
+   */
+  useEffect(() => registerGhostAction('set_voice', ({ name } = {}) => {
+    const n = String(name || '').trim().toLowerCase();
+    const key =
+      /wom|fem|girl|lady|heart|bella|nicole/.test(n) ? 'woman' :
+      /man|male|dude|guy|michael|adam(?!.*ghost)/.test(n) ? 'man' :
+      /ghost|onyx|deep/.test(n) ? 'ghost' :
+      Object.keys(VOICES).find((k) => k === n || VOICES[k].label.toLowerCase() === n);
+    if (!key) return { ok: false, said: `no voice called "${name}" — pick woman, man, or ghost` };
+    setVoiceName_(setVoiceName(key));
+    if (!voiceOn) {
+      setVoiceOn(true);
+      localStorage.setItem(VOICE_KEY, '1');
+    }
+    return `voice set to ${VOICES[key].label}`;
+  }), [voiceOn]);
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
@@ -121,6 +176,13 @@ export default function GhostAssistant({ tab, config, getContext }) {
     setMsgs((m) => [...m, { who: 'you', text: q }]);
     setBusy(true);
 
+    // OBS pass. Stow the aside so the recording captures the app the Ghost is
+    // driving, not the panel that told the Ghost to drive it. The actions the
+    // model returns still run — busy stays true, the queue below still fires,
+    // and reopening the box shows what happened. See STOW_KEY at the top.
+    const stowThisRun = stow;
+    if (stowThisRun) setOpen(false);
+
     const ac = new AbortController();
     abortRef.current = ac;
 
@@ -156,10 +218,54 @@ export default function GhostAssistant({ tab, config, getContext }) {
         signal: ac.signal,
       });
 
+      /**
+       * TALKING AND DRIVING AT THE SAME TIME.
+       *
+       * Chris, 2026-08-27, watching an OBS demo of the Matrix macro: *"run the
+       * matrix and talk at the same time. That's the prompt."* Voice used to
+       * fire AFTER the action loop finished — which meant the buttons pressed
+       * silently and the ghost only spoke over an already-changed screen. Fine
+       * for a chat reply, terrible for a recording.
+       *
+       * SETUP FIRST, THEN VOICE, THEN THE REST. A `set_voice` action must apply
+       * BEFORE speak() runs or the narration starts in the previous voice. So
+       * actions run in two waves: any setup verb (currently just set_voice)
+       * fires synchronously up front, then speak() kicks off, then the driving
+       * actions run in parallel with the narration.
+       */
+      const SETUP_ACTIONS = new Set(['set_voice']);
+      // Some actions narrate on their own — a walkthrough scripts the voice
+      // and the cursor together on the pilot's AudioContext. If the ghost box
+      // ALSO speaks its reply text, two voices talk over each other on
+      // different audio pipes and neither one hush()es the other. So when a
+      // narrating action is present, the ghost box stays quiet; its `text` is
+      // still written into the conversation for the log.
+      const NARRATING_ACTIONS = new Set(['run_matrix_walkthrough', 'pilot_run']);
+
       const done = [];
       const waiting = [];
+      const setup = [];
+      const driving = [];
+      let narrated = false;
       for (const a of actions) {
         if (NEEDS_A_TAP[a.name]) { waiting.push(a); continue; }
+        if (NARRATING_ACTIONS.has(a.name)) narrated = true;
+        (SETUP_ACTIONS.has(a.name) ? setup : driving).push(a);
+      }
+
+      // Wave 1: setup, awaited so the voice lands in the right skin.
+      for (const a of setup) {
+        const r = await runGhostAction(a.name, a.args);
+        done.push({ name: a.name, ...r });
+      }
+
+      // Wave 2: narration, fire-and-forget — but only when nothing in the
+      // action list is going to speak on its own.
+      if (voiceOn && !narrated) speak(text);
+
+      // Wave 3: the actual driving. Runs in parallel with the voice above (or,
+      // when a walkthrough is in the mix, provides its own voice as it goes).
+      for (const a of driving) {
         const r = await runGhostAction(a.name, a.args);
         done.push({ name: a.name, ...r });
       }
@@ -177,7 +283,8 @@ export default function GhostAssistant({ tab, config, getContext }) {
         waiting,
         corrections: claimed.map((c) => c.note),
       }]);
-      if (voiceOn) speak(text);
+      // Voice already started above, in parallel with the actions. See the
+      // "TALKING AND DRIVING" note.
     } catch (e) {
       setMsgs((m) => [...m, { who: 'error', text: e.message || 'That did not work.' }]);
     } finally {
@@ -246,14 +353,34 @@ export default function GhostAssistant({ tab, config, getContext }) {
               <h2>The Ghost</h2>
               <p>Ask it anything. It can write, and it can press things for you.</p>
             </div>
-            <button
-              type="button"
-              className={`gha-voice${voiceOn ? ' on' : ''}`}
-              aria-pressed={voiceOn}
-              onClick={toggleVoice}
-            >
-              {voiceOn ? '🔊 Voice on' : '🔇 Voice off'}
-            </button>
+            <div className="gha-hdbtns">
+              {/* Stow-after-sending. For OBS recording — press Enter and the
+                  panel disappears so the capture shows the app being driven,
+                  not the panel that gave the order. See STOW_KEY. */}
+              <button
+                type="button"
+                className={`gha-voice${stow ? ' on' : ''}`}
+                aria-pressed={stow}
+                onClick={() => {
+                  const next = !stow;
+                  setStow(next);
+                  localStorage.setItem(STOW_KEY, next ? '1' : '0');
+                }}
+                title={stow
+                  ? 'Panel closes on Enter so the recording captures the app, not this box. Voice is a separate toggle.'
+                  : 'Turn on to close this panel automatically when you press Enter — for OBS recording. Voice stays under its own toggle.'}
+              >
+                {stow ? '🎬 Stow on' : '📂 Stow off'}
+              </button>
+              <button
+                type="button"
+                className={`gha-voice${voiceOn ? ' on' : ''}`}
+                aria-pressed={voiceOn}
+                onClick={toggleVoice}
+              >
+                {voiceOn ? '🔊 Voice on' : '🔇 Voice off'}
+              </button>
+            </div>
           </header>
 
           {/* Who it sounds like. Only worth showing once the voice is on, and

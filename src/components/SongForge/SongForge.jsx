@@ -66,7 +66,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
       if (!store.topic && quantumSeed.palette?.[0]) {
         store.setTopic(quantumSeed.palette.slice(0, 4).join(' / '));
       }
-      setQuantumBanner('Quantum Lab lattice loaded into Song Forge notes/topic. Hit Song First to expand into a full song + cover.');
+      setQuantumBanner('Matrix grid loaded into Song Forge notes/topic. Hit Song First to expand into a full song + cover.');
     }
     if (onQuantumSeedConsumed) onQuantumSeedConsumed();
   }, [quantumSeed]);
@@ -332,7 +332,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
           )}
 
           {quantumBanner && (
-            <div className="pill-green" style={{ padding: '8px 10px', borderRadius: 8, fontSize: '0.72rem', lineHeight: 1.45 }} data-help="Structure arrived from Quantum Lab — notes and topic were pre-filled.">
+            <div className="pill-green" style={{ padding: '8px 10px', borderRadius: 8, fontSize: '0.72rem', lineHeight: 1.45 }} data-help="Structure arrived from The Matrix — notes and topic were pre-filled.">
               ⚛️ {quantumBanner}
               <button type="button" onClick={() => setQuantumBanner(null)} style={{ display: 'block', marginTop: 6, background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '0.65rem' }}>Dismiss</button>
             </div>

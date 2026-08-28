@@ -128,7 +128,12 @@ export const GHOST_DEMOS = {
   },
 
   quantum: {
-    title: 'Quantum Lab',
+    /* The TITLE is chrome and renames freely. The `say` lines below do not:
+       each one is matched to a baked clip in assets/ghost-vo/ (quantum-0-say
+       .mp3 and so on), so editing the words here would put a caption on screen
+       that disagrees with the voice reading it. They still say "Quantum Lab"
+       and will until the voice-over is re-baked. */
+    title: 'The Matrix',
     steps: [
       {
         say: 'Remote session starting on Quantum Lab. Nothing here needs typed commands, every step is a numbered button. Watch me press them in order.',

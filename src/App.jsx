@@ -3,9 +3,7 @@ import { LyricStoreProvider, useLyricStore } from './context/LyricStore.jsx';
 import SongwriterHub from './components/SongwriterHub/SongwriterHub.jsx';
 import OneManBand from './components/OneManBand/OneManBand.jsx';
 import ScrewShop from './components/ScrewShop/ScrewShop.jsx';
-import PrismBackground from './components/common/PrismBackground.jsx';
 import StartHere from './components/common/StartHere.jsx';
-import headerArt from './assets/bg-art/header.webp';
 import ArtistAnalyzer from './components/ArtistAnalyzer/ArtistAnalyzer.jsx';
 import SongForge from './components/SongForge/SongForge.jsx';
 import RhymeHelper from './components/RhymeHelper/RhymeHelper.jsx';
@@ -28,37 +26,28 @@ import MasteringStudio from './components/MasteringStudio/MasteringStudio.jsx';
 import QuantumLab from './components/QuantumLab/QuantumLab.jsx';
 import LoopStation from './components/LoopStation/LoopStation.jsx';
 import Stemmer from './components/Stemmer/Stemmer.jsx';
-import { APP_VERSION } from './buildInfo.js';
 
-// Tab icons — Chris's dichroic-glass artwork, keyed off its dark background.
-// These replace the flat emoji: every icon is his own 3D render.
-import icoSongwriter from './assets/icons/icon-songwriter.png';
-import icoOneManBand from './assets/icons/icon-onemanband.png';
-import icoScrew from './assets/icons/icon-screw.png';
-import icoAnalyzer from './assets/icons/icon-analyzer.png';
-import icoSongforge from './assets/icons/icon-songforge.png';
-import icoQuantum from './assets/icons/icon-quantum.png';
-import icoCollab from './assets/icons/icon-collab.png';
-import icoLoopstation from './assets/icons/icon-loopstation.png';
-import icoStemmer from './assets/icons/icon-stemmer.png';
-import icoBooth from './assets/icons/icon-booth.png';
-import icoMidistudio from './assets/icons/icon-midistudio.png';
-import icoMastering from './assets/icons/icon-mastering.png';
-import icoRhyme from './assets/icons/icon-rhyme.png';
-import icoThesaurus from './assets/icons/icon-thesaurus.png';
-import icoDictionary from './assets/icons/icon-dictionary.png';
-import icoToolshub from './assets/icons/icon-toolshub.png';
-import icoScratchpad from './assets/icons/icon-scratchpad.png';
-import icoSettings from './assets/icons/icon-settings.png';
+// Tab icons — Chris's dichroic-glass artwork used to sit here, one 3D render
+// per tab. Stripped on 2026-08-27 with the rest of the artwork: *"leave it
+// jet black. Actually, flat black."* The tab strip falls back to the emoji
+// glyph in each entry's `icon:` field, which is what shipped before the
+// renders landed. The .png files are left in src/assets/icons/ — nothing
+// imports them any more, so Vite emits none of them.
 import { useMobile } from './mobile/useMobile.js';
 import MobileShell from './mobile/MobileShell.jsx';
+import GhostPilotLayer from './components/Ghost/GhostPilotLayer.jsx';
+import { track, isEnabled as analyticsEnabled } from './services/analytics.js';
 // The still header art (profile.jpg, logo.jpg, header-medallion / -signature /
 // -chris / -wordmark .png) is no longer imported here. The header became the
 // whole uncropped video clip, and its <img> elements went with it, but the six
 // imports stayed behind — and Vite emits an imported asset whether or not it is
 // rendered, so every build was still shipping them. The files themselves are
 // left in src/assets/ untouched.
-import footerMedallionImg from './assets/footer-medallion-new.png'; // Chris's bottom-left medallion (4.2.0)
+//
+// THE FOOTER MEDALLION IS OUT TOO (commercial refactor). It was 1.2 MB of
+// "Lyricist Goes Quantum" tip-jar-era artwork sitting in a bar that is now an
+// operational status deck. Same rule as above: an imported asset ships whether
+// or not it renders, so the import goes with the <img>.
 // Header banner clip. Imported, NOT read out of public/ at runtime — see the note
 // in components/common/TabVideoBg.jsx. Everything else in this app that plays a
 // background video goes through a Vite import, so this does too.
@@ -67,33 +56,61 @@ import footerMedallionImg from './assets/footer-medallion-new.png'; // Chris's b
 // 16 MB in every installer for nothing. Same trap as the 8 dead image
 // imports in 087 and the Scratchpad clip in 092.
 
-// Footer medallion sizing. The whole image has to be visible — no crop at the
-// top, no crop at the bottom. An earlier version hung it past the bar and
-// masked the overhang, and it just read as a chopped-off logo.
-const FOOTER_MEDALLION_H = 112;
+/**
+ * ══════════════════════════════════════════════════════════════════════════
+ * THE GUIDED TOUR IS PARKED, NOT DELETED.
+ *
+ * Chris, 2026-08-26: "Remove the wizard for now but keep it somewhere you can
+ * retrieve it."
+ *
+ * So it is one boolean, and NOTHING ELSE WAS TOUCHED. Every file the tour is
+ * made of is still exactly where it was and still complete:
+ *
+ *   src/components/Onboarding/OnboardingWizard.jsx   the 20-card player
+ *   src/components/Onboarding/wizardCards.js         the cards + narration text
+ *   public/wizard-audio/card-01.mp3 … card-20.mp3    Ava's baked narration
+ *
+ * Flipping this back to `true` restores it in full — the first-run auto-launch,
+ * the header "Take the Tour" button, and the phone launcher's tour pill, all of
+ * which read this one constant.
+ *
+ * WHY A CONSTANT AND NOT A DELETED IMPORT. Deleting the import would have meant
+ * unpicking five call sites and then putting them all back by hand later, which
+ * is how a parked feature quietly becomes a lost one. With the flag false,
+ * Rollup drops OnboardingWizard from the bundle anyway, so the shipped build
+ * pays nothing for it — the code is absent from the installer and present in
+ * the repo, which is exactly what "keep it somewhere retrievable" needs.
+ *
+ * Note for whoever turns it back on: cards 1, 3, 6 and 7 have been rewritten
+ * for the Lyricist Pro / The Matrix rename but their MP3s have NOT been
+ * re-baked, so the text and the voice disagree on those four. See the banner in
+ * wizardCards.js.
+ * ══════════════════════════════════════════════════════════════════════════
+ */
+const WIZARD_ENABLED = false;
 
 const tabs = [
-  // Write / story tools first, then Quantum Lab
-  { id: 'songwriter', icon: '🎵', img: icoSongwriter, label: 'Songwriter', blurb: 'write and rewrite lyrics', help: 'The main workspace. Set up the kind of song you want (style, mood, topic), then write and polish the lyrics line by line.' },
+  // Write / story tools first, then The Matrix
+  { id: 'songwriter', icon: '🎵', label: 'Songwriter', blurb: 'write and rewrite lyrics', help: 'The main workspace. Set up the kind of song you want (style, mood, topic), then write and polish the lyrics line by line.' },
   // Straight after Songwriter on purpose: write the words, then hear them.
-  { id: 'onemanband', icon: '🎸', img: icoOneManBand, label: 'One Man Band', blurb: 'lyrics into a real song', help: 'Turns your lyrics into a real song with vocals and a full band. Pick a genre, a mood and a voice, and it writes the Input Caption for you. Free on the cloud engine, no key needed. Longer songs take longer, and it tells you how long before you start.' },
-  { id: 'analyzer', icon: '👻', img: icoAnalyzer, label: 'Ghost Rider', blurb: 'analyse any artist\'s style', help: 'Studies any artist you name and breaks down how they write, then helps you write a NEW song in that same style. (It does not copy their actual lyrics.)' },
-  { id: 'songforge', icon: '🪄', img: icoSongforge, label: 'Song Forge', blurb: 'a full song from one idea', help: 'Auto-generate a full song and cover art using your single OpenRouter key (lyrics + Nano Banana image models on OpenRouter). Song First or Art First. No Google AI Studio key.' },
-  { id: 'quantum', icon: '⚛️', img: icoQuantum, label: 'Quantum Lab', blurb: 'experiment with structure', help: 'Build a verse by playing with a grid of word tiles (the lattice). Heat words up, let energy spread, lock rhymes with Crystallize, then Generate Neural Lyrics for a real 4-line verse. Send to Songwriter or Song Forge in one click. Needs your OpenRouter key for generate.' },
-  { id: 'collab', icon: '🤝', img: icoCollab, label: 'Collaboration', blurb: 'write with someone live', help: 'Write a song with someone else at the same time, wherever they are. Start a session, send them the code, and you are both typing on the same page. Peer to peer — the words go straight between your two computers. No account, no server holding your song, free forever.' },
-  { id: 'loopstation', icon: '🔁', img: icoLoopstation, label: 'RC-Funk 5000', blurb: 'drum machine and looper', help: 'Live multi-track loop station (Boss RC-style). Record loops on up to 4 tracks, stack layers, control volume, undo a track. Fully offline. Great for riffs and vocal hooks while you write.' },
-  { id: 'stemmer', icon: '🎛️', img: icoStemmer, label: 'Stemmer', blurb: 'split a track into stems', help: 'Split a full mix into Vocals, Drums, Bass, Guitar, Keys, and Other. Offline mode (default) is free, light CPU, no key, no GPU. Optional Cloud mode uses a Replicate API key for pro Demucs stems on their servers.' },
-  { id: 'booth', icon: '🎤', img: icoBooth, label: 'Recording Booth', blurb: 'record your own takes', help: 'Record harmonica, guitar, or vocals straight into the app (or upload takes) and keep them in a saved library. Play them in the persistent player while you write, convert them to MIDI, or export them as WAV.' },
-  { id: 'midistudio', icon: '🎹', img: icoMidistudio, label: 'MIDI Studio', blurb: 'audio to MIDI, piano roll', help: 'Turn any audio into editable MIDI, tweak it on a piano-roll with a stronger multi-voice synth, and pick from dozens of Milkdrop-class visualizer presets. Runs fully offline.' },
-  { id: 'mastering', icon: '💽', img: icoMastering, label: 'Mastering Studio', blurb: 'master and export', help: 'The finish line: pull your songs together into an album, master each track with a real EQ/compression/limiter chain (all offline), add cover art (upload or AI-generated), and export the finished album — WAVs, cover, and tracklist.' },
+  { id: 'onemanband', icon: '🎸', label: 'One Man Band', blurb: 'lyrics into a real song', help: 'Turns your lyrics into a real song with vocals and a full band. Pick a genre, a mood and a voice, and it writes the Input Caption for you. Free on the cloud engine, no key needed. Longer songs take longer, and it tells you how long before you start.' },
+  { id: 'analyzer', icon: '👻', label: 'Ghost Rider', blurb: 'analyse any artist\'s style', help: 'Studies any artist you name and breaks down how they write, then helps you write a NEW song in that same style. (It does not copy their actual lyrics.)' },
+  { id: 'songforge', icon: '🪄', label: 'Song Forge', blurb: 'a full song from one idea', help: 'Auto-generate a full song and cover art using your single OpenRouter key (lyrics + Nano Banana image models on OpenRouter). Song First or Art First. No Google AI Studio key.' },
+  { id: 'quantum', icon: '⚛️', label: 'The Matrix', blurb: 'engineer verse structure', help: 'Build a verse from a 20-tile semantic grid. Load your keywords, then hit Auto-Craft Verse for the one-click path — it spreads the energy, locks the field and writes both neural states for you. Everything granular (manual steps, the 9-suite feature hub, the analytical inspectors) lives in the Advanced Studio drawer underneath. Needs your BYOK routing key for generation.' },
+  { id: 'collab', icon: '🤝', label: 'Collaboration', blurb: 'write with someone live', help: 'Write a song with someone else at the same time, wherever they are. Start a session, send them the code, and you are both typing on the same page. Peer to peer — the words go straight between your two computers. No account, no server holding your song, free forever.' },
+  { id: 'loopstation', icon: '🔁', label: 'RC-Funk 5000', blurb: 'drum machine and looper', help: 'Live multi-track loop station (Boss RC-style). Record loops on up to 4 tracks, stack layers, control volume, undo a track. Fully offline. Great for riffs and vocal hooks while you write.' },
+  { id: 'stemmer', icon: '🎛️', label: 'Cloud Stem Extraction', blurb: 'BYO Replicate key', help: 'Splits a full mix into Vocals, Drums, Bass, Guitar, Keys, and Other. Local mode runs on your own CPU with no key and no GPU. High-fidelity Demucs separation offloads to the Replicate API using your own key, so a 4 GB VRAM machine is never asked to hold the model.' },
+  { id: 'booth', icon: '🎤', label: 'Recording Booth', blurb: 'record your own takes', help: 'Record harmonica, guitar, or vocals straight into the app (or upload takes) and keep them in a saved library. Play them in the persistent player while you write, convert them to MIDI, or export them as WAV.' },
+  { id: 'midistudio', icon: '🎹', label: 'MIDI Studio', blurb: 'audio to MIDI, piano roll', help: 'Turn any audio into editable MIDI, tweak it on a piano-roll with a stronger multi-voice synth, and pick from dozens of Milkdrop-class visualizer presets. Runs fully offline.' },
+  { id: 'mastering', icon: '💽', label: 'Mastering Studio', blurb: 'master and export', help: 'The finish line: pull your songs together into an album, master each track with a real EQ/compression/limiter chain (all offline), add cover art (upload or AI-generated), and export the finished album — WAVs, cover, and tracklist.' },
   // Sits after Mastering because it is something you do TO a finished track.
-  { id: 'screw', icon: '🍇', img: icoScrew, label: 'Chopped & Screwed', blurb: 'slow it and chop it', help: 'Slow a song down until the voice sinks with it, then chop it back up on the beat. The sound DJ Screw invented in Houston. Works on any audio file or any of your own recordings, runs entirely on your computer, and saves straight back to Recordings.' },
-  { id: 'rhyme', icon: '📖', img: icoRhyme, label: 'Rhyme Helper', blurb: 'find rhymes that fit', help: 'A rhyming dictionary and rhyme finder. Look up words that rhyme, and check the rhymes inside lines you have already written.' },
-  { id: 'thesaurus', icon: '📚', img: icoThesaurus, label: 'Thesaurus', blurb: 'better words', help: 'A word finder: type a word to get other words that mean the same, words that mean the opposite, and related ideas. Free, no AI key needed.' },
-  { id: 'dictionary', icon: '📕', img: icoDictionary, label: 'Dictionary', blurb: 'what it means', help: 'Look up what a word means, how to say it, and example sentences — in English or Spanish. Free, no AI key needed.' },
-  { id: 'toolshub', icon: '🧰', img: icoToolshub, label: 'AI Tools Hub', blurb: 'every AI tool in one place', help: 'A community shelf of free AI tools — browse them, upvote your favorites, and share the ones you use. Free tools for the masses.' },
-  { id: 'scratchpad', icon: '📝', img: icoScratchpad, label: 'Scratchpad', blurb: 'dump your ideas', help: 'A free, blank notepad for jotting ideas, hooks, or lines. It saves automatically on your computer so nothing gets lost.' },
-  { id: 'settings', icon: '⚙️', img: icoSettings, label: 'Settings', blurb: 'your key and your setup', help: 'Where you connect your AI key and choose which AI model writes your lyrics. Set this up first so the rest of the app works.' }
+  { id: 'screw', icon: '🍇', label: 'Chopped & Screwed', blurb: 'slow it and chop it', help: 'Slow a song down until the voice sinks with it, then chop it back up on the beat. The sound DJ Screw invented in Houston. Works on any audio file or any of your own recordings, runs entirely on your computer, and saves straight back to Recordings.' },
+  { id: 'rhyme', icon: '📖', label: 'Rhyme Helper', blurb: 'find rhymes that fit', help: 'A rhyming dictionary and rhyme finder. Look up words that rhyme, and check the rhymes inside lines you have already written.' },
+  { id: 'thesaurus', icon: '📚', label: 'Thesaurus', blurb: 'better words', help: 'A word finder: type a word to get other words that mean the same, words that mean the opposite, and related ideas. Free, no AI key needed.' },
+  { id: 'dictionary', icon: '📕', label: 'Dictionary', blurb: 'what it means', help: 'Look up what a word means, how to say it, and example sentences — in English or Spanish. Free, no AI key needed.' },
+  { id: 'toolshub', icon: '🧰', label: 'AI Tools Hub', blurb: 'every AI tool in one place', help: 'A shared shelf of AI tools — browse them, upvote the ones that earn it, and add the ones you rely on.' },
+  { id: 'scratchpad', icon: '📝', label: 'Scratchpad', blurb: 'dump your ideas', help: 'A free, blank notepad for jotting ideas, hooks, or lines. It saves automatically on your computer so nothing gets lost.' },
+  { id: 'settings', icon: '⚙️', label: 'Settings', blurb: 'your key and your setup', help: 'Where you connect your AI key and choose which AI model writes your lyrics. Set this up first so the rest of the app works.' }
 ];
 
 /**
@@ -189,36 +206,17 @@ function MainLayout() {
   // was open while the renderer was growing.
   useEffect(() => {
     window.__lyricistActiveTab = activeTab;
-    // Every prism listens for this. A hidden tab has to RELEASE its WebGL
-    // context and the new one has to take it, and both have to happen on the
-    // switch itself, not whenever an observer gets round to it. See
-    // PrismBackground: Chromium allows sixteen contexts and this app has
-    // eighteen canvases, so a slow release means the limit is still hit and the
-    // oldest background dies.
-    window.dispatchEvent(new Event('lyricist-tab'));
+    // Product analytics: which tools actually get opened. The tab id and
+    // nothing else — see services/analytics.js. This is the app's pageview,
+    // because the app is one HTML document and its real navigation is here.
+    track('tab_viewed', { tab_id: activeTab });
   }, [activeTab]);
 
-  // The header banner clip lives outside every TabPane, so the per-tab video
-  // sync never touches it — but Chromium suspends it on occlusion just the same,
-  // which left the top of the app frozen on one frame after an alt-tab. Same
-  // treatment: whenever the window is visible again, get it playing.
-  useEffect(() => {
-    const resume = () => {
-      // Two clips now — the whole-frame one and the blurred backdrop behind it.
-      // querySelector only ever woke the first, which left the backdrop frozen
-      // on one frame while the banner moved.
-      document.querySelectorAll('.header-cosmic video').forEach((v) => {
-        if (v?.paused) { const p = v.play(); if (p?.catch) p.catch(() => {}); }
-      });
-    };
-    resume();
-    document.addEventListener('visibilitychange', resume);
-    window.addEventListener('focus', resume);
-    return () => {
-      document.removeEventListener('visibilitychange', resume);
-      window.removeEventListener('focus', resume);
-    };
-  }, []);
+  // The header used to hold a background clip and a WebGL prism, both of which
+  // Chromium would suspend on occlusion, so this effect wired visibilitychange
+  // and focus to force them to resume. Both are gone with the artwork strip
+  // (2026-08-27), so is the effect. If a future header ever puts a video back,
+  // it lives in TabPane's own sync now — nothing outside a tab needs its own.
   const [ghostRiderData, setGhostRiderData] = useState(null);
   const [quantumForgeSeed, setQuantumForgeSeed] = useState(null);
   const [showWizard, setShowWizard] = useState(false);
@@ -233,7 +231,7 @@ function MainLayout() {
   const handleQuantumToSongwriter = (data) => {
     setGhostRiderData({
       lyrics: data.lyrics,
-      artist: data.artist || 'Quantum Lab',
+      artist: data.artist || 'The Matrix',
       sunoTags: data.sunoTags || '',
       source: 'quantum',
     });
@@ -268,7 +266,9 @@ function MainLayout() {
   }, [store.tipsEnabled]);
 
   // Auto-launch the guided tour the very first time the app is opened.
+  // Parked — see WIZARD_ENABLED at the top of this file.
   useEffect(() => {
+    if (!WIZARD_ENABLED) return;
     // One-time reset: 'lyricistOnboarded' got stuck true on his machine from
     // repeat same-day test installs, so the tour stopped auto-launching on
     // every build after — reported 2026-08-16. This runs once per install
@@ -296,7 +296,9 @@ function MainLayout() {
           tabs={tabs}
           activeTab={activeTab}
           onSelect={setActiveTab}
-          onWizard={() => setShowWizard(true)}
+          // null while the tour is parked. MobileShell hides both of its tour
+          // controls when it has nothing to call — see WIZARD_ENABLED above.
+          onWizard={WIZARD_ENABLED ? () => setShowWizard(true) : null}
         />
       )}
 
@@ -308,8 +310,14 @@ function MainLayout() {
       {/* App-wide hover-help engine: hovering any element with data-help shows a bubble. */}
       <HelpLayer />
 
-      {/* First-run guided tour (re-launchable from the header "Take the Tour" button). */}
-      {showWizard && (
+      {/* GHOST PILOT — INTERNAL MARKETING BUILD ONLY.
+          Renders null and imports nothing in the commercial build; the whole
+          robotics layer is behind VITE_FAFO_INTERNAL_BUILD and is tree-shaken
+          out of the installer. See components/Ghost/GhostPilotLayer.jsx. */}
+      <GhostPilotLayer />
+
+      {/* First-run guided tour. Parked — see WIZARD_ENABLED at the top. */}
+      {WIZARD_ENABLED && showWizard && (
         <OnboardingWizard onClose={closeWizard} onNavigate={setActiveTab} />
       )}
 
@@ -334,87 +342,50 @@ function MainLayout() {
         />
       )}
 
-      {/* THE APP'S FLOOR. One flat colour, nothing photographic.
-          A fixed full-screen photo used to live here — an Austin street scene
-          from 4.0.2 — with a dark gradient on top whose only job was to hold it
-          down enough to read text over. Both are gone.
-          Every tab paints its own prism and its own artwork now, so the photo
-          was covered on every tab and showed through nowhere... until something
-          rendered OUTSIDE a tab pane, and then it was suddenly a photograph of a
-          street with faces and old branding in it sitting behind the UI. That is
-          not a background this app has wanted since the prism landed, and it was
-          costing 400 KB in every build to be invisible. */}
+      {/* THE APP'S FLOOR. Flat black — Chris's call, 2026-08-27: *"strip the
+          app of all artwork and leave it jet black. Actually, flat black."*
+          The floor used to be #05070C (a near-black tuned for OLED depth
+          under the WebGL prism); the prism is gone with the rest of the
+          artwork, so a colour designed to sit under motion looks slightly
+          dead on its own. Pure black is the whole floor now. */}
       <div
         style={{
           position: 'fixed',
           inset: 0,
           zIndex: 0,
           pointerEvents: 'none',
-          background: '#05070C',
+          background: '#000',
         }}
       />
 
       {/* Main Layout Wrap */}
       <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100vh' }}>
-        {/* Header — the banner clip, WHOLE. Nothing cropped. (4.2.0) */}
-        {/* THE WHOLE VIDEO IS THE HEADER. Chris's call, 2026-08-11 — and this is
-            the second time it has been asked for, so it is written down now.
+        {/* Header — flat black, controls only. 2026-08-27.
 
-            Every earlier version of this bar sized the header by a width formula and
-            let object-fit:cover crop the clip to whatever band was left. That is what
-            cut his head off: the clip is 1920x1080, the bar is ~4.7:1, so cover only
-            ever showed a centred ~33% slice of the frame. No amount of nudging the
-            height fixes that — a 16:9 frame cannot fit in a 5:1 slot. Half an inch
-            bought 5% more frame; the medallion needed 500px; the answer is not to
-            crop at all.
+            The bar's old size, `min(calc(100vw * 0.5625), 62vh)`, was tuned to
+            a 16:9 video's aspect ratio: it was letterboxing his wordmark
+            render on top of the WebGL prism. With every last piece of art
+            stripped out of the header the aspect no longer means anything, so
+            a video-shaped bar of empty black would just be dead screen space
+            at the top of every tab. It is a compact 96px strip now — enough
+            for the three control pills on the right, and nothing more.
 
-            So: the height IS the clip's own aspect (9/16 of the window width), capped
-            at 62vh so it can never swallow the whole screen, and the clip is
-            object-fit:CONTAIN — the full frame, top to bottom, never cut. Behind it a
-            second copy runs blurred and over-scaled to fill whatever width is left
-            over, so there are no black bars at the sides when the cap is in play.
-            Both copies get resumed by the occlusion fix above.
+            Background is #000, matching the app floor. The 1px hairline
+            underneath comes from .header-cosmic's stylesheet rule, which
+            still separates the header from the tab strip below it. */}
+        <div className="header-cosmic" style={{ flexShrink: 0, position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center', background: '#000', height: 96, overflow: 'hidden', width: '100%' }}>
 
-            The tabs sit below it and the tab content is its own tall scrolling page,
-            so nothing underneath is compressed to make room. */}
-        <div className="header-cosmic" style={{ flexShrink: 0, position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center', background: '#020516', height: 'min(calc(100vw * 0.5625), 62vh)', overflow: 'hidden', width: '100%' }}>
-
-          {/* THE HEADER VIDEO IS OUT. Chris's call, 2026-08-16, reversing the
-              earlier "whole uncropped video" decision: "I do want that video of
-              mine taken down... I want people to see that whole background
-              moving like it is."
-
-              The living prism runs here instead, so the motion that used to be
-              trapped in one 16 MB clip now runs the full width of the app and
-              costs a few KB of maths.
-
-              THE ARTWORK LANDED 2026-08-18. His own render, the wordmark and
-              "GOES QUANTUM" set in it, sitting on the prism rather than
-              replacing it. `contain`, never `cover` — the lesson from the old
-              header fight is that when art gets cropped to fit a box you change
-              the box, and this piece is 16:9 going into a wide bar, so cover
-              would eat the lettering. Letterboxing it keeps every word. */}
-          <PrismBackground hue={0} scale={0.45} />
-          <img
-            src={headerArt}
-            alt=""
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'contain',
-              zIndex: 1,
-              opacity: 0.92,
-              pointerEvents: 'none',
-            }}
-          />
-
-          {/* Controls — stacked vertically on the right */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)', zIndex: 2 }}>
-            {/* Re-launch the guided tour any time */}
-            <button
+          {/* Controls — laid out in one row across the header, right-aligned.
+              They used to be a column, but with the header at a flat 96px the
+              column ran taller than the band and the top pill was cut in half
+              by .header-cosmic's overflow: hidden. Chris flagged it on
+              2026-08-27: red-circle screenshot, "move up!". A row of four pills
+              fits comfortably in a 1440-wide header and leaves the vertical
+              band unclipped. */}
+          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8, position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)', zIndex: 2 }}>
+            {/* Re-launch the guided tour any time. Parked with the tour itself
+                — see WIZARD_ENABLED at the top of this file. */}
+            {WIZARD_ENABLED && <button
               onClick={() => setShowWizard(true)}
               data-help="New here, or want a refresher? Click to replay the guided tour that walks you through the whole app."
               style={{
@@ -435,7 +406,7 @@ function MainLayout() {
             >
               <span>🧭</span>
               Take the Tour
-            </button>
+            </button>}
 
             {/* Ghost Demo master switch — optional; remembered between sessions */}
             <button
@@ -492,7 +463,7 @@ function MainLayout() {
             {/* Global Tips switch — turns every help bubble in the app on or off */}
             <button
               onClick={() => store.setTipsEnabled(!store.tipsEnabled)}
-              data-help="Turns hover help ON or OFF for the whole app. When ON, hover any button, tab, word tile, or panel and a bubble explains it in plain English — including every control in Quantum Lab (the lattice). Leave Tips ON while you learn. This is separate from Take the Tour."
+              data-help="Turns hover help ON or OFF for the whole app. When ON, hover any button, tab, word tile, or panel and a bubble explains it in plain English — including every control in The Matrix. Leave Tips ON while you learn."
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -554,9 +525,7 @@ function MainLayout() {
                 }}
                 data-help={t.help}
               >
-                {t.img
-                  ? <img src={t.img} alt="" className="tab-browser-icon" aria-hidden="true" />
-                  : <span style={{ marginRight: 6 }}>{t.icon}</span>}
+                <span style={{ marginRight: 6 }}>{t.icon}</span>
                 {t.label}
               </button>
             );
@@ -657,122 +626,60 @@ function MainLayout() {
             isn't inside them anyway — double insurance.) */}
         <SunoPlayer />
 
-        {/* Footer */}
-        <div
-          className="app-footer"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '8px 16px',
-            // Sampled off the medallion's own corner (#020516) — near-black,
-            // but navy rather than pure black, so there is no seam where the
-            // artwork meets the bar. The plate colour further in is #17223A if
-            // this ever wants to be lighter.
-            background: '#020516',
-            borderTop: '1px solid rgba(0,229,255,0.22)',
-            boxShadow: '0 -1px 20px rgba(168,85,247,0.15)',
-            flexShrink: 0,
-            position: 'relative',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            {/* Footer — Quantum Lab banner art */}
-            <img
-              src={footerMedallionImg}
-              alt="Lyricist Goes Quantum — Quantum Lab"
-              data-help="Christopher Funk — the founder of CFunky Creations LLC, the one-man shop that builds Lyricist and other free AI tools out of Austin, Texas."
-              style={{
-                // Whole medallion, nothing clipped: it sits inside the bar and
-                // the bar grows to hold it. 'cover' cropped it to a letterbox
-                // strip, and the overhang version chopped the top and bottom.
-                height: FOOTER_MEDALLION_H,
-                width: 'auto',
-                objectFit: 'contain',
-                flexShrink: 0,
-                filter: 'drop-shadow(0 0 10px #00f0ff) drop-shadow(0 0 22px rgba(192,38,255,0.5)) drop-shadow(0 0 36px rgba(0,255,156,0.25))'
-              }}
-            />
-            <div>
-              <div className="chrome-silver" style={{ fontSize: '0.72rem', fontWeight: 700 }}>
-                CFunkyCreations LLC
-              </div>
-              <div style={{ fontSize: '0.6rem', color: 'rgba(180,195,220,0.8)', textShadow: '0 1px 0 rgba(255,255,255,0.25)' }}>
-                Austin, Texas ·{' '}
-                <a href="mailto:cfunkycreations@gmail.com" style={{ color: 'inherit' }} data-help="Email Christopher directly with questions, bugs, or feature ideas.">
-                  cfunkycreations@gmail.com
-                </a>{' '}
-                ·{' '}
-                <a href="https://cfunkycreationsllc.com" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }} data-help="The CFunky Creations website — home base for this and the other free AI tools.">
-                  cfunkycreationsllc.com
-                </a>
-              </div>
-            </div>
+        {/* ── THE OPERATIONAL STATUS DECK ────────────────────────────────────
+            This bar used to be a tip jar: a 1.2 MB medallion, a mission
+            statement, and three payment links repeated on all eighteen tabs.
+            It is now three status nodes and nothing else — who built it, what
+            the engine is doing, and what your licence and routing look like.
+
+            The right node is a control, not a label. A licence readout you
+            cannot act on is decoration; this one opens Settings, which is
+            where the BYOK key that drives the routing actually lives. */}
+        <div className="app-footer">
+          {/* LEFT NODE — the organisation. */}
+          <div className="deck-node deck-left" data-help="Funk Audio File OpSec — the Austin, Texas engineering shop behind Lyricist Pro.">
+            <span className="deck-mark">FAFO</span>
+            <span className="deck-text">
+              <b>Funk Audio File OpSec (FAFO)</b>
+              <i>Austin, Texas</i>
+            </span>
           </div>
 
+          {/* CENTRE NODE — what the product is and where the work happens.
+
+              THE AIR-GAP CLAIM IS COMPUTED, NOT TYPED. A status deck that
+              asserts "Air-Gapped Safe" while a telemetry SDK is running is
+              lying to the customer, so this node reads the actual build: with
+              no VITE_POSTHOG_KEY nothing analytics-related is even bundled and
+              the claim holds; with one, it says so plainly instead. */}
           <div
-            className="chrome-silver"
-            style={{ fontSize: '0.6rem', letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: "'Audiowide', 'JetBrains Mono', monospace", textAlign: 'center', lineHeight: 1.6 }}
-            data-help="CFunky's mission: powerful songwriting tools that stay free for everyone, no catch."
+            className="deck-node deck-centre"
+            data-help={analyticsEnabled()
+              ? 'Lyricist Pro runs its audio, MIDI and analysis engines on your own machine. Model calls go out through your own API key. This build also reports anonymous feature usage — which tools get opened and which engines get run. Never your lyrics, keywords, prompts, file names or audio.'
+              : 'Lyricist Pro runs its audio, MIDI and analysis engines on your own machine. The only thing that ever leaves this computer is a model request through your own API key. No telemetry of any kind is bundled in this build.'}
           >
-            Lyricist {APP_VERSION} · Free AI tools for the masses<br />
-            Always free, available for all · Keep Austin, Austin, Bruh
+            <span className="deck-title">Lyricist Pro</span>
+            <span className="deck-sep">·</span>
+            <span className="deck-metric">Engine: Local/Hybrid</span>
+            <span className="deck-sep">·</span>
+            {analyticsEnabled()
+              ? <span className="deck-metric">Anonymous Usage Stats</span>
+              : <span className="deck-metric deck-ok">Air-Gapped Safe</span>}
           </div>
 
-          {/* NO data-help ON ANY OF THESE. Everybody already knows what PayPal
-              and Cash App are, and a tooltip explaining them reads like the app
-              thinks you're stupid. Tips are for the parts of this app that
-              genuinely need explaining. */}
-          <div className="support-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 6, maxWidth: '100%' }}>
-            
-            <a
-              href="https://paypal.me/funkchris"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                padding: '5px 11px',
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                background: 'linear-gradient(135deg,#003087,#009cde)',
-                color: '#fff',
-                borderRadius: 6,
-                textDecoration: 'none',
-                boxShadow: '0 0 8px rgba(0,156,222,0.4)'
-              }}
-            >
-              PayPal
-            </a>
-            
-            <a
-              href="https://cash.app/$cfunkycreations"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                padding: '5px 11px',
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                background: 'linear-gradient(135deg,#00D632,#00A82D)',
-                color: '#04231a',
-                borderRadius: 6,
-                textDecoration: 'none',
-                boxShadow: '0 0 8px rgba(0,214,50,0.4)'
-              }}
-            >
-              Cash App
-            </a>
-            
-            <a
-              href="https://buymeacoffee.com/cfunkycream"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <img
-                src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=cfunkycream&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff"
-                alt="Buy Me A Coffee"
-                style={{ height: 26, width: 'auto' }}
-              />
-            </a>
-          </div>
+          {/* RIGHT NODE — licence + routing, and the way to Settings. */}
+          <button
+            type="button"
+            className={`deck-node deck-right ${store.config.openRouterApiKey ? 'is-live' : 'is-idle'}`}
+            onClick={() => setActiveTab('settings')}
+            data-help="Your licence state and where model calls are routed. Lyricist Pro is Bring-Your-Own-Key: requests go straight from this machine to the provider you configured. Click to open Settings."
+          >
+            <span className="deck-led" aria-hidden="true" />
+            <span className="deck-text">
+              <b>Commercial License Active</b>
+              <i>{store.config.openRouterApiKey ? 'BYOK Routing' : 'BYOK Key Required'}</i>
+            </span>
+          </button>
         </div>
       </div>
     </div>

@@ -3,7 +3,6 @@ import TabBackground from '../common/TabBackground.jsx';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { callAI } from '../../services/AIService.js';
 import EnergyField from './EnergyField.jsx';
-import LatticeFire from './LatticeFire.jsx';
 import {
   buildSection, buildSectionFromKeywords, buildEntanglements, setCellText,
   runGens, spotlightCell, measureCell,
@@ -23,7 +22,7 @@ import './QuantumLab.css';
 
 // ============================================================
 // Quantum Lab — "Lyricist Goes Quantum" (Lyricist 4.2.0)
-// A living lattice of lyric syllables driven by the lyric-core engine:
+// A living grid of lyric syllables driven by the lyric-core engine:
 // energy cellular-automata, superposition collapse, entanglement,
 // sectional DNA, and neural surface realization (via OpenRouter).
 // ============================================================
@@ -31,7 +30,7 @@ import './QuantumLab.css';
 // Brand neon palette — electric purple · blue · emerald + hot fluorescents for tiles
 const MAG = '#a855f7', ORG = '#00e5ff', GRN = '#10f0a0', YLW = '#c026ff', BLU = '#00f0ff';
 const HOT_ORG = '#ff6f00', HOT_RED = '#ff1a1a', HOT_PNK = '#ff00aa';
-// Violet — lattice TILES only when selected/clicked (never toolbar)
+// Violet — grid TILES only when selected/clicked (never toolbar)
 const VIO = '#b44dff';
 const pct = (x) => `${Math.round((x || 0) * 100)}%`;
 const f2 = (x) => (x || 0).toFixed(2);
@@ -42,7 +41,7 @@ const hashClass = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c
  *
  * The old version put the three hottest bands on a ramp and then coloured every
  * cool tile by RHYME CLASS, cycling five unrelated colours. So energy - the one
- * thing the lattice exists to show - was invisible across the bottom two thirds
+ * thing the grid exists to show - was invisible across the bottom two thirds
  * of the range, and the board read as a random spread of greens and purples.
  * Chris's word for it was bland, and he was right.
  *
@@ -162,7 +161,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const [section, setSection] = useState(() => buildSection());
   // Manual contract links MUST be declared before the links useMemo (TDZ black-screen fix)
   const [manualLinks, setManualLinks] = useState([]);
-  // Rebuild links whenever the lattice words change + merge manual contracts
+  // Rebuild links whenever the grid words change + merge manual contracts
   const links = useMemo(() => {
     const auto = buildEntanglements(section);
     return [...auto, ...manualLinks];
@@ -173,33 +172,46 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const [crystallized, setCrystallized] = useState(false);
   const [entView, setEntView] = useState(true);
 
-  /* PHONE ONLY. In landscape the lattice is the tool; the keyword box, the
+  /* PHONE ONLY. In landscape the grid is the tool; the keyword box, the
      step buttons and the three inspector panels were eating 400 of the 915
      available pixels and sitting on top of the thing you came here to see.
      They become two drawers behind two labelled buttons instead. Both are
-     closed on arrival, so the lattice opens full width. */
+     closed on arrival, so the grid opens full width. */
   const mobile = useMobile();
   const [drawer, setDrawer] = useState(null);      // null | 'controls' | 'panels'
-  /* The linked-pairs readout floats over the lattice and covers four tiles.
+  /* The linked-pairs readout floats over the grid and covers four tiles.
      It is a glance, not a panel: a chip that opens on hover, and on tap for
      touch screens where hover does not exist. */
   const [entOpen, setEntOpen] = useState(false);
   const [status, setStatus] = useState({
     lead: 'Your words first.',
-    rest: ' Type YOUR keywords below (as many as you want), hit Load into lattice, then Spotlight / Run / Crystallize. Or click a tile and edit it. The demo grid is only a starting example.',
+    rest: ' Type YOUR keywords below (as many as you want), hit Load into Grid, then Spotlight / Run / Crystallize. Or click a tile and edit it. The demo grid is only a starting example.',
   });
   const [running, setRunning] = useState(false);
   // Multi-state verse: A and B candidates before you "collapse" to one
   const [neuralA, setNeuralA] = useState(null);
   const [neuralB, setNeuralB] = useState(null);
   const [neuralPick, setNeuralPick] = useState('A'); // which state is active
+  // Tier 1 Quick Path. `autoStage` is what the button says while it works, so a
+  // 15 second run is never a dead control with a spinner on it.
+  const [autoBusy, setAutoBusy] = useState(false);
+  const [autoStage, setAutoStage] = useState('');
+  // Tier 2 drawer. Closed on arrival, deliberately — see the note above the
+  // Advanced Studio block in the render.
+  const [advOpen, setAdvOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [isNarrow, setIsNarrow] = useState(false);
   const [vidFailed, setVidFailed] = useState(false);
-  // Cheat sheet starts open for first-timers, but stays collapsed once you
-  // close it — nobody wants to re-close the manual every time they come back.
+  /**
+   * Cheat sheet starts CLOSED, and stays however you left it.
+   *
+   * It used to default open, which put a six-step manual above the fold on a
+   * tab whose entire point is now one button. The steps it explains all live in
+   * the Advanced Studio drawer; somebody using the Quick Path never needs them.
+   * Still one click away, and still remembered per browser.
+   */
   const [howtoOpen, setHowtoOpen] = useState(() => {
-    try { return localStorage.getItem('ql.howtoOpen') !== '0'; } catch { return true; }
+    try { return localStorage.getItem('ql.howtoOpen') === '1'; } catch { return false; }
   });
   useEffect(() => {
     try { localStorage.setItem('ql.howtoOpen', howtoOpen ? '1' : '0'); } catch { /* private mode */ }
@@ -210,7 +222,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   // Inline edit for the selected tile
   const [editDraft, setEditDraft] = useState('');
   const [editingId, setEditingId] = useState(null);
-  // Purple flash on lattice TILE only (toolbar keeps its own orange/green)
+  // Purple flash on grid TILE only (toolbar keeps its own orange/green)
   const [flashTileId, setFlashTileId] = useState(null);
   const flashTimer = useRef(null);
   // ── Advanced quantum (features 1–9) ──
@@ -222,8 +234,8 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
 
   // ── Ghost Demo safety net ──────────────────────────────────────────
   // The demo drives this tab for real: it types seed words into the keyword
-  // box and clicks "Load into lattice", which replaces the whole grid. That
-  // once wiped a lattice the user had filled with their own words. Snapshot
+  // box and clicks "Load into Grid", which replaces the whole grid. That
+  // once wiped a grid the user had filled with their own words. Snapshot
   // everything the demo can reach so it can all be put back afterwards.
   const liveRef = useRef({});
   liveRef.current = {
@@ -325,7 +337,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     if (!raw) {
       setStatus({
         lead: 'Type something first.',
-        rest: ' Put one or more words/phrases in the keyword box (comma or new line between phrases), then Load into lattice.',
+        rest: ' Put one or more words/phrases in the keyword box (comma or new line between phrases), then Load into Grid.',
       });
       return;
     }
@@ -340,7 +352,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     const count = raw.split(/[,\n|;]+/).map((t) => t.trim()).filter(Boolean).length
       || raw.split(/\s+/).filter(Boolean).length;
     setStatus({
-      lead: 'Your lattice.',
+      lead: 'Your grid.',
       rest: ` Loaded your keywords into the grid (${count} token${count === 1 ? '' : 's'} — cycles to fill 20 tiles). These stay YOUR words. Now: Spotlight, Run 12 gens, Crystallize, Generate Neural Lyrics.`,
     });
   }, [keywordDraft]);
@@ -374,7 +386,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     setEditingId(null);
     setStatus({
       lead: 'Demo grid.',
-      rest: ' Back to the sample lattice. Type your own keywords anytime and hit Load into lattice.',
+      rest: ' Back to the sample grid. Type your own keywords anytime and hit Load into Grid.',
     });
   }, []);
 
@@ -389,7 +401,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         return;
       }
     }
-    // Purple flash = lattice tile feedback only
+    // Purple flash = grid tile feedback only
     setFlashTileId(cell.id);
     if (flashTimer.current) clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => setFlashTileId(null), 800);
@@ -407,7 +419,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       setEditingId(null);
       setStatus({
         lead: 'Selected.',
-        rest: ` “${cell.text}” — purple = this lattice tile is active. Edit it below, or Spotlight / Run / Crystallize.`,
+        rest: ` “${cell.text}” — purple = this grid tile is active. Edit it below, or Spotlight / Run / Crystallize.`,
       });
     }
   }, [spotlightMode, section]);
@@ -431,7 +443,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     setCrystallized(false);
     setStatus({
       lead: 'Energy spread.',
-      rest: ' Heat moved across the lattice for 12 steps. Brighter / hotter tiles are more likely to change when you Crystallize. Next: Crystallize, or Spotlight another word.',
+      rest: ' Heat moved across the grid for 12 steps. Brighter / hotter tiles are more likely to change when you Crystallize. Next: Crystallize, or Spotlight another word.',
     });
     setTimeout(() => setRunning(false), 900);
   };
@@ -448,7 +460,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
    *
    * It cannot be written as doRun() + doCrystallize(): doCrystallize reads
    * `section` from the render closure, which would still be the pre-Run value,
-   * so it would lock the OLD lattice. The two transforms are chained on the
+   * so it would lock the OLD grid. The two transforms are chained on the
    * value instead of on state.
    */
   const doRunAndLock = () => {
@@ -463,11 +475,11 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       audit.ok
         ? {
             lead: 'Spread and locked.',
-            rest: ' Energy moved across the lattice for 12 steps and the field is now locked (Crystallize went green). Your own keywords were never swapped out. Next: Step 6, Generate Neural Lyrics.',
+            rest: ' Energy moved across the grid for 12 steps and the field is now locked (Crystallize went green). Your own keywords were never swapped out. Next: Step 6, Generate Neural Lyrics.',
           }
         : {
             lead: 'Spread and locked — but contracts broken.',
-            rest: ` ${audit.violations.length} entanglement contract(s) failed: ${audit.violations.map((v) => `“${v.aText}”↔“${v.bText}”`).join('; ')}. Fix those tiles or remove the contracts before you generate.`,
+            rest: ` ${audit.violations.length} rhyme link(s) failed: ${audit.violations.map((v) => `“${v.aText}”↔“${v.bText}”`).join('; ')}. Fix those tiles or remove the links before you generate.`,
           }
     );
     setTimeout(() => setRunning(false), 900);
@@ -481,7 +493,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     if (!audit.ok) {
       setStatus({
         lead: 'Locked — but contracts broken.',
-        rest: ` ${audit.violations.length} entanglement contract(s) failed: ${audit.violations.map((v) => `“${v.aText}”↔“${v.bText}”`).join('; ')}. Fix tiles or remove contracts before neural generate.`,
+        rest: ` ${audit.violations.length} rhyme link(s) failed: ${audit.violations.map((v) => `“${v.aText}”↔“${v.bText}”`).join('; ')}. Fix tiles or remove links before neural generate.`,
       });
     } else {
       setStatus({
@@ -498,7 +510,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     setStatus({
       lead: 'Measured.',
       rest: w
-        ? ` Picked one word for this tile: “${w}”. Linked (entangled) tiles may shift to match. Optional step — Crystallize still locks the whole lattice at once.`
+        ? ` Picked one word for this tile: “${w}”. Linked tiles may shift to match. Optional step — Crystallize still locks the whole grid at once.`
         : ' This tile settled on one word.',
     });
   };
@@ -509,7 +521,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     setStatus({
       lead: willFreeze ? 'Pinned.' : 'Unpinned.',
       rest: willFreeze
-        ? ` “${selected.text}” will not change until you unpin it. Handy when you love a word and want the rest of the lattice to move around it.`
+        ? ` “${selected.text}” will not change until you unpin it. Handy when you love a word and want the rest of the grid to move around it.`
         : ` “${selected.text}” can change again.`,
     });
   };
@@ -534,23 +546,34 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     const willLock = !section.frozen;
     setSection(lockSection(section, willLock));
     setStatus({
-      lead: willLock ? 'Whole lattice pinned.' : 'Lattice unpinned.',
+      lead: willLock ? 'Whole grid pinned.' : 'Grid unpinned.',
       rest: willLock
         ? ' Every word is frozen so nothing drifts. Click Lock again when you want to play.'
         : ' Words can change again.',
     });
   };
 
-  const buildNeuralMessages = (variant) => {
-    const endWords = section.lines.map((l) => l.cells[l.cells.length - 1].text);
-    const palette = [...new Set(cells.map((c) => c.text))].join(', ');
+  /**
+   * `srcSection` is how Auto-Craft stays honest.
+   *
+   * setSection() does not update the `section` in this closure, so a one-click
+   * run that spreads, locks, then generates would build its prompt from the
+   * grid as it looked BEFORE any of that — a verse for a board that never
+   * existed. Each step hands the next one its actual result instead.
+   */
+  const buildNeuralMessages = (variant, srcSection = null) => {
+    const sec = srcSection || section;
+    const secCells = sec.lines.flatMap((l) => l.cells);
+    const secDna = srcSection ? dnaOf(sec, gen + 12) : dna;
+    const endWords = sec.lines.map((l) => l.cells[l.cells.length - 1].text);
+    const palette = [...new Set(secCells.map((c) => c.text))].join(', ');
     const spin = variant === 'B'
       ? 'Variant B: lean more abstract/image-heavy, slightly different angle on the same end-words.'
       : 'Variant A: lean more direct and emotional, plain language.';
     const pressure = buildNeuralConstraints({
-      stylePressure: stylePressure || section.stylePressure,
+      stylePressure: stylePressure || sec.stylePressure,
       contracts,
-      section,
+      section: sec,
       dnaUsed,
       forceKeywords: parseKeywords(keywordDraft),
     });
@@ -559,17 +582,24 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       {
         role: 'system',
         content:
-          'You are a surgical lyricist working INSIDE hard craft constraints (quantum lattice). Write ONE tight 4-line verse. Land each line on its given end-word. Honor contracts and style pressure. No clichés, no explanations — output only the 4 lines. Never copy any real artist lyrics.',
+          'You are a surgical lyricist working INSIDE hard craft constraints (word grid). Write ONE tight 4-line verse. Land each line on its given end-word. Honor contracts and style pressure. No clichés, no explanations — output only the 4 lines. Never copy any real artist lyrics.',
       },
       {
         role: 'user',
-        content: `Section: ${secLabel}\nSeed palette: ${palette}\nRhyme scheme: ${dna?.rhymeScheme || 'AABB'}\nEnd-words per line (in order): ${endWords.join(', ')}\nStress signature: ${dna?.stressSignature || ''}\n${pressure ? `CONSTRAINTS:\n${pressure}\n` : ''}${spin}\nWrite the 4-line verse now.`,
+        content: `Section: ${secLabel}\nSeed palette: ${palette}\nRhyme scheme: ${secDna?.rhymeScheme || 'AABB'}\nEnd-words per line (in order): ${endWords.join(', ')}\nStress signature: ${secDna?.stressSignature || ''}\n${pressure ? `CONSTRAINTS:\n${pressure}\n` : ''}${spin}\nWrite the 4-line verse now.`,
       },
     ];
   };
 
-  /** Generate multi-state A + B verses (pick one before send). */
-  const doNeural = async () => {
+  /**
+   * Generate multi-state A + B verses (pick one before send).
+   *
+   * `overrideSection` is supplied by Auto-Craft, which has just spread and
+   * locked the grid and holds the only correct copy of it. Defaults to null,
+   * so the Step 6 button behaves exactly as it always did.
+   */
+  const doNeural = async (overrideSection = null) => {
+    const src = overrideSection || section;
     if (!store.config?.openRouterApiKey) {
       setStatus({
         lead: 'Need an API key.',
@@ -577,7 +607,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       });
       return;
     }
-    const audit = checkContracts(section, contracts);
+    const audit = checkContracts(src, contracts);
     if (!audit.ok) {
       setStatus({
         lead: 'Contracts block generate.',
@@ -586,13 +616,37 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       return;
     }
     setBusy(true);
-    setStatus({ lead: 'Writing A + B…', rest: ' Generating two multi-state verses under lattice + DNA + style pressure. Pick A or B, run Truth Meter, then send.' });
+    setStatus({ lead: 'Writing A + B…', rest: ' Generating two multi-state verses under grid + DNA + style pressure. Pick A or B, run Truth Meter, then send.' });
     try {
-      const [outA, outB] = await Promise.all([
-        callAI(buildNeuralMessages('A'), store.config, 0.88, 220),
-        callAI(buildNeuralMessages('B'), store.config, 0.95, 220),
-      ]);
+      /**
+       * A THEN B, NOT A AND B.
+       *
+       * These two calls used to go out together under Promise.all. On an
+       * OpenRouter key with a strict per-second concurrency allowance the
+       * second request is rejected the instant it lands, and because
+       * Promise.all rejects as a unit, ONE refused request threw away the
+       * good verse that came back with it. What the user saw was "Could not
+       * generate. Provider returned error" for a run where half the work had
+       * actually succeeded.
+       *
+       * So they go one at a time with a beat in between, and B is allowed to
+       * fail on its own. Losing the second variant costs the A/B choice for
+       * that run; losing the pair costs the whole generate.
+       */
+      const outA = await callAI(buildNeuralMessages('A', overrideSection), store.config, 0.88, 220);
       setNeuralA((outA || '').trim());
+
+      await new Promise((r) => setTimeout(r, 400));
+
+      let outB;
+      try {
+        outB = await callAI(buildNeuralMessages('B', overrideSection), store.config, 0.95, 220);
+      } catch (errB) {
+        // B alone is not a failed run. Fall back to A so the tab still has a
+        // verse on screen and the pick control still works.
+        console.warn('[The Matrix] State B failed, falling back to State A:', errB);
+        outB = outA;
+      }
       setNeuralB((outB || '').trim());
       setNeuralPick('A');
       setTruthReport(null);
@@ -607,6 +661,60 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     }
   };
 
+  /**
+   * ══ TIER 1: THE QUICK PATH ═══════════════════════════════════════════════
+   * Steps 4, 5 and 6 in a single press: spread the energy, lock the field,
+   * write both states.
+   *
+   * WHY THIS EXISTS. The manual path is six numbered buttons that have to be
+   * pressed in the right order, and getting the order wrong produces either
+   * nothing or a verse built on an unlocked grid. That is a fine instrument
+   * panel for someone who wants to watch each transform land, and it is the
+   * wrong front door for everybody else.
+   *
+   * WHY IT THREADS THE SECTION BY HAND. setSection() does not update `section`
+   * in this closure, so calling doRun() then doCrystallize() then doNeural()
+   * in sequence would run all three against the ORIGINAL grid. Each step
+   * takes the previous step's return value instead. This is the same reason
+   * buildNeuralMessages accepts srcSection.
+   *
+   * The manual Step 3/4/5/6 buttons are untouched and still in the drawer.
+   * This does not replace them; it is the same transforms with nothing to
+   * remember.
+   */
+  const autoCraftVerse = async () => {
+    if (autoBusy || busy || running) return;
+    setAutoBusy(true);
+    try {
+      setAutoStage('Spreading energy…');
+      setStatus({ lead: 'Auto-Craft running.', rest: ' Spreading energy across the matrix for 12 generations.' });
+      const ran = runGens(section, 12);
+
+      setAutoStage('Locking the field…');
+      const locked = crystallizeLab(ran.section);
+      setSection(locked.section);
+      setGen((g) => g + 12);
+      setCrystallized(true);
+
+      // A broken contract stops the run BEFORE spending a call, and says which
+      // pair failed rather than returning a verse that quietly ignores it.
+      const audit = checkContracts(locked.section, contracts);
+      if (!audit.ok) {
+        setStatus({
+          lead: 'Spread and locked — but rhyme links are broken.',
+          rest: ` ${audit.violations.length} link(s) failed: ${audit.violations.map((v) => `“${v.aText}”↔“${v.bText}”`).join('; ')}. Fix those tiles in Advanced Studio, then generate.`,
+        });
+        return;
+      }
+
+      setAutoStage('Writing both states…');
+      await doNeural(locked.section);
+    } finally {
+      setAutoBusy(false);
+      setAutoStage('');
+    }
+  };
+
   const activeNeural = neuralPick === 'B' ? neuralB : neuralA;
 
   const sendToSongwriter = () => {
@@ -617,11 +725,11 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     if (onSendToSongwriter) {
       onSendToSongwriter({
         lyrics: activeNeural,
-        artist: 'Quantum Lab',
+        artist: 'The Matrix',
         source: 'quantum',
         notes: `Quantum palette: ${[...new Set(cells.map((c) => c.text))].join(', ')}`,
       });
-      setStatus({ lead: 'Sent to Songwriter.', rest: ` State ${neuralPick} is in Songwriter as “Quantum Lab Verse”.` });
+      setStatus({ lead: 'Sent to Songwriter.', rest: ` State ${neuralPick} is in Songwriter as “Matrix Verse”.` });
     }
   };
 
@@ -636,7 +744,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         verse: activeNeural || '',
         keywords: keywordDraft,
       });
-      setStatus({ lead: 'Sent to Song Forge.', rest: ' Lattice structure is seeding Song Forge — finish a full song + cover there.' });
+      setStatus({ lead: 'Sent to Song Forge.', rest: ' Grid structure is seeding Song Forge — finish a full song + cover there.' });
     }
   };
 
@@ -649,10 +757,10 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     });
     setStatus({
       lead: 'Here is the order.',
-      rest: ' Step 1 type your words up top. Step 2 Load into lattice. Step 3 Spotlight, then click tiles to heat them. '
+      rest: ' Step 1 type your words up top. Step 2 Load into Grid. Step 3 Spotlight, then click tiles to heat them. '
         + 'Step 4 Run 12 gens to spread the energy. Step 5 Crystallize to lock it in. Step 6 Generate Neural Lyrics writes the verse. '
-        + 'Then Send to Songwriter or Send to Song Forge. Freeze cell pins one tile; Entanglement View shows the links. '
-        + 'Every button is right here under the lattice — there is nothing to type.',
+        + 'Then Send to Songwriter or Send to Song Forge. Freeze cell pins one tile; Rhyme Links View shows the links. '
+        + 'Every button is right here under the grid — there is nothing to type.',
     });
   };
 
@@ -665,7 +773,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   return (
     <div className={rootCls}>
       {/* ── PHONE: the two drawer buttons ──────────────────────────────────
-          Labelled, always visible, sitting above the lattice. No swipe-from-
+          Labelled, always visible, sitting above the grid. No swipe-from-
           the-edge gesture, no hidden handle: if a control exists it has a
           button with a word on it. */}
       {mobile && (
@@ -674,7 +782,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             type="button"
             className={`ql-mobtab ${drawer === 'controls' ? 'is-open' : ''}`}
             onClick={() => setDrawer((d) => (d === 'controls' ? null : 'controls'))}
-            data-help="Your keywords and all six step buttons. Slides over the lattice, then closes again."
+            data-help="Your keywords and all six step buttons. Slides over the grid, then closes again."
           >
             ☰ Words &amp; steps {drawer === 'controls' ? '✕' : '▾'}
           </button>
@@ -690,23 +798,23 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             type="button"
             className={`ql-mobtab ${drawer === 'panels' ? 'is-open' : ''}`}
             onClick={() => setDrawer((d) => (d === 'panels' ? null : 'panels'))}
-            data-help="Word Inspector, Section DNA and the scores for the lattice as it stands."
+            data-help="Word Inspector, Section DNA and the scores for the grid as it stands."
           >
             {drawer === 'panels' ? '✕' : '▾'} Inspector ⚛
           </button>
         </div>
       )}
 
-      {/* Tapping the lattice closes whichever drawer is open. */}
+      {/* Tapping the grid closes whichever drawer is open. */}
       {mobile && drawer && (
         <div className="ql-mobscrim" onClick={() => setDrawer(null)} aria-hidden="true" />
       )}
 
-      {/* YOUR KEYWORDS — primary entry point (user owns the lattice) */}
+      {/* YOUR KEYWORDS — primary entry point (user owns the grid) */}
       <div
         className="ql-keywords"
         data-demo="ql-keywords"
-        data-help="This is how YOU control the lattice. Type any words or short phrases you want in the song — as many as you like. Comma or new line between items (so multi-word phrases stay together). Then hit Load into lattice. Spotlight, Run, and Crystallize run on YOUR words — the computer does not invent the seed list for you."
+        data-help="This is how YOU control the grid. Type any words or short phrases you want in the song — as many as you like. Comma or new line between items (so multi-word phrases stay together). Then hit Load into Grid. Spotlight, Run, and Crystallize run on YOUR words — the computer does not invent the seed list for you."
       >
         <label className="ql-keywords-label" htmlFor="ql-kw-input">
           <span className="ql-step-tag">Step 1</span> Your keywords / phrases
@@ -731,9 +839,9 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             className="ql-btn accent-ylw"
             onClick={loadKeywords}
             data-demo="ql-load"
-            data-help="Fills the lattice with the words you typed. Multi-word phrases are fine. If you give fewer than 20, they cycle to fill the grid. Your words stay yours — Crystallize will not replace them with demo dictionary picks."
+            data-help="Fills the grid with the words you typed. Multi-word phrases are fine. If you give fewer than 20, they cycle to fill the grid. Your words stay yours — Crystallize will not replace them with demo dictionary picks."
           >
-            <span className="ql-step-tag">Step 2</span> ⬇ Load into lattice
+            <span className="ql-step-tag">Step 2</span> ⬇ Load into Grid
           </button>
           <button
             type="button"
@@ -743,7 +851,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           >
             Reset demo grid
           </button>
-          <span className="ql-keywords-hint">Ctrl+Enter to load · then use the buttons under the lattice</span>
+          <span className="ql-keywords-hint">Ctrl+Enter to load · then use the buttons under the grid</span>
         </div>
       </div>
 
@@ -759,7 +867,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           onClick={() => setHowtoOpen((v) => !v)}
           data-help="Show or hide the step-by-step guide."
         >
-          <span>How to use Quantum Lab (the lattice)</span>
+          <span>How to use The Matrix</span>
           <span className="ql-howto-chev">{howtoOpen ? '▾' : '▸'}</span>
         </button>
         {howtoOpen && (
@@ -768,7 +876,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
               <b>Step 1 — put YOUR words in</b> — type keywords/phrases in the box above (as many as you want). Or click any tile in the grid and edit it. You pick the words — not the computer.
             </li>
             <li>
-              <b>Step 2 — Load into lattice</b> — your words fill the grid and stay yours.
+              <b>Step 2 — Load into Grid</b> — your words fill the grid and stay yours.
             </li>
             <li>
               <b>Steps 3 &amp; 4 — heat &amp; spread</b> — <i>Spotlight</i>, click the tiles you care about, then <i>Run 12 gens</i> so the energy moves.
@@ -783,7 +891,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         )}
         {howtoOpen && (
           <p className="ql-howto-note">
-            Every button sits in the <b>Lattice controls</b> bar right under the grid — nothing to type, no commands.
+            Every button sits in the <b>Matrix Engine Controls</b> bar right under the grid — nothing to type, no commands.
             Turn <b>Tips ON</b> (💡 in the app header) and hover any control for plain English.
             The sample grid is only an example. Optional: <b>Freeze cell</b> pins one tile. <b>Measure</b> is for demo “open” tiles only — your typed words stay put.
           </p>
@@ -818,11 +926,11 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         </defs>
       </svg>
 
-      {/* Lattice + energy field */}
+      {/* Grid + energy field */}
       <div
         className="ql-lattice-wrap"
         ref={wrapRef}
-        data-help="This whole area is the lattice — a 4-line grid of word tiles. Each tile is one word in a draft verse skeleton. Play with heat and crystallize, then generate real lyrics from it."
+        data-help="This whole area is the grid — a 4-line grid of word tiles. Each tile is one word in a draft verse skeleton. Play with heat and crystallize, then generate real lyrics from it."
       >
         {!vidFailed && (
           <div className="ql-bgvid-clip">
@@ -843,7 +951,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         {entView && (
           <div
             className={`ql-panel ql-ent-panel ${entOpen ? 'is-open' : ''}`}
-            data-help="Shows how many word pairs are linked (entangled). Linked words tend to move together — same repeats or rhyme partners. Turn the links on/off with the Entanglement View button."
+            data-help="Shows how many word pairs are linked (entangled). Linked words tend to move together — same repeats or rhyme partners. Turn the links on/off with the Rhyme Links View button."
           >
             <button
               type="button"
@@ -869,9 +977,10 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           </div>
         )}
 
-        {/* Real fire, over the whole lattice. Reads .ql-burning straight off
-            the DOM, so it can never disagree with what the tiles are showing. */}
-        <LatticeFire wrapRef={wrapRef} />
+        {/* The canvas fire that used to burn over the whole grid is gone —
+            Chris, 2026-08-27: *"get rid of that fucking fire."* The tiles keep
+            their own heat ramp, which is the part that actually carries
+            meaning; the particle layer on top was decoration. */}
 
         <div className="ql-lattice" ref={gridRef} style={{ gridTemplateColumns: `repeat(${cols}, minmax(72px, 1fr))` }}>
           {section.lines.map((line) =>
@@ -898,7 +1007,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
                   style={{ '--tc': c, '--glow': `${glow}px`, '--heat': heat.toFixed(2), '--fh': fireHue(cell) }}
                   onClick={() => onTile(cell)}
                   onDoubleClick={() => onTileDouble(cell)}
-                  data-help={`“${cell.text}” — energy ${pct(cell.energy)} (${stateLabel})${cell.userOwned ? ' · YOUR word' : ''}. Click = purple (lattice tile). Double-click or edit below. Spotlight ON = pour heat.`}
+                  data-help={`“${cell.text}” — energy ${pct(cell.energy)} (${stateLabel})${cell.userOwned ? ' · YOUR word' : ''}. Click = purple (grid tile). Double-click or edit below. Spotlight ON = pour heat.`}
                 >
                   <span className="ql-tile-word">{cell.text}</span>
                   {phoneticsOn && (
@@ -912,11 +1021,10 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
                     <i className={!cell.isSuperposition ? 'on' : ''} />
                   </span>
                   {cell.isSuperposition && <span className="ql-tile-super-badge">Σ</span>}
-                  {/* No flame element here any more. The fire is drawn for the
-                      whole board at once by <LatticeFire>, on one canvas, as a
-                      particle system — see LatticeFire.jsx for why CSS could
-                      never do this job. The .ql-burning class is what tells the
-                      canvas which tiles to light. */}
+                  {/* No flame element here. There is no flame anywhere any
+                      more — the canvas particle layer was removed on
+                      2026-08-27. A tile carries its heat entirely through its
+                      own colour ramp now. */}
                 </div>
               );
             })
@@ -924,16 +1032,112 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         </div>
       </div>
 
-      {/* ── ACTION BAR ── every command is a button, right under the lattice ──
+      {/* ══ TIER 1 — THE QUICK PATH ═══════════════════════════════════════
+          One button, directly under the grid, doing the whole job. This is the
+          default view and it is what the tab is FOR. Everything else lives in
+          the drawer below and nobody has to open it to get a verse. */}
+      <button
+        type="button"
+        className="ql-quickpath"
+        onClick={autoCraftVerse}
+        disabled={autoBusy || busy || running}
+        data-demo="matrix-autocraft"
+        data-help="ONE CLICK. Spreads energy across the grid for 12 generations, locks the field, then writes two complete verses (State A and State B). Everything the six numbered buttons do, in the right order, without you having to remember it. Needs a free OpenRouter key in Settings."
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 14,
+          padding: '18px 20px',
+          marginTop: 14,
+          borderRadius: 14,
+          cursor: autoBusy || busy || running ? 'wait' : 'pointer',
+          background: 'linear-gradient(180deg, rgba(var(--accent-rgb),0.16), rgba(0,0,0,0.55))',
+          border: '1px solid var(--accent-neon, #00f0ff)',
+          boxShadow: `0 0 22px rgba(var(--accent-rgb),0.28)`,
+          color: '#f3ecff',
+          opacity: autoBusy || busy || running ? 0.7 : 1,
+          transition: 'all 0.15s',
+        }}
+      >
+        <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>⚡</span>
+        <span style={{ textAlign: 'left' }}>
+          <span style={{
+            display: 'block',
+            fontFamily: "'Audiowide', 'Orbitron', sans-serif",
+            fontSize: '1.15rem',
+            letterSpacing: '0.04em',
+            color: 'var(--accent-neon, #00f0ff)',
+          }}>
+            {autoBusy ? (autoStage || 'Auto-Crafting…') : 'Auto-Craft Verse'}
+          </span>
+          <span className="ql-mono" style={{
+            display: 'block',
+            fontSize: '0.68rem',
+            letterSpacing: '0.16em',
+            opacity: 0.75,
+            marginTop: 3,
+          }}>
+            SPREAD, LOCK &amp; GENERATE · 1-CLICK RUN
+          </span>
+        </span>
+      </button>
+
+      <p
+        className="ql-status"
+        data-help="Live feedback after each action — what just happened and what to try next."
+      >
+        <b>{status.lead}</b>{status.rest}
+        <span className="ql-caret" />
+      </p>
+
+      {/* ══ TIER 2 — ADVANCED STUDIO ══════════════════════════════════════
+          Everything below is the granular path: the six numbered steps and the
+          nine-panel power suite. Nothing was removed and nothing is
+          unreachable — it is CLOSED ON ARRIVAL because presenting it all flat,
+          equally prominent, meant nothing was prominent and the actual job
+          (words in, verse out) sat six presses deep in a wall of instruments. */}
+      <button
+        type="button"
+        className="ql-adv-toggle"
+        onClick={() => setAdvOpen((v) => !v)}
+        aria-expanded={advOpen}
+        data-help="Opens the manual controls: the six numbered steps, and the nine studio panels (DNA, rhyme links, measure, sections, truth meter, stress, loop, style, journal). You never need these to get a verse — Auto-Craft above runs them for you."
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          padding: '12px 16px',
+          marginTop: 14,
+          borderRadius: 10,
+          cursor: 'pointer',
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid var(--border-hairline, rgba(160,200,255,0.16))',
+          color: '#c8d7f0',
+          fontFamily: "'Space Grotesk', sans-serif",
+          fontSize: '0.82rem',
+          letterSpacing: '0.08em',
+        }}
+      >
+        <span>⚙ ADVANCED STUDIO CONTROLS &amp; SECTIONAL PHYSICS</span>
+        <span style={{ opacity: 0.7 }}>{advOpen ? '▲' : '▼'}</span>
+      </button>
+
+      {advOpen && (
+      <>
+      {/* ── ACTION BAR ── every command is a button, right under the grid ──
           Nobody should have to know a terminal to run this tab. The old
           "/run /crystallize /send" text bar at the bottom of the page is gone. */}
       <div
         className="ql-actionbar"
         data-demo="ql-actionbar"
-        data-help="Every Quantum Lab action, in order. Left to right: heat it, run it, lock it, write it, then send it."
+        data-help="Every Matrix action, in order. Left to right: heat it, run it, lock it, write it, then send it."
       >
         <div className="ql-actionbar-caption">
-          <span className="ql-actionbar-title">Lattice controls</span>
+          <span className="ql-actionbar-title">Matrix Engine Controls</span>
           <span className="ql-actionbar-sub">
             Press them left to right — or use the one orange button to do Steps 4 and 5 in a single press.
             Hover any button for plain English.
@@ -948,12 +1152,12 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
               setSpotlightMode((v) => !v);
               setStatus(
                 !spotlightMode
-                  ? { lead: 'Spotlight ON.', rest: ' Button is ORANGE while on. Click any lattice tile to pour heat. Click Spotlight again to turn off.' }
+                  ? { lead: 'Spotlight ON.', rest: ' Button is ORANGE while on. Click any grid tile to pour heat. Click Spotlight again to turn off.' }
                   : { lead: 'Spotlight OFF.', rest: ' Clicks select tiles again (purple) instead of heating them.' }
               );
             }}
             data-demo="ql-spotlight"
-            data-help="STEP 3. Turn ON = the button stays ORANGE. Then click any lattice tile to pour heat into it. Click Spotlight again to turn it off."
+            data-help="STEP 3. Turn ON = the button stays ORANGE. Then click any grid tile to pour heat into it. Click Spotlight again to turn it off."
           >
             <span className="ql-step-tag">Step 3</span> 💡 Spotlight
           </button>
@@ -963,7 +1167,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             onClick={doRun}
             disabled={running}
             data-demo="ql-run"
-            data-help="STEP 4. Moves energy across the lattice for 12 steps. Hotter tiles matter more when you Crystallize."
+            data-help="STEP 4. Moves energy across the grid for 12 steps. Hotter tiles matter more when you Crystallize."
           >
             <span className="ql-step-tag">Step 4</span> ▷ Run 12 gens
           </button>
@@ -972,7 +1176,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             className={`ql-btn ${crystallized ? 'on-grn' : ''}`}
             onClick={doCrystallize}
             data-demo="ql-crystallize"
-            data-help="STEP 5. Locks the lattice energy state. Your keywords stay. Turns GREEN once it is locked."
+            data-help="STEP 5. Locks the grid energy state. Your keywords stay. Turns GREEN once it is locked."
           >
             <span className="ql-step-tag">Step 5</span> ❄ Crystallize
           </button>
@@ -991,10 +1195,10 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           <button
             type="button"
             className={`ql-btn accent-ylw ${busy ? 'ql-btn-busy' : ''}`}
-            onClick={doNeural}
+            onClick={() => doNeural()}
             disabled={busy}
             data-demo="ql-generate"
-            data-help="STEP 6. Writes a 4-line verse from your lattice — two versions, A and B (needs a free OpenRouter key in Settings)."
+            data-help="STEP 6. Writes a 4-line verse from your grid — two versions, A and B (needs a free OpenRouter key in Settings)."
           >
             <span className="ql-step-tag">Step 6</span> ✳ {busy ? 'Generating…' : 'Generate Neural Lyrics'}
           </button>
@@ -1005,7 +1209,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             type="button"
             className={`ql-btn ${selected?.frozen ? 'on-grn' : ''}`}
             onClick={doFreeze}
-            data-help="Optional. Select a lattice tile first, then Freeze to pin it (turns green). Click again to unpin."
+            data-help="Optional. Select a grid tile first, then Freeze to pin it (turns green). Click again to unpin."
           >
             🔒 Freeze cell
           </button>
@@ -1016,12 +1220,12 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
               setEntView((v) => !v);
               setStatus({
                 lead: entView ? 'Links hidden.' : 'Links shown.',
-                rest: entView ? ' Entanglement lines off.' : ' Glowing links between related tiles are visible.',
+                rest: entView ? ' Rhyme link lines off.' : ' Glowing links between related tiles are visible.',
               });
             }}
-            data-help="Shows or hides entanglement lines between related lattice tiles. Green when links are visible."
+            data-help="Shows or hides rhyme link lines between related grid tiles. Green when links are visible."
           >
-            ⋈ Entanglement View
+            ⋈ Rhyme Links View
           </button>
           <button
             type="button"
@@ -1037,7 +1241,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             className="ql-btn"
             onClick={sendToForge}
             data-demo="ql-send-forge"
-            data-help="Sends this lattice — palette, end-words, rhyme scheme and the picked verse — into Song Forge to build a full song."
+            data-help="Sends this grid — palette, end-words, rhyme scheme and the picked verse — into Song Forge to build a full song."
           >
             → Send to Song Forge
           </button>
@@ -1059,15 +1263,12 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         </div>
       </div>
 
-      <p
-        className="ql-status"
-        data-help="Live feedback after each action — what just happened and what to try next."
-      >
-        <b>{status.lead}</b>{status.rest}
-        <span className="ql-caret" />
-      </p>
+      {/* The status line used to sit here, between the action bar and the
+          feature panels. It moved up next to Auto-Craft: it reports what the
+          Quick Path is doing too, and a progress line hidden inside a closed
+          drawer is a progress line nobody reads. */}
 
-      {/* Features 1–9: DNA, contracts, measure, multi-section, truth, stress, loop, style, journal */}
+      {/* Features 1–9: DNA, rhyme links, measure, multi-section, truth, stress, loop, style, journal */}
       <QuantumFeaturesPanel
         section={section}
         setSection={setSection}
@@ -1095,13 +1296,18 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         onTruthReport={setTruthReport}
         truthReport={truthReport}
       />
+      </>
+      )}
+      {/* ══ END TIER 2 ═══════════════════════════════════════════════════ */}
 
-      {/* Multi-state neural output A / B + one-click handoffs */}
+      {/* Multi-state neural output A / B + one-click handoffs.
+          OUTSIDE the drawer on purpose: this is the Quick Path's result, and it
+          has to be visible to somebody who never opens Advanced Studio. */}
       {(neuralA || neuralB) && (
         <div
           className="ql-panel ql-neural-out"
           style={{ marginTop: 12, borderColor: 'rgba(234,255,43,0.4)' }}
-          data-help="Two multi-state verses from the same lattice. Pick A or B (collapse), then Send to Songwriter or Song Forge in one click."
+          data-help="Two multi-state verses from the same grid. Pick A or B (collapse), then Send to Songwriter or Song Forge in one click."
         >
           <h4 style={{ color: YLW }}>Neural Lyrics — multi-state</h4>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
@@ -1124,7 +1330,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             <button type="button" className="ql-mini grn" onClick={sendToSongwriter} data-help="One-click: open Songwriter with the picked state as a verse.">
               → Send to Songwriter
             </button>
-            <button type="button" className="ql-mini" onClick={sendToForge} data-help="One-click: open Song Forge with this lattice as the seed for a full song + cover.">
+            <button type="button" className="ql-mini" onClick={sendToForge} data-help="One-click: open Song Forge with this grid as the seed for a full song + cover.">
               → Send to Song Forge
             </button>
           </div>
@@ -1163,7 +1369,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
               onChange={(e) => { setEditDraft(e.target.value); setEditingId(selectedId); }}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyCellEdit(); } }}
               placeholder="Type your word or phrase…"
-              data-help="Replace the selected tile with whatever you type. Press Enter or Apply. This is your keyword — the lattice will not swap it out."
+              data-help="Replace the selected tile with whatever you type. Press Enter or Apply. This is your keyword — the grid will not swap it out."
             />
             <button
               type="button"
@@ -1208,7 +1414,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
 
         <div
           className="ql-panel"
-          data-help="The skeleton of your section: stress = beat pattern (1 = strong, 0 = weak), rhyme scheme = AABB means lines 1–2 rhyme and 3–4 rhyme, dominant = the active rhyme groups, avg energy = how hot the whole lattice is. You do not have to edit these by hand — Mutate and Crystallize update them."
+          data-help="The skeleton of your section: stress = beat pattern (1 = strong, 0 = weak), rhyme scheme = AABB means lines 1–2 rhyme and 3–4 rhyme, dominant = the active rhyme groups, avg energy = how hot the whole grid is. You do not have to edit these by hand — Mutate and Crystallize update them."
         >
           <h4>Section DNA</h4>
           <div className="ql-mini-btns">
@@ -1217,7 +1423,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             <button
               className={`ql-mini ${section.frozen ? 'grn' : ''}`}
               onClick={doLock}
-              data-help="Pins every word so nothing can change. Click again to unlock. Green and reading DNA Locked means every word is pinned. Use when the lattice looks good and you only want to Generate Neural Lyrics."
+              data-help="Pins every word so nothing can change. Click again to unlock. Green and reading DNA Locked means every word is pinned. Use when the grid looks good and you only want to Generate Neural Lyrics."
             >
               {section.frozen ? '🔒 DNA Locked' : '🔓 DNA Unlocked'}
             </button>
@@ -1243,24 +1449,24 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           <div className="ql-kv" data-help="Which lines are supposed to rhyme. AABB means line 1 rhymes with line 2, and line 3 rhymes with line 4. Crystallize tries to make the end words honor this.">
             <span className="k">rhyme scheme</span><span className="v ql-v-ylw">{dna?.rhymeScheme || '—'}</span>
           </div>
-          <div className="ql-kv" data-help="The active rhyme groups right now (for example A and B). A quick snapshot of how the lattice is grouping end sounds.">
+          <div className="ql-kv" data-help="The active rhyme groups right now (for example A and B). A quick snapshot of how the grid is grouping end sounds.">
             <span className="k">dominant</span><span className="v ql-v-org">{dominant}</span>
           </div>
-          <div className="ql-kv" data-help="Average heat of every tile. Higher means the lattice is 'active.' After Spotlight and Run 12 gens this often rises, then Crystallize settles choices.">
+          <div className="ql-kv" data-help="Average heat of every tile. Higher means the grid is 'active.' After Spotlight and Run 12 gens this often rises, then Crystallize settles choices.">
             <span className="k">avg energy</span><span className="v ql-v-org">{pct(dna?.averageEnergy)}</span>
           </div>
         </div>
 
         <div
           className="ql-panel"
-          data-help="Live grades from 0 to 1 (higher is stronger). Rhyme = end rhymes holding. Stress = meter feel. Semantic = meaning flow. Energy = heat balance across the lattice. These update as you play — use them as a guide, not a test score."
+          data-help="Live grades from 0 to 1 (higher is stronger). Rhyme = end rhymes holding. Stress = meter feel. Semantic = meaning flow. Energy = heat balance across the grid. These update as you play — use them as a guide, not a test score."
         >
           <h4>Score</h4>
           {[
             ['rhyme', score.rhymeStrength, false, 'How well the end-of-line rhymes are holding (AABB style). Higher = stronger rhymes. Crystallize usually improves this.'],
             ['stress', score.stressFidelity, true, 'How steady the strong/weak beat pattern feels (the meter). Mutate changes this a little on purpose.'],
             ['semantic', score.semanticCoherence, false, 'How smoothly the meaning seems to flow line to line. A rough guide — real song sense comes when you Generate Neural Lyrics.'],
-            ['energy', score.energyBalance, true, 'How balanced heat is across the lattice. Very uneven energy means a few tiles are much hotter than others. Run 12 gens spreads heat around.'],
+            ['energy', score.energyBalance, true, 'How balanced heat is across the grid. Very uneven energy means a few tiles are much hotter than others. Run 12 gens spreads heat around.'],
           ].map(([label, val, grn, help]) => (
             <div className="ql-score-row" key={label} data-help={help}>
               <div className="ql-score-top"><span className="lbl">{label}</span><span className="num">{f2(val)}</span></div>

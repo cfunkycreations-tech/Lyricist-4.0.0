@@ -46,11 +46,11 @@ export default function StartHere({ onGoToSettings }) {
         <div className="sh-two">
           <div>
             <span className="sh-h waiting">Waiting on the key</span>
-            <p>Songwriter's AI writing, Ghost Rider, Song Forge, Quantum Lab, Rhyme Helper's AI suggestions</p>
+            <p>Songwriter's AI writing, Ghost Rider, Song Forge, The Matrix, Rhyme Helper's AI suggestions</p>
           </div>
           <div>
             <span className="sh-h ready">Ready right now, no key</span>
-            <p>One Man Band, Recording Booth, RC-Funk 5000, Mastering, Stemmer, MIDI Studio,
+            <p>One Man Band, Recording Booth, RC-Funk 5000, Mastering, local stem extraction, MIDI Studio,
               Chopped &amp; Screwed, Thesaurus, Dictionary, Scratch Pad</p>
           </div>
         </div>
