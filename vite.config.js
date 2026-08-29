@@ -9,6 +9,9 @@ export default defineConfig({
   // already holding 5173. Falls back to the normal Vite default.
   server: {
     port: Number(process.env.PORT) || 5173,
+    watch: {
+      ignored: ["**/src-tauri/**"]
+    }
   },
   resolve: {
     alias: {
