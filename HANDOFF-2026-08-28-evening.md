@@ -85,23 +85,33 @@ Configure already succeeded (103.9s, JUCE 8.0.3 fetched into `build/_deps/`).
    *late*, after the whole JUCE download. Now gated behind
    `-DASIO_SDK_DIR=<path to sdk>/common`.
 
-   > **⚠ THIS IS UNFINISHED, NOT A DESIGN CHOICE.** The current binary has ASIO
-   > compiled **out**, and that is not acceptable as a final state. Chris has
-   > **three registered ASIO drivers** — `FlexASIO`, `Yamaha Steinberg USB ASIO`,
-   > and `Ableton Push` — and FlexASIO is deliberate: commit `0867866` added
-   > FlexASIO attribution. **ASIO is the point, not a nice-to-have.**
+   > **✅ RESOLVED same evening.** Chris supplied ASIO SDK 2.3.4. Its `common/`
+   > folder is vendored at `juce-backend/asiosdk/common/` and **gitignored** —
+   > it carries its own `LICENSE.txt` with redistribution terms and this repo is
+   > public under a commercial EULA. Rebuild it yourself with:
    >
-   > It shows in the smoke test: `asio.enumerate` returned only
-   > `Speakers (JBL Bar 2.1)`, `Speakers (5- Logitech USB Headset)`,
-   > `Primary Sound Driver` — all WASAPI/DirectSound. **None of the three ASIO
-   > drivers appeared**, because the host support isn't compiled in.
+   > ```
+   > cmake -S juce-backend -B juce-backend/build -G "Visual Studio 17 2022" -A x64 \
+   >   -DASIO_SDK_DIR="V:/src/Lyricist-4.2.0/juce-backend/asiosdk/common"
+   > ```
    >
-   > To finish: get `iasiodrv.h` from Steinberg's ASIO SDK (free, license
-   > acceptance required — **Chris's call, don't do it for him**), then
-   > reconfigure with `-DASIO_SDK_DIR=.../common`. Configure prints
-   > `ASIO SDK found … ASIO enabled` when it takes. **Gitignore the vendored
-   > SDK** — it has redistribution terms and this repo is public with a
-   > commercial EULA.
+   > Configure prints `ASIO SDK found … ASIO enabled`. Verified against the
+   > rebuilt binary — `asio.enumerate` now returns all three of Chris's drivers:
+   > `["Ableton Push", "FlexASIO", "Yamaha Steinberg USB ASIO"]`. FlexASIO
+   > working is the point of the attribution in `0867866`.
+   >
+   > **If the SDK folder goes missing, the build silently drops back to
+   > WASAPI-only** — the CMake gate warns rather than fails, by design. If ASIO
+   > drivers ever vanish from the picker, check that warning first.
+
+   > **Known behaviour worth a decision:** `enumerateDrivers()` returns ASIO
+   > devices *exclusively* when any exist, and only falls back to WASAPI/
+   > DirectSound when the ASIO list is empty. Before ASIO was compiled in, the
+   > same call returned `Speakers (JBL Bar 2.1)`, `Speakers (5- Logitech USB
+   > Headset)`, `Primary Sound Driver`; now it returns none of them. That is the
+   > code doing what it says, but it means a user with any ASIO driver installed
+   > can no longer pick their plain Windows output. Ask Chris whether the picker
+   > should list both.
 
    `AsioDriver.cpp` never includes the SDK itself — it asks for the `"ASIO"`
    device type by string and falls back — so no code changes when it's enabled.

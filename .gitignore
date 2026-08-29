@@ -16,6 +16,13 @@ dist-build/
 dist-standalone/
 juce-backend/build/
 
+# Steinberg ASIO SDK, vendored locally so the build does not depend on a folder
+# in Downloads. NOT committed: it is licensed third-party code with
+# redistribution terms (see asiosdk/common/LICENSE.txt), and this repo is public
+# and ships under a commercial EULA. Anyone rebuilding fetches their own copy and
+# points at it with -DASIO_SDK_DIR.
+juce-backend/asiosdk/
+
 # Lyricist/ is a SEPARATE GIT REPOSITORY checked out inside this one (it has its
 # own .git, plus Lyricist-release/ at 1.3 GB and lyric-core/). Committing it would
 # silently record a gitlink rather than files. Ignored here until someone decides
