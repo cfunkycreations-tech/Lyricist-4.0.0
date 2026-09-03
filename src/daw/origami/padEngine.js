@@ -49,15 +49,19 @@ function signatureMask(f){
   o.fillStyle = "#fff";
   o.textAlign = "center";
   o.textBaseline = "middle";
-  var size = Math.floor(oc.height * 0.66);
+  var size = Math.floor(oc.height * 0.82);
   o.font = '700 ' + size + 'px "Dancing Script", "Brush Script MT", cursive';
   var text = "Lyricist 4.2.0 Pro";
   var w = o.measureText(text).width;
-  var scale = Math.min(1, (oc.width * 0.93) / Math.max(w, 1));
+  var scale = Math.min(1, (oc.width * 0.96) / Math.max(w, 1));
   o.save();
   o.translate(oc.width/2, oc.height/2);
   o.scale(scale, scale);
-  o.fillText(text, 0, 0);
+  o.lineWidth = Math.max(1, size * 0.055);
+    o.strokeStyle = "#fff";
+    o.lineJoin = "round";
+    o.strokeText(text, 0, 0);
+    o.fillText(text, 0, 0);
   o.restore();
 
   var px = o.getImageData(0,0,oc.width,oc.height).data;
@@ -90,14 +94,14 @@ export function padField(f, t, mode, seed){
     var span = 5.2, hold = 2.4;
     var pen = ((t % (span + hold)) / span);
     for(i=0;i<n;i++){
-      if(m[i] < 0.06) continue;
+      if(m[i] < 0.04) continue;
       c = i % cols;
       var cx = c / Math.max(cols - 1, 1);
       var lead = pen - cx;
       if(lead < 0) continue;                        /* nib has not reached it */
       var head = Math.max(0, 1 - lead * 9);         /* the bright nib */
       var ink  = pen > 1 ? Math.max(0, 1 - (pen - 1) * 1.4) : 1;
-      outA[i] = Math.min(1, (0.42 * ink + head * 0.75) * Math.min(1, m[i] * 1.6));
+      outA[i] = Math.min(1, (0.55 * ink + head * 0.70) * Math.min(1, m[i] * 2.1));
       outH[i] = (188 + cx * 150 + head * 60 + t * 14) % 360;
     }
     return;

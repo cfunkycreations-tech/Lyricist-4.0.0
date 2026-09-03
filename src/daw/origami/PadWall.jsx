@@ -6,8 +6,14 @@ const CYCLE_ORDER = ['breathe', 'ripple', 'chase', 'sparkle', 'rain'];
 /** How long the wordmark writes itself before the loop takes over, in seconds. */
 const BOOT_SECONDS = 15.2;
 
-/** Cell pitch in CSS px. Small enough that the cursive actually resolves. */
-const CELL = 11;
+/**
+ * Cell pitch in CSS px.
+ *
+ * Two things fight over this number: the squares have to read AS squares, and
+ * the wordmark has to resolve into letters. Below ~12 the grid turns to mush;
+ * above ~15 the cursive loses its joins. 13 holds both.
+ */
+const CELL = 13;
 
 /**
  * The pad wall — hundreds of pads, edge to edge, on canvas.
@@ -88,21 +94,60 @@ export default function PadWall({ pattern = 'cycle', onModeChange }) {
       const H = canvas.height;
       const cw = W / f.cols;
       const ch = H / f.rows;
-      const gap = Math.max(1, 1.6 * dprRef.current);
+      const dpr = dprRef.current;
+      const gap = 2 * dpr;
+      const side = Math.min(cw, ch) - gap;
+      const ox = (cw - side) / 2;
+      const oy = (ch - side) / 2;
 
       ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = '#0B0C0F';
+      ctx.lineWidth = Math.max(1, dpr);
+
+      // Unlit: a hairline square outline, drawn on the half-pixel so the
+      // stroke lands on one device pixel instead of smearing across two.
+      // These are lines, not blocks — the pad is the outline, and the colour
+      // is light coming through it.
+      const half = ctx.lineWidth / 2;
+      ctx.strokeStyle = 'rgba(255,255,255,0.055)';
+      ctx.beginPath();
       for (let r = 0; r < f.rows; r++) {
-        for (let c = 0; c < f.cols; c++) ctx.fillRect(c * cw, r * ch, cw - gap, ch - gap);
+        for (let c = 0; c < f.cols; c++) {
+          ctx.rect(Math.round(c * cw + ox) + half, Math.round(r * ch + oy) + half, side, side);
+        }
       }
+      ctx.stroke();
+
+      // Lit: the outline takes the hue at full strength, with a faint wash
+      // inside it so the square reads as illuminated rather than merely drawn.
       for (let i = 0; i < f.n; i++) {
         let a = f.A[i];
         if (a < 0.02) continue;
         if (a > 1) a = 1;
         const h = ((f.H[i] % 360) + 360) % 360;
-        ctx.fillStyle = `hsl(${h.toFixed(0)},97%,${(21 + a * 50).toFixed(0)}%)`;
-        ctx.fillRect((i % f.cols) * cw, ((i / f.cols) | 0) * ch, cw - gap, ch - gap);
+        const x = Math.round((i % f.cols) * cw + ox) + half;
+        const y = Math.round(((i / f.cols) | 0) * ch + oy) + half;
+        ctx.fillStyle = `hsla(${h.toFixed(0)},96%,56%,${(a * 0.20).toFixed(3)})`;
+        ctx.fillRect(x, y, side, side);
+        ctx.strokeStyle = `hsla(${h.toFixed(0)},98%,${(58 + a * 20).toFixed(0)}%,${(0.22 + a * 0.78).toFixed(3)})`;
+        ctx.strokeRect(x, y, side, side);
       }
+
+      // A second pass puts a real bloom on only the brightest pads. Shadow
+      // blur is expensive, so it is spent on the few cells that carry the
+      // image rather than on all several hundred.
+      ctx.save();
+      for (let i = 0; i < f.n; i++) {
+        const a = f.A[i];
+        if (a < 0.55) continue;
+        const h = ((f.H[i] % 360) + 360) % 360;
+        const x = Math.round((i % f.cols) * cw + ox) + half;
+        const y = Math.round(((i / f.cols) | 0) * ch + oy) + half;
+        ctx.shadowColor = `hsla(${h.toFixed(0)},100%,62%,${(a * 0.9).toFixed(2)})`;
+        ctx.shadowBlur = 10 * dpr * a;
+        ctx.strokeStyle = `hsla(${h.toFixed(0)},100%,72%,${a.toFixed(2)})`;
+        ctx.strokeRect(x, y, side, side);
+      }
+      ctx.restore();
 
       // The wordmark has to be readable, so the frost eases off while it writes.
       stage.classList.toggle('sharp', mode === 'signature');

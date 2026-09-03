@@ -72,6 +72,7 @@ export default function MatrixMeter({ playing, mode = 'breathe', seed = 0, chann
         for (let si = 0; si < SEGS; si++) {
           const el = cells[domIndex(si)];
           el.style.background = '';
+          el.style.borderColor = '';
           el.style.boxShadow = '';
           if (si === hsi && si >= lit) el.className = 'hd';
           else if (si < lit) el.className = zone(si);
@@ -87,12 +88,16 @@ export default function MatrixMeter({ playing, mode = 'breathe', seed = 0, chann
           el.className = '';
           if (a < 0.015) {
             el.style.background = '';
+            el.style.borderColor = '';
             el.style.boxShadow = '';
           } else {
+            // Outline first, wash second — same rule as the pad wall, so a
+            // 5x4 board and a 60x23 board are visibly the same instrument.
             const h = ((f.H[i] % 360) + 360) % 360;
-            el.style.background = `hsl(${h.toFixed(0)},97%,${(21 + a * 50).toFixed(0)}%)`;
+            el.style.background = `hsla(${h.toFixed(0)},96%,56%,${(a * 0.20).toFixed(3)})`;
+            el.style.borderColor = `hsla(${h.toFixed(0)},98%,${(58 + a * 20).toFixed(0)}%,${(0.22 + a * 0.78).toFixed(3)})`;
             el.style.boxShadow =
-              `0 0 ${(5 + a * 20).toFixed(1)}px hsla(${h.toFixed(0)},100%,62%,${(a * 0.85).toFixed(2)})`;
+              `0 0 ${(4 + a * 14).toFixed(1)}px hsla(${h.toFixed(0)},100%,62%,${(a * 0.7).toFixed(2)})`;
           }
         }
       }

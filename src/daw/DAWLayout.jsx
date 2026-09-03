@@ -3,7 +3,6 @@ import './origami/origami.css';
 
 import Crease from './origami/Crease';
 import FoldPanel from './origami/FoldPanel';
-import WritingSurface from './origami/WritingSurface';
 import PadWall from './origami/PadWall';
 
 import TransportBar from './TransportBar';
@@ -110,7 +109,6 @@ function DAWLayoutContent() {
   return (
     <div className={`shell${sided ? ' sided' : ''}`} ref={shellRef}>
       <div className="surface">
-        <WritingSurface />
         <div className="sheet">
           <CenterCanvas onEditClip={(clip, trackId) => setEditingClip({ clip, trackId })} />
         </div>
