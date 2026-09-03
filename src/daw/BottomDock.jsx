@@ -11,137 +11,49 @@ import DrumPadSampler from './dock/DrumPadSampler';
 import GranularSynth from './dock/GranularSynth';
 import AutoTuneDock from './dock/AutoTuneDock';
 
+const TABS = [
+  ['Chains', DeviceChain],
+  ['Piano', PianoRoll],
+  ['Pads', DrumPadSampler],
+  ['Looper', LooperDock],
+  ['Slicer', TapeSlicer],
+  ['Stems', StemSeparator],
+  ['Editor', PluginHostEditor],
+  ['Chords', ChordPalette],
+  ['Macros', MacroRack],
+  ['Granular', GranularSynth],
+  ['Tune', AutoTuneDock]
+];
+
 /**
- * BottomDock Component - Tabbed resizable dock for DAW modules
+ * The rack flap's contents.
+ *
+ * The dock used to own its own height, resize handle and collapse toggle.
+ * The flap owns all of that now — a panel that can fold to a crease does not
+ * also need a collapse button, and two of them disagreeing is how you end up
+ * with content clipped behind chrome.
  */
 export default function BottomDock() {
-  const [activeTab, setActiveTab] = useState('VST3 Chains');
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [height, setHeight] = useState(300);
-
-  const tabs = ['VST3 Chains', 'Piano Roll', 'Drum Pads', 'Looper', 'Tape Slicer', 'Stems', 'Plugin Editor', 'Chords', 'Macros', 'Granular', 'Auto-Tune'];
-
-  const renderContent = () => {
-    switch(activeTab) {
-      case 'VST3 Chains': return <DeviceChain />;
-      case 'Piano Roll': return <PianoRoll />;
-      case 'Drum Pads': return <DrumPadSampler />;
-      case 'Looper': return <LooperDock />;
-      case 'Tape Slicer': return <TapeSlicer />;
-      case 'Stems': return <StemSeparator />;
-      case 'Plugin Editor': return <PluginHostEditor />;
-      case 'Chords': return <ChordPalette />;
-      case 'Macros': return <MacroRack />;
-      case 'Granular': return <GranularSynth />;
-      case 'Auto-Tune': return <AutoTuneDock />;
-      default: return null;
-    }
-  };
-
-  if (isCollapsed) {
-    return (
-      <div style={{...styles.dock, height: '40px'}}>
-        <div style={styles.header}>
-          <div style={styles.tabs}>
-            <span style={styles.collapsedTitle}>Dock Collapsed - {activeTab}</span>
-          </div>
-          <button style={styles.collapseBtn} onClick={() => setIsCollapsed(false)}>▲</button>
-        </div>
-      </div>
-    );
-  }
+  const [activeTab, setActiveTab] = useState('Chains');
+  const Panel = (TABS.find(([name]) => name === activeTab) || TABS[0])[1];
 
   return (
-    <div style={{...styles.dock, height: `${height}px`}}>
-      <div style={styles.resizeHandle} />
-      <div style={styles.header}>
-        <div style={styles.tabs}>
-          {tabs.map(tab => (
-            <button 
-              key={tab}
-              style={{
-                ...styles.tabBtn,
-                color: activeTab === tab ? 'var(--gm-ice-white, #F0F8FF)' : '#888',
-                borderBottom: activeTab === tab ? '2px solid var(--gm-amber, #FF9900)' : '2px solid transparent',
-              }}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-        <button style={styles.collapseBtn} onClick={() => setIsCollapsed(true)}>▼</button>
+    <>
+      <div className="flaptabs">
+        {TABS.map(([name]) => (
+          <button
+            type="button"
+            key={name}
+            className={`flaptab${activeTab === name ? ' on' : ''}`}
+            onClick={() => setActiveTab(name)}
+          >
+            {name}
+          </button>
+        ))}
       </div>
-      <div style={styles.contentArea}>
-        {renderContent()}
+      <div className="flapbody">
+        <Panel />
       </div>
-    </div>
+    </>
   );
 }
-
-const styles = {
-  dock: {
-    // Pins the dock to the shell's dock area. Without this it is auto-placed
-    // into the sidebar column, where the device rack's intrinsic width
-    // collapses the canvas column to nothing.
-    gridArea: 'dock',
-    backgroundColor: 'var(--gm-panel, #242424)',
-    borderTop: '1px solid var(--gm-border, #333)',
-    display: 'flex',
-    flexDirection: 'column',
-    position: 'relative',
-    minWidth: 0,
-    width: '100%',
-    fontFamily: 'Inter, Roboto, sans-serif',
-  },
-  resizeHandle: {
-    height: '4px',
-    width: '100%',
-    cursor: 'ns-resize',
-    backgroundColor: '#333',
-    position: 'absolute',
-    top: 0,
-    zIndex: 10,
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    padding: '0 16px',
-    height: '36px',
-    marginTop: '4px',
-  },
-  tabs: {
-    display: 'flex',
-    gap: '16px',
-    height: '100%',
-  },
-  tabBtn: {
-    background: 'none',
-    border: 'none',
-    fontSize: '12px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    padding: '0 8px',
-    height: '100%',
-    textTransform: 'uppercase',
-  },
-  collapsedTitle: {
-    color: '#888',
-    fontSize: '12px',
-    alignSelf: 'center',
-  },
-  collapseBtn: {
-    background: 'none',
-    border: 'none',
-    color: '#aaa',
-    cursor: 'pointer',
-    fontSize: '14px',
-  },
-  contentArea: {
-    flex: 1,
-    overflow: 'hidden',
-    position: 'relative',
-  }
-};

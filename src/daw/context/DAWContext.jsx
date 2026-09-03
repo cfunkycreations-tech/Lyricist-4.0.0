@@ -100,6 +100,19 @@ export const DAWProvider = ({ children }) => {
     { id: 'sec3', type: 'Chorus', energy: 9, bars: 8, lines: [] }
   ]);
 
+
+  // Which lyric section is being written. It lives here rather than inside
+  // LyricForge because the shell's structure drawer and the writing surface
+  // are now separate panels that have to agree on it.
+  const [activeSectionId, setActiveSectionId] = useState(null);
+
+  // Open on the first section with words in it. Landing on an empty Intro
+  // makes a loaded song look like a blank one.
+  useEffect(() => {
+    if (activeSectionId && lyrics.some(s => s.id === activeSectionId)) return;
+    const written = lyrics.find(s => (s.lines || []).some(l => String(l.text || '').trim()));
+    setActiveSectionId((written || lyrics[1] || lyrics[0] || {}).id || null);
+  }, [lyrics, activeSectionId]);
   const [selectedTrackId, setSelectedTrackId] = useState('t1');
   const [activeDockTab, setActiveDockTab] = useState('VST3 Chains'); // 'VST3 Chains' | 'Piano Roll' | 'Looper' | 'Tape Slicer'
   /**
@@ -338,6 +351,8 @@ export const DAWProvider = ({ children }) => {
 
   const value = {
     tracks,
+    activeSectionId,
+    setActiveSectionId,
     transport,
     lyrics,
     selectedTrackId,

@@ -5,7 +5,6 @@ import { useLyricStore } from '../../context/LyricStore';
 import { generateLineVariation, fillBlank, generateSection } from '../../services/AIService';
 import { lookup } from '../services/RhymeService';
 import rhymeAnalyzer from '../engine/RhymeAnalyzer';
-import RhymeHeatmap from './RhymeHeatmap';
 import RhymeCoachBar from '../components/RhymeCoachBar';
 import LyricMatrix from './LyricMatrix';
 
@@ -18,13 +17,13 @@ export default function LyricForge() {
   const {
     lyrics,
     updateLyricLine,
-    addLyricSection,
     writeSection,
-    aiConfig
+    aiConfig,
+    activeSectionId,
+    setActiveSectionId
   } = useDAW();
   const store = useLyricStore();
 
-  const [activeSectionId, setActiveSectionId] = useState(lyrics[1]?.id || lyrics[0]?.id || 'verse-1');
   const [activeContextMenu, setActiveContextMenu] = useState(null);
   const [loadingAction, setLoadingAction] = useState(null);
   const [activeWord, setActiveWord] = useState('');
@@ -37,6 +36,16 @@ export default function LyricForge() {
   };
 
   const { lines: analyzedLines, flowConsistency } = rhymeAnalyzer.analyzeLines(activeSection.lines || []);
+
+  // Median syllables-per-bar for the section. The cadence hairline is a
+  // deviation from this, so it means something the syllable count alone does not.
+  const medianDensity = (() => {
+    const barsPerLine = Math.max(1, (activeSection.bars || 16) / Math.max(analyzedLines.length, 1));
+    const d = analyzedLines.map(l => l.syllables / barsPerLine).sort((a, b) => a - b);
+    if (!d.length) return 0;
+    const mid = d.length >> 1;
+    return d.length % 2 ? d[mid] : (d[mid - 1] + d[mid]) / 2;
+  })();
 
   // The Matrix stands in only when the song has no words at all — not merely
   // when the selected section is blank, or clicking an empty Chorus would wipe
@@ -133,124 +142,72 @@ export default function LyricForge() {
   };
 
   return (
-    <div className="lyric-forge" onClick={closeContextMenu}>
-      <div className="lf-left-col">
-        <div className="lf-header">Song Structure Sequence</div>
-        <div className="structure-list">
-          {lyrics.map(sec => {
-            const isSelected = sec.id === activeSection.id;
+    <div className="lyric-page" onClick={closeContextMenu}>
+      {songIsEmpty ? <LyricMatrix /> : (
+        <>
+          <RhymeCoachBar activeWord={activeWord} onSelectRhyme={handleSelectRhyme} />
+          <p className="sec">
+            <b>{sectionCode}</b><em>syl / bar</em>
+          </p>
+
+          {analyzedLines.map((line) => {
+            const bars = Math.max(1, (activeSection.bars || 16) / Math.max(analyzedLines.length, 1));
+            const density = line.syllables / bars;
+            const dev = density - medianDensity;
+            const over = Math.abs(dev) > 0.5;
+            const span = Math.min(Math.abs(dev) / 2, 0.5) * 100;
+            const left = dev >= 0 ? 50 : 50 - span;
             return (
-              <div 
-                key={sec.id} 
-                className={`structure-item ${isSelected ? 'selected' : ''}`}
-                onClick={(e) => { e.stopPropagation(); setActiveSectionId(sec.id); }}
-                style={{
-                  borderColor: isSelected ? 'var(--gm-led-ice, #F0F8FF)' : 'var(--gm-border-dark, #333)',
-                  cursor: 'pointer'
-                }}
+              <div
+                key={line.id}
+                className={`ln${focusedLineId === line.id ? ' on' : ''}`}
+                onContextMenu={(e) => handleContextMenu(e, line.id)}
+                data-context-type="lyric"
+                data-context-id={line.id}
               >
-                <h4>
-                  <span style={{ textTransform: 'capitalize' }}>{sec.type}</span>
-                  <span className="bars"> [{sec.bars || 16} bars]</span>
-                </h4>
-                <div className="energy-curve">
-                  <div 
-                    className="energy-fill" 
-                    style={{ 
-                      width: `${(sec.energy || 5) * 10}%`,
-                      background: sec.energy >= 8 ? 'var(--gm-led-crimson, #E63946)' : sec.energy >= 6 ? 'var(--gm-led-amber, #FF9900)' : 'var(--gm-led-ice, #F0F8FF)'
-                    }}
-                  />
-                </div>
-                <div className="stats">Lines: {sec.lines ? sec.lines.length : 0} | Energy: {sec.energy || 5}/10</div>
+                <span className="gut">{line.syllables}</span>
+                <span
+                  className="rt"
+                  style={{ color: line.rhymeColor || 'var(--faint)' }}
+                  title="Rhyme scheme"
+                >
+                  {line.rhymeTag || '-'}
+                </span>
+                {/* Cadence, digital: syllables over bars, with the hairline
+                    showing how far off the section median this line sits. */}
+                <span className="cd" title="Syllables per bar">
+                  <u className={over ? 'over' : ''}>{density.toFixed(1)}</u>
+                  <s><i className={over ? 'over' : ''} style={{ left: `${left.toFixed(1)}%`, width: `${Math.max(span, 2).toFixed(1)}%` }} /></s>
+                </span>
+                <input
+                  className="wd"
+                  value={line.text}
+                  onChange={(e) => handleLineChange(line.id, e.target.value)}
+                  onFocus={(e) => {
+                    setFocusedLineId(line.id);
+                    const words = e.target.value.trim().split(/\s+/);
+                    setActiveWord(words[words.length - 1] || '');
+                  }}
+                  placeholder="Write the line. Right click for AI actions."
+                />
+
+                {activeContextMenu === line.id && (
+                  <div className="context-menu" onClick={(e) => e.stopPropagation()}>
+                    <button className="context-btn" onClick={() => handleContextAction('suggest-rhyme', line)}>Suggest rhyme</button>
+                    <button className="context-btn" onClick={() => handleContextAction('cadence', line)}>Rewrite with artist cadence</button>
+                    <button className="context-btn" onClick={() => handleContextAction('fill', line)}>Fill the blank</button>
+                    <button className="context-btn" onClick={() => handleContextAction('bridge', line)}>Generate bridge</button>
+                  </div>
+                )}
               </div>
             );
           })}
-          <button 
-            className="btn-add-section" 
-            onClick={(e) => { e.stopPropagation(); addLyricSection('verse'); }}
-          >
-            + Add Section
-          </button>
-        </div>
-      </div>
-      
-      <div className="lf-right-col">
-        <div className="lf-header">
-          Precision Lyric Line Editor (<span style={{ textTransform: 'capitalize' }}>{activeSection.type}</span>)
-        </div>
-        {/* No words anywhere yet: the Matrix takes the window instead of an
-            empty scroll area, and offers the one button that starts the song. */}
-        {songIsEmpty ? <LyricMatrix /> : (
-        <>
-        <RhymeCoachBar activeWord={activeWord} onSelectRhyme={handleSelectRhyme} />
-        <div className="lyric-editor">
-          <span className="lyric-section-code">{sectionCode}</span>
-          {analyzedLines.map((line, idx) => (
-            <div 
-              key={line.id} 
-              className="lyric-line" 
-              onContextMenu={(e) => handleContextMenu(e, line.id)}
-              data-context-type="lyric"
-              data-context-id={line.id}
-            >
-              <div className="syl-pill" title="Syllable Count">{line.syllables}</div>
-              <div 
-                className="rhyme-tag" 
-                title="Rhyme Scheme Tag"
-                style={{ backgroundColor: line.rhymeColor, color: line.rhymeTag ? '#111' : 'inherit' }}
-              >
-                {line.rhymeTag || '-'}
-              </div>
-              <div className="cadence-meter" title="Cadence Rhythm Grid">
-                {[1, 2, 3, 4].map(c => (
-                  <div 
-                    key={c} 
-                    className={`cadence-dot ${(line.syllables + c) % 2 === 0 ? 'active' : ''}`}
-                  />
-                ))}
-              </div>
-              <input 
-                className="lyric-input" 
-                value={line.text}
-                onChange={(e) => handleLineChange(line.id, e.target.value)}
-                onFocus={(e) => {
-                  setFocusedLineId(line.id);
-                  const words = e.target.value.trim().split(/\s+/);
-                  setActiveWord(words[words.length - 1] || '');
-                }}
-                placeholder="Type your lyric line here (right click for AI context actions)..."
-              />
-              
-              {activeContextMenu === line.id && (
-                <div className="context-menu" onClick={(e) => e.stopPropagation()}>
-                  <button className="context-btn" onClick={() => handleContextAction('suggest-rhyme', line)}>
-                    ✨ Suggest Rhyme
-                  </button>
-                  <button className="context-btn" onClick={() => handleContextAction('cadence', line)}>
-                    🎤 Rewrite with Artist Cadence
-                  </button>
-                  <button className="context-btn" onClick={() => handleContextAction('fill', line)}>
-                    📝 Fill the Blank
-                  </button>
-                  <button className="context-btn" onClick={() => handleContextAction('bridge', line)}>
-                    🌉 Generate Bridge
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-          {loadingAction && (
-            <div style={{ fontSize: '11px', color: 'var(--gm-led-amber, #FF9900)', marginTop: '8px', paddingLeft: '8px' }}>
-              ⚡ Working on {loadingAction}...
-            </div>
-          )}
 
-          {/* Rhymes for the line that was right-clicked. Clicking one swaps
-              the line's last word for it. */}
+          {loadingAction && <div className="lyric-status">Working on {loadingAction}…</div>}
+
           {rhymeChoices && (
             <div className="lyric-rhyme-picker" onClick={(e) => e.stopPropagation()}>
-              <span className="lrp-label">Swap last word:</span>
+              <span className="lrp-label">Swap last word</span>
               {rhymeChoices.words.map(w => (
                 <button
                   key={w}
@@ -270,22 +227,13 @@ export default function LyricForge() {
                   {w}
                 </button>
               ))}
-              <button className="lrp-close" onClick={() => setRhymeChoices(null)}>✕</button>
+              <button className="lrp-close" onClick={() => setRhymeChoices(null)}>Close</button>
             </div>
           )}
 
-          {actionError && (
-            <div className="lyric-action-error">{actionError}</div>
-          )}
-        </div>
+          {actionError && <div className="lyric-action-error">{actionError}</div>}
         </>
-        )}
-      </div>
-
-      <div className="lf-inspect-col" style={{ width: '300px', flexShrink: 0 }}>
-        <RhymeHeatmap analyzedLines={analyzedLines} flowConsistency={flowConsistency} />
-      </div>
+      )}
     </div>
   );
 }
-

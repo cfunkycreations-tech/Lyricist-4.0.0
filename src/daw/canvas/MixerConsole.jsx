@@ -189,7 +189,7 @@ const ChannelStrip = ({
       <div className="strip-section fader-section">
         {isMaster && (
           <div className="master-meters">
-            <MasterVUMeter vertical={true} levelL={peakLevel} levelR={peakLevel} />
+            <MasterVUMeter orientation="vertical" leftLevel={peakLevel} rightLevel={peakLevel} />
           </div>
         )}
         

@@ -1,65 +1,70 @@
-import React, { useState, useRef, useEffect } from 'react';
-import MasterVUMeter from './components/MasterVUMeter';
+import React, { useEffect, useRef, useState } from 'react';
+import MatrixMeter from './origami/MatrixMeter';
 import { useDAW } from './context/DAWContext';
 import audioGraph from './engine/AudioGraph';
 import metronomeEngine from './engine/MetronomeEngine';
-import RenderQueueTray from './components/RenderQueueTray';
 import projectSessionService from './services/ProjectSessionService';
 import webMidiService from './services/WebMidiService';
 import performanceMonitor from './engine/PerformanceMonitor';
 
+const KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
 /**
- * TransportBar component for daw-shell top grid area.
- * Contains playback controls, timing info, ASIO status, and Render Queue tray.
- * @returns {JSX.Element}
+ * The transport, as the shell's top flap.
+ *
+ * Fine print throughout — nothing here is set above 13px, and the largest
+ * thing on the panel is a number. The master board is the 5x4 matrix meter
+ * under acrylic, reading the audio graph's true peak. When the transport is
+ * stopped it stops metering and runs idle pads instead.
  */
 export default function TransportBar({ onOpenSettings, onOpenExport, onOpenScope, onOpenHistory, onOpenEula, onOpenDiagnostics }) {
-  const { transport, togglePlay, stop, toggleRecord, setTransport, renderQueue, tracks, lyrics, loadProject } = useDAW();
-  const [asioConnected] = useState(true);
-  const [showQueue, setShowQueue] = useState(false);
-  const [midiActivity, setMidiActivity] = useState(false);
+  const { transport, togglePlay, stop, toggleRecord, setTransport, tracks, lyrics, loadProject } = useDAW();
   const [metroActive, setMetroActive] = useState(false);
+  const [midiActivity, setMidiActivity] = useState(false);
   const [dspLoad, setDspLoad] = useState(0);
+  const [peakDb, setPeakDb] = useState(-Infinity);
   const fileInputRef = useRef(null);
 
-  const activeJobs = renderQueue ? renderQueue.filter(j => j.status === 'active') : [];
-  const completedJobs = renderQueue ? renderQueue.filter(j => j.status === 'completed') : [];
+  useEffect(() => { metronomeEngine.setBpm(transport.bpm); }, [transport.bpm]);
 
   useEffect(() => {
-    metronomeEngine.setBpm(transport.bpm);
-  }, [transport.bpm]);
-
-  useEffect(() => {
-    const onMidiActivity = () => {
+    const onMidi = () => {
       setMidiActivity(true);
-      if (window.midiActivityTimeout) clearTimeout(window.midiActivityTimeout);
-      window.midiActivityTimeout = setTimeout(() => setMidiActivity(false), 150);
+      clearTimeout(onMidi._t);
+      onMidi._t = setTimeout(() => setMidiActivity(false), 150);
     };
-    webMidiService.addEventListener(onMidiActivity);
-    return () => webMidiService.removeEventListener(onMidiActivity);
+    webMidiService.addEventListener(onMidi);
+    return () => { clearTimeout(onMidi._t); webMidiService.removeEventListener(onMidi); };
   }, []);
 
+  // DSP load is read from the monitor when it has one. It is NOT faked when it
+  // does not — a made-up load figure on a panel that also shows a real meter
+  // teaches you to distrust both.
   useEffect(() => {
-    const interval = setInterval(() => {
+    const id = setInterval(() => {
       if (performanceMonitor && typeof performanceMonitor.getDSPLoad === 'function') {
         setDspLoad(performanceMonitor.getDSPLoad());
-      } else {
-        setDspLoad(prev => Math.floor(Math.random() * 15) + 2); // Mock low load
       }
     }, 1000);
-    return () => clearInterval(interval);
+    return () => clearInterval(id);
   }, []);
 
-  const getDspColor = (load) => {
-    if (load < 50) return 'var(--gm-led-ice, #F0F8FF)';
-    if (load < 80) return 'var(--gm-led-amber, #FF9900)';
-    return 'var(--gm-led-crimson, #E63946)';
-  };
+  // The readout tracks the same true peak the matrix board draws.
+  useEffect(() => {
+    let raf = 0;
+    const tick = () => {
+      const p = audioGraph.getMasterPeaks();
+      setPeakDb(Math.max(p.left, p.right));
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   const toggleMetronome = () => {
-    const nextActive = !metroActive;
-    setMetroActive(nextActive);
-    if (nextActive && transport.isPlaying) {
+    const next = !metroActive;
+    setMetroActive(next);
+    if (next && transport.isPlaying) {
       metronomeEngine.setBpm(transport.bpm);
       metronomeEngine.start();
     } else {
@@ -67,7 +72,7 @@ export default function TransportBar({ onOpenSettings, onOpenExport, onOpenScope
     }
   };
 
-  const handlePlayClick = () => {
+  const handlePlay = () => {
     audioGraph.init();
     if (!transport.isPlaying && metroActive) {
       metronomeEngine.setBpm(transport.bpm);
@@ -78,26 +83,15 @@ export default function TransportBar({ onOpenSettings, onOpenExport, onOpenScope
     togglePlay();
   };
 
-  const handleStopClick = () => {
-    metronomeEngine.stop();
-    stop();
-  };
-
   const handleFileAction = (e) => {
     const action = e.target.value;
-    e.target.value = ''; // Reset select
-    if (action === 'new') {
-      const defaultState = projectSessionService.createDefaultProject();
-      loadProject(defaultState);
-    } else if (action === 'open') {
-      fileInputRef.current.click();
-    } else if (action === 'save') {
+    e.target.value = '';
+    if (action === 'new') loadProject(projectSessionService.createDefaultProject());
+    else if (action === 'open') fileInputRef.current.click();
+    else if (action === 'save') {
       projectSessionService.saveProjectToFile({
-        tracks,
-        lyrics,
-        bpm: transport.bpm,
-        key: transport.key,
-        timeSig: transport.timeSig,
+        tracks, lyrics,
+        bpm: transport.bpm, key: transport.key, timeSig: transport.timeSig,
         automation: {}
       });
     }
@@ -106,274 +100,88 @@ export default function TransportBar({ onOpenSettings, onOpenExport, onOpenScope
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      try {
-        const state = await projectSessionService.loadProjectFromFile(file);
-        loadProject(state);
-      } catch (err) {
-        console.error('Failed to load project:', err);
-      }
+      try { loadProject(await projectSessionService.loadProjectFromFile(file)); }
+      catch (err) { console.error('Failed to load project:', err); }
     }
-    e.target.value = null; // Reset input
+    e.target.value = null;
   };
 
+  const bar = Math.floor(transport.playhead) + 1;
+  const beat = Math.floor((transport.playhead % 1) * 4) + 1;
+  const dbText = Number.isFinite(peakDb) ? peakDb.toFixed(1) : '-∞';
+
   return (
-    <div className="daw-transport">
-      <div 
-        className="brand-badge"
-        onClick={onOpenEula}
-        title="View End User License Agreement"
-        style={{
-          cursor: 'pointer',
-          fontFamily: 'var(--gm-font-ui, Inter, Roboto, sans-serif)',
-          fontWeight: 800,
-          fontSize: '14px',
-          color: 'var(--gm-text-active, #FFF)',
-          padding: '0 16px',
-          display: 'flex',
-          alignItems: 'center',
-          letterSpacing: '1px',
-          borderRight: '1px solid var(--gm-border-dark, #333)',
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.textShadow = '0 0 8px var(--gm-led-ice, #F0F8FF)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.textShadow = 'none'; }}
-      >
-        LYRICIST
+    <div className="tr">
+      <div className="keys">
+        <button type="button" className={`k${transport.isPlaying ? ' lit' : ''}`} onClick={handlePlay}>
+          {transport.isPlaying ? 'Stop' : 'Play'}
+        </button>
+        <button type="button" className={`k rec${transport.isRecording ? ' lit' : ''}`} onClick={toggleRecord}>
+          Rec
+        </button>
+        <button type="button" className={`k${metroActive ? ' lit' : ''}`} onClick={toggleMetronome}>
+          Click
+        </button>
       </div>
-      <div className="transport-group">
-        <select 
-          className="control-input"
-          style={{ width: '80px', fontWeight: 'bold' }}
-          onChange={handleFileAction}
-          value=""
-          title="File Menu"
-        >
-          <option value="" disabled>📁 File</option>
-          <option value="new">New Project</option>
-          <option value="open">Open .lyricist File...</option>
-          <option value="save">Save Project</option>
-        </select>
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          style={{ display: 'none' }} 
-          accept=".lyricist" 
-          onChange={handleFileChange}
+
+      <label className="fld">
+        <u>Tempo</u>
+        <input
+          className="fldin"
+          type="number"
+          min="20"
+          max="300"
+          value={transport.bpm}
+          onChange={(e) => setTransport({ bpm: Number(e.target.value) || 120 })}
         />
-        <button 
-          className={`btn-hardware ${metroActive ? 'active' : ''}`}
-          onClick={toggleMetronome}
-          title="Metronome"
-          style={{ color: metroActive ? 'var(--gm-led-amber, #FF9900)' : 'inherit' }}
-        >
-          🔔 Metronome
-        </button>
-        <button 
-          className={`btn-hardware ${transport.isPlaying ? 'active' : ''}`}
-          onClick={handlePlayClick}
-          title={transport.isPlaying ? "Pause (Space)" : "Play (Space)"}
-        >
-          ▶
-        </button>
-        <button 
-          className="btn-hardware"
-          onClick={handleStopClick}
-          title="Stop"
-        >
-          ■
-        </button>
-        <button 
-          className={`btn-hardware btn-record ${transport.isRecording ? 'active' : ''}`}
-          onClick={toggleRecord}
-          title="Record"
-        >
-          ●
-        </button>
-      </div>
+      </label>
 
-      <div className="transport-group">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <span style={{ fontSize: '11px', color: 'var(--gm-text-label, #A0A0A0)', fontWeight: 600 }}>BPM</span>
-          <input 
-            type="number" 
-            className="control-input" 
-            value={transport.bpm} 
-            onChange={(e) => setTransport({ bpm: Number(e.target.value) || 120 })}
-            title="Tempo (BPM)"
-            style={{ width: '56px' }}
-          />
-        </div>
-
-        <select 
-          className="control-input" 
-          value={transport.key} 
-          onChange={(e) => setTransport({ key: e.target.value })}
-          title="Root Key"
-        >
-          {['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'].map(k => (
-            <option key={k} value={k}>{k}</option>
-          ))}
+      <label className="fld">
+        <u>Key</u>
+        <select className="fldin" value={transport.key} onChange={(e) => setTransport({ key: e.target.value })}>
+          {KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
         </select>
+      </label>
 
-        <select 
-          className="control-input" 
-          value={transport.scale} 
-          onChange={(e) => setTransport({ scale: e.target.value })}
-          title="Scale"
-        >
-          <option value="major">Major</option>
-          <option value="minor">Minor</option>
-        </select>
-
-        <select 
-          className="control-input" 
-          value={transport.timeSig} 
-          onChange={(e) => setTransport({ timeSig: e.target.value })}
-          title="Time Signature"
-        >
+      <label className="fld">
+        <u>Sig</u>
+        <select className="fldin" value={transport.timeSig} onChange={(e) => setTransport({ timeSig: e.target.value })}>
           <option value="4/4">4/4</option>
           <option value="3/4">3/4</option>
           <option value="6/8">6/8</option>
         </select>
+      </label>
 
-        <div style={{
-          fontFamily: 'var(--gm-font-metrics, monospace)',
-          fontSize: '11px',
-          color: 'var(--gm-text-active, #FFF)',
-          background: '#111',
-          padding: '3px 8px',
-          borderRadius: 'var(--gm-radius, 2px)',
-          border: '1px solid var(--gm-border-dark, #333)',
-          letterSpacing: '0.05em'
-        }}>
-          BAR {Math.floor(transport.playhead) + 1}.{Math.floor((transport.playhead % 1) * 4) + 1}
-        </div>
+      <div className="fld"><u>Bar</u><b>{bar}.{beat}</b></div>
+      {dspLoad > 0 && (
+        <button type="button" className="fld fld-btn" onClick={onOpenDiagnostics} title="Performance diagnostics">
+          <u>DSP</u><b>{Math.round(dspLoad)}%</b>
+        </button>
+      )}
+      {midiActivity && <div className="fld"><u>MIDI</u><b>&bull;</b></div>}
+
+      <div className="mtx">
+        <MatrixMeter playing={transport.isPlaying} channel="L" seed={0} />
+        <button type="button" className="fld fld-btn" onClick={onOpenScope} title="Master acoustic scope">
+          <u>dBTP</u><b>{dbText}</b>
+        </button>
+        <MatrixMeter playing={transport.isPlaying} channel="R" seed={1.7} />
       </div>
 
-      <div className="transport-group" style={{ position: 'relative' }}>
-        <div 
-          onClick={onOpenScope} 
-          title="Click to open Master Acoustic Scope"
-          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-        >
-          <MasterVUMeter
-            orientation="horizontal"
-            compact={true}
-            leftLevel={transport.isPlaying ? (6.4 + Math.random() * 1.8) : 0}
-            rightLevel={transport.isPlaying ? (6.0 + Math.random() * 1.6) : 0}
-            width={110}
-            showLabels={true}
-            showReadout={false}
-            segments={14}
-          />
-        </div>
-
-        {/* DSP Load Chip */}
-        <div 
-          onClick={onOpenDiagnostics}
-          title="Performance Diagnostics"
-          style={{
-            cursor: 'pointer',
-            fontFamily: 'var(--gm-font-metrics, monospace)',
-            fontSize: '10px',
-            color: getDspColor(dspLoad),
-            background: '#111',
-            padding: '2px 6px',
-            borderRadius: '4px',
-            border: `1px solid ${getDspColor(dspLoad)}`,
-            boxShadow: `0 0 4px ${getDspColor(dspLoad)}`,
-            marginLeft: '8px',
-            marginRight: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minWidth: '45px',
-            transition: 'all 0.2s ease'
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 0 8px ${getDspColor(dspLoad)}`; }}
-          onMouseLeave={(e) => { e.currentTarget.style.boxShadow = `0 0 4px ${getDspColor(dspLoad)}`; }}
-        >
-          DSP {Math.round(dspLoad)}%
-        </div>
-        
-        <button className="btn-hardware" title="Open Master Acoustic Scope" onClick={onOpenScope}>
-          ⚡ Scope
-        </button>
-
-        <div 
-          className={`asio-dot ${asioConnected ? 'connected' : ''}`} 
-          title={`ASIO Hardware Engine: ${asioConnected ? 'Connected (48kHz / 128 spls)' : 'Disconnected'}`} 
-        />
-
-        {/* Render Queue Tray Toggle Button */}
-        <button 
-          className={`btn-hardware ${activeJobs.length > 0 ? 'active' : ''}`} 
-          title="Background Render Queue"
-          onClick={() => setShowQueue(!showQueue)}
-          style={{ position: 'relative' }}
-        >
-          ⚡ Queue
-          {(activeJobs.length > 0 || completedJobs.length > 0) && (
-            <span style={{
-              position: 'absolute',
-              top: '-4px',
-              right: '-4px',
-              background: activeJobs.length > 0 ? 'var(--gm-led-amber, #FF9900)' : 'var(--gm-led-ice, #F0F8FF)',
-              color: '#000',
-              fontSize: '9px',
-              fontWeight: 700,
-              borderRadius: '9999px',
-              width: '14px',
-              height: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              {activeJobs.length || completedJobs.length}
-            </span>
-          )}
-        </button>
-
-        {showQueue && <RenderQueueTray />}
-        
-        {/* Export Button */}
-        <button className="btn-hardware" title="Export Audio" onClick={onOpenExport}>
-          ⚡ Export
-        </button>
-
-        {/* Ghost Copilot Button */}
-        <button 
-          className="btn-hardware" 
-          title="Ghost Copilot"
-          style={{ color: 'var(--gm-amber, #FF9900)' }}
-        >
-          🤖 Ghost
-        </button>
-
-        {/* MIDI Activity LED */}
-        <div 
-          style={{
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            backgroundColor: midiActivity ? 'var(--gm-cyan, #00FFFF)' : '#111',
-            boxShadow: midiActivity ? '0 0 8px var(--gm-cyan, #00FFFF)' : 'inset 0 2px 4px rgba(0,0,0,0.5)',
-            border: '1px solid #333',
-            transition: 'background-color 0.1s, box-shadow 0.1s'
-          }}
-          title="MIDI Activity"
-        />
-
-        {/* History Button */}
-        <button className="btn-hardware" title="Session History" onClick={onOpenHistory}>
-          🕒 History
-        </button>
-
-        {/* Settings Button */}
-        <button className="btn-hardware" title="Funk Matrix & Settings" onClick={onOpenSettings}>
-          ⚙
-        </button>
+      <div className="keys trailing">
+        <select className="k ksel" onChange={handleFileAction} defaultValue="" title="Project">
+          <option value="" disabled>File</option>
+          <option value="new">New</option>
+          <option value="open">Open</option>
+          <option value="save">Save</option>
+        </select>
+        <button type="button" className="k" onClick={onOpenExport}>Export</button>
+        <button type="button" className="k" onClick={onOpenHistory}>History</button>
+        <button type="button" className="k" onClick={onOpenSettings}>Settings</button>
+        <button type="button" className="k" onClick={onOpenEula} title="End user licence agreement">EULA</button>
       </div>
+
+      <input ref={fileInputRef} type="file" accept=".lyr,.json" onChange={handleFileChange} style={{ display: 'none' }} />
     </div>
   );
 }
-

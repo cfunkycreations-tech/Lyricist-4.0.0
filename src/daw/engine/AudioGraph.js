@@ -195,6 +195,36 @@ class AudioGraph {
   }
 
   /**
+   * True sample peak per channel, in dBFS.
+   *
+   * Separate from getMasterLevels, which is RMS on an arbitrary 0-10 scale.
+   * A peak meter has to read peak, and it has to return -Infinity for digital
+   * silence rather than a floor value — a stopped engine showing "-60" is
+   * indistinguishable from one playing something very quiet.
+   *
+   * @returns {{ left: number, right: number }} dBFS, or -Infinity when silent.
+   */
+  getMasterPeaks() {
+    if (!this.masterAnalyserLeft || !this.masterAnalyserRight) {
+      return { left: -Infinity, right: -Infinity };
+    }
+    const peakOf = (analyser) => {
+      const data = new Float32Array(analyser.fftSize);
+      analyser.getFloatTimeDomainData(data);
+      let max = 0;
+      for (let i = 0; i < data.length; i++) {
+        const v = Math.abs(data[i]);
+        if (v > max) max = v;
+      }
+      return max > 0 ? 20 * Math.log10(max) : -Infinity;
+    };
+    return {
+      left: peakOf(this.masterAnalyserLeft),
+      right: peakOf(this.masterAnalyserRight)
+    };
+  }
+
+  /**
    * Gets the current level for a specific track fader meter.
    * @param {string} trackId 
    * @returns {number} Level from 0-10
