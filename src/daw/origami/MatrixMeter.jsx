@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { makeField, padField } from './padEngine';
+import { makeField, padField, scene } from './padEngine';
 import audioGraph from '../engine/AudioGraph';
 
 const COLS = 5;
@@ -33,20 +33,17 @@ function norm(db) {
  *
  * @param {Object}  props
  * @param {boolean} props.playing  Whether the transport is running.
- * @param {string}  [props.mode]   Idle pattern to run when stopped.
  * @param {number}  [props.seed]   Phase offset, so L and R do not lockstep.
  * @param {string}  [props.channel] 'L' or 'R'.
  */
-export default function MatrixMeter({ playing, mode = 'breathe', seed = 0, channel = 'L' }) {
+export default function MatrixMeter({ playing, seed = 0, channel = 'L' }) {
   const gridRef = useRef(null);
   const cellsRef = useRef([]);
   const fieldRef = useRef(makeField(COLS, ROWS));
   const holdRef = useRef({ db: -Infinity, at: 0 });
   const playingRef = useRef(playing);
-  const modeRef = useRef(mode);
 
   useEffect(() => { playingRef.current = playing; }, [playing]);
-  useEffect(() => { modeRef.current = mode; }, [mode]);
 
   useEffect(() => {
     const grid = gridRef.current;
@@ -81,7 +78,9 @@ export default function MatrixMeter({ playing, mode = 'breathe', seed = 0, chann
       } else {
         grid.classList.add('pads');
         const f = fieldRef.current;
-        padField(f, t, modeRef.current === 'signature' ? 'breathe' : modeRef.current, seed);
+        // The wall owns the scene clock. 'signature' is a wordmark and means
+        // nothing on a 5x4 board, so that one segment falls back to aurora.
+        padField(f, t, scene.mode === 'signature' ? 'aurora' : scene.mode, seed);
         for (let i = 0; i < f.n; i++) {
           const a = Math.max(0, Math.min(1, f.A[i]));
           const el = cells[i];
