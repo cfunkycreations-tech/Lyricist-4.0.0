@@ -7,6 +7,16 @@ import { makeField, padField, pushRipple, pushBlast, setScene, POOL, LABELS } fr
  */
 const CELL = 52;
 
+/**
+ * Pitch for the signature segment.
+ *
+ * The two pull against each other: 52px reads as hardware, but a board that
+ * coarse is 4-6 rows tall and cursive needs ~16 rows to resolve, so the
+ * wordmark comes out as coloured blocks. The board runs fine while it signs
+ * its name and coarse for everything else.
+ */
+const CELL_FINE = 14;
+
 /** Seconds the signature holds before the scene cycle takes over. */
 const INTRO = 7.4;
 /** Seconds each scene holds. */
@@ -47,9 +57,11 @@ export default function PadWall({ onScene }) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Two fields: one per scene, so a crossfade can hold both at once.
-    let padF = null;
-    let padF2 = null;
+    // Two fields per pitch: a crossfade between scenes holds both at once.
+    // Coarse is the scene board; fine is the signature board.
+    let coarse = null;
+    let coarse2 = null;
+    let fine = null;
     let dpr = 1;
 
     const size = () => {
@@ -58,10 +70,15 @@ export default function PadWall({ onScene }) {
       dpr = Math.min(window.devicePixelRatio || 1, 3);
       canvas.width = Math.max(1, Math.round(w * dpr));
       canvas.height = Math.max(1, Math.round(h * dpr));
-      const cols = Math.max(8, Math.floor(w / CELL));
-      const rows = Math.max(4, Math.floor(h / CELL));
-      padF = makeField(cols, rows);
-      padF2 = makeField(cols, rows);
+      const grid = (cell) => [
+        Math.max(8, Math.floor(w / cell)),
+        Math.max(4, Math.floor(h / cell))
+      ];
+      const [cc, cr] = grid(CELL);
+      coarse = makeField(cc, cr);
+      coarse2 = makeField(cc, cr);
+      const [fc, fr] = grid(CELL_FINE);
+      fine = makeField(fc, fr);
     };
     size();
 
@@ -92,34 +109,29 @@ export default function PadWall({ onScene }) {
       return { a, b: a, mix: 0, name: a };
     };
 
-    const draw = (t, sc) => {
-      if (!padF) return;
-      padField(padF, t, sc.a, 0.85);
-      if (sc.mix > 0 && sc.b !== sc.a) {
-        // Brightness lerps; each cell keeps the hue of whichever scene is
-        // winning it, so scenes bleed into one another instead of cutting.
-        padField(padF2, t, sc.b, 0.85);
-        const m = sc.mix;
-        for (let i = 0; i < padF.n; i++) {
-          const aa = padF.A[i] * (1 - m);
-          const bb = padF2.A[i] * m;
-          padF.A[i] = aa + bb;
-          if (bb > aa) padF.H[i] = padF2.H[i];
-        }
-      }
-
+    /**
+     * Paint one field. Geometry comes off the field's own dimensions, so the
+     * same routine draws a 15-column scene board and a 55-column signature
+     * board without knowing which it has.
+     *
+     * @param {Object} f      Field to paint.
+     * @param {number} alpha  0-1, for cross-fading between the two pitches.
+     */
+    const paint = (f, alpha) => {
+      if (alpha <= 0.004) return;
       const W = canvas.width;
       const H = canvas.height;
-      const cw = W / padF.cols;
-      const ch = H / padF.rows;
-      const gap = Math.max(3, Math.round(2.2 * dpr));
+      const cw = W / f.cols;
+      const ch = H / f.rows;
+      const gap = Math.max(f.cols > 30 ? 1.6 : 3, Math.round(2.2 * dpr));
       const side = Math.min(cw, ch) - gap;
       const rad = Math.max(1, side * 0.12);
       const ox = (cw - side) / 2;
       const oy = (ch - side) / 2;
 
-      ctx.clearRect(0, 0, W, H);
-      ctx.lineWidth = Math.max(1.25, 1.5 * dpr);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.lineWidth = Math.max(f.cols > 30 ? 1 : 1.25, 1.5 * dpr);
       const half = ctx.lineWidth / 2;
 
       // Round-rect on the half pixel, so a pad reads as one crisp button
@@ -142,13 +154,13 @@ export default function PadWall({ onScene }) {
       // NOTHING IS DRAWN WHERE NOTHING IS LIT. A resting outline at every cell
       // is a lattice filling the whole panel — the glowing tile board this
       // design exists to remove, just at a bigger pitch.
-      for (let i = 0; i < padF.n; i++) {
-        let a = padF.A[i];
+      for (let i = 0; i < f.n; i++) {
+        let a = f.A[i];
         if (a < 0.02) continue;
         if (a > 1) a = 1;
-        const h = ((padF.H[i] % 360) + 360) % 360;
+        const h = ((f.H[i] % 360) + 360) % 360;
         ctx.beginPath();
-        padPath((i % padF.cols) * cw + ox, ((i / padF.cols) | 0) * ch + oy);
+        padPath((i % f.cols) * cw + ox, ((i / f.cols) | 0) * ch + oy);
         ctx.fillStyle = `hsla(${h.toFixed(0)},96%,56%,${(a * 0.22).toFixed(3)})`;
         ctx.fill();
         ctx.strokeStyle = `hsla(${h.toFixed(0)},98%,${(58 + a * 22).toFixed(0)}%,${(0.28 + a * 0.72).toFixed(3)})`;
@@ -156,19 +168,61 @@ export default function PadWall({ onScene }) {
       }
 
       // Bloom, spent only on the pads bright enough to carry the image.
-      ctx.save();
-      for (let j = 0; j < padF.n; j++) {
-        const av = padF.A[j];
+      for (let j = 0; j < f.n; j++) {
+        const av = f.A[j];
         if (av < 0.55) continue;
-        const hv = ((padF.H[j] % 360) + 360) % 360;
+        const hv = ((f.H[j] % 360) + 360) % 360;
         ctx.beginPath();
-        padPath((j % padF.cols) * cw + ox, ((j / padF.cols) | 0) * ch + oy);
+        padPath((j % f.cols) * cw + ox, ((j / f.cols) | 0) * ch + oy);
         ctx.shadowColor = `hsla(${hv.toFixed(0)},100%,62%,${(av * 0.9).toFixed(2)})`;
         ctx.shadowBlur = 12 * dpr * av;
         ctx.strokeStyle = `hsla(${hv.toFixed(0)},100%,72%,${av.toFixed(2)})`;
         ctx.stroke();
       }
       ctx.restore();
+    };
+
+    const draw = (t, sc) => {
+      if (!coarse) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const aSig = sc.a === 'signature';
+      const bSig = sc.b === 'signature';
+
+      // Signature holding: fine board only.
+      if (aSig && bSig) {
+        padField(fine, t, 'signature', 0.85);
+        paint(fine, 1);
+        return;
+      }
+
+      // Signature crossing into a scene, or back. The two boards have
+      // different dimensions, so this dissolves whole boards on alpha rather
+      // than lerping per cell — the pitch visibly changes, which is the point.
+      if (aSig || bSig) {
+        const sceneMode = aSig ? sc.b : sc.a;
+        const sceneMix = aSig ? sc.mix : 1 - sc.mix;
+        padField(fine, t, 'signature', 0.85);
+        padField(coarse, t, sceneMode, 0.85);
+        paint(fine, 1 - sceneMix);
+        paint(coarse, sceneMix);
+        return;
+      }
+
+      // Scene to scene, same pitch: brightness lerps and each cell keeps the
+      // hue of whichever scene is winning it, so scenes bleed rather than cut.
+      padField(coarse, t, sc.a, 0.85);
+      if (sc.mix > 0 && sc.b !== sc.a) {
+        padField(coarse2, t, sc.b, 0.85);
+        const m = sc.mix;
+        for (let i = 0; i < coarse.n; i++) {
+          const aa = coarse.A[i] * (1 - m);
+          const bb = coarse2.A[i] * m;
+          coarse.A[i] = aa + bb;
+          if (bb > aa) coarse.H[i] = coarse2.H[i];
+        }
+      }
+      paint(coarse, 1);
     };
 
     let raf = 0;
