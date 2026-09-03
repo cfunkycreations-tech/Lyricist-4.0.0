@@ -103,19 +103,16 @@ export default function PadWall({ pattern = 'cycle', onModeChange }) {
       ctx.clearRect(0, 0, W, H);
       ctx.lineWidth = Math.max(1, dpr);
 
-      // Unlit: a hairline square outline, drawn on the half-pixel so the
-      // stroke lands on one device pixel instead of smearing across two.
-      // These are lines, not blocks — the pad is the outline, and the colour
-      // is light coming through it.
+      // NOTHING IS DRAWN WHERE NOTHING IS LIT.
+      //
+      // There used to be a faint square at every cell here. Several hundred of
+      // them tile the whole panel, which is the glowing tile board again at
+      // higher density — the one motif this design exists to remove. Unlit is
+      // void. What you see is only what is actually on.
+      //
+      // Strokes still land on the half-pixel so a 1px line covers one device
+      // pixel instead of smearing across two.
       const half = ctx.lineWidth / 2;
-      ctx.strokeStyle = 'rgba(255,255,255,0.055)';
-      ctx.beginPath();
-      for (let r = 0; r < f.rows; r++) {
-        for (let c = 0; c < f.cols; c++) {
-          ctx.rect(Math.round(c * cw + ox) + half, Math.round(r * ch + oy) + half, side, side);
-        }
-      }
-      ctx.stroke();
 
       // Lit: the outline takes the hue at full strength, with a faint wash
       // inside it so the square reads as illuminated rather than merely drawn.

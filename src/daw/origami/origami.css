@@ -237,7 +237,9 @@ canvas{display:block}
   /* The pad IS the outline. A filled cell reads as a block; a lit hairline
      square reads as light coming through one. */
   background:transparent;
-  border:1px solid rgba(255,255,255,.07);
+  /* An unlit pad is invisible. A border on every cell is a 20-square tile
+     board sitting behind the meter, which is the motif this design removed. */
+  border:1px solid transparent;
   transition:background .05s linear,border-color .05s linear,box-shadow .05s linear;
 }
 .grid i.ic{background:rgba(198,217,233,.18);border-color:var(--ice);box-shadow:0 0 7px rgba(198,217,233,.65)}
