@@ -11,11 +11,12 @@ const CELL = 52;
  * Pitch for the signature segment.
  *
  * The two pull against each other: 52px reads as hardware, but a board that
- * coarse is 4-6 rows tall and cursive needs ~16 rows to resolve, so the
- * wordmark comes out as coloured blocks. The board runs fine while it signs
- * its name and coarse for everything else.
+ * coarse is 4-6 rows tall and cursive needs a lot of rows to resolve. 14px was
+ * still blocks. 8px gives roughly 45 rows on a full-width board, which is
+ * enough for the joins and the thin upstrokes to survive. Fine while it signs
+ * its name, coarse for everything else.
  */
-const CELL_FINE = 14;
+const CELL_FINE = 8;
 
 /** Seconds the signature holds before the scene cycle takes over. */
 const INTRO = 7.4;
@@ -123,15 +124,21 @@ export default function PadWall({ onScene }) {
       const H = canvas.height;
       const cw = W / f.cols;
       const ch = H / f.rows;
-      const gap = Math.max(f.cols > 30 ? 1.6 : 3, Math.round(2.2 * dpr));
+      // Seam, stroke and corner all scale with pitch. A 2.2 * dpr gap is right
+      // on a 52px pad and eats most of an 8px one, which is how a fine board
+      // turns to mush.
+      const fine = f.cols > 60;
+      const gap = fine
+        ? Math.max(1, Math.round(0.8 * dpr))
+        : Math.max(3, Math.round(2.2 * dpr));
       const side = Math.min(cw, ch) - gap;
-      const rad = Math.max(1, side * 0.12);
+      const rad = fine ? Math.max(0.5, side * 0.22) : Math.max(1, side * 0.12);
       const ox = (cw - side) / 2;
       const oy = (ch - side) / 2;
 
       ctx.save();
       ctx.globalAlpha = alpha;
-      ctx.lineWidth = Math.max(f.cols > 30 ? 1 : 1.25, 1.5 * dpr);
+      ctx.lineWidth = fine ? Math.max(0.75, 0.8 * dpr) : Math.max(1.25, 1.5 * dpr);
       const half = ctx.lineWidth / 2;
 
       // Round-rect on the half pixel, so a pad reads as one crisp button
