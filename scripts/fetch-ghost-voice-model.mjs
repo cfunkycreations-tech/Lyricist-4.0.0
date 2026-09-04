@@ -91,6 +91,16 @@ for (const { from, to } of missing) {
     // voice back on the network for every user, which is the whole thing he
     // asked to stop.
     console.error(`[ghost-voice] FAILED on ${from}: ${e.message}`);
+    // LYRICIST_SKIP_VOICE=1 downgrades that to a warning, for environments that
+    // cannot reach huggingface.co at all. The build then produces an app whose
+    // Ghost voice falls back to the network on first use — fine for a dev or CI
+    // build, NOT fine for an installer handed to a user. Never set it for a
+    // release; scripts/preflight.mjs blocks a release that is missing the model.
+    if (process.env.LYRICIST_SKIP_VOICE === '1') {
+      console.warn('[ghost-voice] LYRICIST_SKIP_VOICE=1 — continuing WITHOUT the bundled voice.');
+      console.warn('[ghost-voice] Do not ship this build. The Ghost will fetch its voice at runtime.');
+      break;
+    }
     process.exit(1);
   }
 }

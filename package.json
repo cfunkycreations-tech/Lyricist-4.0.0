@@ -32,7 +32,6 @@
       "comfySetup.js",
       "kaggleCloud.js",
       "captionSkill.js",
-      "splash/**/*",
       "src/assets/icon.ico",
       "!node_modules/**/*"
     ],

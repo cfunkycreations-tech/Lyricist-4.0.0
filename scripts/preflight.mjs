@@ -112,11 +112,17 @@ function checkPackagedMainModules() {
  *
  * `build.files` is a WHITELIST, so anything not named there is simply absent
  * from the installed app while working perfectly in dev — the failure only ever
- * shows up on a real install, which is the worst place to find it. The splash
- * is loaded with loadFile() rather than imported, so no module scan can see it.
+ * shows up on a real install, which is the worst place to find it. These are
+ * reached with path.join(__dirname, …) rather than imported, so no module scan
+ * can see them.
+ *
+ * This list must track main.js. It used to name splash/splash.html and
+ * splash/splash.mp4; the splash was removed with the directory in 66e20f2 and
+ * main.js has not loaded it since, so the check was failing every release over
+ * files nothing wanted. Keep it to what main.js actually reaches for today.
  */
 function checkPackagedRuntimeAssets() {
-  const assets = ['splash/splash.html', 'splash/splash.mp4'];
+  const assets = ['src/assets/icon.ico'];
   const pkgJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
   const patterns = pkgJson.build?.files || [];
   for (const rel of assets) {
@@ -159,10 +165,40 @@ function checkSourceIndexHtml() {
   return 1;
 }
 
+/**
+ * The Ghost's voice must actually be on disk before an installer is cut.
+ *
+ * scripts/fetch-ghost-voice-model.mjs downloads it, and LYRICIST_SKIP_VOICE=1
+ * lets a dev build continue when huggingface.co is unreachable. That escape
+ * hatch is only safe if something stops a skipped build from being shipped:
+ * without these files the Ghost silently goes back to fetching ~94 MB from the
+ * network on first speak, for every user, which is exactly what bundling it was
+ * meant to end. Vite copies public/ into dist/, so public/ is where it has to be.
+ */
+function checkGhostVoiceBundled() {
+  const MODEL_ID = 'onnx-community/Kokoro-82M-v1.0-ONNX';
+  const required = [
+    ...['config.json', 'tokenizer.json', 'tokenizer_config.json', 'onnx/model_quantized.onnx']
+      .map((f) => path.posix.join(MODEL_ID, f)),
+    ...['am_adam', 'am_michael', 'af_heart'].map((v) => `voices/${v}.bin`),
+  ];
+  const missing = required.filter((rel) => !fs.existsSync(path.join(ROOT, 'public', 'kokoro', rel)));
+  if (missing.length) {
+    problems.push(
+      `public/kokoro is missing ${missing.length} of ${required.length} Ghost voice file(s) `
+      + `(first: ${missing[0]}). The installer would ship without the bundled voice and every `
+      + `user would download it at runtime. Run: npm run fetch:voice  `
+      + `(if that build used LYRICIST_SKIP_VOICE=1, it is a dev build and must not be released.)`
+    );
+  }
+  return required.length - missing.length;
+}
+
 const channels = checkDuplicateIpcHandlers();
 const bridged = checkPreloadChannels();
 const mainModules = checkPackagedMainModules();
 const runtimeAssets = checkPackagedRuntimeAssets();
+const voiceFiles = checkGhostVoiceBundled();
 checkSourceIndexHtml();
 
 if (problems.length) {
@@ -172,4 +208,4 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log(`preflight ok — ${channels} ipc channels, ${bridged} bridged, ${mainModules} main modules packaged, ${runtimeAssets} runtime assets packaged, no duplicates`);
+console.log(`preflight ok — ${channels} ipc channels, ${bridged} bridged, ${mainModules} main modules packaged, ${runtimeAssets} runtime assets packaged, ${voiceFiles} ghost voice files bundled, no duplicates`);
