@@ -1,6 +1,0 @@
-.scope-modal {
-  width: 800px;
-  max-width: 90vw;
-  background-color: var(--gm-bg-panel, #222);
-  border: 1px solid var(--gm-border-dark, #333);
-}

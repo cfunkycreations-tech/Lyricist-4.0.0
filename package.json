@@ -7,7 +7,6 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
-    "tauri": "tauri",
     "copy:model": "node scripts/copy-basic-pitch-model.mjs",
     "postinstall": "node scripts/copy-basic-pitch-model.mjs && node scripts/copy-onnx-runtime.mjs && node scripts/fetch-ghost-voice-model.mjs",
     "build": "npm run copy:model && npm run copy:ort && npm run fetch:voice && vite build",
@@ -79,8 +78,6 @@
   },
   "devDependencies": {
     "@nut-tree-fork/nut-js": "^4.2.6",
-    "@tauri-apps/api": "^2.11.1",
-    "@tauri-apps/cli": "^2.11.4",
     "@vitejs/plugin-react": "^5.2.0",
     "electron": "^43.0.0",
     "electron-builder": "^26.15.3",

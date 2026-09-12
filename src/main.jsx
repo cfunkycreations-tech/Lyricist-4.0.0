@@ -1,7 +1,7 @@
 import React from 'react';
 import { startPrism } from './services/prismTheme.js';
 import ReactDOM from 'react-dom/client';
-import { MainLayout } from './components/MainLayout';
+import App from './App.jsx';
 import './index.css';
 import { registerPWA } from './web/registerPWA.js';
 import LandscapeSplash from './web/LandscapeSplash.jsx';
@@ -61,7 +61,7 @@ try {
         {/* Web only. Turns the phone sideways and locks it, then gets out of
             the way. Renders nothing inside the desktop app. */}
         <LandscapeSplash />
-        <MainLayout />
+        <App />
       </BootErrorBoundary>
     </React.StrictMode>
   );

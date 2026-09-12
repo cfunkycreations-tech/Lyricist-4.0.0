@@ -66,3 +66,7 @@ public/ort/
 # on postinstall and before every build. Not history.
 public/kokoro/
 
+
+# The archived DAW project zip. Kept on disk, not in git — the whole thing is
+# already in the history, so committing a copy of it would just be weight.
+archive/*.zip

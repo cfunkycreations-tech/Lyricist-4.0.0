@@ -688,20 +688,24 @@ function MainLayout() {
 
 /**
  * ══════════════════════════════════════════════════════════════════════════
- * DAW LAYOUT — LYRICIST 4.2.0 PRO.
+ * THE TAB STRIP IS THE APP. (Restored 2026-09-12.)
  *
- * The new single-window DAW layout replaces the old 18-tab strip. MainLayout
- * (above) is preserved in full — nothing was removed — so the old UI is one
- * boolean away from coming back if needed. DAWLayout renders the CSS Grid
- * shell: Transport Bar → Sidebar → Center Canvas → Bottom Dock.
+ * For a while this rendered a single-window DAW layout (src/daw) instead, and
+ * the eighteen tabs sat here unrendered behind it. Chris, 2026-09-12: *"the
+ * tabs come back on, and everything they did with that other project I want
+ * scrapped... there was no plan with that other app."*
+ *
+ * So it is gone — src/daw, the Tauri MainLayout and its zustand store were all
+ * deleted rather than left switched off, because a dead UI that still compiles
+ * is a thing every future change has to keep working around. It is in the git
+ * history if any of it is ever wanted back, and the next attempt at a DAW view
+ * starts from a plan rather than from this.
  * ══════════════════════════════════════════════════════════════════════════
  */
-import DAWLayout from './daw/DAWLayout';
-
 export default function App() {
   return (
     <LyricStoreProvider>
-      <DAWLayout />
+      <MainLayout />
     </LyricStoreProvider>
   );
 }
