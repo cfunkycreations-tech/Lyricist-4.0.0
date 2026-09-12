@@ -52,7 +52,7 @@ The AI writing needs a key from OpenRouter. It is free to get, there are free mo
 
 Go to Settings, paste the key, pick a model, save. That same key runs Song Forge lyrics and the cover art, so it is one key for the whole studio.
 
-Everything else works without it: rhymes, the thesaurus, the dictionary, the loop station, the recorder, mastering, stems, and hearing your words sung in One Man Band.
+Everything else works without it: rhymes, the thesaurus, the dictionary, the loop station, the recorder, mastering, stems, and hearing your words sung in Black Hole Studios.
 
 Now let me walk you through the lab.`
   },
@@ -67,10 +67,10 @@ Lyricist was built to bring people together through the craft, different backgro
 So let's write.`
   },
   {
-    // One Man Band sits straight after Songwriter in the tab bar for the same
+    // Black Hole Studios sits straight after Songwriter in the tab bar for the same
     // reason it sits here: you write the words, then you hear them.
-    id: 4, icon: '🎸', title: 'One Man Band, hear your words sung', tab: 'onemanband', audio: 'card-18.mp3',
-    script: `One Man Band. Where your words become a real song.
+    id: 4, icon: '🎸', title: 'Black Hole Studios, hear your words sung', tab: 'onemanband', audio: 'card-18.mp3',
+    script: `Black Hole Studios. Where your words become a real song.
 
 Write your Input Lyrics, pick a genre, a mood and a voice, and it writes the Input Caption for you. Then it sings it back with a full band behind it.
 

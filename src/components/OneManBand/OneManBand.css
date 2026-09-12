@@ -46,9 +46,97 @@
   font-family: var(--omb-mono); font-size: 10.5px; letter-spacing: .24em;
   text-transform: uppercase; color: var(--omb-faint);
 }
+/* THE WORDMARK AND THE THING BEHIND IT.
+   The hole is absolutely positioned inside this box and sits UNDER the text, so
+   the title keeps its place in the header flow and nothing below it moves. */
+.omb-id { position: relative; }
+.omb-id > .omb-brand,
+.omb-id > .omb-title,
+.omb-id > .omb-tag { position: relative; z-index: 1; }
+
+/* ── the black hole ───────────────────────────────────────────────────────
+   Three stacked layers, all drawn:
+     disc      the accretion disc — a lit ring seen at a lean, turning
+     horizon   the event horizon itself, dead black with a photon ring
+     glow      the light the disc throws forward across the wordmark
+   Prism-aware: every colour is a variable, so the accent slider rotates this
+   with the rest of the app. Swap in real artwork by replacing these three. */
+.omb-hole {
+  position: absolute; z-index: 0; pointer-events: none;
+  /* Sized to the wordmark and sitting behind its middle. It was twice this and
+     anchored on the box's centre, which put a big pale circle up through the
+     tab strip — a ring floating over the chrome, not a hole behind the name. */
+  left: clamp(34px, 13vw, 150px); top: 62%;
+  width: clamp(118px, 15vw, 172px); aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  perspective: 520px;
+}
+.omb-hole > span { position: absolute; inset: 0; border-radius: 50%; }
+
+.omb-hole-disc {
+  /* A ring, leaned back and squashed the way a disc seen near edge-on is, with
+     the bright side hotter — that asymmetry is what reads as "spinning". */
+  background:
+    conic-gradient(from 210deg,
+      hsla(158 80% 58% / .05) 0deg,
+      hsla(158 85% 62% / .85) 70deg,
+      #fff 130deg,
+      hsla(262 85% 71% / .8) 200deg,
+      hsla(305 75% 66% / .35) 280deg,
+      hsla(158 80% 58% / .05) 360deg);
+  /* A fat, bright band rather than a hairline: at header size a thin ring just
+     reads as a circle someone drew. */
+  -webkit-mask: radial-gradient(closest-side, transparent 40%, #000 50%, #000 86%, transparent 99%);
+  mask: radial-gradient(closest-side, transparent 40%, #000 50%, #000 86%, transparent 99%);
+  /* Wide enough to stand out well past the horizon on both sides. At scale 1.5
+     the squashed ellipse was narrower than the black sphere in front of it, so
+     the disc was there and entirely hidden — all you saw was the photon ring. */
+  transform: rotateX(74deg) scale(1.95);
+  filter: blur(.6px) saturate(1.35);
+  animation: omb-spin 26s linear infinite;
+  z-index: 2;
+}
+.omb-hole-horizon {
+  /* Dead black, with the photon ring that makes it read as a hole punched in
+     the picture rather than a dot painted on it. The black is opaque so the
+     background does not show through the middle — that transparency was why
+     the first pass looked like an outline instead of a hole. */
+  inset: 21%;
+  background: #000;
+  /* No wide black shadow here. It used to throw 60px of near-opaque black
+     OUTWARD over the disc behind it and flattened the whole thing back into a
+     ring on a dark blob. The horizon is allowed to be black; it is not allowed
+     to black out its own accretion disc. */
+  box-shadow:
+    0 0 0 2px hsla(158 85% 62% / .95),
+    0 0 18px 3px hsla(158 80% 58% / .55);
+  z-index: 3;
+}
+.omb-hole-glow {
+  inset: -40%;
+  background: radial-gradient(closest-side,
+    hsla(158 80% 58% / .26), hsla(262 85% 71% / .12) 55%, transparent 78%);
+  filter: blur(8px);
+  z-index: 1;   /* behind the disc, or it hazes over the one bright thing here */
+}
+@keyframes omb-spin { to { transform: rotateX(74deg) scale(1.95) rotate(360deg); } }
+
+/* Nobody's header needs to spin at them. */
+@media (prefers-reduced-motion: reduce) {
+  .omb-hole-disc { animation: none; }
+}
+
 .omb-title {
-  font-family: "Haettenschweiler", "Arial Narrow Bold", Impact, system-ui, sans-serif;
-  font-weight: 400; margin: 2px 0 0; font-size: clamp(42px, 7vw, 78px); line-height: .86;
+  /* AUDIOWIDE. Chris, 2026-09-12, on the rename: the name is the thing you see
+     first, and this is the app's display face everywhere else. Haettenschweiler
+     was a condensed Impact-alike that read as a sports poster; this reads as the
+     control panel the tab actually is. */
+  font-family: 'Audiowide', 'Orbitron', system-ui, sans-serif;
+  font-weight: 400; margin: 2px 0 0;
+  /* Audiowide is far wider per character than the condensed face it replaces,
+     and "Black Hole Studios" is eighteen characters — at the old 78px ceiling it
+     ran off the side of the header on a laptop. */
+  font-size: clamp(26px, 4.4vw, 52px); line-height: 1.04;
   text-transform: uppercase; color: #fff;
   text-shadow: 0 0 1px var(--omb-emerald-lit), 0 0 3px var(--omb-emerald-lit),
                0 0 16px hsla(158 80% 58% / .5), 0 0 44px hsla(158 80% 58% / .2);

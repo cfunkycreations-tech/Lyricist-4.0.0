@@ -1,4 +1,4 @@
-// One Man Band — the engine layer.
+// Black Hole Studios — the engine layer.
 //
 // Turns a caption + lyrics into a finished song. Three places it can run, and
 // the picker exists because they are wildly different, not because variety is

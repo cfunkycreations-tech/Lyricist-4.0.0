@@ -23,10 +23,10 @@ export const GHOST_DEMO_TABS = new Set([
 /** @type {Record<string, { title: string, steps: object[] }>} */
 export const GHOST_DEMOS = {
   onemanband: {
-    title: 'One Man Band',
+    title: 'Black Hole Studios',
     steps: [
       {
-        say: 'Remote session on One Man Band. This is the tab that takes the words you wrote and sings them back to you, with a full band behind them.',
+        say: 'Remote session on Black Hole Studios. This is the tab that takes the words you wrote and sings them back to you, with a full band behind them.',
         wait: 3600,
       },
       {
@@ -121,7 +121,7 @@ export const GHOST_DEMOS = {
         wait: 3400,
       },
       {
-        say: 'That is One Man Band. Write the words in Songwriter, sing them here, then polish in Mastering Studio.',
+        say: 'That is Black Hole Studios. Write the words in Songwriter, sing them here, then polish in Mastering Studio.',
         wait: 3400,
       },
     ],
@@ -533,11 +533,11 @@ export const GHOST_DEMOS = {
       },
       {
         target: '.screw-field',
-        say: 'Or pull one of your own recordings straight out of the app. A song you just made in One Man Band lands in this list.',
+        say: 'Or pull one of your own recordings straight out of the app. A song you just made in Black Hole Studios lands in this list.',
         action: 'point',
         optional: true,
         whenMissing:
-          'There is also a picker for your own recordings, and it is not on screen because you have not made any yet. As soon as you keep a take from One Man Band or the Recording Booth, it turns up right here and you can screw your own song without leaving the app.',
+          'There is also a picker for your own recordings, and it is not on screen because you have not made any yet. As soon as you keep a take from Black Hole Studios or the Recording Booth, it turns up right here and you can screw your own song without leaving the app.',
         wait: 3800,
       },
       {

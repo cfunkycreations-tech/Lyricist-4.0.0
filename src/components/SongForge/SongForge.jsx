@@ -366,8 +366,23 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
               Using current Songwriter setup
             </label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.74rem', color: '#e8e0ff' }}>
-              <div><strong>Genre:</strong> {blendLabel(store.genreList)}{store.subgenreList.length ? ` — ${blendLabel(store.subgenreList)}` : ''}</div>
-              <div><strong>Mood:</strong> {blendLabel(store.moodList)}</div>
+              {/* "Not picked" rather than a blank space after the word Genre.
+                  The pickers start empty now, so this panel had two rows that
+                  read as if something had failed to load. Nothing is wrong —
+                  the choice is simply still open, and Surprise Me right below
+                  is one way to close it. */}
+              <div>
+                <strong>Genre:</strong>{' '}
+                {store.genreList.length
+                  ? `${blendLabel(store.genreList)}${store.subgenreList.length ? ` — ${blendLabel(store.subgenreList)}` : ''}`
+                  : <span style={{ opacity: 0.55 }}>Not picked — the AI will choose one</span>}
+              </div>
+              <div>
+                <strong>Mood:</strong>{' '}
+                {store.moodList.length
+                  ? blendLabel(store.moodList)
+                  : <span style={{ opacity: 0.55 }}>Not picked — the AI will choose one</span>}
+              </div>
               <div><strong>Topic:</strong> {store.topic || 'Not set'}</div>
               {mode === 'songFirst' && <div><strong>Structure:</strong> {store.customStructure.join(' → ')}</div>}
             </div>

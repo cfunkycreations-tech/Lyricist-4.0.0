@@ -50,7 +50,7 @@ export default function StartHere({ onGoToSettings }) {
           </div>
           <div>
             <span className="sh-h ready">Ready right now, no key</span>
-            <p>One Man Band, Recording Booth, RC-Funk 5000, Mastering, local stem extraction, MIDI Studio,
+            <p>Black Hole Studios, Recording Booth, RC-Funk 5000, Mastering, local stem extraction, MIDI Studio,
               Chopped &amp; Screwed, Thesaurus, Dictionary, Scratch Pad</p>
           </div>
         </div>

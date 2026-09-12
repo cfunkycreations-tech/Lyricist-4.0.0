@@ -114,7 +114,7 @@ export async function resolveGhostModel() {
 
 const TAB_NOTES = {
   songwriter: 'Songwriter: the main writing workspace. Sections, lines, style controls.',
-  onemanband: 'One Man Band: turns written words into a real sung song. It takes exactly two '
+  onemanband: 'Black Hole Studios: turns written words into a real sung song. It takes exactly two '
     + 'things and calls them what MiniMax calls them: the INPUT LYRICS (the words, with '
     + '[Verse] [Chorus] style tags for the shape) and the INPUT CAPTION (one single box of '
     + 'text describing the sound, NOT three boxes). Also genre-mood-voice pickers, length, '

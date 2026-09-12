@@ -79,10 +79,13 @@ import { saveRecording, listRecordings } from '../../services/RecordingsStore.js
 import './OneManBand.css';
 
 /**
- * ONE MAN BAND — your words, sung by a full band.
+ * BLACK HOLE STUDIOS — your words, sung by a full band.
  *
- * Named by Chris. It is his own story: the busker who does not need anyone
- * else to show up.
+ * Renamed by Chris, 2026-09-12, from One Man Band: *"I don't like that fucking
+ * name, we're getting rid of it."* The file, the folder and the tab id stay
+ * `onemanband` on purpose — they are load-bearing (saved takes, the Ghost's tab
+ * router, the background video, every `omb-` class in the CSS) and renaming
+ * them would be a rename of the plumbing, not of the thing the user sees.
  *
  * Three things decide how this is built, all learned the hard way:
  *
@@ -209,6 +212,19 @@ function draftCaption({ genres, moods, voices, seconds }) {
   const genre = blendLabel(gs);
   const mood = blendLabel(ms);
   const voice = blendLabel(vs);
+
+  /**
+   * NOTHING PICKED MEANS NOTHING WRITTEN.
+   *
+   * The pickers start empty now, and this used to assume they never could:
+   * with no genre it wrote "Basic Attributes: ." and with no voice it wrote
+   * "Vocal Gender & Timbre: , weathered and full-throated", which is worse than
+   * an empty box because it looks like the app decided something. An empty
+   * caption shows the placeholder instead, which says what the box is for and
+   * points at the pickers directly above it.
+   */
+  if (!gs.length && !ms.length && !vs.length) return '';
+
   // Instrumental only if EVERY voice pick is instrumental. One real voice in the
   // list means the piece has singing in it.
   const instrumental = vs.length > 0 && vs.every((v) => v.startsWith('Instrumental'));
@@ -219,16 +235,20 @@ function draftCaption({ genres, moods, voices, seconds }) {
 
   return {
     globalMeta:
-      `Basic Attributes: ${gs.length > 1
-        ? `${genre} — a genuine fusion, with ${gs[0]} leading and ${gs.slice(1).join(', ')} `
-          + `folded into the same arrangement rather than taking turns`
-        : genre}. ${shape} `
+      (gs.length
+        ? `Basic Attributes: ${gs.length > 1
+          ? `${genre} — a genuine fusion, with ${gs[0]} leading and ${gs.slice(1).join(', ')} `
+            + `folded into the same arrangement rather than taking turns`
+          : genre}. ${shape} `
+        : `Basic Attributes: ${shape} `)
       + (ms.length > 1
         ? `Global Emotional Progression: ${ms[0].toLowerCase()} at the core from the opening bar, `
           + `shaded with ${ms.slice(1).map((m) => m.toLowerCase()).join(' and ')}, all of it present `
           + `at once rather than section by section. `
-        : `Global Emotional Progression: ${mood.toLowerCase()} from the opening bar, holding that `
-          + `character through to the end. `)
+        : ms.length
+          ? `Global Emotional Progression: ${mood.toLowerCase()} from the opening bar, holding that `
+            + `character through to the end. `
+          : '')
       + `Application Scenarios & Imagery: a small room, a worn instrument, someone playing for `
       + `the sake of it. `
       + `Sonics & Production Profile: dark and earthy, close-miked, analog warmth, sharp `
@@ -236,13 +256,21 @@ function draftCaption({ genres, moods, voices, seconds }) {
     vocals: instrumental
       ? 'This piece is instrumental with no vocals. The lead melodic role is carried by the '
         + 'main instrument of the arrangement.'
-      : `Vocal Gender & Timbre: ${vs.length > 1
-        ? `${vs[0]} on lead, with ${vs.slice(1).join(' and ')} in support and in harmony`
-        : voice}, weathered and full-throated with real grain. `
-        + `Vocal Style: sung slightly ahead of the beat, conversational phrasing, a falling `
-        + `motif at the end of each line. `
-        + `Harmony/Backing Vocals: sparse, only where the song lifts. `
-        + `Vocal FX: light slapback delay, dry otherwise.`,
+      : !vs.length
+        // No voice picked is not the same as an instrumental — it is a singer
+        // nobody has described yet. Say that, so the model sings it rather than
+        // dropping the vocal, and so the heading the validator looks for is here.
+        ? 'Vocal Gender & Timbre: no particular singer specified — choose a voice that suits the '
+          + 'style and keep it consistent. '
+          + 'Vocal Style: conversational phrasing, sung slightly ahead of the beat. '
+          + 'Harmony/Backing Vocals: sparse, only where the song lifts.'
+        : `Vocal Gender & Timbre: ${vs.length > 1
+          ? `${vs[0]} on lead, with ${vs.slice(1).join(' and ')} in support and in harmony`
+          : voice}, weathered and full-throated with real grain. `
+          + `Vocal Style: sung slightly ahead of the beat, conversational phrasing, a falling `
+          + `motif at the end of each line. `
+          + `Harmony/Backing Vocals: sparse, only where the song lifts. `
+          + `Vocal FX: light slapback delay, dry otherwise.`,
     // The genre's own instruments, not a generic band. This is the single
     // biggest thing that makes a world-music pick sound like that music
     // instead of like pop with a different label on it.
@@ -264,15 +292,33 @@ export default function OneManBand() {
     + 'Sparks on the deck of a nameless town\n\n[Chorus]\nSo I sing it loud, I sing it free\n'
     + 'Every road out here belongs to me\n'
   );
-  // Lists, up to five each, blended into one song. `genre`/`mood`/`voice` stay
-  // as the lead of each so the recipe saved with a take and the instrumental
-  // check keep reading the way they always did.
-  const [genres, setGenres] = useState(['Blues rock']);
-  const [moods, setMoods] = useState(['Gritty and driving']);
-  const [voices, setVoices] = useState(['Gravelly male']);
-  const genre = genres[0];
-  const mood = moods[0];
-  const voice = voices[0];
+  /**
+   * THE PICKS LIVE IN THE STORE, NOT IN THIS TAB.
+   *
+   * Chris, 2026-09-11: *"when you pick a genre, mood or voice... they need to
+   * match what was in Songwriter and vice versa. They all need to work together
+   * intuitively and they need to work back and forth."*
+   *
+   * They used to be three `useState`s right here, opening on Blues rock /
+   * Gritty and driving / Gravelly male, which meant this tab and Songwriter
+   * could sit side by side describing two different songs — and the one you
+   * were not looking at was the one that had made itself up. Now both tabs read
+   * and write the same three choices, translated between the two vocabularies
+   * by styleBridge on the way through (Hip-Hop / Rap + East Coast over there is
+   * Boom bap here, Amapiano here is Afrobeats → Amapiano over there).
+   *
+   * `genre`/`mood`/`voice` stay as the lead of each, so the recipe saved with a
+   * take and the instrumental check keep reading the way they always did.
+   */
+  const genres = store.bhGenreList;
+  const setGenres = store.setBhGenreList;
+  const moods = store.bhMoodList;
+  const setMoods = store.setBhMoodList;
+  const voices = store.voiceList;
+  const setVoices = store.setVoiceList;
+  const genre = genres[0] || '';
+  const mood = moods[0] || '';
+  const voice = voices[0] || '';
 
   /**
    * EVERY pick instrumental means instrumental. NO picks at all does not.
@@ -327,8 +373,11 @@ export default function OneManBand() {
    * The draft writer and MiniMax's own rewriter still think in three parts, so
    * they are joined on the way in and the whole string goes out as the caption.
    */
+  // Drafted from whatever is actually picked — which on a fresh start is
+  // nothing, so the box opens empty with its placeholder showing rather than
+  // pre-loaded with a Blues rock caption nobody asked for.
   const [caption, setCaption] = useState(() => joinCaption(draftCaption({
-    genres: ['Blues rock'], moods: ['Gritty and driving'], voices: ['Gravelly male'], seconds: 30,
+    genres: store.bhGenreList, moods: store.bhMoodList, voices: store.voiceList, seconds: 30,
   })));
   const [captionEdited, setCaptionEdited] = useState(false);
   const [rewriting, setRewriting] = useState(false);
@@ -474,7 +523,7 @@ export default function OneManBand() {
    */
   const loadExample = (ex) => {
     setLyrics(ex.lyrics);
-    setCaption({ globalMeta: ex.globalMeta, vocals: ex.vocals, arrangement: ex.arrangement });
+    setCaption(joinCaption({ globalMeta: ex.globalMeta, vocals: ex.vocals, arrangement: ex.arrangement }));
     setCaptionEdited(true);
     fitLength(ex.lyrics);
     setConfirmExample(null);
@@ -692,7 +741,7 @@ export default function OneManBand() {
            * nothing to press twice and it is the button people look for.
            */
           saveRecording({
-            name: `One Man Band ${new Date().toLocaleString()} (take ${res.seed})`,
+            name: `Black Hole Studios ${new Date().toLocaleString()} (take ${res.seed})`,
             blob: res.blob,
             duration: seconds,
           }).then(() => {
@@ -774,7 +823,7 @@ export default function OneManBand() {
       const already = new Set((await listRecordings()).map((r) => r.name));
       let brought = 0;
       for (const f of listed.files || []) {
-        const name = `One Man Band ${f.fileName.replace(/\.[^.]+$/, '')}`;
+        const name = `Black Hole Studios ${f.fileName.replace(/\.[^.]+$/, '')}`;
         if (already.has(name)) continue;
         const got = await window.lyricistAPI.songBytes(f.filePath);
         if (!got?.ok) continue;
@@ -820,7 +869,7 @@ export default function OneManBand() {
   const keep = async (take) => {
     try {
       await saveRecording({
-        name: `One Man Band ${new Date().toLocaleString()} (take ${take.seed})`,
+        name: `Black Hole Studios ${new Date().toLocaleString()} (take ${take.seed})`,
         blob: take.blob,
         duration: take.seconds,
       });
@@ -1002,9 +1051,21 @@ export default function OneManBand() {
       <div className="omb-wrap">
 
         <header className="omb-top">
-          <div>
-            <div className="omb-brand">Lyricist Pro</div>
-            <h1 className="omb-title">One Man Band</h1>
+          <div className="omb-id">
+            {/* THE BLACK HOLE.
+                Drawn, not photographed: an event horizon with a lit accretion
+                disc leaning behind the wordmark, turning slowly. SVG and CSS
+                rather than an image file, so it is sharp on any screen, adds
+                nothing to the download, and re-colours itself with Prism like
+                the rest of the app. Swapping in real artwork later means
+                replacing this one block with an <img>; nothing else knows. */}
+            <div className="omb-hole" aria-hidden="true">
+              <span className="omb-hole-disc" />
+              <span className="omb-hole-horizon" />
+              <span className="omb-hole-glow" />
+            </div>
+            <div className="omb-brand">Lyricist 4.2.0</div>
+            <h1 className="omb-title">Black Hole Studios</h1>
             <p className="omb-tag">
               Your words, sung by a full band. <b>Free forever.</b> Faster if you have the hardware.
             </p>
@@ -1136,7 +1197,7 @@ export default function OneManBand() {
               <div className="omb-picks">
                 <MultiPick
                   label="Genre"
-                  help="Pick up to five and they are fused into one arrangement, not played in turn. Every genre brings its own instruments to the description, and all of them end up in the band."
+                  help="Nothing is picked until you pick it. Choose up to five and they are fused into one arrangement, not played in turn. Every genre brings its own instruments to the description, and all of them end up in the band. Shared with Songwriter — what you pick here shows up there, and the other way round."
                   value={genres}
                   onChange={setGenres}
                   options={GENRE_GROUPS}
@@ -1144,7 +1205,7 @@ export default function OneManBand() {
                 />
                 <MultiPick
                   label="Mood"
-                  help="Up to five feelings, layered at once rather than section by section. The first is the core of the piece."
+                  help="Up to five feelings, layered at once rather than section by section. The first is the core of the piece. Shared with Songwriter."
                   value={moods}
                   onChange={setMoods}
                   options={MOOD_GROUPS}
@@ -1152,7 +1213,7 @@ export default function OneManBand() {
                 />
                 <MultiPick
                   label="Voice"
-                  help="Up to five. The first sings lead and the rest come in as support and harmony. Pick only Instrumental voices to get a song with no singing at all."
+                  help="Up to five. The first sings lead and the rest come in as support and harmony. Pick only Instrumental voices to get a song with no singing at all. Leave it empty and the singer is left to the model."
                   value={voices}
                   onChange={setVoices}
                   options={VOICE_GROUPS}
@@ -1168,9 +1229,13 @@ export default function OneManBand() {
                             onClick={rewriteWithAI}>
                       {rewriting ? (phase || 'Writing…') : "Rewrite with MiniMax's caption skill"}
                     </button>
+                    {/* joinCaption, same as every other path. This one handed the
+                        box the raw three-part OBJECT, and a React <textarea>
+                        given an object renders "[object Object]" — Start over
+                        was the one button that could wreck the caption. */}
                     <button type="button" className="omb-mini" onClick={() => {
                       setCaptionEdited(false);
-                      setCaption(draftCaption({ genres, moods, voices, seconds }));
+                      setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds })));
                     }}>Start over
                     </button>
                   </span>

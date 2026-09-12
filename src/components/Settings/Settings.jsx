@@ -445,14 +445,14 @@ export default function Settings() {
         </p>
       </div>
 
-      {/* ---- One Man Band: free song quota ---------------------------------
+      {/* ---- Black Hole Studios: free song quota ---------------------------------
           The free music server gives anonymous users only a few minutes of GPU
           a day. Its own error message says the fix: "Authenticate with a
           Hugging Face token for more quota." A free account is enough, and the
           tab works without it — just fewer songs before it stops. */}
-      <div style={{ marginBottom: 18 }} data-help="Optional. A free Hugging Face account gives One Man Band a much bigger daily allowance for making songs. Without it you still get songs, just fewer per day. The token stays on your machine.">
+      <div style={{ marginBottom: 18 }} data-help="Optional. A free Hugging Face account gives Black Hole Studios a much bigger daily allowance for making songs. Without it you still get songs, just fewer per day. The token stays on your machine.">
         <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(43,232,160,0.75)', marginBottom: 5, display: 'block' }}>
-          One Man Band — Hugging Face token (optional, free)
+          Black Hole Studios — Hugging Face token (optional, free)
         </label>
         <input
           type={showGoogleKey ? 'text' : 'password'}

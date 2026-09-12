@@ -1,5 +1,8 @@
 import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { registerDemoSnapshot } from '../services/demoSafety.js';
+import {
+  toBlackHoleGenres, toSongwriterGenres, toBlackHoleMoods, toSongwriterMoods,
+} from '../services/styleBridge.js';
 
 const LyricStoreContext = createContext();
 
@@ -184,7 +187,7 @@ export const MAX_TEMPERATURE = 1.1;
 export const DEFAULT_CONFIG = {
   openRouterApiKey: '',
 
-  // One Man Band. The free music server gives anonymous users only a few
+  // Black Hole Studios. The free music server gives anonymous users only a few
   // minutes of GPU a day, and its own error message says the fix outright:
   // "Authenticate with a Hugging Face token for more quota". A free account is
   // enough. Entirely optional — songs still get made without it, just fewer.
@@ -349,16 +352,74 @@ export const LyricStoreProvider = ({ children }) => {
   // build fixing things that were not broken. So the array is the truth,
   // `genre` is its LEAD (the first pick), and `setGenre(x)` still means "make it
   // just x". Anything that wants the whole blend asks for `genreList`.
-  const [genreList, setGenreList] = useState([genres[0]]);
-  const [subgenreList, setSubgenreList] = useState([subgenres[genres[0]][0]]);
-  const [moodList, setMoodList] = useState([moods[0]]);
+  // NOTHING IS PICKED UNTIL SOMEBODY PICKS IT.
+  //
+  // Chris, 2026-09-11: *"as soon as you open this tab those names need to
+  // disappear... I don't want the genre name on there until you pick it from
+  // the dropdown."* These used to open on Hip-Hop / Rap, East Coast and Happy,
+  // and a prefilled answer is not a default, it is a decision made for you while
+  // you were not looking. Somebody who never touches the genre picker had a
+  // hip-hop song chosen for them; worse, somebody who MEANT to choose could not
+  // tell which of those three words was theirs. Empty reads as a question, which
+  // is what it is. The pickers show the word Genre, Subgenre and Mood until they
+  // are answered, and every prompt builder already copes with an unset one.
+  const [genreList, setGenreListRaw] = useState([]);
+  const [subgenreList, setSubgenreListRaw] = useState([]);
+  const [moodList, setMoodListRaw] = useState([]);
 
-  const genre = genreList[0] || genres[0];
+  /**
+   * THE SAME CHOICES, IN BLACK HOLE STUDIOS' VOCABULARY.
+   *
+   * Chris, 2026-09-11: *"if one setting is one way in one tab it needs to be
+   * the same in all the tabs."* Black Hole Studios picks a SOUND out of the
+   * three-hundred-entry taxonomy (so the caption can name the real instruments)
+   * while Songwriter picks a broad WRITING genre plus a subgenre. Same decision,
+   * two dialects — so both live here and styleBridge translates whenever either
+   * side moves. Setting one writes the other; nothing polls and nothing loops,
+   * because the translation happens in the setter rather than in an effect.
+   */
+  const [bhGenreList, setBhGenreListRaw] = useState([]);
+  const [bhMoodList, setBhMoodListRaw] = useState([]);
+  // Voice has no Songwriter counterpart — it only means something once a machine
+  // is singing — so it is stored, not translated.
+  const [voiceList, setVoiceList] = useState([]);
+
+  const asList = (next, prev) => (typeof next === 'function' ? next(prev) : next) || [];
+
+  const setGenreList = (next) => {
+    const list = asList(next, genreList);
+    setGenreListRaw(list);
+    setBhGenreListRaw(toBlackHoleGenres(list, subgenreList));
+  };
+  const setSubgenreList = (next) => {
+    const list = asList(next, subgenreList);
+    setSubgenreListRaw(list);
+    setBhGenreListRaw(toBlackHoleGenres(genreList, list));
+  };
+  const setMoodList = (next) => {
+    const list = asList(next, moodList);
+    setMoodListRaw(list);
+    setBhMoodListRaw(toBlackHoleMoods(list));
+  };
+  const setBhGenreList = (next) => {
+    const list = asList(next, bhGenreList);
+    setBhGenreListRaw(list);
+    const { genreList: g, subgenreList: s } = toSongwriterGenres(list);
+    setGenreListRaw(g);
+    setSubgenreListRaw(s);
+  };
+  const setBhMoodList = (next) => {
+    const list = asList(next, bhMoodList);
+    setBhMoodListRaw(list);
+    setMoodListRaw(toSongwriterMoods(list));
+  };
+
+  const genre = genreList[0] || '';
   const subgenre = subgenreList[0] || '';
-  const mood = moodList[0] || moods[0];
-  const setGenre = (g) => setGenreList([g]);
+  const mood = moodList[0] || '';
+  const setGenre = (g) => setGenreList(g ? [g] : []);
   const setSubgenre = (g) => setSubgenreList(g ? [g] : []);
-  const setMood = (m) => setMoodList([m]);
+  const setMood = (m) => setMoodList(m ? [m] : []);
   const [structureTemplate, setStructureTemplate] = useState(prebuiltTemplates[0].id);
   const [customStructure, setCustomStructure] = useState(prebuiltTemplates[0].structure);
   const [topic, setTopic] = useState('');
@@ -381,14 +442,17 @@ export const LyricStoreProvider = ({ children }) => {
   const subgenrePool = genreList.flatMap((g) => subgenres[g] || []);
 
   useEffect(() => {
-    // Drop any subgenre whose genre is no longer picked, and never leave the
-    // list empty. This used to hard-reset to the first subgenre of the one
-    // genre; with a blend, throwing away a still-valid pick because a DIFFERENT
-    // genre changed would be maddening.
-    setSubgenreList((prev) => {
+    // Drop any subgenre whose genre is no longer picked. This used to hard-reset
+    // to the first subgenre of the one genre; with a blend, throwing away a
+    // still-valid pick because a DIFFERENT genre changed would be maddening.
+    //
+    // IT NO LONGER FILLS THE GAP EITHER. Landing on subgenre one of whatever
+    // genre you just chose is the same unasked-for decision the empty defaults
+    // exist to get rid of — you would pick Country and be handed Bro-Country.
+    // Empty means empty; the picker says "Subgenre" until you answer it.
+    setSubgenreListRaw((prev) => {
       const kept = prev.filter((sg) => subgenrePool.includes(sg));
-      if (kept.length) return kept.length === prev.length ? prev : kept;
-      return subgenrePool.length ? [subgenrePool[0]] : [];
+      return kept.length === prev.length ? prev : kept;
     });
   }, [genreList]);   // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -415,6 +479,7 @@ export const LyricStoreProvider = ({ children }) => {
   demoRef.current = {
     lyrics, undoStack, redoStack,
     genreList, subgenreList, moodList,
+    bhGenreList, bhMoodList, voiceList,
     genre, subgenre, mood, structureTemplate, customStructure,
     topic, artistRef, notes,
     rhymeScheme, rhymeDensity, flowPattern, cadenceNotes, hookFirstMode,
@@ -429,10 +494,16 @@ export const LyricStoreProvider = ({ children }) => {
       setRedoStack(s.redoStack);
       // Lists where a newer snapshot has them, single values where it does not,
       // so a session saved before the blend still restores.
-      setGenreList(s.genreList || [s.genre].filter(Boolean));
+      setGenreListRaw(s.genreList || [s.genre].filter(Boolean));
       // Genre drives a subgenre prune on the next tick, so put subgenres back after it.
-      setTimeout(() => setSubgenreList(s.subgenreList || [s.subgenre].filter(Boolean)), 0);
-      setMoodList(s.moodList || [s.mood].filter(Boolean));
+      setTimeout(() => setSubgenreListRaw(s.subgenreList || [s.subgenre].filter(Boolean)), 0);
+      setMoodListRaw(s.moodList || [s.mood].filter(Boolean));
+      // Put the Black Hole Studios side back as it was rather than re-deriving
+      // it: a snapshot taken while that tab held a sound Songwriter cannot name
+      // (Gnawa, Qawwali) must come back as that sound, not as its nearest family.
+      setBhGenreListRaw(s.bhGenreList || []);
+      setBhMoodListRaw(s.bhMoodList || []);
+      setVoiceList(s.voiceList || []);
       setStructureTemplate(s.structureTemplate);
       setCustomStructure(s.customStructure);
       setTopic(s.topic);
@@ -606,6 +677,11 @@ export const LyricStoreProvider = ({ children }) => {
       subgenreList, setSubgenreList,
       moodList, setMoodList,
       subgenrePool,
+      // The same picks in Black Hole Studios' vocabulary, kept in step by
+      // styleBridge. Setting either side updates the other.
+      bhGenreList, setBhGenreList,
+      bhMoodList, setBhMoodList,
+      voiceList, setVoiceList,
       structureTemplate, setStructureTemplate,
       customStructure, setCustomStructure,
       topic, setTopic,

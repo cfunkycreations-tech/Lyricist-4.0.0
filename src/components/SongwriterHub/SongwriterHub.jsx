@@ -276,28 +276,32 @@ export default function SongwriterHub({ ghostRiderData }) {
             dropdown rather than a ctrl-click multi-select. */}
         <MultiPick
           label="Genre"
-          help="Genre is the style of music — like Hip-Hop, Pop, or Country. Pick up to five and they get blended into one song. The first one is the lead; tap another chip to make that one lead instead."
+          help="Genre is the style of music — like Hip-Hop, Pop, or Country. Nothing is picked until you pick it. Choose up to five and they get blended into one song. The first one is the lead; tap another chip to make that one lead instead."
           value={store.genreList}
           onChange={store.setGenreList}
           options={genres}
           addLabel="Add a genre"
         />
 
-        {store.subgenrePool.length > 0 && (
-          <MultiPick
-            label="Subgenre"
-            help="The narrower corner of the genres you picked — the list is drawn from all of them. Up to five, and the first is the lead."
-            value={store.subgenreList}
-            onChange={store.setSubgenreList}
-            options={store.subgenrePool}
-            min={0}
-            addLabel="Add a subgenre"
-          />
-        )}
+        {/* THE SUBGENRE PILL IS ALWAYS HERE, genre or no genre.
+            It used to appear out of nowhere the moment a genre was chosen, which
+            made the sidebar jump and hid the fact that a subgenre was a thing
+            you could ask for at all. It sits in its slot saying "Subgenre",
+            with the dropdown telling you what it is waiting for. */}
+        <MultiPick
+          label="Subgenre"
+          help="The narrower corner of the genres you picked — the list is drawn from all of them, so pick a genre first. Up to five, and the first is the lead."
+          value={store.subgenreList}
+          onChange={store.setSubgenreList}
+          options={store.subgenrePool}
+          disabled={store.subgenrePool.length === 0}
+          emptyHint="Pick a genre first"
+          addLabel="Add a subgenre"
+        />
 
         <MultiPick
           label="Mood"
-          help="Mood is the feeling of the song — happy, heartbroken, angry, hopeful. Pick up to five and they get layered; the first one is the dominant feeling."
+          help="Mood is the feeling of the song — happy, heartbroken, angry, hopeful. Nothing is picked until you pick it. Choose up to five and they get layered; the first one is the dominant feeling."
           value={store.moodList}
           onChange={store.setMoodList}
           options={moods}
@@ -498,26 +502,10 @@ export default function SongwriterHub({ ghostRiderData }) {
           </div>
         </div>
 
-        {/* Structure Presets & Builder */}
+        {/* Structure Presets & Builder. Hook-First Mode lives INSIDE this now,
+            between the preset and the arrangement — see StructureBuilder. */}
         <div data-demo="sw-structure">
           <StructureBuilder />
-        </div>
-
-        {/* Hook first mode toggle */}
-        <div
-          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-          data-help="The HOOK (also called the chorus) is the catchy part of a song that repeats and sticks in your head. Turn this ON to write that catchy part FIRST, then build the rest of the song around it. Off = write the song in order, start to finish."
-        >
-          <input
-            type="checkbox"
-            id="hook-first-toggle"
-            checked={store.hookFirstMode}
-            onChange={(e) => store.setHookFirstMode(e.target.checked)}
-            style={{ width: '16px', height: '16px', accentColor: '#a855f7' }}
-          />
-          <label htmlFor="hook-first-toggle" style={{ fontSize: '0.75rem', color: '#c4b5fd', cursor: 'pointer' }}>
-            Hook-First Mode (write the catchy chorus first)
-          </label>
         </div>
 
         {/* Notes */}
@@ -644,6 +632,9 @@ export default function SongwriterHub({ ghostRiderData }) {
             )}
           </div>
 
+          {/* CYAN PILLS, not cornered boxes. Chris asked for these two to read as
+              pills like the ones at the top of the sidebar, so the tab has one
+              shape language running down it instead of two. */}
           <div style={{ display: 'flex', gap: 6 }}>
             <button
               onClick={handleFillBlanks}
@@ -652,16 +643,16 @@ export default function SongwriterHub({ ghostRiderData }) {
               data-help="Stuck on a word or line? Type [blank] right in your lyrics wherever you're stuck, then click this and the AI fills in just those spots — keeping everything else you wrote."
               style={{
                 flex: 1,
-                padding: '8px',
-                borderRadius: 8,
+                padding: '8px 14px',
+                borderRadius: 999,
                 border: 'none',
                 color: '#fff',
                 fontSize: '0.78rem',
                 fontWeight: 700,
-                cursor: 'pointer'
+                cursor: isFillingBlanks ? 'not-allowed' : 'pointer'
               }}
             >
-              Fill [blank]
+              {isFillingBlanks ? 'Filling…' : 'Fill [blank]'}
             </button>
 
             <button
@@ -670,8 +661,8 @@ export default function SongwriterHub({ ghostRiderData }) {
               data-help="A BRIDGE is a short section near the end that breaks the pattern and adds a twist — a change of feeling before the final chorus. This gives you 3 different bridge options to pick from."
               style={{
                 flex: 1,
-                padding: '8px',
-                borderRadius: 8,
+                padding: '8px 14px',
+                borderRadius: 999,
                 border: 'none',
                 color: '#fff',
                 fontSize: '0.78rem',

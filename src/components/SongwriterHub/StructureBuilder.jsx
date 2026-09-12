@@ -78,6 +78,35 @@ export default function StructureBuilder() {
         </select>
       </div>
 
+      {/* HOOK-FIRST MODE SITS BETWEEN THE TWO, and that is the whole point.
+          Chris, 2026-09-11: *"this hook first is below the arrangement sequence
+          box. I want it to go up here between the arrangement and song
+          structure. That's where it needs to go, not below the arrangement
+          sequence. That's backwards."* He is right: it answers "in what order do
+          I write this song", which is the same question the preset above just
+          asked and which the running order below is the answer to. Underneath
+          the arrangement it read as an afterthought about a list it actually
+          governs. */}
+      <div
+        style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '8px 10px', borderRadius: 8,
+          background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(139,92,246,0.16)',
+        }}
+        data-help="The HOOK (also called the chorus) is the catchy part of a song that repeats and sticks in your head. Turn this ON to write that catchy part FIRST, then build the rest of the song around it. Off = write the song in order, start to finish."
+      >
+        <input
+          type="checkbox"
+          id="hook-first-toggle"
+          checked={store.hookFirstMode}
+          onChange={(e) => store.setHookFirstMode(e.target.checked)}
+          style={{ width: '16px', height: '16px', accentColor: '#a855f7', flexShrink: 0 }}
+        />
+        <label htmlFor="hook-first-toggle" style={{ fontSize: '0.75rem', color: '#c4b5fd', cursor: 'pointer' }}>
+          Hook-First Mode (write the catchy chorus first)
+        </label>
+      </div>
+
       {/* Custom structure builder */}
       <div style={{ background: 'rgba(13,8,28,0.5)', borderRadius: 10, padding: 12, border: '1px solid rgba(139,92,246,0.14)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>

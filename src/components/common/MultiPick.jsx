@@ -32,11 +32,15 @@ export const MAX_PICKS = MAX;
  * @param {Function} [nameOf]  pulls the name out of an option when it is an object
  * @param {string}   [help]    tooltip text for the app's own data-help system
  * @param {number}   [max]     ceiling, five unless told otherwise
- * @param {number}   [min]     floor, one unless told otherwise; you cannot remove the last one
+ * @param {number}   [min]     floor, zero unless told otherwise; you cannot go below it
+ * @param {string}   [placeholder]  what the empty pill says; the label unless told otherwise
+ * @param {string}   [emptyHint]    replaces the dropdown's first line when nothing can be picked yet
+ * @param {boolean}  [disabled]     nothing can be added yet (e.g. subgenre before a genre)
  */
 export default function MultiPick({
   label, value, onChange, options, nameOf = (o) => (typeof o === 'string' ? o : o.name),
-  help = '', max = MAX_PICKS, min = 1, addLabel = 'Add another',
+  help = '', max = MAX_PICKS, min = 0, addLabel = 'Add another',
+  placeholder = '', emptyHint = '', disabled = false,
 }) {
   const picks = Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean);
   const full = picks.length >= max;
@@ -64,6 +68,20 @@ export default function MultiPick({
       </div>
 
       <div className="mpick-chips">
+        {/* NOTHING PICKED YET SAYS SO, IN THE PILL ITSELF.
+            Chris, 2026-09-11: *"I don't want them to say anything until
+            something is picked, so they just say the generic genre, subgenre."*
+            An empty picker used to be impossible — it opened holding Hip-Hop /
+            Rap, East Coast, Happy — so the row of pills looked identical whether
+            you had chosen those three things or simply never looked at them. The
+            pill stays exactly where it was and keeps its shape, so the layout
+            never jumps when the first real pick lands; only the word changes,
+            from the name of the thing to the name of the question. */}
+        {picks.length === 0 && (
+          <span className="mpick-chip is-empty">
+            <span className="mpick-name">{placeholder || label}</span>
+          </span>
+        )}
         {picks.map((p, i) => (
           <span key={p} className={`mpick-chip${i === 0 ? ' is-lead' : ''}`}>
             {i === 0 && <b className="mpick-lead">lead</b>}
@@ -93,10 +111,14 @@ export default function MultiPick({
       <select
         className="mpick-add"
         value=""
-        disabled={full}
+        disabled={full || disabled}
         onChange={(e) => { add(e.target.value); e.target.value = ''; }}
       >
-        <option value="">{full ? `${max} is the most you can mix` : `${addLabel}…`}</option>
+        <option value="">
+          {disabled ? (emptyHint || 'Nothing to pick from yet')
+            : full ? `${max} is the most you can mix`
+              : `${addLabel}…`}
+        </option>
         {grouped
           ? Object.entries(options).map(([group, list]) => {
             const left = remaining(list);

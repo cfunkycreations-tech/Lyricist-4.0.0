@@ -363,11 +363,18 @@ export function buildPromptContext(store) {
   const genreLine = blendPhrase(store.genreList || [store.genre], 'sound');
   const subLine = blendPhrase(store.subgenreList || [store.subgenre].filter(Boolean), 'sound');
   const moodLine = blendPhrase(store.moodList || [store.mood], 'feeling');
+  // NOTHING PICKED IS A REAL ANSWER NOW, so say what it means instead of sending
+  // "- Genre:" with nothing after it. A model handed an empty field either
+  // invents a genre silently or writes the blandest thing it knows; told in
+  // words that the choice is open, it picks one that suits the topic and the
+  // person gets a song rather than a shrug.
+  const OPEN_GENRE = 'not specified — choose whatever genre suits the topic and say what you chose';
+  const OPEN_MOOD = 'not specified — let the topic decide the feeling';
   return `
 SONGWRITING CONFIGURATION:
-- Genre: ${genreLine}
+- Genre: ${genreLine || OPEN_GENRE}
 - Subgenre: ${subLine || "none"}
-- Mood: ${moodLine}
+- Mood: ${moodLine || OPEN_MOOD}
 - Rhyme Scheme: ${store.rhymeScheme || "AABB"}
 - Rhyme Density: ${store.rhymeDensity || "High"}
 - Flow Pattern: ${store.flowPattern || "Balanced"}

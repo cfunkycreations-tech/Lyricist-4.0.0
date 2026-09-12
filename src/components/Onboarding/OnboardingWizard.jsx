@@ -54,7 +54,7 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
     if (!a) return;
     setHasAudio(false);
     setPlaying(false);
-    // A card is allowed to have no narration yet. One Man Band shipped before
+    // A card is allowed to have no narration yet. Black Hole Studios shipped before
     // its clip was recorded, and a card whose script is written but whose audio
     // is not must read silently rather than throw on a null.
     if (!current.audio) {
