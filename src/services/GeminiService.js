@@ -62,7 +62,7 @@ export const DEFAULT_TEXT_MODEL = 'openrouter/auto';
 export const BRAND_ART_STYLE =
   'Framed inside a perfectly circular medallion emblem, like a glowing engraved coin or badge — ' +
   'not a square or rectangular canvas. Deep black background outside the medallion. ' +
-  'The medallion rim glows with a vivid neon electric blue-to-purple-to-emerald gradient (#00e5ff to #a855f7 to #10f0a0), ' +
+  'The medallion rim glows with a vivid neon electric blue-to-purple-to-emerald gradient (#e7a540 to #9ba1aa to #10f0a0), ' +
   'with a soft cyan highlight accent. Sharp, high-contrast, professional album-cover quality, ' +
   'centered composition, no text or lettering anywhere in the image.';
 
@@ -70,7 +70,7 @@ export const MANDATORY_MEDALLION_FRAME =
   'MANDATORY OUTPUT CONSTRAINTS (these override any conflicting instruction above): ' +
   'The final image MUST be composed as a single seamless circular medallion frame, ' +
   'perfectly centered, like a glowing engraved coin — never a square or rectangular composition. ' +
-  'The medallion border MUST glow intensely in electric blue (#00e5ff), electric purple (#a855f7), and emerald (#10f0a0), ' +
+  'The medallion border MUST glow intensely in electric blue (#e7a540), electric purple (#9ba1aa), and emerald (#10f0a0), ' +
   'with the glow bleeding softly into a deep black background outside the circle. ' +
   'No text or lettering anywhere in the image.';
 

@@ -98,7 +98,7 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
         <h2 className="emerald-edge" style={{ fontFamily: 'var(--faf-font)', fontSize: '1.5rem', margin: 0, letterSpacing: '0.04em' }}>
           COLLABORATION
         </h2>
-        <p style={{ fontSize: '0.78rem', color: 'rgba(200,190,220,0.75)', margin: '6px 0 0', maxWidth: 760, lineHeight: 1.6 }}>
+        <p style={{ fontSize: '0.78rem', color: 'rgba(230,232,235,0.75)', margin: '6px 0 0', maxWidth: 760, lineHeight: 1.6 }}>
           Write a song with someone else, live, wherever they are. Start a session, send them the code,
           and you are both typing in the same words. <b>Peer to peer</b> — the song goes straight between
           your two computers. No account, nobody's server holding your lyrics, nothing to pay for, ever.
@@ -129,7 +129,7 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
       {!session ? (
         <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 460 }}>
-            <label style={{ fontSize: '0.7rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(200,190,220,0.6)' }}>
+            <label style={{ fontSize: '0.7rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(230,232,235,0.6)' }}>
               Your name
             </label>
             <input
@@ -147,7 +147,7 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
             <div style={{ flex: '1 1 320px', minWidth: 300, padding: 18, borderRadius: 14,
               border: '1px solid rgba(16,240,160,0.35)', background: 'rgba(6,20,16,0.6)' }}>
               <h3 style={{ margin: '0 0 8px', fontSize: '1rem', color: 'var(--ql-grn, #10f0a0)' }}>Start a session</h3>
-              <p style={{ fontSize: '0.74rem', color: 'rgba(200,190,220,0.7)', lineHeight: 1.6, margin: '0 0 14px' }}>
+              <p style={{ fontSize: '0.74rem', color: 'rgba(230,232,235,0.7)', lineHeight: 1.6, margin: '0 0 14px' }}>
                 Get a code, send it to whoever you are writing with. Text it, say it down the phone —
                 it is twelve characters and it is the only thing they need.
               </p>
@@ -163,9 +163,9 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
 
             {/* Join */}
             <div style={{ flex: '1 1 320px', minWidth: 300, padding: 18, borderRadius: 14,
-              border: '1px solid rgba(0,229,255,0.3)', background: 'rgba(6,12,26,0.6)' }}>
-              <h3 style={{ margin: '0 0 8px', fontSize: '1rem', color: '#00e5ff' }}>Join a session</h3>
-              <p style={{ fontSize: '0.74rem', color: 'rgba(200,190,220,0.7)', lineHeight: 1.6, margin: '0 0 14px' }}>
+              border: '1px solid rgba(231,165,64,0.3)', background: 'rgba(6,12,26,0.6)' }}>
+              <h3 style={{ margin: '0 0 8px', fontSize: '1rem', color: '#e7a540' }}>Join a session</h3>
+              <p style={{ fontSize: '0.74rem', color: 'rgba(230,232,235,0.7)', lineHeight: 1.6, margin: '0 0 14px' }}>
                 Got a code from someone? Type it here. Upper or lower case, dashes or not — it sorts itself out.
               </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -196,7 +196,7 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
           <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap',
             padding: 16, borderRadius: 14, border: '1px solid rgba(16,240,160,0.4)', background: 'rgba(6,20,16,0.6)' }}>
             <div>
-              <div style={{ fontSize: '0.66rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(200,190,220,0.55)' }}>
+              <div style={{ fontSize: '0.66rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(230,232,235,0.55)' }}>
                 Session code — send this to them
               </div>
               <div className="ql-mono" style={{ fontSize: '1.7rem', letterSpacing: '0.16em', color: 'var(--ql-grn, #10f0a0)', textShadow: '0 0 0 1px rgba(16,240,160,0.5)' }}>
@@ -214,7 +214,7 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
 
           {/* Who is here, and whether the connection actually happened */}
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', fontSize: '0.74rem' }}>
-            <span style={{ color: 'rgba(200,190,220,0.6)' }}>In this session:</span>
+            <span style={{ color: 'rgba(230,232,235,0.6)' }}>In this session:</span>
             {peers.map((p) => (
               <span key={p.clientId} style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 999,
@@ -225,7 +225,7 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
               </span>
             ))}
             {others.length === 0 && (
-              <span style={{ color: 'rgba(200,190,220,0.55)' }}>
+              <span style={{ color: 'rgba(230,232,235,0.55)' }}>
                 {session.signalingConnected
                   ? '— waiting for them to join. Connected and listening; send them the code.'
                   : '— still reaching the meeting point…'}
@@ -235,7 +235,7 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
 
           {/* The shared page */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, minHeight: 420 }}>
-            <label style={{ fontSize: '0.7rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(200,190,220,0.6)' }}>
+            <label style={{ fontSize: '0.7rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(230,232,235,0.6)' }}>
               The song — you are both typing in here
             </label>
             <textarea
@@ -292,7 +292,7 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
         </button>
         {showAdvanced && (
           <div style={{ marginTop: 10, padding: 14, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', maxWidth: 640 }}>
-            <p style={{ fontSize: '0.72rem', color: 'rgba(200,190,220,0.7)', lineHeight: 1.6, margin: '0 0 10px' }}>
+            <p style={{ fontSize: '0.72rem', color: 'rgba(230,232,235,0.7)', lineHeight: 1.6, margin: '0 0 10px' }}>
               These are the free public servers that introduce two people to each other. They never see your
               song. If they ever go dark, any y-webrtc signalling server works — one per line.
             </p>
@@ -322,7 +322,7 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
                 Reset to defaults
               </button>
               <button className="ql-btn" onClick={runSignalCheck}><RefreshCw size={12} /> Re-test</button>
-              <span style={{ fontSize: '0.7rem', color: 'rgba(200,190,220,0.6)' }}>
+              <span style={{ fontSize: '0.7rem', color: 'rgba(230,232,235,0.6)' }}>
                 {signalCheck === 'checking' && 'checking…'}
                 {Array.isArray(signalCheck) && signalCheck.map((r) => (
                   <span key={r.url} style={{ marginRight: 10, color: r.ok ? '#10f0a0' : '#f87171' }}>

@@ -36,8 +36,8 @@ export default function WaveSlicer({
 
       const css = getComputedStyle(document.documentElement);
       const emerald = css.getPropertyValue('--lx-emerald-lit').trim() || '#2BE8A0';
-      const violet = css.getPropertyValue('--lx-violet').trim() || '#A97BFF';
-      const magenta = css.getPropertyValue('--lx-magenta').trim() || '#E86BD8';
+      const violet = css.getPropertyValue('--lx-violet').trim() || '#9BA1AA';
+      const magenta = css.getPropertyValue('--lx-magenta').trim() || '#9BA1AA';
 
       const mid = h / 2;
 
@@ -74,7 +74,7 @@ export default function WaveSlicer({
           }
         }
         if (s.drag) {
-          g.fillStyle = 'rgba(232,107,216,0.22)';
+          g.fillStyle = 'rgba(155,161,170,0.22)';
           g.fillRect(x, 0, sw, h);
           g.strokeStyle = magenta;
           g.lineWidth = 1.5;

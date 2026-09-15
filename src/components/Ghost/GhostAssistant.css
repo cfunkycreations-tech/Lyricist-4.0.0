@@ -12,7 +12,7 @@
   backdrop-filter: blur(14px);
 }
 .gha-launch:hover { border-color: hsla(158 80% 68% / .9); box-shadow: 0 0 0 1px hsla(158 80% 58% / .34), 0 10px 30px rgba(0, 0, 0, .55); }
-.gha-launch.is-open { background: linear-gradient(180deg, hsla(262 70% 55% / .26), rgba(5, 7, 12, .92)); border-color: hsla(262 80% 72% / .6); }
+.gha-launch.is-open { background: linear-gradient(180deg, hsla(216 8% 64% / .26), rgba(5, 7, 12, .92)); border-color: hsla(216 8% 64% / .6); }
 .gha-face { font-size: 16px; filter: none; }
 
 .gha {
@@ -47,7 +47,7 @@
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 10.5px;
   letter-spacing: .08em; white-space: nowrap;
   background: rgba(3, 5, 9, .6); color: #9FB2D4;
-  border: 1px solid hsla(262 70% 70% / .3);
+  border: 1px solid hsla(216 8% 64% / .3);
 }
 .gha-voice.on { color: #8FF0C4; border-color: hsla(158 80% 58% / .6); background: hsla(158 84% 40% / .16); }
 
@@ -62,7 +62,7 @@
 .gha-picker button {
   padding: 5px 11px; border-radius: 999px; cursor: pointer;
   font-family: inherit; font-size: 11.5px; color: #9FB2D4;
-  background: rgba(3, 5, 9, .55); border: 1px solid hsla(262 70% 70% / .28);
+  background: rgba(3, 5, 9, .55); border: 1px solid hsla(216 8% 64% / .28);
 }
 .gha-picker button[aria-pressed="true"] {
   color: #8FF0C4; background: hsla(158 84% 40% / .18); border-color: hsla(158 80% 58% / .6);
@@ -84,7 +84,7 @@
 .gha-tune-row button {
   flex: 0 0 auto; width: 24px; height: 24px; padding: 0; border-radius: 6px; cursor: pointer;
   font-family: inherit; font-size: 14px; line-height: 1; color: #9FB2D4;
-  background: rgba(3, 5, 9, .55); border: 1px solid hsla(262 70% 70% / .28);
+  background: rgba(3, 5, 9, .55); border: 1px solid hsla(216 8% 64% / .28);
 }
 .gha-tune-row button:hover { color: #fff; border-color: hsla(158 80% 58% / .6); }
 .gha-tune-row output {
@@ -145,7 +145,7 @@
   padding: 7px 13px; border-radius: 8px; cursor: pointer;
   font-family: inherit; font-size: 12px; font-weight: 600;
   background: rgba(3, 5, 9, .55); color: #9FB2D4;
-  border: 1px solid var(--omb-line-hot, hsla(262 70% 70% / .3));
+  border: 1px solid var(--omb-line-hot, hsla(216 8% 64% / .3));
 }
 .gha-tapbtns button.go {
   color: #EAF2FF; background: hsla(158 84% 40% / .26);
@@ -168,9 +168,9 @@
 .gha-undo {
   margin-left: 9px; padding: 3px 9px; border-radius: 6px; cursor: pointer;
   font-family: inherit; font-size: 11px; font-weight: 600; color: #EAF2FF;
-  background: hsla(262 70% 55% / .30); border: 1px solid hsla(262 75% 72% / .60);
+  background: hsla(216 8% 64% / .30); border: 1px solid hsla(216 8% 64% / .60);
 }
-.gha-undo:hover { background: hsla(262 70% 58% / .48); }
+.gha-undo:hover { background: hsla(216 8% 64% / .48); }
 
 /* What it did that does not match what he laid out. Checked in code, not asked
    for politely in a prompt. */
@@ -183,7 +183,7 @@
 .gha-ask input {
   flex: 1 1 auto; min-width: 0; padding: 9px 12px; border-radius: 9px;
   font-family: inherit; font-size: 13px; color: #EAF2FF;
-  background: rgba(3, 5, 9, .72); border: 1px solid hsla(262 70% 70% / .3);
+  background: rgba(3, 5, 9, .72); border: 1px solid hsla(216 8% 64% / .3);
 }
 .gha-ask input:focus { outline: none; border-color: hsla(158 80% 58% / .65); box-shadow: 0 0 0 1px hsla(158 80% 58% / .18); }
 .gha-ask button {
@@ -227,7 +227,7 @@ body.lyricist-mobile .gha-face { font-size: 17px; }
 .gha-views button {
   flex: 1 1 0; padding: 6px 10px; border-radius: 8px; cursor: pointer;
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
-  color: #9FB2D4; background: rgba(3, 5, 9, .55); border: 1px solid hsla(262 70% 70% / .28);
+  color: #9FB2D4; background: rgba(3, 5, 9, .55); border: 1px solid hsla(216 8% 64% / .28);
 }
 .gha-views button[aria-pressed="true"] { color: #8FF0C4; background: hsla(158 84% 40% / .18); border-color: hsla(158 80% 58% / .6); }
 
@@ -237,13 +237,13 @@ body.lyricist-mobile .gha-face { font-size: 17px; }
 .ghj-new textarea {
   width: 100%; box-sizing: border-box; resize: vertical; min-height: 70px;
   padding: 8px 10px; border-radius: 8px; font-family: inherit; font-size: 12.5px; line-height: 1.5;
-  color: #EAF2FF; background: rgba(3, 5, 9, .7); border: 1px solid hsla(262 70% 70% / .3);
+  color: #EAF2FF; background: rgba(3, 5, 9, .7); border: 1px solid hsla(216 8% 64% / .3);
 }
 .ghj-new textarea:focus { outline: none; border-color: hsla(158 80% 58% / .7); }
 .ghj-modes { display: flex; gap: 6px; flex-wrap: wrap; }
 .ghj-modes button, .ghj-go button, .ghj-btns button, .ghj-clear {
   padding: 6px 11px; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 11.5px; font-weight: 600;
-  color: #9FB2D4; background: rgba(3, 5, 9, .55); border: 1px solid hsla(262 70% 70% / .28);
+  color: #9FB2D4; background: rgba(3, 5, 9, .55); border: 1px solid hsla(216 8% 64% / .28);
 }
 .ghj-modes button.on { color: #8FF0C4; background: hsla(158 84% 40% / .18); border-color: hsla(158 80% 58% / .6); }
 .ghj-go { display: flex; gap: 8px; }

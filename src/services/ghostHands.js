@@ -121,7 +121,7 @@ async function find(selector, namesOf, label, index = 0, patience = 1500) {
 /** A glow on the control as it is used. Kept with the hand off too, so a fast run still leaves a trail. */
 function glow(el) {
   const { outline, outlineOffset } = el.style;
-  el.style.outline = '2px solid #b388ff';
+  el.style.outline = '2px solid #9ba1aa';
   el.style.outlineOffset = '2px';
   setTimeout(() => { el.style.outline = outline; el.style.outlineOffset = outlineOffset; }, 900);
 }

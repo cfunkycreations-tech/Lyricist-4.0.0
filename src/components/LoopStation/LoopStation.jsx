@@ -342,10 +342,10 @@ export default function LoopStation() {
         gap: 6,
         padding: '10px 12px',
         borderRadius: 12,
-        border: on ? '1.5px solid rgba(103,232,249,0.55)' : '1.5px solid rgba(139,92,246,0.3)',
-        background: on ? 'rgba(30, 20, 60, 0.75)' : 'rgba(10,6,20,0.65)',
+        border: on ? '1px solid rgba(231,165,64,0.55)' : '1px solid rgba(155,161,170,0.3)',
+        background: on ? 'rgba(26, 29, 34, 0.75)' : 'rgba(11,13,16,0.65)',
         minWidth: 140,
-        boxShadow: on ? '0 0 0 1px rgba(103,232,249,0.2)' : 'none',
+        boxShadow: on ? '0 0 0 1px rgba(231,165,64,0.2)' : 'none',
       }}
       data-help={help}
     >
@@ -354,7 +354,7 @@ export default function LoopStation() {
         onClick={() => setOn((v) => !v)}
         style={{
           border: 'none',
-          background: on ? 'linear-gradient(135deg,#38bdf8,#a855f7)' : 'rgba(40,30,70,0.8)',
+          background: on ? 'linear-gradient(135deg,#e7a540,#9ba1aa)' : 'rgba(26,29,34,0.8)',
           color: '#fff',
           fontWeight: 700,
           fontSize: '0.78rem',
@@ -365,7 +365,7 @@ export default function LoopStation() {
       >
         {label}: {on ? 'ON' : 'OFF'}
       </button>
-      <label style={{ fontSize: '0.65rem', color: 'rgba(200,190,220,0.7)', display: 'flex', alignItems: 'center', gap: 6 }}>
+      <label style={{ fontSize: '0.65rem', color: 'rgba(230,232,235,0.7)', display: 'flex', alignItems: 'center', gap: 6 }}>
         Amount
         <input
           type="range"
@@ -385,8 +385,8 @@ export default function LoopStation() {
     <div className="tab-video-shell">
       <TabBackground name="loopstation" />
       <div className="tab-video-content">
-    <div className="rc-funk-root" style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', overflow: 'auto', background: 'rgba(5,2,8,0.5)', padding: '20px 24px', color: '#f3ecff' }}>
-      {/* No backdrop sheet here. The root above is already opaque (#050208), so
+    <div className="rc-funk-root" style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', overflow: 'auto', background: 'rgba(3,5,8,0.5)', padding: '20px 24px', color: '#e6e8eb' }}>
+      {/* No backdrop sheet here. The root above is already opaque (#030508), so
           the app-wide street scene never shows through at any scroll position.
           There used to be a position:fixed sheet doing this job, and fixed means
           the VIEWPORT — it painted a black rectangle over the header, the
@@ -423,10 +423,10 @@ export default function LoopStation() {
         }
         /* 2 — ELECTRIC BLUE (Stop) — no yellow */
         .rc-round-yellow {
-          background: radial-gradient(circle at 35% 30%, #a5f3fc 0%, #00e5ff 45%, #0284c7 100%);
-          border-color: #67e8f9;
+          background: radial-gradient(circle at 35% 30%, #e6e8eb 0%, #e7a540 45%, #e7a540 100%);
+          border-color: #e7a540;
           color: #042f2e;
-          box-shadow: 0 0 0 2px rgba(0,229,255,0.45), 0 0 28px rgba(0,229,255,0.55), inset 0 2px 0 rgba(255,255,255,0.4);
+          box-shadow: 0 0 0 2px rgba(231,165,64,0.45), 0 0 28px rgba(231,165,64,0.55), inset 0 2px 0 rgba(255,255,255,0.4);
           text-shadow: 0 1px 0 rgba(255,255,255,0.35);
         }
         /* 3 — RED (Quantum / third) */
@@ -434,7 +434,7 @@ export default function LoopStation() {
           background: radial-gradient(circle at 35% 30%, #fca5a5 0%, #ef4444 45%, #b91c1c 100%);
         }
         .rc-round-cyan {
-          background: radial-gradient(circle at 35% 30%, #a5f3fc 0%, #22d3ee 45%, #0e7490 100%);
+          background: radial-gradient(circle at 35% 30%, #e6e8eb 0%, #e7a540 45%, #1a1d22 100%);
           border-color: #f87171;
           color: #fff;
           box-shadow: 0 0 0 2px rgba(239,68,68,0.4), 0 0 28px rgba(239,68,68,0.5), inset 0 2px 0 rgba(255,255,255,0.25);
@@ -459,10 +459,10 @@ export default function LoopStation() {
           box-shadow: 0 0 14px rgba(34,197,94,0.4);
         }
         .rc-track-yellow {
-          background: linear-gradient(180deg, #67e8f9, #0284c7);
-          border-color: #22d3ee;
+          background: linear-gradient(180deg, #e7a540, #e7a540);
+          border-color: #e7a540;
           color: #042f2e;
-          box-shadow: 0 0 14px rgba(0,229,255,0.45);
+          box-shadow: 0 0 14px rgba(231,165,64,0.45);
         }
         .rc-track-red {
           background: linear-gradient(180deg, #f87171, #dc2626);
@@ -471,7 +471,7 @@ export default function LoopStation() {
           box-shadow: 0 0 14px rgba(239,68,68,0.4);
         }
       `}</style>
-      <h1 style={{ fontFamily: 'var(--faf-font)', fontWeight: 700, fontSize: 'clamp(1.6rem, 3vw, 2.4rem)', margin: '0 0 6px', background: 'linear-gradient(90deg,#38bdf8,#a855f7,#f5f3ff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+      <h1 style={{ fontFamily: 'var(--faf-font)', fontWeight: 700, fontSize: 'clamp(1.6rem, 3vw, 2.4rem)', margin: '0 0 6px', background: 'linear-gradient(90deg,#e7a540,#9ba1aa,#f5f3ff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
         RC-FUNK 5000
       </h1>
       <p style={{ color: '#a5b4fc', letterSpacing: '0.12em', textTransform: 'uppercase', fontSize: '0.75rem', margin: '0 0 16px' }} data-help="Live multi-track looper with master Delay, Reverb, and Dub FX. Record phrases, stack up to 4 tracks, polish with FX.">
@@ -536,9 +536,9 @@ export default function LoopStation() {
           <span className="rc-round-icon"><Save size={16} strokeWidth={1.6} /></span>
           <span className="rc-round-label">{saving ? 'Saving…' : 'Save'}</span>
         </button>
-        <label style={{ fontSize: '0.8rem', color: 'rgba(200,190,220,0.75)', marginLeft: 8 }} data-help="Reference BPM for you — loops are free-time recordings. Also used for the Matrix groove handshake.">
+        <label style={{ fontSize: '0.8rem', color: 'rgba(230,232,235,0.75)', marginLeft: 8 }} data-help="Reference BPM for you — loops are free-time recordings. Also used for the Matrix groove handshake.">
           BPM ref{' '}
-          <input type="number" min={40} max={220} value={bpm} onChange={(e) => setBpm(Number(e.target.value) || 90)} style={{ width: 64, marginLeft: 6, padding: 6, borderRadius: 6, border: '1px solid rgba(139,92,246,0.35)', background: '#0d081c', color: '#fff' }} />
+          <input type="number" min={40} max={220} value={bpm} onChange={(e) => setBpm(Number(e.target.value) || 90)} style={{ width: 64, marginLeft: 6, padding: 6, borderRadius: 6, border: '1px solid rgba(155,161,170,0.35)', background: '#101215', color: '#fff' }} />
         </label>
         {playing && <span className="pill-green" style={{ padding: '4px 10px', borderRadius: 999, fontSize: '0.7rem' }}>LOOPING</span>}
         {recordingId != null && <span className="pill-cyan" style={{ padding: '4px 10px', borderRadius: 999, fontSize: '0.7rem' }}>REC T{recordingId + 1}</span>}
@@ -572,7 +572,7 @@ export default function LoopStation() {
         />
       </div>
 
-      <p style={{ fontSize: '0.88rem', color: 'rgba(220,210,240,0.8)', marginBottom: 14 }}><b style={{ color: '#67e8f9' }}>{status}</b></p>
+      <p style={{ fontSize: '0.88rem', color: 'rgba(230,232,235,0.8)', marginBottom: 14 }}><b style={{ color: '#e7a540' }}>{status}</b></p>
       {error && <div className="pill-red" style={{ padding: 10, borderRadius: 8, marginBottom: 12, fontSize: '0.8rem' }}>{error}</div>}
 
       <div style={{ display: 'grid', gap: 12, maxWidth: 720 }}>
@@ -586,15 +586,15 @@ export default function LoopStation() {
               alignItems: 'center',
               padding: '12px 14px',
               borderRadius: 12,
-              border: recordingId === t.id ? '1.5px solid #38bdf8' : '1.5px solid rgba(139,92,246,0.35)',
-              background: 'rgba(10,6,20,0.75)',
-              boxShadow: recordingId === t.id ? '0 0 0 1px rgba(56,189,248,0.35)' : 'none',
+              border: recordingId === t.id ? '1px solid #e7a540' : '1px solid rgba(155,161,170,0.35)',
+              background: 'rgba(11,13,16,0.75)',
+              boxShadow: recordingId === t.id ? '0 0 0 1px rgba(231,165,64,0.35)' : 'none',
             }}
             data-help="Each track holds one loop. Record, then Play All to stack. Mute and volume are per track."
           >
             <div>
               <div style={{ fontFamily: 'var(--faf-font)', fontSize: '0.85rem', color: '#a5b4fc' }}>{t.name}</div>
-              <div style={{ fontSize: '0.65rem', color: 'rgba(180,170,200,0.6)' }}>
+              <div style={{ fontSize: '0.65rem', color: 'rgba(155,161,170,0.6)' }}>
                 {t.hasClip ? `${t.lengthSec.toFixed(1)}s loop` : 'empty'}
               </div>
             </div>
@@ -614,17 +614,17 @@ export default function LoopStation() {
               <button type="button" onClick={() => clearTrack(t.id)} className="rc-track-btn rc-track-red" data-help="Delete this track's loop.">
                 Clear
               </button>
-              <label style={{ fontSize: '0.7rem', color: 'rgba(200,190,220,0.7)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <label style={{ fontSize: '0.7rem', color: 'rgba(230,232,235,0.7)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 Vol
                 <input type="range" min={0} max={1} step={0.01} value={t.gain} onChange={(e) => setGain(t.id, Number(e.target.value))} style={{ width: 100 }} />
               </label>
             </div>
-            <div style={{ width: 12, height: 40, borderRadius: 4, background: t.hasClip ? (t.muted ? '#555' : 'linear-gradient(180deg,#38bdf8,#a855f7)') : '#1a1228' }} title={t.hasClip ? 'Has loop' : 'Empty'} />
+            <div style={{ width: 12, height: 40, borderRadius: 4, background: t.hasClip ? (t.muted ? '#555' : 'linear-gradient(180deg,#e7a540,#9ba1aa)') : '#1b1d20' }} title={t.hasClip ? 'Has loop' : 'Empty'} />
           </div>
         ))}
       </div>
 
-      <ol style={{ marginTop: 22, paddingLeft: 20, color: 'rgba(200,190,220,0.75)', fontSize: '0.85rem', lineHeight: 1.6, maxWidth: 640 }}>
+      <ol style={{ marginTop: 22, paddingLeft: 20, color: 'rgba(230,232,235,0.75)', fontSize: '0.85rem', lineHeight: 1.6, maxWidth: 640 }}>
         <li>Record Track 1 — riff or vocal phrase — Stop Rec.</li>
         <li>Play All, then stack Tracks 2–4 while it loops.</li>
         <li>Flip <b>Delay</b>, <b>Reverb</b>, or <b>Dub FX</b> on the master bus and ride the amounts.</li>

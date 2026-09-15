@@ -54,7 +54,7 @@ export default function StructureBuilder() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Template selector */}
       <div data-help="A song's STRUCTURE is the order of its parts — like Verse, then Chorus, then Verse again. A preset is a ready-made order you can pick so you don't have to build it from scratch. You can still rearrange it below.">
-        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
           Song Structure (the order of parts)
         </label>
         <select
@@ -62,12 +62,12 @@ export default function StructureBuilder() {
           onChange={(e) => handleTemplateChange(e.target.value)}
           style={{
             width: '100%',
-            background: 'rgba(13,8,28,0.7)',
-            border: '1px solid rgba(139,92,246,0.22)',
+            background: 'rgba(16,18,21,0.7)',
+            border: '1px solid rgba(155,161,170,0.22)',
             borderRadius: 8,
             padding: '7px 10px',
             fontSize: '0.82rem',
-            color: '#e8e0ff',
+            color: '#e6e8eb',
             outline: 'none',
             fontFamily: 'var(--faf-font)'
           }}
@@ -91,7 +91,7 @@ export default function StructureBuilder() {
         style={{
           display: 'flex', alignItems: 'center', gap: 8,
           padding: '8px 10px', borderRadius: 8,
-          background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(139,92,246,0.16)',
+          background: 'rgba(155,161,170,0.06)', border: '1px solid rgba(155,161,170,0.16)',
         }}
         data-help="The HOOK (also called the chorus) is the catchy part of a song that repeats and sticks in your head. Turn this ON to write that catchy part FIRST, then build the rest of the song around it. Off = write the song in order, start to finish."
       >
@@ -100,23 +100,23 @@ export default function StructureBuilder() {
           id="hook-first-toggle"
           checked={store.hookFirstMode}
           onChange={(e) => store.setHookFirstMode(e.target.checked)}
-          style={{ width: '16px', height: '16px', accentColor: '#a855f7', flexShrink: 0 }}
+          style={{ width: '16px', height: '16px', accentColor: '#9ba1aa', flexShrink: 0 }}
         />
-        <label htmlFor="hook-first-toggle" style={{ fontSize: '0.75rem', color: '#c4b5fd', cursor: 'pointer' }}>
+        <label htmlFor="hook-first-toggle" style={{ fontSize: '0.75rem', color: '#e6e8eb', cursor: 'pointer' }}>
           Hook-First Mode (write the catchy chorus first)
         </label>
       </div>
 
       {/* Custom structure builder */}
-      <div style={{ background: 'rgba(13,8,28,0.5)', borderRadius: 10, padding: 12, border: '1px solid rgba(139,92,246,0.14)' }}>
+      <div style={{ background: 'rgba(16,18,21,0.5)', borderRadius: 10, padding: 12, border: '1px solid rgba(155,161,170,0.14)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <span
-            style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(232,121,249,0.8)' }}
+            style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.8)' }}
             data-help="The exact running order of your song's parts, top to bottom. Use the up/down arrows to reorder a part, the trash can to remove it, and the buttons below to add a new part. This is YOUR arrangement — change it however you like."
           >
             Arrangement Sequence
           </span>
-          <span style={{ fontSize: '0.6rem', color: 'rgba(167,139,250,0.45)' }}>
+          <span style={{ fontSize: '0.6rem', color: 'rgba(155,161,170,0.45)' }}>
             ({store.lyrics.length} sections)
           </span>
         </div>
@@ -131,8 +131,8 @@ export default function StructureBuilder() {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '5px 8px',
-                background: 'rgba(13,8,28,0.8)',
-                border: '1px solid rgba(139,92,246,0.18)',
+                background: 'rgba(16,18,21,0.8)',
+                border: '1px solid rgba(155,161,170,0.18)',
                 borderRadius: 6,
                 fontSize: '0.74rem'
               }}
@@ -148,14 +148,14 @@ export default function StructureBuilder() {
                 <button
                   onClick={() => handleMove(idx, -1)}
                   disabled={idx === 0}
-                  style={{ background: 'transparent', border: 'none', color: '#c4b5fd', cursor: idx === 0 ? 'not-allowed' : 'pointer', opacity: idx === 0 ? 0.3 : 1 }}
+                  style={{ background: 'transparent', border: 'none', color: '#e6e8eb', cursor: idx === 0 ? 'not-allowed' : 'pointer', opacity: idx === 0 ? 0.3 : 1 }}
                 >
                   <ArrowUp size={12} />
                 </button>
                 <button
                   onClick={() => handleMove(idx, 1)}
                   disabled={idx === store.lyrics.length - 1}
-                  style={{ background: 'transparent', border: 'none', color: '#c4b5fd', cursor: idx === store.lyrics.length - 1 ? 'not-allowed' : 'pointer', opacity: idx === store.lyrics.length - 1 ? 0.3 : 1 }}
+                  style={{ background: 'transparent', border: 'none', color: '#e6e8eb', cursor: idx === store.lyrics.length - 1 ? 'not-allowed' : 'pointer', opacity: idx === store.lyrics.length - 1 ? 0.3 : 1 }}
                 >
                   <ArrowDown size={12} />
                 </button>
@@ -169,7 +169,7 @@ export default function StructureBuilder() {
             </div>
           ))}
           {store.lyrics.length === 0 && (
-            <div style={{ textAlign: 'center', color: 'rgba(148,130,200,0.4)', fontSize: '0.72rem', padding: '10px 0' }}>
+            <div style={{ textAlign: 'center', color: 'rgba(155,161,170,0.4)', fontSize: '0.72rem', padding: '10px 0' }}>
               No sections. Click below to add.
             </div>
           )}
@@ -177,7 +177,7 @@ export default function StructureBuilder() {
 
         {/* Add section triggers */}
         <div
-          style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(139,92,246,0.12)' }}
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(155,161,170,0.12)' }}
           data-help="Add another part to your song. Each button adds that kind of section to the bottom of the arrangement above — then you can move it wherever you want."
         >
           {Object.keys(sectionLabels).map(type => (
@@ -189,14 +189,14 @@ export default function StructureBuilder() {
                 fontSize: '0.62rem',
                 fontWeight: 600,
                 borderRadius: 5,
-                background: 'rgba(139,92,246,0.12)',
-                border: '1px solid rgba(139,92,246,0.25)',
-                color: '#c4b5fd',
+                background: 'rgba(155,161,170,0.12)',
+                border: '1px solid rgba(155,161,170,0.25)',
+                color: '#e6e8eb',
                 cursor: 'pointer',
                 transition: 'all 0.1s'
               }}
-              onMouseEnter={(e) => { e.target.style.background = 'rgba(139,92,246,0.22)'; }}
-              onMouseLeave={(e) => { e.target.style.background = 'rgba(139,92,246,0.12)'; }}
+              onMouseEnter={(e) => { e.target.style.background = 'rgba(155,161,170,0.22)'; }}
+              onMouseLeave={(e) => { e.target.style.background = 'rgba(155,161,170,0.12)'; }}
             >
               + {sectionLabels[type]}
             </button>

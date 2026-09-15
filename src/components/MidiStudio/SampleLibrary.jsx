@@ -251,7 +251,7 @@ export default function SampleLibrary({ onUseSample, fxInput }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Package size={15} style={{ color: '#ff2d95' }} />
           <strong style={{ fontSize: '0.82rem' }}>Sample Library</strong>
-          <span style={{ fontSize: '0.62rem', color: size > MAX_LIBRARY_BYTES * 0.8 ? '#fbbf24' : 'rgba(196,181,253,0.6)' }}>
+          <span style={{ fontSize: '0.62rem', color: size > MAX_LIBRARY_BYTES * 0.8 ? '#fbbf24' : 'rgba(230,232,235,0.6)' }}>
             {packs.length} pack{packs.length === 1 ? '' : 's'} · {formatBytes(size)} of {formatBytes(MAX_LIBRARY_BYTES)} · stored on this machine
           </span>
         </div>
@@ -399,13 +399,13 @@ export default function SampleLibrary({ onUseSample, fxInput }) {
         onDrop={onDrop}
         data-help="Drag samples or a whole sample pack straight onto this panel. Your files never leave this computer."
         style={{
-          border: `1px dashed ${dragOver ? '#ff2d95' : 'rgba(0,229,255,0.32)'}`,
-          background: dragOver ? 'rgba(255,45,149,0.08)' : 'rgba(0,229,255,0.03)',
+          border: `1px dashed ${dragOver ? '#ff2d95' : 'rgba(231,165,64,0.32)'}`,
+          background: dragOver ? 'rgba(255,45,149,0.08)' : 'rgba(231,165,64,0.03)',
           borderRadius: 10,
           padding: '10px 12px',
           textAlign: 'center',
           fontSize: '0.68rem',
-          color: dragOver ? '#ff2d95' : 'rgba(196,181,253,0.72)',
+          color: dragOver ? '#ff2d95' : 'rgba(230,232,235,0.72)',
           transition: 'background 0.15s, border-color 0.15s',
         }}
       >
@@ -453,7 +453,7 @@ export default function SampleLibrary({ onUseSample, fxInput }) {
       {/* Samples in the active pack */}
       {activePack && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 260, overflowY: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.62rem', color: 'rgba(196,181,253,0.55)', padding: '0 2px 2px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.62rem', color: 'rgba(230,232,235,0.55)', padding: '0 2px 2px' }}>
             <span>{samples.length} sample{samples.length === 1 ? '' : 's'} in “{activePack.name}”</span>
             <button
               onClick={async () => {
@@ -473,11 +473,11 @@ export default function SampleLibrary({ onUseSample, fxInput }) {
             position: 'sticky', top: 0, zIndex: 3,
             display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
             padding: '6px 4px', marginBottom: 2,
-            background: 'rgba(10,6,20,0.97)',
-            borderBottom: '1px solid rgba(139,92,246,0.25)',
+            background: 'rgba(11,13,16,0.97)',
+            borderBottom: '1px solid rgba(155,161,170,0.25)',
             backdropFilter: 'blur(6px)',
           }}>
-            <Search size={11} style={{ color: 'rgba(0,229,255,0.8)', flexShrink: 0 }} />
+            <Search size={11} style={{ color: 'rgba(231,165,64,0.8)', flexShrink: 0 }} />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -485,8 +485,8 @@ export default function SampleLibrary({ onUseSample, fxInput }) {
               data-help="Type to narrow the list. By default it searches the pack you're in; flip to All Packs to search your whole library at once."
               style={{
                 flex: '1 1 130px', minWidth: 110, background: 'rgba(0,0,0,0.35)',
-                border: '1px solid rgba(139,92,246,0.3)', borderRadius: 6,
-                color: '#e8e0ff', fontSize: '0.68rem', padding: '5px 8px', outline: 'none',
+                border: '1px solid rgba(155,161,170,0.3)', borderRadius: 6,
+                color: '#e6e8eb', fontSize: '0.68rem', padding: '5px 8px', outline: 'none',
               }}
             />
             {query && (
@@ -526,13 +526,13 @@ export default function SampleLibrary({ onUseSample, fxInput }) {
               <Square size={10} /> Stop{playing.size ? ` (${playing.size})` : ''}
             </button>
 
-            <span style={{ fontSize: '0.6rem', color: 'rgba(196,181,253,0.5)', flexShrink: 0 }}>
+            <span style={{ fontSize: '0.6rem', color: 'rgba(230,232,235,0.5)', flexShrink: 0 }}>
               {visibleSamples.length}/{searchAll ? allSamples.length : samples.length}
             </span>
           </div>
 
           {samples.length === 0 && !searchAll && (
-            <div style={{ fontSize: '0.68rem', color: 'rgba(196,181,253,0.5)', padding: '8px 2px' }}>
+            <div style={{ fontSize: '0.68rem', color: 'rgba(230,232,235,0.5)', padding: '8px 2px' }}>
               Nothing in this pack yet — drop some samples above.
             </div>
           )}
@@ -543,21 +543,21 @@ export default function SampleLibrary({ onUseSample, fxInput }) {
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
                 padding: '5px 8px', borderRadius: 7,
-                background: 'rgba(13,8,28,0.55)',
-                border: '1px solid rgba(139,92,246,0.18)',
+                background: 'rgba(16,18,21,0.55)',
+                border: '1px solid rgba(155,161,170,0.18)',
                 fontSize: '0.68rem',
               }}
             >
-              <Music2 size={11} style={{ color: '#00e5ff', flexShrink: 0 }} />
+              <Music2 size={11} style={{ color: '#e7a540', flexShrink: 0 }} />
               <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {s.name}
               </span>
-              <span style={{ fontSize: '0.58rem', color: 'rgba(196,181,253,0.45)', flexShrink: 0 }}>
+              <span style={{ fontSize: '0.58rem', color: 'rgba(230,232,235,0.45)', flexShrink: 0 }}>
                 {formatBytes(s.size)}
               </span>
 
               <label
-                style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.58rem', color: 'rgba(196,181,253,0.6)', flexShrink: 0 }}
+                style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.58rem', color: 'rgba(230,232,235,0.6)', flexShrink: 0 }}
                 data-help="The pitch this sample was recorded at. Playing other keys shifts up or down from here. Leave it at C4 for drums and one-shots."
               >
                 root
@@ -571,7 +571,7 @@ export default function SampleLibrary({ onUseSample, fxInput }) {
                     await updateSample(s.id, { rootMidi: v });
                     refreshSamples(activePackId);
                   }}
-                  style={{ width: 42, background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 5, color: '#e8e0ff', fontSize: '0.58rem', padding: '2px 4px' }}
+                  style={{ width: 42, background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(155,161,170,0.3)', borderRadius: 5, color: '#e6e8eb', fontSize: '0.58rem', padding: '2px 4px' }}
                 />
                 <span style={{ minWidth: 24 }}>{midiToName(s.rootMidi)}</span>
               </label>

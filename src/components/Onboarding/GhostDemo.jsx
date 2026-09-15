@@ -621,7 +621,7 @@ export default function GhostDemo({ tabId, onClose }) {
             <path
               d="M5 3 L5 18 L9.5 14.5 L12.5 21 L15 20 L12 13.5 L18 13 Z"
               fill="#f8fafc"
-              stroke="#7c3aed"
+              stroke="#9ba1aa"
               strokeWidth="1.1"
             />
           </svg>

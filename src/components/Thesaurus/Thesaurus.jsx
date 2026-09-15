@@ -88,7 +88,7 @@ export default function Thesaurus() {
         {title} ({list.length})
       </span>
       {list.length === 0 ? (
-        <p style={{ color: 'rgba(148,130,200,0.4)', fontSize: '0.82rem' }}>None found for this word.</p>
+        <p style={{ color: 'rgba(155,161,170,0.4)', fontSize: '0.82rem' }}>None found for this word.</p>
       ) : (
         <WordCloud list={list} color={color} accent={accent} />
       )}
@@ -100,7 +100,7 @@ export default function Thesaurus() {
       <TabBackground name="thesaurus" />
       <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Search header */}
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(139,92,246,0.2)', background: 'rgba(8,5,18,0.85)', display: 'flex', gap: 8, flexShrink: 0 }}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(155,161,170,0.2)', background: 'rgba(10,12,15,0.85)', display: 'flex', gap: 8, flexShrink: 0 }}>
         <input
           value={word}
           onChange={(e) => setWord(e.target.value)}
@@ -109,12 +109,12 @@ export default function Thesaurus() {
           placeholder="Enter a word to find other words for it..."
           style={{
             flex: 1,
-            background: 'rgba(13,8,28,0.7)',
-            border: '1px solid rgba(139,92,246,0.22)',
+            background: 'rgba(16,18,21,0.7)',
+            border: '1px solid rgba(155,161,170,0.22)',
             borderRadius: 8,
             padding: '7px 10px',
             fontSize: '0.82rem',
-            color: '#e8e0ff',
+            color: '#e6e8eb',
             outline: 'none',
             fontFamily: 'var(--faf-font)'
           }}
@@ -152,8 +152,8 @@ export default function Thesaurus() {
             title="Other words for it (synonyms)"
             help="Synonyms are different words that mean the SAME thing — like 'happy' and 'joyful'. Great for swapping out a word that feels overused or doesn't quite fit the rhythm."
             list={synonyms}
-            color="#c4b5fd"
-            accent="#a855f7"
+            color="#e6e8eb"
+            accent="#9ba1aa"
           />
         )}
 
@@ -162,8 +162,8 @@ export default function Thesaurus() {
             title="Opposite words (antonyms)"
             help="Antonyms are words that mean the OPPOSITE — like 'happy' and 'sad'. Handy when you want to flip a feeling or set up a contrast in your lyrics."
             list={antonyms}
-            color="#67e8f9"
-            accent="#22d3ee"
+            color="#e7a540"
+            accent="#e7a540"
           />
         )}
 
@@ -172,15 +172,15 @@ export default function Thesaurus() {
             title="Related ideas"
             help="Words and ideas that go WITH your word but aren't exact matches — like 'sunshine' or 'celebrate' for 'happy'. A spark for fresh imagery and lines."
             list={related}
-            color="#f0abfc"
-            accent="#e879f9"
+            color="#e6e8eb"
+            accent="#9ba1aa"
           />
         )}
 
         {synonyms === null && !loading && (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, paddingBottom: 60, userSelect: 'none' }}>
             <div className="empty-glyph"><Library size={44} strokeWidth={1.25} /></div>
-            <p style={{ color: 'rgba(196,181,253,0.7)', fontWeight: 500, fontSize: '0.88rem', textAlign: 'center' }}>
+            <p style={{ color: 'rgba(230,232,235,0.7)', fontWeight: 500, fontSize: '0.88rem', textAlign: 'center' }}>
               Type a word and click Look Up to find other words for it,<br />its opposites, and related ideas.
             </p>
           </div>

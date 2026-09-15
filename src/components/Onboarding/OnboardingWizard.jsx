@@ -104,7 +104,7 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
       /* z-index 950: the phone shell paints at 800 and its bottom sheet at 901.
          At the old 200 the tour opened BEHIND the launcher and looked like the
          button did nothing. Still below the Ghost operator, as before. */
-      style={{ position: 'fixed', inset: 0, zIndex: 950, background: 'rgba(5,2,14,0.78)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 950, background: 'rgba(6,8,11,0.78)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
       onClick={onClose}
     >
       {/* Narration audio — hidden element, driven by the controls below. */}
@@ -121,14 +121,14 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
       <div
         className="card-cosmic wiz-card"
         onClick={(e) => e.stopPropagation()}
-        style={{ width: '100%', maxWidth: 560, maxHeight: '88vh', overflowY: 'auto', background: '#0d081c', border: '1px solid rgba(139,92,246,0.4)', borderRadius: 16, padding: '26px 28px', boxShadow: '0 0 0 1px rgba(124,58,237,0.45)' }}
+        style={{ width: '100%', maxWidth: 560, maxHeight: '88vh', overflowY: 'auto', background: '#101215', border: '1px solid rgba(155,161,170,0.4)', borderRadius: 16, padding: '26px 28px', boxShadow: '0 0 0 1px rgba(155,161,170,0.45)' }}
       >
         {/* Top row: step counter + skip */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-          <span style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.5)' }}>
+          <span style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.5)' }}>
             {current.maker ? 'A note from the AI' : `Tour · ${step + 1} of ${cards.length}`}
           </span>
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'rgba(167,139,250,0.55)', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 600 }}>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'rgba(155,161,170,0.55)', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 600 }}>
             {isLast ? 'Close' : 'Skip tour'}
           </button>
         </div>
@@ -139,7 +139,7 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
         </div>
 
         {/* Title */}
-        <h2 style={{ fontFamily: 'var(--faf-font)', fontSize: '1.35rem', fontWeight: 800, textAlign: 'center', margin: '0 0 8px', background: 'linear-gradient(90deg, #e879f9, #a855f7, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+        <h2 style={{ fontFamily: 'var(--faf-font)', fontSize: '1.35rem', fontWeight: 800, textAlign: 'center', margin: '0 0 8px', background: 'linear-gradient(90deg, #9ba1aa, #9ba1aa, #e7a540)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
           {current.title}
         </h2>
 
@@ -153,7 +153,7 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
             <button onClick={togglePlay} title={playing ? 'Pause' : 'Play'} style={narrBtn}>{playing ? <Pause size={14} /> : <Play size={14} />}</button>
             <button onClick={replay} title="Replay" style={narrBtn}><RotateCcw size={14} /></button>
             <button onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'} style={narrBtn}>{muted ? <VolumeX size={14} /> : <Volume2 size={14} />}</button>
-            <span style={{ fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: ownVoice[current.audio.replace(/\.[^.]+$/, '')] ? 'rgba(52,211,153,0.7)' : 'rgba(167,139,250,0.45)' }}>
+            <span style={{ fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: ownVoice[current.audio.replace(/\.[^.]+$/, '')] ? 'rgba(52,211,153,0.7)' : 'rgba(155,161,170,0.45)' }}>
               {ownVoice[current.audio.replace(/\.[^.]+$/, '')]
                 ? (playing ? 'Your voice…' : 'Your voice')
                 : (playing ? 'Narrating…' : 'Narration')}
@@ -164,7 +164,7 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
         {/* Body — paragraphs from the narration script */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 11, marginBottom: 8 }}>
           {paragraphs.map((p, i) => (
-            <p key={i} style={{ fontSize: current.maker && i === 0 ? '0.92rem' : '0.9rem', lineHeight: 1.68, color: current.maker && i === 0 ? '#e879f9' : '#d6cdf0', fontStyle: current.maker && i === 0 ? 'italic' : 'normal', textAlign: current.maker ? 'left' : 'center', margin: 0 }}>
+            <p key={i} style={{ fontSize: current.maker && i === 0 ? '0.92rem' : '0.9rem', lineHeight: 1.68, color: current.maker && i === 0 ? '#9ba1aa' : '#e6e8eb', fontStyle: current.maker && i === 0 ? 'italic' : 'normal', textAlign: current.maker ? 'left' : 'center', margin: 0 }}>
               {p}
             </p>
           ))}
@@ -174,14 +174,14 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 6, margin: '20px 0 18px' }}>
           {cards.map((_, i) => (
             <button key={i} onClick={() => go(i)} aria-label={`Go to card ${i + 1}`}
-              style={{ width: i === step ? 22 : 8, height: 8, borderRadius: 9999, border: 'none', cursor: 'pointer', padding: 0, background: i === step ? 'linear-gradient(90deg,#e879f9,#22d3ee)' : 'rgba(167,139,250,0.3)', transition: 'all 0.2s' }} />
+              style={{ width: i === step ? 22 : 8, height: 8, borderRadius: 9999, border: 'none', cursor: 'pointer', padding: 0, background: i === step ? 'linear-gradient(90deg,#9ba1aa,#e7a540)' : 'rgba(155,161,170,0.3)', transition: 'all 0.2s' }} />
           ))}
         </div>
 
         {/* Nav buttons */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <button onClick={() => go(step - 1)} disabled={step === 0}
-            style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid rgba(139,92,246,0.3)', background: 'transparent', color: step === 0 ? 'rgba(167,139,250,0.25)' : 'rgba(196,181,253,0.8)', fontSize: '0.82rem', fontWeight: 600, cursor: step === 0 ? 'not-allowed' : 'pointer', fontFamily: 'var(--faf-font)' }}>
+            style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid rgba(155,161,170,0.3)', background: 'transparent', color: step === 0 ? 'rgba(155,161,170,0.25)' : 'rgba(230,232,235,0.8)', fontSize: '0.82rem', fontWeight: 600, cursor: step === 0 ? 'not-allowed' : 'pointer', fontFamily: 'var(--faf-font)' }}>
             ← Back
           </button>
 
@@ -196,5 +196,5 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
   );
 }
 
-const narrBtn = { width: 30, height: 30, borderRadius: 9999, border: '1px solid rgba(139,92,246,0.4)', background: 'rgba(124,58,237,0.15)', color: '#c4b5fd', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 };
+const narrBtn = { width: 30, height: 30, borderRadius: 9999, border: '1px solid rgba(155,161,170,0.4)', background: 'rgba(155,161,170,0.15)', color: '#e6e8eb', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 };
 const navBtn = { padding: '10px 26px', borderRadius: 8, border: 'none', color: '#fff', fontSize: '0.86rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--faf-font)' };

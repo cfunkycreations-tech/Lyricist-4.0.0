@@ -272,7 +272,7 @@ export default function MasteringStudio() {
         <div className="album-sidebar">
           <div>
             <h3 style={{ fontSize: '1rem', marginBottom: 4 }}><Icon i={Gauge} />Mastering Studio</h3>
-            <p style={{ fontSize: '0.72rem', color: 'rgba(196,181,253,0.7)', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.72rem', color: 'rgba(230,232,235,0.7)', lineHeight: 1.5 }}>
               The finish line: gather the songs you've made, master them with a real
               EQ → compression → limiter chain (all offline), add the cover, and export
               the album in one shot.
@@ -322,7 +322,7 @@ export default function MasteringStudio() {
               placeholder="Optional: describe the cover you want..." value={coverPrompt} onChange={(e) => setCoverPrompt(e.target.value)} />
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontWeight: 400, cursor: 'pointer' }}>
               <input type="checkbox" checked={medallion} onChange={(e) => setMedallion(e.target.checked)} style={{ accentColor: '#ff2d95' }} />
-              <span style={{ fontSize: '0.66rem', color: '#c4b5fd' }}>Neon medallion frame</span>
+              <span style={{ fontSize: '0.66rem', color: '#e6e8eb' }}>Neon medallion frame</span>
             </label>
           </div>
 
@@ -335,14 +335,14 @@ export default function MasteringStudio() {
               {Object.keys(MASTERING_PRESETS).map(p => (
                 <button key={p} onClick={() => applyPreset(p)}
                   className={preset === p ? 'pill-purple' : ''}
-                  style={{ padding: '3px 9px', borderRadius: 9999, fontSize: '0.62rem', fontWeight: 700, cursor: 'pointer', background: preset === p ? undefined : 'rgba(13,8,28,0.7)', color: preset === p ? undefined : 'rgba(196,181,253,0.6)', border: preset === p ? undefined : '1px solid rgba(139,92,246,0.25)' }}>
+                  style={{ padding: '3px 9px', borderRadius: 9999, fontSize: '0.62rem', fontWeight: 700, cursor: 'pointer', background: preset === p ? undefined : 'rgba(16,18,21,0.7)', color: preset === p ? undefined : 'rgba(230,232,235,0.6)', border: preset === p ? undefined : '1px solid rgba(155,161,170,0.25)' }}>
                   {p}
                 </button>
               ))}
             </div>
             {[['bass', 'Bass'], ['mids', 'Mids'], ['treble', 'Treble'], ['compression', 'Compression'], ['loudness', 'Loudness']].map(([key, label]) => (
               <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.66rem', marginBottom: 4, fontWeight: 400 }}>
-                <span style={{ width: 78, color: '#00e5ff' }}>{label}</span>
+                <span style={{ width: 78, color: '#e7a540' }}>{label}</span>
                 <input type="range" min={0} max={1} step={0.05} value={settings[key]}
                   onChange={(e) => setSlider(key, Number(e.target.value))}
                   className="suno-range" style={{ flex: 1 }} />
@@ -395,10 +395,10 @@ export default function MasteringStudio() {
           {libraryOpen && (
             <div className="card-cosmic" style={{ borderRadius: 12, padding: 14, marginBottom: 14 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#00e5ff' }}>Your Booth takes — click to add</span>
+                <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#e7a540' }}>Your Booth takes — click to add</span>
                 <button onClick={() => setLibraryOpen(false)} className="suno-btn"><X size={12} /></button>
               </div>
-              {!library.length && <div style={{ fontSize: '0.72rem', color: 'rgba(196,181,253,0.6)' }}>No takes in the library yet — record some in the Recording Booth first.</div>}
+              {!library.length && <div style={{ fontSize: '0.72rem', color: 'rgba(230,232,235,0.6)' }}>No takes in the library yet — record some in the Recording Booth first.</div>}
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {library.map(rec => (
                   <button key={rec.id} onClick={() => addFromLibrary(rec)} className="suno-chip"
@@ -411,7 +411,7 @@ export default function MasteringStudio() {
           )}
 
           {!tracks.length && (
-            <div className="card-cosmic" style={{ borderRadius: 12, padding: 30, textAlign: 'center', color: 'rgba(196,181,253,0.65)', fontSize: '0.8rem' }}>
+            <div className="card-cosmic" style={{ borderRadius: 12, padding: 30, textAlign: 'center', color: 'rgba(230,232,235,0.65)', fontSize: '0.8rem' }}>
               No tracks yet. Pull takes from the Recording Booth or upload your Suno songs,
               drag them into order, then hit <strong>Master All Tracks</strong>.
             </div>
@@ -431,7 +431,7 @@ export default function MasteringStudio() {
               <span className="album-track-num">{i + 1}</span>
               <input
                 className="album-input"
-                style={{ flex: 2, fontWeight: 700, fontFamily: 'var(--faf-font)', color: '#00e5ff' }}
+                style={{ flex: 2, fontWeight: 700, fontFamily: 'var(--faf-font)', color: '#e7a540' }}
                 value={t.title}
                 onChange={(e) => setTracks(prev => prev.map(x => x.id === t.id ? { ...x, title: e.target.value } : x))}
                 onMouseDown={(e) => e.stopPropagation()}
@@ -450,7 +450,7 @@ export default function MasteringStudio() {
               </button>
 
               {t.busy ? (
-                <span style={{ fontSize: '0.64rem', color: '#00e5ff', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ fontSize: '0.64rem', color: '#e7a540', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                   <RefreshCw size={11} className="pulse-glow" /> Mastering...
                 </span>
               ) : t.mastered ? (
@@ -472,7 +472,7 @@ export default function MasteringStudio() {
           ))}
 
           {tracks.length > 0 && (
-            <p style={{ fontSize: '0.64rem', color: 'rgba(196,181,253,0.55)', marginTop: 10 }}>
+            <p style={{ fontSize: '0.64rem', color: 'rgba(230,232,235,0.55)', marginTop: 10 }}>
               Tracks are re-mastered automatically when you change the chain settings.
               Drag a row to set the running order — that order is what gets exported.
             </p>

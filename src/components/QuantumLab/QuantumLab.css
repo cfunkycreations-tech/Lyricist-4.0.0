@@ -4,28 +4,28 @@
 
 .ql-root {
   --ql-mag: #ff2d95;
-  --ql-org: #00e5ff; /* was orange — now electric blue */
+  --ql-org: #e7a540; /* was orange — now electric blue */
   --ql-grn: #39ff14;
   --ql-ylw: #10f0a0; /* was yellow — now electric emerald */
-  --ql-blu: #43d9ff;
-  --ql-vio: #b44dff;
-  --ql-vio2: #c084fc;
-  --ql-deep: #4c1d95;
-  --ql-ink: #07040f;
-  --ql-panel: rgba(10, 6, 28, 0.62);
+  --ql-blu: #e7a540;
+  --ql-vio: #9ba1aa;
+  --ql-vio2: #9ba1aa;
+  --ql-deep: #1a1d22;
+  --ql-ink: #080a0d;
+  --ql-panel: rgba(15, 17, 20, 0.62);
   position: relative;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 22px 26px 30px;
-  color: #f3ecff;
+  color: #e6e8eb;
   font-family: var(--faf-font);
   background:
-    radial-gradient(120% 90% at 20% 0%, rgba(67, 217, 255, 0.12) 0%, transparent 50%),
-    radial-gradient(100% 80% at 90% 10%, rgba(168, 85, 247, 0.14) 0%, transparent 45%),
-    radial-gradient(140% 120% at 70% 0%, #0a0620 0%, #050210 45%, #030108 100%),
-    #050208;
+    radial-gradient(120% 90% at 20% 0%, rgba(231, 165, 64, 0.12) 0%, transparent 50%),
+    radial-gradient(100% 80% at 90% 10%, rgba(155, 161, 170, 0.14) 0%, transparent 45%),
+    radial-gradient(140% 120% at 70% 0%, #111316 0%, #07090c 45%, #030508 100%),
+    #030508;
 }
 
 
@@ -55,9 +55,9 @@
   min-height: 72px;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(0, 229, 255, 0.4);
-  background: rgba(6, 4, 14, 0.9);
-  color: #f3ecff;
+  border: 1px solid rgba(231, 165, 64, 0.4);
+  background: rgba(7, 9, 12, 0.9);
+  color: #e6e8eb;
   font-family: var(--faf-font);
   font-size: 0.95rem;
   line-height: 1.45;
@@ -67,7 +67,7 @@
   border-color: var(--ql-ylw);
   box-shadow: 0 0 0 2px rgba(234, 255, 43, 0.2);
 }
-.ql-keywords-input::placeholder { color: rgba(180, 170, 200, 0.45); }
+.ql-keywords-input::placeholder { color: rgba(155, 161, 170, 0.45); }
 .ql-keywords-actions {
   display: flex;
   flex-wrap: wrap;
@@ -77,7 +77,7 @@
 }
 .ql-keywords-hint {
   font-size: 0.72rem;
-  color: rgba(200, 190, 220, 0.55);
+  color: rgba(230, 232, 235, 0.55);
 }
 .ql-edit-label {
   display: block;
@@ -97,9 +97,9 @@
   min-width: 0;
   padding: 8px 10px;
   border-radius: 8px;
-  border: 1px solid rgba(0, 229, 255, 0.4);
-  background: rgba(6, 4, 14, 0.9);
-  color: #f3ecff;
+  border: 1px solid rgba(231, 165, 64, 0.4);
+  background: rgba(7, 9, 12, 0.9);
+  color: #e6e8eb;
   font-family: var(--faf-font);
   font-size: 0.9rem;
   outline: none;
@@ -112,10 +112,10 @@
 /* ---- How-to cheat sheet (always first for new users) ---- */
 .ql-howto {
   margin: 16px 0 4px;
-  border: 1.5px solid rgba(0, 229, 255, 0.45);
+  border: 1px solid rgba(231, 165, 64, 0.45);
   border-radius: 14px;
-  background: rgba(12, 8, 24, 0.85);
-  box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.12), inset 0 0 20px rgba(0, 0, 0, 0.35);
+  background: rgba(14, 16, 19, 0.85);
+  box-shadow: 0 0 0 1px rgba(231, 165, 64, 0.12), inset 0 0 20px rgba(0, 0, 0, 0.35);
   overflow: hidden;
 }
 .ql-howto-toggle {
@@ -140,7 +140,7 @@
 .ql-howto-steps {
   margin: 0;
   padding: 0 18px 12px 36px;
-  color: rgba(230, 220, 250, 0.92);
+  color: rgba(230, 232, 235, 0.92);
   font-size: 0.9rem;
   line-height: 1.55;
 }
@@ -152,8 +152,8 @@
   padding: 0 16px 14px;
   font-size: 0.82rem;
   line-height: 1.5;
-  color: rgba(200, 190, 220, 0.72);
-  border-top: 1px solid rgba(0, 229, 255, 0.18);
+  color: rgba(230, 232, 235, 0.72);
+  border-top: 1px solid rgba(231, 165, 64, 0.18);
   padding-top: 10px;
 }
 .ql-howto-note b { color: rgba(234, 255, 43, 0.9); font-weight: 600; }
@@ -177,8 +177,8 @@
 .ql-bgscrim {
   position: absolute; inset: 0; pointer-events: none;
   background:
-    radial-gradient(130% 120% at 22% 42%, rgba(6,3,14,0.52) 0%, rgba(6,3,14,0.28) 42%, rgba(6,3,14,0.14) 100%),
-    linear-gradient(180deg, rgba(6,3,14,0.28) 0%, rgba(6,3,14,0.16) 50%, rgba(6,3,14,0.44) 100%);
+    radial-gradient(130% 120% at 22% 42%, rgba(7,9,12,0.52) 0%, rgba(7,9,12,0.28) 42%, rgba(7,9,12,0.14) 100%),
+    linear-gradient(180deg, rgba(7,9,12,0.28) 0%, rgba(7,9,12,0.16) 50%, rgba(7,9,12,0.44) 100%);
 }
 .ql-lattice {
   position: relative;
@@ -225,7 +225,7 @@
     linear-gradient(180deg,
       rgba(var(--tc, 40 60 120), calc(0.06 + var(--heat, 0) * 0.30)) 0%,
       rgba(var(--tc, 40 60 120), calc(0.02 + var(--heat, 0) * 0.14)) 100%),
-    rgba(5, 3, 14, 0.92);
+    rgba(7, 9, 12, 0.92);
   box-shadow:
     0 0 var(--glow, 10px) rgba(var(--tc, 40 60 120), calc(0.30 + var(--heat, 0) * 0.45)), inset 0 0 18px rgba(var(--tc, 40 60 120), calc(0.10 + var(--heat, 0) * 0.30)), inset 0 0 26px rgba(0, 0, 0, 0.75);
   color: #fff;
@@ -242,9 +242,9 @@
 /* Lattice tile selected — violet, and brighter than any temperature so you can
    always find the one you picked. */
 .ql-tile.sel {
-  border-color: #b44dff;
+  border-color: #9ba1aa;
   box-shadow:
-    0 0 0 1px rgba(180, 77, 255, 0.7), inset 0 0 26px rgba(0, 0, 0, 0.8);
+    0 0 0 1px rgba(155, 161, 170, 0.7), inset 0 0 26px rgba(0, 0, 0, 0.8);
 }
 
 .ql-tile.ql-tile-flash {
@@ -331,9 +331,9 @@
   font-weight: 600;
   padding: 11px 20px;
   border-radius: 12px;
-  background: rgba(10, 6, 20, 0.7);
+  background: rgba(11, 13, 16, 0.7);
   border: 1.5px solid rgba(255, 255, 255, 0.14);
-  color: #f3ecff;
+  color: #e6e8eb;
   cursor: pointer;
   transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.2s ease, color 0.15s ease;
   white-space: nowrap;
@@ -381,7 +381,7 @@
 .ql-status {
   font-size: 0.95rem;
   margin: 6px 0 2px;
-  color: rgba(220,210,240,0.75);
+  color: rgba(230,232,235,0.75);
   padding: 8px 12px;
   border-radius: 10px;
   border: 1px solid transparent;
@@ -389,13 +389,13 @@
 }
 .ql-status b { color: var(--ql-grn); text-shadow: 0 0 10px rgba(57,255,20,0.5); }
 .ql-status.ql-status-pop {
-  border-color: rgba(180, 77, 255, 0.65);
-  background: rgba(80, 30, 120, 0.28);
-  box-shadow: 0 0 0 1px rgba(180, 77, 255, 0.35);
-  color: #f0e8ff;
+  border-color: rgba(155, 161, 170, 0.65);
+  background: rgba(26, 29, 34, 0.28);
+  box-shadow: 0 0 0 1px rgba(155, 161, 170, 0.35);
+  color: #e6e8eb;
   animation: ql-status-thump 0.7s ease-out;
 }
-.ql-status.ql-status-pop b { color: var(--ql-vio2); text-shadow: 0 0 12px rgba(180, 77, 255, 0.8); }
+.ql-status.ql-status-pop b { color: var(--ql-vio2); text-shadow: 0 0 12px rgba(155, 161, 170, 0.8); }
 @keyframes ql-status-thump {
   0% { transform: scale(1); }
   30% { transform: scale(1.015); }
@@ -418,10 +418,10 @@
 .ql-panel h4 {
   font-family: var(--faf-font);
   font-size: 0.82rem; letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--ql-org); margin: 0 0 12px; text-shadow: 0 0 10px rgba(0,229,255,0.45);
+  color: var(--ql-org); margin: 0 0 12px; text-shadow: 0 0 10px rgba(231,165,64,0.45);
 }
 .ql-kv { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; font-size: 0.95rem; }
-.ql-kv .k { color: rgba(200,190,220,0.62); }
+.ql-kv .k { color: rgba(230,232,235,0.62); }
 .ql-kv .v { font-family: var(--faf-font); font-weight: 700; }
 .ql-v-org { color: var(--ql-org); } .ql-v-grn { color: var(--ql-grn); } .ql-v-ylw { color: var(--ql-ylw); }
 .ql-mono { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.04em; }
@@ -430,7 +430,7 @@
 .ql-mini {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 0.82rem; padding: 6px 12px; border-radius: 9px;
-  background: rgba(10,6,20,0.6); border: 1.5px solid rgba(255,255,255,0.16); color: #eee; cursor: pointer;
+  background: rgba(11,13,16,0.6); border: 1.5px solid rgba(255,255,255,0.16); color: #eee; cursor: pointer;
   transition: all 0.15s ease;
 }
 .ql-mini:hover { transform: translateY(-1px); }
@@ -446,14 +446,14 @@
 .ql-bar > span {
   display: block; height: 100%; border-radius: 999px;
   background: linear-gradient(90deg, var(--ql-mag), var(--ql-org) 60%, var(--ql-ylw));
-  box-shadow: 0 0 0 1px rgba(0,229,255,0.5);
+  box-shadow: 0 0 0 1px rgba(231,165,64,0.5);
   transition: width 0.5s cubic-bezier(0.2,0.8,0.2,1);
 }
 .ql-bar.grn > span { background: linear-gradient(90deg, var(--ql-grn), var(--ql-ylw)); box-shadow: 0 0 0 1px rgba(57,255,20,0.5); }
 
 /* ---- Entanglement sparkline panel (floating) ---- */
 .ql-ent-panel {
-  border-color: rgba(67,217,255,0.4); box-shadow: 0 0 0 1px rgba(67,217,255,0.16), inset 0 0 24px rgba(0,0,0,0.35);
+  border-color: rgba(231,165,64,0.4); box-shadow: 0 0 0 1px rgba(231,165,64,0.16), inset 0 0 24px rgba(0,0,0,0.35);
 }
 
 /* The turbulence filter's host svg. Zero size, still in the render tree: a
@@ -497,7 +497,7 @@
   font-size: 0.66rem;
   color: #04121a;
   background: var(--ql-blu);
-  box-shadow: 0 0 0 1px rgba(67, 217, 255, 0.6);
+  box-shadow: 0 0 0 1px rgba(231, 165, 64, 0.6);
 }
 /* Closed by default. Height, not display, so it can animate. */
 .ql-ent-body {
@@ -526,9 +526,9 @@
   margin: 14px 0 10px;
   padding: 14px 16px;
   border-radius: 14px;
-  background: rgba(6, 3, 14, 0.82);
-  border: 1px solid rgba(168, 85, 247, 0.35);
-  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.14), inset 0 0 22px rgba(0, 0, 0, 0.35);
+  background: rgba(7, 9, 12, 0.82);
+  border: 1px solid rgba(155, 161, 170, 0.35);
+  box-shadow: 0 0 0 1px rgba(155, 161, 170, 0.14), inset 0 0 22px rgba(0, 0, 0, 0.35);
 }
 .ql-actionbar-row {
   display: flex;
@@ -552,7 +552,7 @@
 }
 .ql-actionbar-sub {
   font-size: 0.74rem;
-  color: rgba(210, 200, 235, 0.6);
+  color: rgba(230, 232, 235, 0.6);
 }
 
 /* Numbered chips so the order is obvious without reading a manual */
@@ -565,8 +565,8 @@
   font-size: 0.6rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #0b0416;
-  background: linear-gradient(135deg, #10f0a0, #00e5ff);
+  color: #0b0d10;
+  background: linear-gradient(135deg, #10f0a0, #e7a540);
   box-shadow: 0 0 0 1px rgba(16, 240, 160, 0.5);
   vertical-align: middle;
 }
@@ -577,7 +577,7 @@
   min-width: 170px;
   font-size: clamp(0.86rem, 1.5vw, 1.08rem);
   padding: 13px 22px;
-  border-color: rgba(168, 85, 247, 0.5);
+  border-color: rgba(155, 161, 170, 0.5);
 }
 /* The bar's own border tint must never eat the ON states — Spotlight has to
    stay ORANGE and Crystallize/Freeze/Entanglement GREEN once they're armed. */
@@ -605,11 +605,11 @@
 /* ---- Advanced features panel (1–9) ---- */
 .ql-adv {
   margin: 14px 0 18px;
-  border: 1px solid rgba(0, 229, 255, 0.28);
+  border: 1px solid rgba(231, 165, 64, 0.28);
   border-radius: 14px;
   background: rgba(6, 10, 24, 0.82);
   overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.12);
+  box-shadow: 0 0 0 1px rgba(155, 161, 170, 0.12);
 }
 .ql-adv-tabs {
   display: flex;
@@ -617,7 +617,7 @@
   gap: 4px;
   padding: 8px;
   background: rgba(0, 0, 0, 0.35);
-  border-bottom: 1px solid rgba(0, 229, 255, 0.18);
+  border-bottom: 1px solid rgba(231, 165, 64, 0.18);
 }
 .ql-adv-tab {
   border: 1px solid transparent;
@@ -631,10 +631,10 @@
   cursor: pointer;
 }
 .ql-adv-tab.is-on {
-  border-color: rgba(0, 229, 255, 0.55);
+  border-color: rgba(231, 165, 64, 0.55);
   color: #e8eef8;
-  background: rgba(0, 229, 255, 0.12);
-  box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.2);
+  background: rgba(231, 165, 64, 0.12);
+  box-shadow: 0 0 0 1px rgba(231, 165, 64, 0.2);
 }
 .ql-adv-body { padding: 14px 16px 16px; }
 .ql-adv-h {
@@ -661,7 +661,7 @@
   min-width: 160px;
   padding: 8px 10px;
   border-radius: 8px;
-  border: 1px solid rgba(0, 229, 255, 0.25);
+  border: 1px solid rgba(231, 165, 64, 0.25);
   background: rgba(8, 12, 28, 0.85);
   color: #e8eef8;
   font-size: 0.82rem;
@@ -669,8 +669,8 @@
 .ql-adv-select {
   padding: 7px 10px;
   border-radius: 8px;
-  border: 1px solid rgba(168, 85, 247, 0.35);
-  background: rgba(12, 8, 28, 0.9);
+  border: 1px solid rgba(155, 161, 170, 0.35);
+  background: rgba(16, 18, 21, 0.9);
   color: #e8eef8;
   font-size: 0.78rem;
 }
@@ -682,7 +682,7 @@
   gap: 10px;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(0, 229, 255, 0.15);
+  border: 1px solid rgba(231, 165, 64, 0.15);
   background: rgba(10, 14, 32, 0.7);
 }
 .ql-adv-card-actions { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -695,9 +695,9 @@
   border-radius: 999px;
   font-size: 0.72rem;
   font-weight: 600;
-  background: rgba(168, 85, 247, 0.15);
-  border: 1px solid rgba(168, 85, 247, 0.4);
-  color: #e9d5ff;
+  background: rgba(155, 161, 170, 0.15);
+  border: 1px solid rgba(155, 161, 170, 0.4);
+  color: #e6e8eb;
 }
 .ql-adv-pill.ok {
   background: rgba(16, 240, 160, 0.12);
@@ -705,8 +705,8 @@
   color: #6ee7b7;
 }
 .ql-adv-pill.warn {
-  background: rgba(0, 229, 255, 0.12);
-  border-color: rgba(0, 229, 255, 0.45);
+  background: rgba(231, 165, 64, 0.12);
+  border-color: rgba(231, 165, 64, 0.45);
   color: #fdba74;
 }
 .ql-adv-cands { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
@@ -719,7 +719,7 @@
   background: rgba(0, 0, 0, 0.25);
   font-size: 0.82rem;
 }
-.ql-adv-amp { color: #67e8f9; font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+.ql-adv-amp { color: #e7a540; font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
 .ql-sec-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .ql-sec-btn {
   padding: 8px 14px;
@@ -732,10 +732,10 @@
   cursor: pointer;
 }
 .ql-sec-btn.is-on {
-  border-color: rgba(0, 229, 255, 0.65);
-  background: rgba(0, 229, 255, 0.14);
+  border-color: rgba(231, 165, 64, 0.65);
+  background: rgba(231, 165, 64, 0.14);
   color: #e8eef8;
-  box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.25);
+  box-shadow: 0 0 0 1px rgba(231, 165, 64, 0.25);
 }
 .ql-truth { margin-top: 12px; }
 .ql-truth-overall { font-size: 1.1rem; margin-bottom: 10px; color: #e8eef8; }
@@ -748,7 +748,7 @@
   color: rgba(200, 210, 230, 0.85);
   margin-bottom: 10px;
 }
-.ql-truth-grid b { color: #67e8f9; }
+.ql-truth-grid b { color: #e7a540; }
 .ql-truth-notes {
   margin: 0;
   padding-left: 18px;
@@ -765,21 +765,21 @@
   gap: 2px;
   padding: 6px 8px;
   border-radius: 8px;
-  border: 1px solid rgba(0, 229, 255, 0.2);
+  border: 1px solid rgba(231, 165, 64, 0.2);
   background: rgba(8, 12, 28, 0.7);
   color: #e8eef8;
   font-size: 0.72rem;
   cursor: pointer;
   min-width: 64px;
 }
-.ql-stress-chip.is-on { border-color: #a855f7; box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.4); }
-.ql-stress-dot { color: #00e5ff; font-size: 0.65rem; }
+.ql-stress-chip.is-on { border-color: #9ba1aa; box-shadow: 0 0 0 1px rgba(155, 161, 170, 0.4); }
+.ql-stress-dot { color: #e7a540; font-size: 0.65rem; }
 .ql-style-box {
   margin-top: 10px;
   padding: 12px;
   border-radius: 10px;
-  border: 1px solid rgba(168, 85, 247, 0.35);
-  background: rgba(40, 20, 70, 0.25);
+  border: 1px solid rgba(155, 161, 170, 0.35);
+  background: rgba(26, 29, 34, 0.25);
   font-size: 0.82rem;
   color: #e8eef8;
 }
@@ -788,9 +788,9 @@
   font-size: 0.68rem;
   padding: 3px 8px;
   border-radius: 999px;
-  background: rgba(0, 229, 255, 0.12);
-  border: 1px solid rgba(0, 229, 255, 0.35);
-  color: #a5f3fc;
+  background: rgba(231, 165, 64, 0.12);
+  border: 1px solid rgba(231, 165, 64, 0.35);
+  color: #e6e8eb;
 }
 .ql-tile-word { display: block; }
 .ql-tile-phono {
@@ -802,14 +802,14 @@
   opacity: 0.75;
   font-family: 'JetBrains Mono', monospace;
 }
-.ql-tile-stress { color: #00e5ff; }
-.ql-tile-rime { color: #67e8f9; }
+.ql-tile-stress { color: #e7a540; }
+.ql-tile-rime { color: #e7a540; }
 .ql-tile-super-badge {
   position: absolute;
   top: 2px;
   right: 4px;
   font-size: 0.55rem;
-  color: #c4b5fd;
+  color: #e6e8eb;
   opacity: 0.85;
 }
 .ql-tile { position: relative; }
@@ -1149,8 +1149,8 @@
   align-items: center;
   gap: 5px;
   padding: 0 5px;
-  background: rgba(5, 3, 16, 0.9);
-  border-bottom: 1px solid rgba(67, 217, 255, 0.3);
+  background: rgba(8, 10, 13, 0.9);
+  border-bottom: 1px solid rgba(231, 165, 64, 0.3);
   backdrop-filter: blur(8px);
 }
 
@@ -1161,8 +1161,8 @@
   font-size: 0.58rem;
   letter-spacing: 0.04em;
   color: #cfe9ff;
-  background: rgba(12, 8, 32, 0.9);
-  border: 1px solid rgba(67, 217, 255, 0.4);
+  background: rgba(18, 20, 23, 0.9);
+  border: 1px solid rgba(231, 165, 64, 0.4);
   border-radius: 999px;
   cursor: pointer;
   white-space: nowrap;
@@ -1171,7 +1171,7 @@
   color: #04121a;
   background: var(--ql-blu);
   border-color: var(--ql-blu);
-  box-shadow: 0 0 0 1px rgba(67, 217, 255, 0.55);
+  box-shadow: 0 0 0 1px rgba(231, 165, 64, 0.55);
 }
 .ql-mobtab-mid { margin: 0 auto; }
 .ql-mobbar-title { display: none; }   /* the shell's own bar already names the tab */
@@ -1182,7 +1182,7 @@
   position: absolute;
   inset: 30px 0 0 0;
   z-index: 5;
-  background: rgba(2, 1, 8, 0.35);
+  background: rgba(3, 5, 8, 0.35);
 }
 
 /* ── the lattice takes the whole window ──────────────────────────────────── */
@@ -1204,8 +1204,8 @@
   z-index: 7;
   margin: 0;
   box-sizing: border-box;
-  background: rgba(6, 4, 20, 0.97);
-  border-right: 1px solid rgba(67, 217, 255, 0.35);
+  background: rgba(10, 12, 15, 0.97);
+  border-right: 1px solid rgba(231, 165, 64, 0.35);
   transform: translateX(-108%);
   transition: transform 0.22s cubic-bezier(0.3, 0.8, 0.3, 1);
 }
@@ -1263,7 +1263,7 @@
   z-index: 7;
   box-sizing: border-box;
   overflow-y: auto;
-  background: rgba(6, 4, 20, 0.98);
+  background: rgba(10, 12, 15, 0.98);
   transform: translateY(-108%);
   transition: transform 0.22s cubic-bezier(0.3, 0.8, 0.3, 1);
 }
@@ -1282,8 +1282,8 @@
   z-index: 7;
   margin: 0;
   box-sizing: border-box;
-  background: rgba(6, 4, 20, 0.97);
-  border-left: 1px solid rgba(192, 38, 255, 0.35);
+  background: rgba(10, 12, 15, 0.97);
+  border-left: 1px solid rgba(155, 161, 170, 0.35);
   transform: translateX(108%);
   transition: transform 0.22s cubic-bezier(0.3, 0.8, 0.3, 1);
 }

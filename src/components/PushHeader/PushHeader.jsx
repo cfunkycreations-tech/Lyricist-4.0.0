@@ -24,8 +24,8 @@ import { Glyph } from '../common/Glyph.jsx';
  * cells on black, and colour, sweep or Milkdrop, lives only inside the cells.
  */
 export const TAB_GROUPS = [
-  { id: 'pen', name: 'The Pen', hue: 322, tabs: ['songwriter', 'onemanband', 'analyzer', 'songforge', 'quantum'] },
-  { id: 'studio', name: 'The Studio', hue: 188, tabs: ['booth', 'midistudio', 'loopstation', 'stemmer', 'screw', 'mastering'] },
+  { id: 'pen', name: 'The Pen', hue: 345, tabs: ['songwriter', 'onemanband', 'analyzer', 'songforge', 'quantum'] },
+  { id: 'studio', name: 'The Studio', hue: 215, tabs: ['booth', 'midistudio', 'loopstation', 'stemmer', 'screw', 'mastering'] },
   { id: 'words', name: 'Word Kit', hue: 142, tabs: ['rhyme', 'thesaurus', 'dictionary', 'scratchpad', 'collab'] },
   { id: 'control', name: 'Control Room', hue: 38, tabs: ['toolshub', 'settings'] },
 ];
@@ -47,7 +47,7 @@ const CELLS = '.pc-pad';
  * is, so the gaps and everything round the squares stay black.
  */
 function usePushVisuals(on, headerRef) {
-  const [info, setInfo] = useState({ name: '', count: 0, error: '' });
+  const [info, setInfo] = useState({ name: '', count: 0, idx: 0, error: '' });
   const api = useRef({ next: () => {}, step: () => {} });
 
   useEffect(() => {
@@ -72,7 +72,7 @@ function usePushVisuals(on, headerRef) {
       const load = (i, blend = 2) => {
         idx = (i + names.length) % names.length;
         viz.loadPreset(map[names[idx]], blend);
-        setInfo({ name: names[idx], count: names.length, error: '' });
+        setInfo({ name: names[idx], count: names.length, idx, error: '' });
       };
       api.current = {
         next: () => load(Math.floor(Math.random() * names.length), 1.6),
@@ -275,8 +275,7 @@ export default function PushHeader({ tabs, activeTab, onSelect }) {
         <button
           type="button"
           className="pc pc-ctl"
-          disabled={!vizOn}
-          onClick={() => { wake(); vizApi.current.next(); }}
+          onClick={() => { wake(); if (vizOn) vizApi.current.next(); else toggleViz(); }}
           title={vizInfo.name}
           data-help="Another visual. It also changes by itself every half minute."
         >
@@ -481,8 +480,8 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
       if (curStep === info.step) return { hue: 0, level: 'white' };
       return pattern[voice][info.step] ? { hue: hexHue(KIT.find((k) => k.id === voice).color), level: 'hot' } : { hue: 0, level: 'dim' };
     }
-    if (info.kind === 'sample') return samples[info.n] ? { hue: 265, level: 'on' } : { hue: 0, level: 'off' };
-    if (info.kind === 'note') return info.root ? { hue: 190, level: 'hot' } : { hue: 0, level: 'dim' };
+    if (info.kind === 'sample') return samples[info.n] ? { hue: 215, level: 'on' } : { hue: 0, level: 'off' };
+    if (info.kind === 'note') return info.root ? { hue: 36, level: 'hot' } : { hue: 0, level: 'dim' };
     return { hue: 0, level: 'off' };
   }, [padInfo, held, voice, curStep, pattern, samples]);
 
@@ -494,7 +493,7 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
     { label: 'Scale', value: SCALE_NAMES[scaleIdx], nudge: (d) => setScaleIdx((s) => (s + Math.sign(d) + SCALE_NAMES.length) % SCALE_NAMES.length) },
     { label: 'Sound', value: inst.name, nudge: (d) => setInstIdx((s) => (s + Math.sign(d) + INSTRUMENTS.length) % INSTRUMENTS.length) },
     { label: 'Drum', value: KIT.find((k) => k.id === voice)?.name, nudge: (d) => setVoice((v) => KIT[(KIT.findIndex((k) => k.id === v) + Math.sign(d) + KIT.length) % KIT.length].id) },
-    { label: 'Visual', value: viz.on ? 'turn' : 'off', nudge: (d) => viz.api.current.step(Math.sign(d)) },
+    { label: 'Visual', value: viz.on ? (viz.info.count ? `${viz.info.idx + 1}/${viz.info.count}` : 'loading') : 'off', nudge: (d) => (viz.on ? viz.api.current.step(Math.sign(d)) : viz.toggle()) },
   ];
 
   // THE REAL PUSH, if one is plugged in.
@@ -559,9 +558,9 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
     { label: 'Clear', act: () => setPattern((p) => ({ ...p, [voice]: Array(16).fill(false) })) },
     { label: 'Clear all', act: () => setPattern(Object.fromEntries(KIT.map((k) => [k.id, Array(16).fill(false)]))) },
     { label: `Vis ${viz.on ? 'on' : 'off'}`, on: viz.on, act: viz.toggle },
-    { label: 'Prev vis', act: () => viz.api.current.step(-1), off: !viz.on },
-    { label: 'Next vis', act: () => viz.api.current.step(1), off: !viz.on },
-    { label: 'Shuffle', act: () => viz.api.current.next(), off: !viz.on },
+    { label: 'Prev vis', act: () => (viz.on ? viz.api.current.step(-1) : viz.toggle()) },
+    { label: 'Next vis', act: () => (viz.on ? viz.api.current.step(1) : viz.toggle()) },
+    { label: 'Shuffle', act: () => (viz.on ? viz.api.current.next() : viz.toggle()) },
     { label: 'Hide', act: onClose },
   ];
 

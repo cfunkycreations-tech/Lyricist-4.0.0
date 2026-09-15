@@ -219,7 +219,7 @@ export default function RecordingBooth({ onNavigate }) {
         <div className="booth-sidebar">
           <div>
             <h3 style={{ fontSize: '1rem', marginBottom: 4 }}><Icon i={Mic} />Recording Booth</h3>
-            <p style={{ fontSize: '0.72rem', color: 'rgba(196,181,253,0.7)', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.72rem', color: 'rgba(230,232,235,0.7)', lineHeight: 1.5 }}>
               Record harmonica, guitar, or vocals straight into Lyricist — or upload takes you already have.
               Everything lands in your library below, saved on this machine, ready to play while you write
               or to convert into MIDI.
@@ -268,13 +268,13 @@ export default function RecordingBooth({ onNavigate }) {
             </button>
           )}
 
-          <div style={{ textAlign: 'center', fontSize: '0.65rem', color: 'rgba(148,130,200,0.5)' }}>— or —</div>
+          <div style={{ textAlign: 'center', fontSize: '0.65rem', color: 'rgba(155,161,170,0.5)' }}>— or —</div>
 
           <input ref={fileRef} type="file" accept="audio/*" multiple onChange={handleFiles} style={{ display: 'none' }} />
           <button
             onClick={() => fileRef.current?.click()}
             data-help="Add takes you've already recorded elsewhere (.mp3/.wav/.ogg/.webm). Pick several at once."
-            style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid rgba(0,229,255,0.4)', background: 'rgba(0,229,255,0.08)', color: '#00e5ff', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid rgba(231,165,64,0.4)', background: 'rgba(231,165,64,0.08)', color: '#e7a540', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
           >
             <Upload size={14} /> Upload Takes
           </button>
@@ -291,7 +291,7 @@ export default function RecordingBooth({ onNavigate }) {
           </h4>
 
           {!recordings.length && (
-            <div className="card-cosmic" style={{ borderRadius: 12, padding: 30, textAlign: 'center', color: 'rgba(196,181,253,0.65)', fontSize: '0.8rem' }}>
+            <div className="card-cosmic" style={{ borderRadius: 12, padding: 30, textAlign: 'center', color: 'rgba(230,232,235,0.65)', fontSize: '0.8rem' }}>
               Nothing recorded yet. Hit <strong>Start Recording</strong> and hum, strum, or blow the idea
               before it gets away — it'll be saved here.
             </div>
@@ -327,7 +327,7 @@ export default function RecordingBooth({ onNavigate }) {
                     <button className="booth-icon-btn" onClick={() => startRename(rec)} aria-label={`Rename ${rec.name}`}><Pencil size={11} /></button>
                   </div>
                 )}
-                <div style={{ fontSize: '0.62rem', color: 'rgba(0,229,255,0.7)', fontFamily: "'JetBrains Mono', monospace" }}>
+                <div style={{ fontSize: '0.62rem', color: 'rgba(231,165,64,0.7)', fontFamily: "'JetBrains Mono', monospace" }}>
                   {fmtTime(rec.duration)} · {fmtSize(rec.size)} · {new Date(rec.createdAt).toLocaleDateString()}
                 </div>
               </div>

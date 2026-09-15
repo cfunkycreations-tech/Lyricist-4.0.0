@@ -15,7 +15,7 @@ export function Knob({ label, value, min, max, step, onChange, help }) {
     <label style={{ fontSize: '0.62rem', display: 'flex', flexDirection: 'column', gap: 3 }} data-help={help}>
       <span style={{ display: 'flex', justifyContent: 'space-between' }}>
         <span>{label}</span>
-        <span style={{ color: 'rgba(0,229,255,0.8)' }}>
+        <span style={{ color: 'rgba(231,165,64,0.8)' }}>
           {typeof value === 'number' ? (value >= 100 ? Math.round(value) : value.toFixed(2)) : value}
         </span>
       </span>

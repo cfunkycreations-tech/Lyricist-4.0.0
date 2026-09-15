@@ -1,73 +1,69 @@
 /**
- * PRISM — one number, every neon colour in the app.
+ * PRISM — one number, the accent colour of the whole app.
  *
  * There used to be a WebGL prism behind every tab whose palette rotated from
  * this same value; it was stripped with the rest of the artwork on 2026-08-27
- * (flat black now, everywhere), and this slider survives it because the neon
- * pinstripe under the active tab, the focus rings, the button strokes and
- * the type glow all still read the accent it writes.
+ * (flat black now, everywhere), and this slider survives it because the
+ * pinstripe under the active tab, the focus rings and the button strokes all
+ * still read the accent it writes.
  *
- * Anchors are HSL because rotating a hue is one addition. Rotating a hex is not.
- *
- * ══ WHAT THE COMMERCIAL REFACTOR ADDED ═══════════════════════════════════
- * The Obsidian & Razor Neon system has ONE switchable accent, --accent-neon,
- * and index.css drives every border, focus ring, glow, scrollbar and active
- * tab off it. This file is what writes it, from the same slider, across the
- * FULL SPECTRUM — the brief's "slider to change the color of the neon, full
- * spec prism".
- *
- * So one control still moves two things that used to be separate:
- *   - the legacy --lx-* interface anchors (unchanged, still rotating)
- *   - the razor-neon accent               (--accent-neon / --accent-rgb)
+ * index.css drives every border, focus ring, scrollbar and active tab off ONE
+ * switchable accent, --accent-neon. This file is what writes it, from the
+ * slider in Settings.
  *
  * --accent-rgb is the same colour as bare "r, g, b" components, because a
- * hairline at 12% and a glow at 55% have to be the SAME hue at two alphas, and
+ * hairline at 12% and a ring at 55% have to be the SAME hue at two alphas, and
  * `rgba(var(--accent-rgb), 0.12)` is the only way to get that from one value.
- * Every rule in index.css that needs a translucent accent reads it. If this
- * ever goes out of step with --accent-neon the interface splits in two, so
- * they are written together, in one place, and nowhere else.
+ * If this ever goes out of step with --accent-neon the interface splits in two,
+ * so they are written together, in one place, and nowhere else.
+ *
+ * ══ NO CYAN, NO PURPLE ═══════════════════════════════════════════════════
+ * Chris, 2026-09-15: "get rid of the cyan and purple colors sick of them".
+ * The slider used to run the full wheel starting at electric cyan. It now runs
+ * one arc of the wheel, crimson → red → amber → lime → emerald, so no position
+ * on it can land on cyan, blue, violet or magenta. Home is amber, the FAF OpSec
+ * signal colour.
  */
 
+// The legacy --lx-* anchors. They no longer rotate: rotating a green by the
+// slider is exactly how it used to end up purple. Violet and magenta keep their
+// names because OneManBand, ScrewShop and WaveSlicer read them, but they are
+// the signal amber and steel now.
 const ANCHORS = {
-  '--lx-emerald': [158, 84, 40],   // dark emerald, the lead
-  '--lx-emerald-lit': [158, 80, 58],   // the glow only, used sparingly
-  '--lx-green2': [152, 79, 44],   // the second green. formerly teal.
-  '--lx-blue': [222, 100, 65],
-  '--lx-violet': [262, 85, 71],
-  '--lx-magenta': [305, 75, 66],
+  '--lx-emerald': [158, 84, 40],
+  '--lx-emerald-lit': [158, 80, 58],
+  '--lx-green2': [152, 79, 44],
+  '--lx-blue': [36, 78, 58],
+  '--lx-violet': [36, 78, 58],
+  '--lx-magenta': [216, 8, 64],
 };
 
-/**
- * WHERE THE ACCENT STARTS.
- *
- * 183.5°, not 184, and the half degree is not fussiness. #00F0FF — the electric
- * cyan index.css declares as the default token — is exactly
- * hsl(183.53 100% 50%). Rounding to 184 lands on rgb(0, 238, 255), which is a
- * different colour from the one the stylesheet says is the default, so the
- * slider at position zero would quietly disagree with the token it is supposed
- * to be sitting on. "Left is home" has to be literally true or the reset is not
- * a reset.
- */
-const ACCENT_H0 = 183.5;
-// FAF OpSec, 2026-09-15: the accent is a signal colour, not a neon. Full
-// saturation at 50% lightness is what made every border and ring read as a
-// toy; 78% / 58% keeps the hue, clean and readable on graphite.
+/** The arc the slider covers: from ARC_START, ARC_SPAN degrees forward. */
+const ARC_START = 340;
+const ARC_SPAN = 180;
+// FAF OpSec: the accent is a signal colour, not a neon. 78% / 58% keeps the
+// hue clean and readable on graphite.
 const ACCENT_S = 78;
 const ACCENT_L = 58;
 
-/** The five named accents, as slider positions. */
+const hueToT = (h) => (((h - ARC_START + 360) % 360) / ARC_SPAN);
+const tToHue = (t) => (ARC_START + Math.min(1, Math.max(0, t)) * ARC_SPAN) % 360;
+
+/** Where the slider sits on a fresh install: amber. */
+export const PRISM_HOME = hueToT(36);
+
+/** The named accents, as slider positions. */
 export const ACCENT_PRESETS = [
-  { name: 'Signal Cyan', hex: '#40E3E7', t: 0 },
-  { name: 'Emerald', hex: '#40E7AF', t: ((160 - ACCENT_H0 + 360) % 360) / 360 },
-  { name: 'Amber', hex: '#E7A440', t: ((36 - ACCENT_H0 + 360) % 360) / 360 },
-  { name: 'Red', hex: '#E74040', t: ((0 - ACCENT_H0 + 360) % 360) / 360 },
-  { name: 'Violet', hex: '#9640E7', t: ((271 - ACCENT_H0 + 360) % 360) / 360 },
+  { name: 'Amber', hex: '#E7A540', t: PRISM_HOME },
+  { name: 'Red', hex: '#E74040', t: hueToT(0) },
+  { name: 'Lime', hex: '#A5E740', t: hueToT(85) },
+  { name: 'Emerald', hex: '#40E7AD', t: hueToT(158) },
 ];
 
-/** Named pairs, checked against the hues they actually produce. */
+/** Names along the arc, left to right: 340°, 6°, 31°, 57°, 83°, 109°, 134°, 160°.
+    The 31° slot is the one amber home rounds to, so it is called Amber. */
 export const PRISM_NAMES = [
-  'Signal Cyan', 'Emerald', 'Lime', 'Amber',
-  'Red', 'Magenta', 'Violet', 'Signal Cyan',
+  'Crimson', 'Red', 'Amber', 'Gold', 'Lime', 'Green', 'Jade', 'Emerald',
 ];
 
 /**
@@ -75,8 +71,8 @@ export const PRISM_NAMES = [
  *
  * Written out rather than leaned on the browser because --accent-rgb has to be
  * COMPONENTS, not a colour: `rgba(var(--x), 0.3)` only parses if var(--x) is
- * "0, 240, 255". Reading a computed style back would hand us "rgb(0, 240, 255)"
- * and every translucent rule in the app would silently fail to parse.
+ * "231, 165, 64". Reading a computed style back would hand us "rgb(...)" and
+ * every translucent rule in the app would silently fail to parse.
  */
 function hslToRgb(h, s, l) {
   const S = s / 100;
@@ -87,39 +83,40 @@ function hslToRgb(h, s, l) {
   return [f(0), f(8), f(4)].map((v) => Math.round(v * 255));
 }
 
+// The slider's meaning changed with the arc. A value saved before it (0 was the
+// old cyan default) would land somewhere arbitrary, so it is reset to home once.
+const ARC_KEY = 'lyricistPrismArc';
+
 /** The app-wide setting. Written by Settings, read by everything. */
 export function getPrism() {
-  const raw = Number(localStorage.getItem('lyricistPrism'));
-  return Number.isFinite(raw) ? raw : 0;
+  const stored = localStorage.getItem('lyricistPrism');
+  if (stored === null || localStorage.getItem(ARC_KEY) !== '1') return PRISM_HOME;
+  const raw = Number(stored);
+  return Number.isFinite(raw) ? Math.min(1, Math.max(0, raw)) : PRISM_HOME;
 }
 
 export function prismName(t = getPrism()) {
   return PRISM_NAMES[Math.round(t * (PRISM_NAMES.length - 1))] || PRISM_NAMES[0];
 }
 
-/** The accent hex at rotation `t`, for anything that needs to show a swatch. */
+/** The accent hex at position `t`, for anything that needs to show a swatch. */
 export function accentHex(t = getPrism()) {
-  const [r, g, b] = hslToRgb((ACCENT_H0 + t * 360) % 360, ACCENT_S, ACCENT_L);
+  const [r, g, b] = hslToRgb(tToHue(t), ACCENT_S, ACCENT_L);
   return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 }
 
-/** Paint the whole interface at rotation `t` (0..1). */
+/** Paint the whole interface at position `t` (0..1). */
 export function applyPrism(t = getPrism()) {
   const root = document.documentElement;
-  const deg = t * 360;
 
   for (const [name, [h, s, l]] of Object.entries(ANCHORS)) {
-    root.style.setProperty(name, `hsl(${(h + deg) % 360} ${s}% ${l}%)`);
+    root.style.setProperty(name, `hsl(${h} ${s}% ${l}%)`);
   }
-  // Panel edges and the type glow follow the lead colour, so frosted borders
-  // never sit in last week's hue while the fill has moved on.
-  root.style.setProperty('--lx-line', `hsla(${(158 + deg) % 360} 60% 70% / .16)`);
-  root.style.setProperty('--lx-line-hot', `hsla(${(262 + deg) % 360} 70% 70% / .30)`);
+  root.style.setProperty('--lx-line', 'hsla(158 60% 70% / .16)');
+  root.style.setProperty('--lx-line-hot', 'hsla(216 8% 70% / .30)');
 
-  // ── THE RAZOR NEON ACCENT ──────────────────────────────────────────────
-  // Both forms, written together. See the note at the top of this file for
-  // why --accent-rgb cannot be derived from --accent-neon at read time.
-  const accentH = (ACCENT_H0 + deg) % 360;
+  // Both forms, written together. See the note at the top of this file.
+  const accentH = tToHue(t);
   const [r, g, b] = hslToRgb(accentH, ACCENT_S, ACCENT_L);
   root.style.setProperty('--accent-neon', `hsl(${accentH} ${ACCENT_S}% ${ACCENT_L}%)`);
   root.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
@@ -130,6 +127,10 @@ export function applyPrism(t = getPrism()) {
  * also on `storage` so a second window stays in step with the first.
  */
 export function startPrism() {
+  if (localStorage.getItem(ARC_KEY) !== '1') {
+    localStorage.setItem('lyricistPrism', String(PRISM_HOME));
+    localStorage.setItem(ARC_KEY, '1');
+  }
   applyPrism();
   window.addEventListener('lyricist-prism', () => applyPrism());
   window.addEventListener('storage', (e) => {

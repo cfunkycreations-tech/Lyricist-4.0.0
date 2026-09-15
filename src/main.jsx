@@ -35,14 +35,14 @@ class BootErrorBoundary extends React.Component {
       const msg = String(this.state.error?.stack || this.state.error?.message || this.state.error);
       return (
         <div style={{
-          minHeight: '100vh', background: '#0a0614', color: '#f3e8ff',
+          minHeight: '100vh', background: '#0b0d10', color: '#e6e8eb',
           padding: 32, fontFamily: 'Segoe UI, system-ui, sans-serif',
         }}>
           <h1 style={{ color: '#ff6b9d', marginTop: 0 }}>Lyricist failed to start</h1>
-          <p style={{ color: '#c4b5fd' }}>Copy this and send it so it can be fixed:</p>
+          <p style={{ color: '#e6e8eb' }}>Copy this and send it so it can be fixed:</p>
           <pre style={{
-            whiteSpace: 'pre-wrap', background: '#12081c', padding: 16,
-            borderRadius: 12, border: '1px solid #7c3aed', color: '#e9d5ff',
+            whiteSpace: 'pre-wrap', background: '#101215', padding: 16,
+            borderRadius: 12, border: '1px solid #9ba1aa', color: '#e6e8eb',
             fontSize: 13, lineHeight: 1.45,
           }}>{msg}</pre>
         </div>
@@ -68,9 +68,9 @@ try {
   );
 } catch (e) {
   console.error(e);
-  rootEl.innerHTML = `<div style="padding:32px;color:#fff;background:#0a0614;min-height:100vh;font-family:sans-serif">
+  rootEl.innerHTML = `<div style="padding:32px;color:#fff;background:#0b0d10;min-height:100vh;font-family:sans-serif">
     <h1 style="color:#ff6b9d">Lyricist failed to start</h1>
-    <pre style="white-space:pre-wrap;color:#e9d5ff">${String(e?.stack || e)}</pre>
+    <pre style="white-space:pre-wrap;color:#e6e8eb">${String(e?.stack || e)}</pre>
   </div>`;
 }
 

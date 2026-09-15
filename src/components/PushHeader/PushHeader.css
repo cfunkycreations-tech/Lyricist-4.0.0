@@ -1,6 +1,14 @@
 /* THE PAD HEADER. A wall of square blocks on black, 1px apart. The Milkdrop
    visuals only ever show INSIDE the instrument's pads: every other block keeps
-   its own face, and the joints and everything around stay black. */
+   its own face, and the joints and everything around stay black.
+
+   NO PURPLE, NO CYAN. Chris, 2026-09-15: "get rid of all purple boxes and
+   replace with dark blue or charcoal grey". Every block's colour is
+   hsl(--hue, --sat) sliding --spread degrees; the old +70° slide turned every
+   blue block purple, and the idle sweep ran the whole wheel through violet and
+   cyan. Now the resting blocks (knobs, buttons, dim pads) are a desaturated
+   dark blue that reads as charcoal, the slide is 24°, and the sweep swings
+   crimson → amber → emerald and back, never reaching cyan or purple. */
 
 @property --hue {
   syntax: '<number>';
@@ -23,6 +31,8 @@
 /* ── one block ── */
 .pc {
   --hue: 0;
+  --sat: 100%;
+  --spread: 24;
   position: relative; box-sizing: border-box; width: 54px; height: 54px; margin: 0; padding: 3px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   border: 0; border-radius: 2px; overflow: hidden; isolation: isolate;
@@ -36,8 +46,8 @@
 .pc::before {
   content: ''; position: absolute; inset: 0; z-index: -2;
   background:
-    radial-gradient(90% 90% at 30% 25%, hsl(calc(var(--hue) + 40) 100% 62%), transparent 75%),
-    linear-gradient(135deg, hsl(var(--hue) 100% 52%), hsl(calc(var(--hue) + 70) 100% 46%));
+    radial-gradient(90% 90% at 30% 25%, hsl(calc(var(--hue) + var(--spread) * .5) var(--sat) 62%), transparent 75%),
+    linear-gradient(135deg, hsl(var(--hue) var(--sat) 52%), hsl(calc(var(--hue) + var(--spread)) var(--sat) 46%));
   opacity: .85; transition: opacity .4s;
 }
 
@@ -63,10 +73,10 @@ button.pc:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
 .pc-icon { font-size: 17px; line-height: 1; }
 .pc-chev { font-size: 18px; line-height: 1; }
 
-/* Idle: every block runs the colour wheel, offset along the row. */
-.pc-sweep, .pc-ctl, .pc-empty { animation: pc-sweep 7s linear infinite; animation-delay: calc(var(--i, 0) * -0.2s); }
+/* Idle: every block swings crimson → amber → emerald and back, offset along the row. */
+.pc-sweep, .pc-ctl, .pc-empty { animation: pc-sweep 7s ease-in-out infinite alternate; animation-delay: calc(var(--i, 0) * -0.2s); }
 .pc-group, .pc-tab { --hue: var(--g); }
-@keyframes pc-sweep { from { --hue: 0; } to { --hue: 360; } }
+@keyframes pc-sweep { from { --hue: -20; } to { --hue: 136; } }
 .push-hd.is-live .pc-sweep, .push-hd.is-live .pc-ctl, .push-hd.is-live .pc-empty { animation-play-state: paused; }
 .push-hd.is-live .pc-sweep::before, .push-inst .pc-empty::before { opacity: .3; }
 
@@ -75,14 +85,14 @@ button.pc:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
 .pc-group .pc-sub, .pc-tab .pc-sub { color: hsl(var(--g) 100% 82%); }
 .pc-ctl.is-on::before { opacity: 1; }
 /* A selected block: a lit white rim. */
-.pc-group.is-on, .pc-tab.is-on, .pc-ctl.is-on, .pc-btn.is-on { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .9); }
+.pc-group.is-on, .pc-tab.is-on, .pc-ctl.is-on, .pc-btn.is-on { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .9); }
 
 /* ── the instrument ── */
 .pc-screen {
   align-items: stretch; justify-content: space-between; padding: 8px 10px;
   font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; text-align: left;
 }
-.pc-screen::before { opacity: .25; }
+.pc-screen::before { opacity: .25; --hue: 215; --sat: 30%; }
 .pc-screen::after { background: linear-gradient(180deg, rgba(2, 3, 5, .9), rgba(2, 3, 5, .94)); }
 .pc-screen-top { display: flex; justify-content: space-between; gap: 8px; font-size: 10px; letter-spacing: .06em; color: #7FB6E0; }
 .pc-screen-top .hw { color: #5E6B82; }
@@ -90,14 +100,15 @@ button.pc:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
 .pc-screen-main { font-size: 15px; color: #F4F8FF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pc-screen-sub { font-size: 9.5px; color: #8797AE; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+/* Knobs and buttons at rest: dark blue so desaturated it reads as charcoal. */
 .pc-knob { cursor: ns-resize; touch-action: none; }
-.pc-knob::before { opacity: .4; --hue: 200; }
-.pc-btn::before { opacity: .35; --hue: 210; }
-.pc-btn.is-on::before { opacity: 1; --hue: 150; }
+.pc-knob::before { opacity: .4; --hue: 215; --sat: 34%; --spread: 8; }
+.pc-btn::before { opacity: .35; --hue: 215; --sat: 26%; --spread: 8; }
+.pc-btn.is-on::before { opacity: 1; --hue: 150; --sat: 100%; --spread: 24; }
 
 .push-inst { touch-action: none; user-select: none; }
 .pc-pad.lv-off::before { opacity: 0; }
-.pc-pad.lv-dim::before { opacity: .18; --hue: 220; }
+.pc-pad.lv-dim::before { opacity: .22; --hue: 215; --sat: 30%; --spread: 8; }
 .pc-pad.lv-on::before { opacity: .55; --hue: var(--h); }
 .pc-pad.lv-hot::before { opacity: 1; --hue: var(--h); }
 .pc-pad.lv-white::before { opacity: 1; background: #F4F6FA; }
@@ -130,5 +141,5 @@ button.pc:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
 
 body.lyricist-mobile .push-hd { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
-  .pc-sweep, .pc-ctl, .pc-empty { animation: none; --hue: 200; }
+  .pc-sweep, .pc-ctl, .pc-empty { animation: none; --hue: 215; --sat: 30%; --spread: 8; }
 }

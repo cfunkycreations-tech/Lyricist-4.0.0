@@ -187,9 +187,9 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
       <TabBackground name="rhyme" />
       <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
       {/* Rhyme Finder panel */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid rgba(139,92,246,0.18)', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid rgba(155,161,170,0.18)', overflow: 'hidden' }}>
         {/* Search header */}
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(139,92,246,0.2)', background: 'rgba(8,5,18,0.85)', display: 'flex', gap: 8, flexShrink: 0 }}>
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(155,161,170,0.2)', background: 'rgba(10,12,15,0.85)', display: 'flex', gap: 8, flexShrink: 0 }}>
           <input
             value={word}
             onChange={(e) => setWord(e.target.value)}
@@ -198,12 +198,12 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
             placeholder="Enter a word to find rhymes..."
             style={{
               flex: 1,
-              background: 'rgba(13,8,28,0.7)',
-              border: '1px solid rgba(139,92,246,0.22)',
+              background: 'rgba(16,18,21,0.7)',
+              border: '1px solid rgba(155,161,170,0.22)',
               borderRadius: 8,
               padding: '7px 10px',
               fontSize: '0.82rem',
-              color: '#e8e0ff',
+              color: '#e6e8eb',
               outline: 'none',
               fontFamily: 'var(--faf-font)'
             }}
@@ -259,19 +259,19 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
           {perfectRhymes !== null && (
             <div>
               <span
-                style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.65)', marginBottom: 10, display: 'block' }}
+                style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.65)', marginBottom: 10, display: 'block' }}
                 data-help="Perfect rhymes are exact sound matches, like 'fire / desire'. They're grouped by how many syllables they have. Click any word to copy it."
               >
                 Perfect Rhymes ({perfectRhymes.length} found)
               </span>
 
               {perfectRhymes.length === 0 ? (
-                <p style={{ color: 'rgba(148,130,200,0.4)', fontSize: '0.82rem' }}>No perfect rhymes found.</p>
+                <p style={{ color: 'rgba(155,161,170,0.4)', fontSize: '0.82rem' }}>No perfect rhymes found.</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {Object.entries(perfectGrouped).sort(([a], [b]) => a - b).map(([syl, list]) => (
                     <div key={syl}>
-                      <div style={{ fontSize: '0.6rem', color: 'rgba(148,130,200,0.35)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 5 }}>
+                      <div style={{ fontSize: '0.6rem', color: 'rgba(155,161,170,0.35)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 5 }}>
                         {syl} syllable{syl === '1' ? '' : 's'}
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
@@ -281,11 +281,11 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
                             onClick={() => handleCopyWord(w)}
                             style={{
                               padding: '4px 10px',
-                              background: 'rgba(139,92,246,0.15)',
-                              border: `1px solid ${copiedWord === w ? '#34d399' : 'rgba(168,85,247,0.3)'}`,
+                              background: 'rgba(155,161,170,0.15)',
+                              border: `1px solid ${copiedWord === w ? '#34d399' : 'rgba(155,161,170,0.3)'}`,
                               borderRadius: 6,
                               fontSize: '0.75rem',
-                              color: copiedWord === w ? '#34d399' : '#c4b5fd',
+                              color: copiedWord === w ? '#34d399' : '#e6e8eb',
                               cursor: 'pointer',
                               fontFamily: "'JetBrains Mono', monospace"
                             }}
@@ -305,7 +305,7 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
           {slantRhymes !== null && slantRhymes.length > 0 && (
             <div>
               <span
-                style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#22d3ee', marginBottom: 10, display: 'block' }}
+                style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#e7a540', marginBottom: 10, display: 'block' }}
                 data-help="Near (slant) rhymes are close-but-not-exact matches, like 'home / alone'. They sound natural and give you way more options than perfect rhymes alone. Click any to copy."
               >
                 Near / Slant Rhymes ({slantRhymes.length} found)
@@ -317,11 +317,11 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
                     onClick={() => handleCopyWord(item.word)}
                     style={{
                       padding: '4px 10px',
-                      background: 'rgba(6,182,212,0.1)',
-                      border: `1px solid ${copiedWord === item.word ? '#34d399' : 'rgba(34,211,238,0.3)'}`,
+                      background: 'rgba(231,165,64,0.1)',
+                      border: `1px solid ${copiedWord === item.word ? '#34d399' : 'rgba(231,165,64,0.3)'}`,
                       borderRadius: 6,
                       fontSize: '0.75rem',
-                      color: copiedWord === item.word ? '#34d399' : '#67e8f9',
+                      color: copiedWord === item.word ? '#34d399' : '#e7a540',
                       cursor: 'pointer',
                       fontFamily: "'JetBrains Mono', monospace"
                     }}
@@ -336,17 +336,17 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
           {/* AI Rhymes */}
           {aiSuggestions && (
             <div>
-              <span style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#c084fc', marginBottom: 10, display: 'block' }}>
+              <span style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#9ba1aa', marginBottom: 10, display: 'block' }}>
                 <Icon i={Sparkles} />AI Rhyming Suggestions & Phrases
               </span>
               <div
                 style={{
-                  background: 'rgba(13,8,28,0.8)',
-                  border: '1px solid rgba(139,92,246,0.22)',
+                  background: 'rgba(16,18,21,0.8)',
+                  border: '1px solid rgba(155,161,170,0.22)',
                   borderRadius: 10,
                   padding: 16,
                   fontSize: '0.82rem',
-                  color: '#e8e0ff',
+                  color: '#e6e8eb',
                   fontFamily: "'JetBrains Mono', monospace",
                   lineHeight: 1.8,
                   whiteSpace: 'pre-wrap'
@@ -360,7 +360,7 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
           {!perfectRhymes && !aiSuggestions && !loadingLocal && !loadingAI && (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, paddingBottom: 60, userSelect: 'none' }}>
               <div className="empty-glyph"><BookOpen size={44} strokeWidth={1.25} /></div>
-              <p style={{ color: 'rgba(196,181,253,0.7)', fontWeight: 500, fontSize: '0.88rem', textAlign: 'center' }}>
+              <p style={{ color: 'rgba(230,232,235,0.7)', fontWeight: 500, fontSize: '0.88rem', textAlign: 'center' }}>
                 Type a word and click Find Rhymes or AI Suggest to start searching.
               </p>
             </div>
@@ -369,16 +369,16 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
       </div>
 
       {/* Internal Rhymes Scanner area on the right */}
-      <div style={{ width: '400px', display: 'flex', flexDirection: 'column', background: 'rgba(13,8,28,0.3)', overflow: 'hidden' }}>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(139,92,246,0.18)', background: 'rgba(8,5,18,0.5)', flexShrink: 0 }}>
+      <div style={{ width: '400px', display: 'flex', flexDirection: 'column', background: 'rgba(16,18,21,0.3)', overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(155,161,170,0.18)', background: 'rgba(10,12,15,0.5)', flexShrink: 0 }}>
           <h4
-            style={{ fontSize: '0.85rem', fontWeight: 700, color: '#c4b5fd', display: 'flex', alignItems: 'center', gap: 6 }}
+            style={{ fontSize: '0.85rem', fontWeight: 700, color: '#e6e8eb', display: 'flex', alignItems: 'center', gap: 6 }}
             data-help="An INTERNAL rhyme is a rhyme that happens in the MIDDLE of your lines, not just at the end — a sign of skilled writing. Paste lyrics here and this tool color-codes the words that rhyme with each other inside the lines."
           >
             <Layers size={14} />
             Internal Rhyme Analyzer
           </h4>
-          <span style={{ fontSize: '0.65rem', color: 'rgba(167,139,250,0.5)' }}>
+          <span style={{ fontSize: '0.65rem', color: 'rgba(155,161,170,0.5)' }}>
             Paste lyrics here to scan and highlight phonetic internal rhymes
           </span>
         </div>
@@ -392,12 +392,12 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
             rows={8}
             style={{
               width: '100%',
-              background: 'rgba(13,8,28,0.7)',
-              border: '1px solid rgba(139,92,246,0.22)',
+              background: 'rgba(16,18,21,0.7)',
+              border: '1px solid rgba(155,161,170,0.22)',
               borderRadius: 8,
               padding: '10px 12px',
               fontSize: '0.8rem',
-              color: '#e8e0ff',
+              color: '#e6e8eb',
               outline: 'none',
               fontFamily: "'JetBrains Mono', monospace",
               resize: 'none',
@@ -426,7 +426,7 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
           {scannedLyrics && (
             <div style={{ marginTop: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', color: 'rgba(167,139,250,0.5)' }}>
+                <span style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', color: 'rgba(155,161,170,0.5)' }}>
                   Scanned Output (Color-Coded Rhyme Clusters)
                 </span>
                 <button
@@ -448,12 +448,12 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
               </div>
               <div
                 style={{
-                  background: 'rgba(13,8,28,0.9)',
-                  border: '1px solid rgba(139,92,246,0.18)',
+                  background: 'rgba(16,18,21,0.9)',
+                  border: '1px solid rgba(155,161,170,0.18)',
                   borderRadius: 8,
                   padding: 14,
                   fontSize: '0.8rem',
-                  color: '#e8e0ff',
+                  color: '#e6e8eb',
                   lineHeight: 1.8,
                   fontFamily: 'var(--faf-font)'
                 }}

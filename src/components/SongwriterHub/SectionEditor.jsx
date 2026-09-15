@@ -7,12 +7,12 @@ import { Icon } from '../common/Glyph.jsx';
 
 const sectionStyles = {
   intro: { border: '1px solid rgba(99, 102, 241, 0.45)', bg: 'rgba(99, 102, 241, 0.04)', glow: 'rgba(99, 102, 241, 0.2)', pill: 'pill-purple' },
-  verse: { border: '1px solid rgba(139, 92, 246, 0.45)', bg: 'rgba(139, 92, 246, 0.04)', glow: 'rgba(139, 92, 246, 0.2)', pill: 'pill-purple' },
+  verse: { border: '1px solid rgba(155, 161, 170, 0.45)', bg: 'rgba(155, 161, 170, 0.04)', glow: 'rgba(155, 161, 170, 0.2)', pill: 'pill-purple' },
   'pre-chorus': { border: '1px solid rgba(236, 72, 153, 0.45)', bg: 'rgba(236, 72, 153, 0.04)', glow: 'rgba(236, 72, 153, 0.2)', pill: 'pill-red' },
-  chorus: { border: '1px solid rgba(6, 182, 212, 0.45)', bg: 'rgba(6, 182, 212, 0.04)', glow: 'rgba(6, 182, 212, 0.2)', pill: 'pill-cyan' },
-  bridge: { border: '1px solid rgba(217, 70, 239, 0.45)', bg: 'rgba(217, 70, 239, 0.04)', glow: 'rgba(217, 70, 239, 0.2)', pill: 'pill-purple' },
+  chorus: { border: '1px solid rgba(231, 165, 64, 0.45)', bg: 'rgba(231, 165, 64, 0.04)', glow: 'rgba(231, 165, 64, 0.2)', pill: 'pill-cyan' },
+  bridge: { border: '1px solid rgba(155, 161, 170, 0.45)', bg: 'rgba(155, 161, 170, 0.04)', glow: 'rgba(155, 161, 170, 0.2)', pill: 'pill-purple' },
   outro: { border: '1px solid rgba(100, 116, 139, 0.45)', bg: 'rgba(100, 116, 139, 0.04)', glow: 'rgba(100, 116, 139, 0.2)', pill: 'pill-green' },
-  freestyle: { border: '1px solid rgba(168, 85, 247, 0.45)', bg: 'rgba(168, 85, 247, 0.04)', glow: 'rgba(168, 85, 247, 0.2)', pill: 'pill-purple' }
+  freestyle: { border: '1px solid rgba(155, 161, 170, 0.45)', bg: 'rgba(155, 161, 170, 0.04)', glow: 'rgba(155, 161, 170, 0.2)', pill: 'pill-purple' }
 };
 
 export default function SectionEditor({ section, index }) {
@@ -234,7 +234,7 @@ export default function SectionEditor({ section, index }) {
             {section.name}
           </span>
           <span
-            style={{ fontSize: '0.75rem', color: 'rgba(167, 139, 250, 0.5)' }}
+            style={{ fontSize: '0.75rem', color: 'rgba(155, 161, 170, 0.5)' }}
             data-help="How many lines are in this section right now."
           >
             {section.lines.length} lines
@@ -246,7 +246,7 @@ export default function SectionEditor({ section, index }) {
           <button
             onClick={() => setShowStats(!showStats)}
             data-help="Show or hide the numbers about this section — like reading level, word variety, and average syllables per line. Click to peek; they're just helpful info, not rules."
-            style={{ background: 'transparent', border: 'none', color: 'rgba(167,139,250,0.6)', cursor: 'pointer' }}
+            style={{ background: 'transparent', border: 'none', color: 'rgba(155,161,170,0.6)', cursor: 'pointer' }}
           >
             <HelpCircle size={16} />
           </button>
@@ -258,9 +258,9 @@ export default function SectionEditor({ section, index }) {
               padding: '4px 8px',
               fontSize: '0.72rem',
               borderRadius: 6,
-              background: 'rgba(13,8,28,0.7)',
-              border: '1px solid rgba(139,92,246,0.22)',
-              color: copied ? '#34d399' : '#c4b5fd',
+              background: 'rgba(16,18,21,0.7)',
+              border: '1px solid rgba(155,161,170,0.22)',
+              color: copied ? '#34d399' : '#e6e8eb',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -285,9 +285,9 @@ export default function SectionEditor({ section, index }) {
               padding: '4px 8px',
               fontSize: '0.72rem',
               borderRadius: 6,
-              background: 'rgba(13,8,28,0.7)',
-              border: '1px solid rgba(139,92,246,0.22)',
-              color: '#c4b5fd',
+              background: 'rgba(16,18,21,0.7)',
+              border: '1px solid rgba(155,161,170,0.22)',
+              color: '#e6e8eb',
               cursor: 'pointer'
             }}
           >
@@ -306,8 +306,8 @@ export default function SectionEditor({ section, index }) {
               padding: '4px 8px',
               fontSize: '0.72rem',
               borderRadius: 6,
-              background: 'rgba(139,92,246,0.2)',
-              border: '1px solid rgba(139,92,246,0.4)',
+              background: 'rgba(155,161,170,0.2)',
+              border: '1px solid rgba(155,161,170,0.4)',
               color: '#fff',
               cursor: 'pointer',
               display: 'flex',
@@ -333,9 +333,9 @@ export default function SectionEditor({ section, index }) {
       {showStats && (
         <div
           style={{
-            background: 'rgba(13, 8, 28, 0.8)',
+            background: 'rgba(16, 18, 21, 0.8)',
             borderRadius: 8,
-            border: '1px solid rgba(139,92,246,0.18)',
+            border: '1px solid rgba(155,161,170,0.18)',
             padding: '10px 14px',
             marginBottom: 12,
             display: 'flex',
@@ -344,16 +344,16 @@ export default function SectionEditor({ section, index }) {
           }}
         >
           <div data-help="Roughly what school grade level the words read at. Lower = simpler and easier to follow; higher = more complex. There's no 'right' number — it's just a feel for how plain or fancy your words are.">
-            <span style={{ color: 'rgba(167,139,250,0.5)' }}>Reading Level:</span>{' '}
-            <strong style={{ color: '#e8e0ff' }}>{readability}</strong>
+            <span style={{ color: 'rgba(155,161,170,0.5)' }}>Reading Level:</span>{' '}
+            <strong style={{ color: '#e6e8eb' }}>{readability}</strong>
           </div>
           <div data-help="Word variety — how often you use different words instead of repeating the same ones. A higher percent means more variety. (TTR is the technical name: 'type-token ratio.') Repeating words on purpose is totally fine in songs, so don't chase this number.">
-            <span style={{ color: 'rgba(167,139,250,0.5)' }}>Word Variety:</span>{' '}
-            <strong style={{ color: '#c084fc' }}>{vocabRichness}%</strong>
+            <span style={{ color: 'rgba(155,161,170,0.5)' }}>Word Variety:</span>{' '}
+            <strong style={{ color: '#9ba1aa' }}>{vocabRichness}%</strong>
           </div>
           <div data-help="The average number of syllables per line in this section. Syllables are the beats in a word (for example, 'mu-sic' has 2). Lines with similar syllable counts tend to flow more evenly when sung or rapped.">
-            <span style={{ color: 'rgba(167,139,250,0.5)' }}>Average Syllables:</span>{' '}
-            <strong style={{ color: '#22d3ee' }}>
+            <span style={{ color: 'rgba(155,161,170,0.5)' }}>Average Syllables:</span>{' '}
+            <strong style={{ color: '#e7a540' }}>
               {(
                 section.lines.reduce((acc, l) => acc + countLineSyllables(l.text || ''), 0) /
                 (section.lines.length || 1)
@@ -393,8 +393,8 @@ export default function SectionEditor({ section, index }) {
                     fontFamily: "'JetBrains Mono', monospace",
                     padding: '2px 5px',
                     borderRadius: 4,
-                    background: line.targetSyllables > 0 && sylCount !== line.targetSyllables ? 'rgba(239, 68, 68, 0.15)' : 'rgba(139, 92, 246, 0.12)',
-                    color: line.targetSyllables > 0 && sylCount !== line.targetSyllables ? '#f87171' : '#c4b5fd',
+                    background: line.targetSyllables > 0 && sylCount !== line.targetSyllables ? 'rgba(239, 68, 68, 0.15)' : 'rgba(155, 161, 170, 0.12)',
+                    color: line.targetSyllables > 0 && sylCount !== line.targetSyllables ? '#f87171' : '#e6e8eb',
                     border: line.targetSyllables > 0 && sylCount !== line.targetSyllables ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid transparent'
                   }}
                   data-help="The number of syllables in this line right now (syllables are the beats in a word, like 'mu-sic' = 2). It updates live as you type. Turns red if it doesn't match a target you set."
@@ -412,8 +412,8 @@ export default function SectionEditor({ section, index }) {
                     width: '32px',
                     background: 'transparent',
                     border: 'none',
-                    borderBottom: '1px dashed rgba(167,139,250,0.3)',
-                    color: 'rgba(232,121,249,0.8)',
+                    borderBottom: '1px dashed rgba(155,161,170,0.3)',
+                    color: 'rgba(155,161,170,0.8)',
                     fontSize: '0.65rem',
                     textAlign: 'center',
                     outline: 'none',
@@ -446,7 +446,7 @@ export default function SectionEditor({ section, index }) {
                     filter: 'none',
                     WebkitTextStroke: '0',
                     boxShadow: 'none',
-                    caretColor: '#00e5ff',
+                    caretColor: '#e7a540',
                   }}
                 />
               </div>
@@ -460,7 +460,7 @@ export default function SectionEditor({ section, index }) {
                   style={{
                     background: 'transparent',
                     border: 'none',
-                    color: line.locked ? '#34d399' : 'rgba(167,139,250,0.4)',
+                    color: line.locked ? '#34d399' : 'rgba(155,161,170,0.4)',
                     cursor: 'pointer'
                   }}
                 >
@@ -478,10 +478,10 @@ export default function SectionEditor({ section, index }) {
                   disabled={lineGeneratingIndex === lIdx}
                   data-help="Rewrite THIS line in place (Harder / Simpler / Elevate). The old line is replaced — no ghost copy underneath. Hit Undo at the top of the workspace if you want it back."
                   style={{
-                    background: 'rgba(13,8,28,0.9)',
-                    border: '1px solid rgba(139,92,246,0.3)',
+                    background: 'rgba(16,18,21,0.9)',
+                    border: '1px solid rgba(155,161,170,0.3)',
                     borderRadius: 4,
-                    color: '#c4b5fd',
+                    color: '#e6e8eb',
                     fontSize: '0.62rem',
                     cursor: 'pointer',
                     padding: '2px 4px'
@@ -501,7 +501,7 @@ export default function SectionEditor({ section, index }) {
                   style={{
                     background: 'transparent',
                     border: 'none',
-                    color: '#22d3ee',
+                    color: '#e7a540',
                     cursor: lineGeneratingIndex === lIdx ? 'wait' : 'pointer',
                     display: 'flex',
                     alignItems: 'center'
@@ -522,24 +522,24 @@ export default function SectionEditor({ section, index }) {
             marginTop: 12,
             padding: '10px 14px',
             borderRadius: 8,
-            background: 'rgba(124, 58, 237, 0.05)',
-            border: '1px dashed rgba(124, 58, 237, 0.3)',
+            background: 'rgba(155, 161, 170, 0.05)',
+            border: '1px dashed rgba(155, 161, 170, 0.3)',
             fontSize: '0.8rem',
-            color: '#e879f9',
+            color: '#9ba1aa',
             fontStyle: 'italic',
             lineHeight: 1.8
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
             <span
-              style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(232, 121, 249, 0.7)' }}
+              style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(155, 161, 170, 0.7)' }}
               data-help="Ad-libs are the little background vocals between or under the main lines — shouts and reactions like 'yeah!', 'uh!', or 'come on!' that add energy. These are AI suggestions you can use or ignore."
             >
               <Icon i={Megaphone} />Vocal Ad-Lib layer
             </span>
             <button
               onClick={() => store.updateSectionMeta(section.id, { showAdLibs: false })}
-              style={{ background: 'transparent', border: 'none', color: 'rgba(167,139,250,0.5)', cursor: 'pointer', fontSize: '0.65rem' }}
+              style={{ background: 'transparent', border: 'none', color: 'rgba(155,161,170,0.5)', cursor: 'pointer', fontSize: '0.65rem' }}
             >
               Hide
             </button>

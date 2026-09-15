@@ -312,7 +312,7 @@ export default function Visualizer() {
           )}
         </div>
         {presetName && (
-          <div style={{ position: 'absolute', left: 10, bottom: 8, fontSize: '0.58rem', color: 'rgba(0,229,255,0.85)', fontFamily: "'JetBrains Mono', monospace", textShadow: '0 0 6px rgba(0,0,0,0.9)', maxWidth: '70%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ position: 'absolute', left: 10, bottom: 8, fontSize: '0.58rem', color: 'rgba(231,165,64,0.85)', fontFamily: "'JetBrains Mono', monospace", textShadow: '0 0 6px rgba(0,0,0,0.9)', maxWidth: '70%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {presetIndex + 1}/{allNames.length || '—'} · {presetName}
           </div>
         )}
@@ -320,13 +320,13 @@ export default function Visualizer() {
           <div style={{
             position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center', gap: 8,
-            background: 'rgba(4,2,10,0.86)', color: '#00e5ff', textAlign: 'center', padding: 16,
+            background: 'rgba(4,6,9,0.86)', color: '#e7a540', textAlign: 'center', padding: 16,
           }}>
             <MonitorUp size={26} />
             <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>
               Playing on {describeDisplay(poppedTo)}
             </div>
-            <div style={{ fontSize: '0.64rem', color: 'rgba(196,181,253,0.7)', maxWidth: 380 }}>
+            <div style={{ fontSize: '0.64rem', color: 'rgba(230,232,235,0.7)', maxWidth: 380 }}>
               Shuffle, Prev/Next and the preset list still drive it. Press Esc on that screen, or use
               the button above, to bring it back here.
             </div>
@@ -337,18 +337,18 @@ export default function Visualizer() {
 
       {/* Preset browser — many Milkdrop-class visualizations */}
       <div
-        style={{ maxHeight: 160, overflow: 'hidden', display: 'flex', flexDirection: 'column', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 10, background: 'rgba(8,5,18,0.9)' }}
+        style={{ maxHeight: 160, overflow: 'hidden', display: 'flex', flexDirection: 'column', border: '1px solid rgba(155,161,170,0.3)', borderRadius: 10, background: 'rgba(10,12,15,0.9)' }}
         data-help={`Full Butterchurn pack: ${allNames.length} presets loaded. List shows up to ${PICKER_CAP}; Shuffle uses all of them.`}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderBottom: '1px solid rgba(139,92,246,0.2)' }}>
-          <Search size={12} color="#00e5ff" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderBottom: '1px solid rgba(155,161,170,0.2)' }}>
+          <Search size={12} color="#e7a540" />
           <input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder={`Search ${allNames.length || '…'} visualizers…`}
-            style={{ flex: 1, background: 'transparent', border: 'none', color: '#e8e0ff', fontSize: '0.72rem', outline: 'none' }}
+            style={{ flex: 1, background: 'transparent', border: 'none', color: '#e6e8eb', fontSize: '0.72rem', outline: 'none' }}
           />
-          <span style={{ fontSize: '0.62rem', color: 'rgba(180,170,200,0.55)' }}>{filtered.length} shown</span>
+          <span style={{ fontSize: '0.62rem', color: 'rgba(155,161,170,0.55)' }}>{filtered.length} shown</span>
         </div>
         <div style={{ overflowY: 'auto', flex: 1, padding: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
           {filtered.map((n) => (
@@ -363,14 +363,14 @@ export default function Visualizer() {
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 borderColor: n === presetName ? 'rgba(255,45,149,0.7)' : undefined,
-                color: n === presetName ? '#00e5ff' : undefined,
+                color: n === presetName ? '#e7a540' : undefined,
               }}
               title={n}
             >
               {n.length > 28 ? n.slice(0, 26) + '…' : n}
             </button>
           ))}
-          {!filtered.length && <span style={{ fontSize: '0.7rem', color: 'rgba(180,170,200,0.5)', padding: 8 }}>No matches</span>}
+          {!filtered.length && <span style={{ fontSize: '0.7rem', color: 'rgba(155,161,170,0.5)', padding: 8 }}>No matches</span>}
         </div>
       </div>
     </div>

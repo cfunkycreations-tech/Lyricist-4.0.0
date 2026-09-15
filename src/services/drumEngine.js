@@ -17,11 +17,11 @@ import * as TR from './tr808.js';
 
 export const KIT = [
   { id: 'kick',    name: 'Kick',       color: '#ff2d95', key: 'B1' },
-  { id: 'snare',   name: 'Snare',      color: '#00e5ff', key: 'D2' },
-  { id: 'clap',    name: 'Clap',       color: '#c026ff', key: 'D#2' },
+  { id: 'snare',   name: 'Snare',      color: '#e7a540', key: 'D2' },
+  { id: 'clap',    name: 'Clap',       color: '#9ba1aa', key: 'D#2' },
   { id: 'hatC',    name: 'Closed Hat', color: '#10f0a0', key: 'F#2' },
   { id: 'hatO',    name: 'Open Hat',   color: '#7dffb0', key: 'A#2' },
-  { id: 'cymbal',  name: 'Cymbal',     color: '#67e8f9', key: 'C#3' },
+  { id: 'cymbal',  name: 'Cymbal',     color: '#e7a540', key: 'C#3' },
   { id: 'tomL',    name: 'Low Tom',    color: '#ff8c00', key: 'G1' },
   { id: 'tomM',    name: 'Mid Tom',    color: '#fb923c', key: 'B1' },
   { id: 'tomH',    name: 'High Tom',   color: '#fdba74', key: 'D2' },

@@ -31,10 +31,10 @@ import { Icon } from '../common/Glyph.jsx';
 // ============================================================
 
 // Brand neon palette — electric purple · blue · emerald + hot fluorescents for tiles
-const MAG = '#a855f7', ORG = '#00e5ff', GRN = '#10f0a0', YLW = '#c026ff', BLU = '#00f0ff';
-const HOT_ORG = '#ff6f00', HOT_RED = '#ff1a1a', HOT_PNK = '#ff00aa';
+const MAG = '#9ba1aa', ORG = '#e7a540', GRN = '#10f0a0', YLW = '#9ba1aa', BLU = '#e7a540';
+const HOT_ORG = '#ff6f00', HOT_RED = '#ff1a1a', HOT_PNK = '#9ba1aa';
 // Violet — grid TILES only when selected/clicked (never toolbar)
-const VIO = '#b44dff';
+const VIO = '#9ba1aa';
 const pct = (x) => `${Math.round((x || 0) * 100)}%`;
 const f2 = (x) => (x || 0).toFixed(2);
 const hashClass = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
@@ -51,20 +51,23 @@ const hashClass = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c
  * Now it is a continuous furnace ramp, cold to white hot, exactly like real
  * fire, so a glance tells you where the energy is:
  *
- *   0.00  deep midnight blue   barely alive
- *   0.18  electric cyan
+ *   0.00  cold graphite        barely alive
+ *   0.18  cool steel
  *   0.36  emerald green
  *   0.52  burning yellow-gold
  *   0.68  molten orange
  *   0.84  fierce red
  *   1.00  white hot core
  *
- * Entangled (superposition) tiles sit OUTSIDE the ramp in violet, because that
+ * The cold end used to be midnight blue into electric cyan; Chris, 2026-09-15:
+ * "get rid of the cyan and purple colors". It starts on graphite and steel now.
+ *
+ * Entangled (superposition) tiles sit OUTSIDE the ramp in steel, because that
  * is a different property, not more heat. Same reason frozen tiles go grey.
  */
 const HEAT_RAMP = [
-  [0.00, [10, 26, 90]],     // deep midnight blue
-  [0.18, [0, 190, 255]],    // electric cyan
+  [0.00, [38, 42, 48]],     // cold graphite
+  [0.18, [120, 128, 138]],  // cool steel
   [0.36, [16, 240, 160]],   // emerald
   [0.52, [255, 214, 0]],    // yellow-gold
   [0.68, [255, 111, 0]],    // molten orange
@@ -1063,7 +1066,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
                 </svg>
               ))}
             </div>
-            <div style={{ fontSize: '0.7rem', color: 'rgba(200,190,220,0.6)', marginTop: 4 }}>
+            <div style={{ fontSize: '0.7rem', color: 'rgba(230,232,235,0.6)', marginTop: 4 }}>
               Active pairs: {links.length}
             </div>
             </div>
@@ -1147,9 +1150,9 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           borderRadius: 14,
           cursor: autoBusy || busy || running ? 'wait' : 'pointer',
           background: 'linear-gradient(180deg, rgba(var(--accent-rgb),0.16), rgba(0,0,0,0.55))',
-          border: '1px solid var(--accent-neon, #00f0ff)',
+          border: '1px solid var(--accent-neon, #e7a540)',
           boxShadow: `0 0 22px rgba(var(--accent-rgb),0.28)`,
-          color: '#f3ecff',
+          color: '#e6e8eb',
           opacity: autoBusy || busy || running ? 0.7 : 1,
           transition: 'all 0.15s',
         }}
@@ -1161,7 +1164,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             fontFamily: 'var(--faf-font)',
             fontSize: '1.15rem',
             letterSpacing: '0.04em',
-            color: 'var(--accent-neon, #00f0ff)',
+            color: 'var(--accent-neon, #e7a540)',
           }}>
             {autoBusy ? (autoStage || 'Auto-Crafting…') : 'Auto-Craft Verse'}
           </span>
@@ -1430,11 +1433,11 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div style={{ opacity: neuralPick === 'A' ? 1 : 0.55, border: neuralPick === 'A' ? '1px solid rgba(234,255,43,0.5)' : '1px solid transparent', borderRadius: 10, padding: 8 }}>
               <div style={{ fontSize: '0.7rem', color: YLW, marginBottom: 6 }}>STATE A</div>
-              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'var(--faf-font)', fontSize: '0.92rem', lineHeight: 1.55, color: '#f3ecff' }}>{neuralA || '—'}</pre>
+              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'var(--faf-font)', fontSize: '0.92rem', lineHeight: 1.55, color: '#e6e8eb' }}>{neuralA || '—'}</pre>
             </div>
             <div style={{ opacity: neuralPick === 'B' ? 1 : 0.55, border: neuralPick === 'B' ? '1px solid rgba(234,255,43,0.5)' : '1px solid transparent', borderRadius: 10, padding: 8 }}>
               <div style={{ fontSize: '0.7rem', color: YLW, marginBottom: 6 }}>STATE B</div>
-              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'var(--faf-font)', fontSize: '0.92rem', lineHeight: 1.55, color: '#f3ecff' }}>{neuralB || '—'}</pre>
+              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'var(--faf-font)', fontSize: '0.92rem', lineHeight: 1.55, color: '#e6e8eb' }}>{neuralB || '—'}</pre>
             </div>
           </div>
         </div>

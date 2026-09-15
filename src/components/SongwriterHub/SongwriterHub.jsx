@@ -350,7 +350,7 @@ export default function SongwriterHub({ ghostRiderData }) {
   const missingKeywords = getMissingKeywords();
 
   return (
-    <div style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'radial-gradient(70% 50% at 20% 0%, rgba(0,229,255,0.08) 0%, transparent 55%), radial-gradient(60% 45% at 85% 100%, rgba(168,85,247,0.08) 0%, transparent 50%), #04060f' }}>
+    <div style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'radial-gradient(70% 50% at 20% 0%, rgba(231,165,64,0.08) 0%, transparent 55%), radial-gradient(60% 45% at 85% 100%, rgba(155,161,170,0.08) 0%, transparent 50%), #04060f' }}>
       <TabBackground name="songwriter" />
       <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
@@ -409,7 +409,7 @@ export default function SongwriterHub({ ghostRiderData }) {
 
         {/* Topic Input (Keywords) */}
         <div data-help="What the song is about, plus any words or images you want woven in. Type freely — separate ideas with commas, spaces, dashes, periods, or new lines, whatever feels natural. Example: city lights, midnight, running late.">
-          <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+          <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
             Topic & Keyword Ideas
           </label>
           <textarea
@@ -419,12 +419,12 @@ export default function SongwriterHub({ ghostRiderData }) {
             rows={2}
             style={{
               width: '100%',
-              background: 'rgba(13,8,28,0.7)',
-              border: '1px solid rgba(139,92,246,0.22)',
+              background: 'rgba(16,18,21,0.7)',
+              border: '1px solid rgba(155,161,170,0.22)',
               borderRadius: 8,
               padding: '7px 10px',
               fontSize: '0.82rem',
-              color: '#e8e0ff',
+              color: '#e6e8eb',
               outline: 'none',
               fontFamily: 'var(--faf-font)',
               resize: 'none'
@@ -434,7 +434,7 @@ export default function SongwriterHub({ ghostRiderData }) {
 
         {/* Artist Reference */}
         <div data-help="Optional. Name one or more artists whose vibe you want the lyrics to lean toward (separate them however you like). It borrows their FEEL — wording, energy, themes — not their actual song lyrics.">
-          <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+          <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
             Artist Influence (optional)
           </label>
           <input
@@ -443,12 +443,12 @@ export default function SongwriterHub({ ghostRiderData }) {
             placeholder="e.g. Kendrick Lamar, Bob Dylan..."
             style={{
               width: '100%',
-              background: 'rgba(13,8,28,0.7)',
-              border: '1px solid rgba(139,92,246,0.22)',
+              background: 'rgba(16,18,21,0.7)',
+              border: '1px solid rgba(155,161,170,0.22)',
               borderRadius: 8,
               padding: '7px 10px',
               fontSize: '0.82rem',
-              color: '#e8e0ff',
+              color: '#e6e8eb',
               outline: 'none',
               fontFamily: 'var(--faf-font)'
             }}
@@ -456,9 +456,9 @@ export default function SongwriterHub({ ghostRiderData }) {
         </div>
 
         {/* Rhyme scheme, flow pattern & density */}
-        <div style={{ padding: 10, background: 'rgba(124, 58, 237, 0.04)', borderRadius: 8, border: '1px solid rgba(124, 58, 237, 0.15)' }}>
+        <div style={{ padding: 10, background: 'rgba(155, 161, 170, 0.04)', borderRadius: 8, border: '1px solid rgba(155, 161, 170, 0.15)' }}>
           <span
-            style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c084fc', marginBottom: 8, display: 'block' }}
+            style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9ba1aa', marginBottom: 8, display: 'block' }}
             data-help="These settings control the RHYTHM of the words — how the rhymes line up and how the lines bounce. All optional. Leave the defaults if you're not sure; you can always change them later."
           >
             Rhythm & Cadence
@@ -466,18 +466,18 @@ export default function SongwriterHub({ ghostRiderData }) {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div data-help="A rhyme scheme is the PATTERN of which lines rhyme with each other. For example, AABB means line 1 rhymes with line 2, and line 3 rhymes with line 4. 'Free' means don't force any pattern.">
-              <label style={{ fontSize: '0.6rem', color: 'rgba(167,139,250,0.6)', display: 'block', marginBottom: 3 }}>Rhyme Scheme</label>
+              <label style={{ fontSize: '0.6rem', color: 'rgba(155,161,170,0.6)', display: 'block', marginBottom: 3 }}>Rhyme Scheme</label>
               <select
                 value={store.rhymeScheme}
                 onChange={(e) => store.setRhymeScheme(e.target.value)}
                 style={{
                   width: '100%',
-                  background: 'rgba(13,8,28,0.8)',
-                  border: '1px solid rgba(139,92,246,0.2)',
+                  background: 'rgba(16,18,21,0.8)',
+                  border: '1px solid rgba(155,161,170,0.2)',
                   borderRadius: 6,
                   padding: '5px 8px',
                   fontSize: '0.76rem',
-                  color: '#e8e0ff',
+                  color: '#e6e8eb',
                   outline: 'none'
                 }}
               >
@@ -488,7 +488,7 @@ export default function SongwriterHub({ ghostRiderData }) {
             </div>
 
             <div data-help="How MANY rhymes get packed into the lines. Sparse = just a few (clean and clear). Balanced = a steady amount. Dense = lots, packed tight (common in rap). Extra Dense = even more. Maximum = rhymes nearly wall-to-wall.">
-              <label style={{ fontSize: '0.6rem', color: 'rgba(167,139,250,0.6)', display: 'block', marginBottom: 3 }}>Rhyme Density (how many rhymes)</label>
+              <label style={{ fontSize: '0.6rem', color: 'rgba(155,161,170,0.6)', display: 'block', marginBottom: 3 }}>Rhyme Density (how many rhymes)</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
                 {[
                   { val: 'sparse', label: 'Sparse' },
@@ -508,8 +508,8 @@ export default function SongwriterHub({ ghostRiderData }) {
                       borderRadius: 4,
                       border: 'none',
                       cursor: 'pointer',
-                      background: store.rhymeDensity === d.val ? 'rgba(124,58,237,0.45)' : 'rgba(13,8,28,0.6)',
-                      color: store.rhymeDensity === d.val ? '#fff' : 'rgba(167,139,250,0.5)'
+                      background: store.rhymeDensity === d.val ? 'rgba(155,161,170,0.45)' : 'rgba(16,18,21,0.6)',
+                      color: store.rhymeDensity === d.val ? '#fff' : 'rgba(155,161,170,0.5)'
                     }}
                   >
                     {d.label}
@@ -524,18 +524,18 @@ export default function SongwriterHub({ ghostRiderData }) {
                 would hide it from exactly the people who went looking for it. */}
             {store.genreList.some((g) => RAPPED_GENRES.includes(g)) && (
               <div data-help="Flow is the RHYTHM of how the words are rapped over the beat — fast, slow, choppy, smooth, triplets, and so on. It's like the heartbeat of the verse. (Shows up whenever a rapped genre is in your blend.)">
-                <label style={{ fontSize: '0.6rem', color: 'rgba(167,139,250,0.6)', display: 'block', marginBottom: 3 }}>Rap Flow Pattern</label>
+                <label style={{ fontSize: '0.6rem', color: 'rgba(155,161,170,0.6)', display: 'block', marginBottom: 3 }}>Rap Flow Pattern</label>
                 <select
                   value={store.flowPattern}
                   onChange={(e) => store.setFlowPattern(e.target.value)}
                   style={{
                     width: '100%',
-                    background: 'rgba(13,8,28,0.8)',
-                    border: '1px solid rgba(139,92,246,0.2)',
+                    background: 'rgba(16,18,21,0.8)',
+                    border: '1px solid rgba(155,161,170,0.2)',
                     borderRadius: 6,
                     padding: '5px 8px',
                     fontSize: '0.76rem',
-                    color: '#e8e0ff',
+                    color: '#e6e8eb',
                     outline: 'none'
                   }}
                 >
@@ -547,19 +547,19 @@ export default function SongwriterHub({ ghostRiderData }) {
             )}
 
             <div data-help="Cadence (say: KAY-dence) is the way the words are DELIVERED — the pacing and attitude of the voice. Pick a ready-made style below, type your own, or both. Totally optional.">
-              <label style={{ fontSize: '0.6rem', color: 'rgba(167,139,250,0.6)', display: 'block', marginBottom: 3 }}>Cadence / Delivery (how it's spoken)</label>
+              <label style={{ fontSize: '0.6rem', color: 'rgba(155,161,170,0.6)', display: 'block', marginBottom: 3 }}>Cadence / Delivery (how it's spoken)</label>
               <select
                 value=""
                 onChange={(e) => { if (e.target.value) store.setCadenceNotes(e.target.value); }}
                 data-help="Quick-pick a delivery style. Choosing one fills in the box below, which you can then edit or add to."
                 style={{
                   width: '100%',
-                  background: 'rgba(13,8,28,0.8)',
-                  border: '1px solid rgba(139,92,246,0.2)',
+                  background: 'rgba(16,18,21,0.8)',
+                  border: '1px solid rgba(155,161,170,0.2)',
                   borderRadius: 6,
                   padding: '5px 8px',
                   fontSize: '0.74rem',
-                  color: '#c4b5fd',
+                  color: '#e6e8eb',
                   outline: 'none',
                   marginBottom: 5,
                   cursor: 'pointer'
@@ -588,12 +588,12 @@ export default function SongwriterHub({ ghostRiderData }) {
                 data-help="Type the delivery in your own words, or fine-tune the style you picked above."
                 style={{
                   width: '100%',
-                  background: 'rgba(13,8,28,0.8)',
-                  border: '1px solid rgba(139,92,246,0.2)',
+                  background: 'rgba(16,18,21,0.8)',
+                  border: '1px solid rgba(155,161,170,0.2)',
                   borderRadius: 6,
                   padding: '5px 8px',
                   fontSize: '0.76rem',
-                  color: '#e8e0ff',
+                  color: '#e6e8eb',
                   outline: 'none'
                 }}
               />
@@ -609,7 +609,7 @@ export default function SongwriterHub({ ghostRiderData }) {
 
         {/* Notes */}
         <div data-help="Any extra instructions for the AI, in plain words. Use this to add rules or wishes — like 'keep it clean, no swearing,' 'use lots of comparisons,' or 'mention my hometown.' Optional.">
-          <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+          <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
             Anything Else You Want (notes)
           </label>
           <textarea
@@ -619,12 +619,12 @@ export default function SongwriterHub({ ghostRiderData }) {
             rows={2}
             style={{
               width: '100%',
-              background: 'rgba(13,8,28,0.7)',
-              border: '1px solid rgba(139,92,246,0.22)',
+              background: 'rgba(16,18,21,0.7)',
+              border: '1px solid rgba(155,161,170,0.22)',
               borderRadius: 8,
               padding: '7px 10px',
               fontSize: '0.82rem',
-              color: '#e8e0ff',
+              color: '#e6e8eb',
               outline: 'none',
               fontFamily: 'var(--faf-font)',
               resize: 'none'
@@ -672,7 +672,7 @@ export default function SongwriterHub({ ghostRiderData }) {
             <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--ql-grn, #10f0a0)', marginBottom: 3 }}>
               Already wrote a song?
             </div>
-            <div style={{ fontSize: '0.68rem', color: 'rgba(200,190,220,0.72)', lineHeight: 1.5, marginBottom: 9 }}>
+            <div style={{ fontSize: '0.68rem', color: 'rgba(230,232,235,0.72)', lineHeight: 1.5, marginBottom: 9 }}>
               Load your own lyrics in from a file and work on them here — rewrite lines, fill blanks,
               check rhymes, all of it. Nothing is sent anywhere. Plain text, .txt, .md or .lrc.
               If your file has <b>[Verse]</b> / <b>[Chorus]</b> headings they'll be kept.
@@ -695,7 +695,7 @@ export default function SongwriterHub({ ghostRiderData }) {
                 data-help="Paste lyrics straight in instead of picking a file."
                 style={{
                   padding: '9px 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.18)',
-                  background: 'transparent', color: 'rgba(220,210,240,0.85)', fontWeight: 600,
+                  background: 'transparent', color: 'rgba(230,232,235,0.85)', fontWeight: 600,
                   fontSize: '0.76rem', cursor: 'pointer',
                 }}
               >
@@ -711,7 +711,7 @@ export default function SongwriterHub({ ghostRiderData }) {
                   style={{
                     width: '100%', minHeight: 130, borderRadius: 8, padding: 10,
                     background: 'rgba(0,0,0,0.26)', border: '1px solid rgba(255,255,255,0.15)',
-                    color: '#f3ecff', fontSize: '0.8rem', lineHeight: 1.6, resize: 'vertical',
+                    color: '#e6e8eb', fontSize: '0.8rem', lineHeight: 1.6, resize: 'vertical',
                     fontFamily: 'var(--faf-font)',
                   }}
                 />
@@ -776,7 +776,7 @@ export default function SongwriterHub({ ghostRiderData }) {
       </div>
 
       {/* Main Lyrics Editor workspace */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'rgba(7,5,15,0.45)' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'rgba(8,10,13,0.45)' }}>
         {/* Workspace Toolbar */}
         <div
           style={{
@@ -784,14 +784,14 @@ export default function SongwriterHub({ ghostRiderData }) {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '10px 20px',
-            borderBottom: '1px solid rgba(139,92,246,0.18)',
-            background: 'rgba(8,5,18,0.7)',
+            borderBottom: '1px solid rgba(155,161,170,0.18)',
+            background: 'rgba(10,12,15,0.7)',
             flexShrink: 0
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span
-              style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.5)' }}
+              style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.5)' }}
               data-help="This is your editing area. Once you generate a song, each section (verse, chorus, etc.) shows up here for you to tweak line by line."
             >
               Songwriter Workspace
@@ -832,8 +832,8 @@ export default function SongwriterHub({ ghostRiderData }) {
                 gap: 6,
                 padding: '5px 12px',
                 borderRadius: 8,
-                border: `1px solid ${store.canUndo ? 'rgba(0,229,255,0.45)' : 'rgba(100,100,120,0.25)'}`,
-                background: store.canUndo ? 'rgba(0,229,255,0.12)' : 'rgba(20,20,30,0.4)',
+                border: `1px solid ${store.canUndo ? 'rgba(231,165,64,0.45)' : 'rgba(100,100,120,0.25)'}`,
+                background: store.canUndo ? 'rgba(231,165,64,0.12)' : 'rgba(23,25,28,0.4)',
                 color: store.canUndo ? '#e8eef8' : 'rgba(140,140,160,0.4)',
                 cursor: store.canUndo ? 'pointer' : 'not-allowed',
                 fontSize: '0.72rem',
@@ -856,8 +856,8 @@ export default function SongwriterHub({ ghostRiderData }) {
                 gap: 6,
                 padding: '5px 12px',
                 borderRadius: 8,
-                border: `1px solid ${store.canRedo ? 'rgba(168,85,247,0.5)' : 'rgba(100,100,120,0.25)'}`,
-                background: store.canRedo ? 'rgba(168,85,247,0.14)' : 'rgba(20,20,30,0.4)',
+                border: `1px solid ${store.canRedo ? 'rgba(155,161,170,0.5)' : 'rgba(100,100,120,0.25)'}`,
+                background: store.canRedo ? 'rgba(155,161,170,0.14)' : 'rgba(23,25,28,0.4)',
                 color: store.canRedo ? '#e8eef8' : 'rgba(140,140,160,0.4)',
                 cursor: store.canRedo ? 'pointer' : 'not-allowed',
                 fontSize: '0.72rem',
@@ -879,9 +879,9 @@ export default function SongwriterHub({ ghostRiderData }) {
                     fontWeight: 600,
                     padding: '4px 12px',
                     borderRadius: 6,
-                    border: '1px solid rgba(139,92,246,0.35)',
+                    border: '1px solid rgba(155,161,170,0.35)',
                     background: 'transparent',
-                    color: copied ? '#34d399' : 'rgba(196,181,253,0.7)',
+                    color: copied ? '#34d399' : 'rgba(230,232,235,0.7)',
                     cursor: 'pointer',
                     transition: 'all 0.15s',
                     display: 'flex',
@@ -960,11 +960,11 @@ export default function SongwriterHub({ ghostRiderData }) {
           ) : (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyCenter: 'center', gap: 12, paddingBottom: 60, userSelect: 'none', justifyContent: 'center' }}>
               <div className="empty-glyph"><PenLine size={44} strokeWidth={1.25} /></div>
-              <p style={{ color: 'rgba(196,181,253,0.7)', fontWeight: 500, fontSize: '0.9rem', textAlign: 'center' }}>
+              <p style={{ color: 'rgba(230,232,235,0.7)', fontWeight: 500, fontSize: '0.9rem', textAlign: 'center' }}>
                 {isGenerating ? 'Coaxing the words from the ether...' : 'Configure your options and click Generate Full Song.'}
               </p>
               {!isGenerating && (
-                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.65rem', color: 'rgba(148,130,200,0.35)', textAlign: 'center' }}>
+                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.65rem', color: 'rgba(155,161,170,0.35)', textAlign: 'center' }}>
                   Model: {store.config.model}
                 </p>
               )}
@@ -982,7 +982,7 @@ export default function SongwriterHub({ ghostRiderData }) {
             position: 'fixed',
             inset: 0,
             zIndex: 100,
-            background: 'rgba(5,2,14,0.85)',
+            background: 'rgba(6,8,11,0.85)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -996,11 +996,11 @@ export default function SongwriterHub({ ghostRiderData }) {
               maxWidth: '850px',
               maxHeight: '85vh',
               overflowY: 'auto',
-              background: '#0d081c',
-              border: '1px solid rgba(139,92,246,0.35)',
+              background: '#101215',
+              border: '1px solid rgba(155,161,170,0.35)',
               borderRadius: 14,
               padding: 24,
-              boxShadow: '0 0 0 1px rgba(124,58,237,0.4)'
+              boxShadow: '0 0 0 1px rgba(155,161,170,0.4)'
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -1012,7 +1012,7 @@ export default function SongwriterHub({ ghostRiderData }) {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: 'rgba(167,139,250,0.6)',
+                  color: 'rgba(155,161,170,0.6)',
                   fontSize: '1.2rem',
                   cursor: 'pointer'
                 }}
@@ -1022,11 +1022,11 @@ export default function SongwriterHub({ ghostRiderData }) {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 20 }}>
-              <div style={{ padding: 12, background: 'rgba(13,8,28,0.7)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: 8 }}>
-                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#e879f9', display: 'block', marginBottom: 8 }} data-help="A bridge that changes the STORY — adds a surprise, a new point of view, or a turn in what the song is saying.">
+              <div style={{ padding: 12, background: 'rgba(16,18,21,0.7)', border: '1px solid rgba(155,161,170,0.2)', borderRadius: 8 }}>
+                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#9ba1aa', display: 'block', marginBottom: 8 }} data-help="A bridge that changes the STORY — adds a surprise, a new point of view, or a turn in what the song is saying.">
                   NARRATIVE TWIST
                 </span>
-                <pre style={{ fontSize: '0.74rem', fontFamily: 'var(--faf-font)', color: '#e8e0ff', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                <pre style={{ fontSize: '0.74rem', fontFamily: 'var(--faf-font)', color: '#e6e8eb', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                   {bridgeVars.A}
                 </pre>
                 <button
@@ -1036,8 +1036,8 @@ export default function SongwriterHub({ ghostRiderData }) {
                     width: '100%',
                     padding: '6px',
                     fontSize: '0.72rem',
-                    background: 'rgba(139,92,246,0.2)',
-                    border: '1px solid rgba(139,92,246,0.4)',
+                    background: 'rgba(155,161,170,0.2)',
+                    border: '1px solid rgba(155,161,170,0.4)',
                     color: '#fff',
                     borderRadius: 6,
                     cursor: 'pointer'
@@ -1047,11 +1047,11 @@ export default function SongwriterHub({ ghostRiderData }) {
                 </button>
               </div>
 
-              <div style={{ padding: 12, background: 'rgba(13,8,28,0.7)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: 8 }}>
-                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#22d3ee', display: 'block', marginBottom: 8 }} data-help="A bridge that hits the hardest FEELING — the most heartfelt, intense moment of the whole song.">
+              <div style={{ padding: 12, background: 'rgba(16,18,21,0.7)', border: '1px solid rgba(155,161,170,0.2)', borderRadius: 8 }}>
+                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#e7a540', display: 'block', marginBottom: 8 }} data-help="A bridge that hits the hardest FEELING — the most heartfelt, intense moment of the whole song.">
                   EMOTIONAL PEAK
                 </span>
-                <pre style={{ fontSize: '0.74rem', fontFamily: 'var(--faf-font)', color: '#e8e0ff', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                <pre style={{ fontSize: '0.74rem', fontFamily: 'var(--faf-font)', color: '#e6e8eb', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                   {bridgeVars.B}
                 </pre>
                 <button
@@ -1061,8 +1061,8 @@ export default function SongwriterHub({ ghostRiderData }) {
                     width: '100%',
                     padding: '6px',
                     fontSize: '0.72rem',
-                    background: 'rgba(139,92,246,0.2)',
-                    border: '1px solid rgba(139,92,246,0.4)',
+                    background: 'rgba(155,161,170,0.2)',
+                    border: '1px solid rgba(155,161,170,0.4)',
                     color: '#fff',
                     borderRadius: 6,
                     cursor: 'pointer'
@@ -1072,11 +1072,11 @@ export default function SongwriterHub({ ghostRiderData }) {
                 </button>
               </div>
 
-              <div style={{ padding: 12, background: 'rgba(13,8,28,0.7)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: 8 }}>
+              <div style={{ padding: 12, background: 'rgba(16,18,21,0.7)', border: '1px solid rgba(155,161,170,0.2)', borderRadius: 8 }}>
                 <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#34d399', display: 'block', marginBottom: 8 }} data-help="A bridge that changes the SOUND and rhythm — a different flow or energy, so the ear gets something fresh before the last chorus.">
                   SONIC SHIFT
                 </span>
-                <pre style={{ fontSize: '0.74rem', fontFamily: 'var(--faf-font)', color: '#e8e0ff', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                <pre style={{ fontSize: '0.74rem', fontFamily: 'var(--faf-font)', color: '#e6e8eb', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                   {bridgeVars.C}
                 </pre>
                 <button
@@ -1086,8 +1086,8 @@ export default function SongwriterHub({ ghostRiderData }) {
                     width: '100%',
                     padding: '6px',
                     fontSize: '0.72rem',
-                    background: 'rgba(139,92,246,0.2)',
-                    border: '1px solid rgba(139,92,246,0.4)',
+                    background: 'rgba(155,161,170,0.2)',
+                    border: '1px solid rgba(155,161,170,0.4)',
                     color: '#fff',
                     borderRadius: 6,
                     cursor: 'pointer'

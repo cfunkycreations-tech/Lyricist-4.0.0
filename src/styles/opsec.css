@@ -271,12 +271,13 @@ button[style*="border-radius: 9999px"]:not(.pc), button[style*="border-radius: 9
 .stemmer-progress-bar { background: var(--faf-ink-1); border: 1px solid var(--faf-line); border-radius: 2px; }
 .stemmer-progress-fill { background: rgb(var(--accent-rgb)) !important; border-radius: 0; }
 
-/* The accent rail shows the colours the accent generator actually makes now. */
+/* The accent rail shows the arc the accent generator actually covers:
+   crimson → red → amber → lime → emerald. No cyan, no purple. */
 .prism-range {
   height: 6px; border-radius: 3px; border: 1px solid var(--faf-line);
   background: linear-gradient(90deg,
-    hsl(184 78% 58%) 0%, hsl(235 78% 58%) 14%, hsl(286 78% 58%) 28%, hsl(337 78% 58%) 42%,
-    hsl(28 78% 58%) 57%, hsl(79 78% 58%) 71%, hsl(130 78% 58%) 85%, hsl(184 78% 58%) 100%);
+    hsl(340 78% 58%) 0%, hsl(0 78% 58%) 11%, hsl(36 78% 58%) 31%,
+    hsl(60 78% 58%) 44%, hsl(100 78% 58%) 67%, hsl(160 78% 58%) 100%);
 }
 .prism-range::-webkit-slider-thumb { background: linear-gradient(180deg, #F2F3F5, #B9BEC6); border: 1px solid #0A0B0D; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.7); }
 
@@ -333,3 +334,26 @@ h1:not(.gradient-title):not(.chrome-title), h2, h3 { color: var(--faf-text) !imp
 .pc-screen { font-family: var(--faf-mono); }
 .push-side > button, .push-side > div { font-family: var(--faf-font) !important; font-weight: 500 !important; }
 .push-side > button > span:first-child, .push-side > div > span:first-child { display: flex; }
+
+/* ── RAZOR-THIN LINES ──
+   Chris, 2026-09-15: "for the neon laser colors I want this line razor thin! I
+   am talking about the accent colour line and the actual lines in the app".
+   Every accent line is one pixel. Sliders keep a full-height hit area; only the
+   painted line is 1px, drawn as a background band through the middle. */
+.prism-range {
+  height: 18px; border: 0 !important; border-radius: 0; box-shadow: none;
+  background-size: 100% 1px !important; background-repeat: no-repeat !important; background-position: 0 50% !important;
+}
+.prism-range::-webkit-slider-thumb { width: 11px; height: 11px; border: 1px solid #0A0B0D; }
+.prism-range::-moz-range-thumb { width: 11px; height: 11px; border: 1px solid #0A0B0D; }
+.suno-range {
+  height: 14px; border: 0; border-radius: 0; box-shadow: none;
+  background: linear-gradient(rgba(var(--accent-rgb), 0.6), rgba(var(--accent-rgb), 0.6)) 0 50% / 100% 1px no-repeat;
+}
+.suno-range::-webkit-slider-thumb { width: 9px; height: 9px; }
+button:focus-visible, [role="slider"]:focus-visible { outline: 1px solid rgb(var(--accent-rgb)); outline-offset: 2px; }
+.input-cosmic:focus { border-color: rgb(var(--accent-rgb)) !important; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5) !important; }
+.album-track--dragover { box-shadow: 0 0 0 1px rgb(var(--accent-rgb)) !important; }
+/* The active-tab pinstripe: a 1px line, no bloom. */
+.tab-glow-line, .tab-browser.is-active::after { box-shadow: none; max-height: 1px; }
+.tab-browser.is-active { box-shadow: none; }

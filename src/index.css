@@ -85,11 +85,11 @@ body, button, input, select, label, textarea {
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-hairline: 1px solid rgba(255, 255, 255, 0.12);
 
-  /* Switchable Razor Neon accent. Default: electric cyan.
+  /* Switchable accent. Default: FAF OpSec signal amber (no cyan, no purple).
      THESE FIVE ARE THE ONLY HARDCODED HEXES ALLOWED IN THIS FILE. */
-  --accent-neon: #00F0FF;
+  --accent-neon: #E7A540;
   --accent-amber: #FF9900;
-  --accent-violet: #A855F7;
+  --accent-violet: #9BA1AA;
   --accent-emerald: #10F0A0;
   --accent-crimson: #FF1A1A;
 
@@ -97,7 +97,7 @@ body, button, input, select, label, textarea {
 
   /* The accent as bare components, so a rule can ask for it at any alpha.
      prismTheme.js keeps this in step with --accent-neon on every repaint. */
-  --accent-rgb: 0, 240, 255;
+  --accent-rgb: 231, 165, 64;
 
   /* Text. Three steps and no more: primary, secondary, and the dim one used
      for hints nobody has to read. */
@@ -114,7 +114,7 @@ body, button, input, select, label, textarea {
   --neon-purple: var(--accent-violet);
   --neon-emerald: var(--accent-emerald);
   --emerald-edge: var(--accent-neon);
-  --gold-hi: #E0F2FE;
+  --gold-hi: #E6E8EB;
   --gold-mid: var(--accent-neon);
   --gold-deep: #1E2836;
   --gold-lo: #141B26;
@@ -180,11 +180,11 @@ body, button, input, select, label, textarea {
   --gm-accent-ice:    #F0F8FF;
   --gm-accent-amber:  #FFB020;
   --gm-accent-crimson:#E63946;
-  --gm-accent-blue:   #4CC9F0;
+  --gm-accent-blue:   #E7A540;
   --gm-amber:         #FFB020;
   --gm-ice-white:     #F0F8FF;
   --gm-crimson:       #E63946;
-  --gm-cyan:          #4CC9F0;
+  --gm-cyan:          #E7A540;
   --gm-led-connected: #10F0A0;
   --gm-led-white:     #F0F8FF;
 }
@@ -483,21 +483,21 @@ select option {
 
 .offtheme-highlight {
   background: rgba(245, 158, 11, 0.15);
-  border-bottom: 2px dashed var(--accent-violet);
+  border-bottom: 1px dashed var(--accent-violet);
 }
 
 .rhyme-highlight-1 { background-color: rgba(var(--accent-rgb), 0.25); border-radius: 3px; }
-.rhyme-highlight-2 { background-color: rgba(34, 211, 238, 0.25); border-radius: 3px; }
-.rhyme-highlight-3 { background-color: rgba(232, 121, 249, 0.25); border-radius: 3px; }
+.rhyme-highlight-2 { background-color: rgba(231, 165, 64, 0.25); border-radius: 3px; }
+.rhyme-highlight-3 { background-color: rgba(155, 161, 170, 0.25); border-radius: 3px; }
 .rhyme-highlight-4 { background-color: rgba(52, 211, 153, 0.25); border-radius: 3px; }
 .rhyme-highlight-5 { background-color: rgba(248, 113, 113, 0.25); border-radius: 3px; }
 
-/* ── THE FULL-SPECTRUM ACCENT SLIDER (Settings) ───────────────────────────
-   The rail IS the spectrum, at the same saturation and lightness the accent
-   generator uses, starting at 184° so the left end is the default electric
-   cyan. Aim at a colour, get that colour. The stops are hardcoded because
-   this one rail must NOT rotate with the accent — a spectrum that moves with
-   the value you are picking is unusable. */
+/* ── THE ACCENT SLIDER (Settings) ─────────────────────────────────────────
+   The rail IS the arc the accent generator covers (prismTheme.js): crimson →
+   red → amber → lime → emerald, no cyan, no purple. Aim at a colour, get that
+   colour. The stops are hardcoded because this one rail must NOT rotate with
+   the accent — a spectrum that moves with the value you are picking is
+   unusable. opsec.css repaints it at the accent's saturation. */
 .prism-range {
   -webkit-appearance: none;
   appearance: none;
@@ -507,10 +507,9 @@ select option {
   outline: none;
   cursor: pointer;
   background: linear-gradient(90deg,
-    hsl(184 100% 50%) 0%,   hsl(235 100% 50%) 14%,
-    hsl(286 100% 50%) 28%,  hsl(337 100% 50%) 42%,
-    hsl(28 100% 50%) 57%,   hsl(79 100% 50%) 71%,
-    hsl(130 100% 50%) 85%,  hsl(184 100% 50%) 100%);
+    hsl(340 78% 58%) 0%,  hsl(0 78% 58%) 11%,
+    hsl(36 78% 58%) 31%,  hsl(60 78% 58%) 44%,
+    hsl(100 78% 58%) 67%, hsl(160 78% 58%) 100%);
 }
 .prism-range::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -568,7 +567,7 @@ select option {
   justify-content: center;
   border-radius: 50%;
   background: rgba(var(--accent-rgb), 0.25);
-  color: #d6c8ff;
+  color: #e6e8eb;
   border: 1px solid rgba(var(--accent-rgb), 0.5);
   font-weight: 700;
   font-family: var(--faf-font);
@@ -594,8 +593,8 @@ select option {
   max-width: 260px;
   padding: 8px 11px;
   border-radius: 8px;
-  background: rgba(20, 12, 38, 0.98);
-  color: #e8e0ff;
+  background: rgba(23, 25, 28, 0.98);
+  color: #e6e8eb;
   border: 1px solid rgba(var(--accent-rgb), 0.45);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 12px rgba(var(--accent-rgb), 0.4);
   font-size: 0.72rem;
@@ -625,8 +624,8 @@ select option {
   z-index: 100000; /* above Quantum Lab panels, modals, canvas overlays */
   padding: 11px 14px;
   border-radius: 10px;
-  background: rgba(14, 8, 28, 0.98);
-  color: #f0e8ff;
+  background: rgba(16, 18, 21, 0.98);
+  color: #e6e8eb;
   border: 1px solid rgba(var(--accent-rgb), 0.5);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6), 0 0 16px rgba(var(--accent-rgb), 0.4), 0 0 0 1px rgba(16, 240, 160, 0.15);
   font-size: 0.8rem;
@@ -933,7 +932,7 @@ input.lyric-line-input {
   aspect-ratio: 1 / 1;
   border-radius: 50%;
   overflow: hidden;
-  background: radial-gradient(circle, #1a0f28 0%, #07050f 100%);
+  background: radial-gradient(circle, #1a1c1f 0%, #080a0d 100%);
   box-shadow:
     0 0 22px rgba(var(--accent-rgb), 0.55), 0 0 55px rgba(var(--accent-rgb), 0.3), inset 0 0 0 3px rgba(var(--accent-rgb), 0.6);
 }
@@ -1004,7 +1003,7 @@ input.lyric-line-input {
   gap: 10px 16px;
   padding: 8px 46px 8px 14px;
   flex-shrink: 0;
-  background: rgba(8, 4, 16, 0.97);
+  background: rgba(8, 10, 13, 0.97);
   border-top: 1px solid rgba(var(--accent-rgb), 0.45);
   box-shadow: 0 -1px 18px rgba(var(--accent-rgb), 0.18), 0 -1px 40px rgba(var(--accent-rgb), 0.08);
   z-index: 50;
@@ -1068,16 +1067,16 @@ input.lyric-line-input {
   position: absolute; bottom: calc(100% + 6px); right: 12px; z-index: 60;
   display: flex; gap: 8px; align-items: center;
   width: min(420px, calc(100vw - 24px)); padding: 10px;
-  background: rgba(14, 7, 24, 0.98); border: 1px solid rgba(var(--accent-rgb), 0.5);
+  background: rgba(14, 16, 19, 0.98); border: 1px solid rgba(var(--accent-rgb), 0.5);
   border-radius: 10px; box-shadow: 0 -6px 30px rgba(0, 0, 0, 0.6), 0 0 16px rgba(var(--accent-rgb), 0.25);
 }
 .suno-popover--list { flex-direction: column; align-items: stretch; gap: 4px; max-height: 260px; overflow-y: auto; }
-.suno-empty { font-size: 0.72rem; color: rgba(196, 181, 253, 0.6); text-align: center; padding: 8px; }
+.suno-empty { font-size: 0.72rem; color: rgba(230, 232, 235, 0.6); text-align: center; padding: 8px; }
 .suno-row { display: flex; align-items: center; gap: 6px; }
 .suno-row--active .suno-row-name { color: var(--accent-neon); text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.7); }
 .suno-row-name {
   flex: 1; text-align: left; background: none; border: none; cursor: pointer;
-  font-size: 0.72rem; color: #e8e0ff; padding: 5px 6px; border-radius: 6px;
+  font-size: 0.72rem; color: #e6e8eb; padding: 5px 6px; border-radius: 6px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .suno-row-name:hover { background: rgba(var(--accent-rgb), 0.12); }
@@ -1102,7 +1101,7 @@ input.lyric-line-input {
 .seq-roll-wrap {
   position: relative; overflow: auto; border-radius: 10px;
   border: 1px solid rgba(var(--accent-rgb), 0.3);
-  background: #07040d;
+  background: #07090c;
   box-shadow: inset 0 0 30px rgba(var(--accent-rgb), 0.06);
   max-height: 420px;
   outline: none;
@@ -1114,7 +1113,7 @@ input.lyric-line-input {
   box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.65);
   border: 1px solid rgba(255, 255, 255, 0.25);
 }
-.seq-note--selected { outline: 2px solid #00c2ff; box-shadow: 0 0 0 1px rgba(0, 194, 255, 0.9); z-index: 3; }
+.seq-note--selected { outline: 1px solid #e7a540; box-shadow: 0 0 0 1px rgba(231, 165, 64, 0.9); z-index: 3; }
 .seq-note--grab { cursor: grab; }
 /* Right-edge resize grip — only shows a handle when there's room to grab one. */
 .seq-note-grip {
@@ -1146,7 +1145,7 @@ input.lyric-line-input {
 .seq-vel-wrap {
   position: relative; overflow-x: auto; overflow-y: hidden; border-radius: 10px;
   border: 1px solid rgba(var(--accent-rgb), 0.22);
-  background: #05030a;
+  background: #05070a;
   box-shadow: inset 0 0 24px rgba(var(--accent-rgb), 0.05);
   user-select: none;
 }
@@ -1156,7 +1155,7 @@ input.lyric-line-input {
   display: flex; align-items: center; justify-content: center;
   font-size: 8px; letter-spacing: 0.14em; font-family: 'JetBrains Mono', monospace;
   color: rgba(var(--accent-rgb), 0.8);
-  background: linear-gradient(90deg, #0d0a18, #191330);
+  background: linear-gradient(90deg, #0f1114, #1a1d22);
   border-right: 1px solid rgba(var(--accent-rgb), 0.18);
 }
 .seq-vel-bar {
@@ -1164,9 +1163,9 @@ input.lyric-line-input {
   background: linear-gradient(180deg, var(--accent-neon), var(--accent-violet));
   box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.5);
 }
-.seq-vel-bar:hover { background: linear-gradient(180deg, #7dfcff, var(--accent-neon)); }
-.seq-vel-bar--selected { background: linear-gradient(180deg, #fff, #00c2ff); box-shadow: 0 0 0 1px rgba(0, 194, 255, 0.9); z-index: 3; }
-.seq-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent-neon); box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.9); pointer-events: none; z-index: 4; }
+.seq-vel-bar:hover { background: linear-gradient(180deg, #e7a540, var(--accent-neon)); }
+.seq-vel-bar--selected { background: linear-gradient(180deg, #fff, #e7a540); box-shadow: 0 0 0 1px rgba(231, 165, 64, 0.9); z-index: 3; }
+.seq-playhead { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--accent-neon); box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.9); pointer-events: none; z-index: 4; }
 .viz-canvas-wrap {
   position: relative; width: 100%; aspect-ratio: 16 / 7; min-height: 180px;
   border-radius: 12px; overflow: hidden;
@@ -1276,7 +1275,7 @@ input.lyric-line-input {
 }
 .album-input {
   background: transparent; border: none; border-bottom: 1px dashed rgba(var(--accent-rgb), 0.25);
-  color: #e8e0ff; font-size: 0.8rem; outline: none; padding: 2px 0; min-width: 0;
+  color: #e6e8eb; font-size: 0.8rem; outline: none; padding: 2px 0; min-width: 0;
 }
 .album-input:focus { border-bottom-color: var(--accent-neon); }
 @media (max-width: 900px) {

@@ -382,7 +382,7 @@ export default function SunoPlayer() {
             autoFocus
           />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <span style={{ fontSize: '0.6rem', color: 'rgba(200,190,220,0.5)' }}>Song or playlist links · one per line</span>
+            <span style={{ fontSize: '0.6rem', color: 'rgba(230,232,235,0.5)' }}>Song or playlist links · one per line</span>
             <button className="suno-chip suno-chip--go" onClick={addFromLinks} disabled={adding}>
               {adding ? 'Adding…' : 'Add'}
             </button>

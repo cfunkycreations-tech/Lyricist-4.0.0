@@ -324,7 +324,7 @@ function MainLayout() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ color: '#e8e0ff', position: 'relative', overflow: 'hidden' }}>
+    <div className="min-h-screen flex flex-col" style={{ color: '#e6e8eb', position: 'relative', overflow: 'hidden' }}>
       {/* Phone navigation. An overlay, not a wrapper - see MobileShell.jsx. */}
       {isMobile && (
         <MobileShell
@@ -453,10 +453,10 @@ function MainLayout() {
                 padding: '4px 12px',
                 borderRadius: 9999,
                 cursor: 'pointer',
-                background: 'rgba(0,229,255,0.14)',
-                color: '#67e8f9',
-                border: '1px solid rgba(0,229,255,0.45)',
-                boxShadow: '0 0 0 1px rgba(0,229,255,0.2)',
+                background: 'rgba(231,165,64,0.14)',
+                color: '#e7a540',
+                border: '1px solid rgba(231,165,64,0.45)',
+                boxShadow: '0 0 0 1px rgba(231,165,64,0.2)',
                 transition: 'all 0.15s'
               }}
             >
@@ -481,9 +481,9 @@ function MainLayout() {
                 padding: '4px 12px',
                 borderRadius: 9999,
                 cursor: 'pointer',
-                background: store.ghostDemoEnabled ? 'rgba(168,85,247,0.18)' : 'rgba(80,70,90,0.15)',
-                color: store.ghostDemoEnabled ? '#e9d5ff' : 'rgba(170,150,160,0.7)',
-                border: `1px solid ${store.ghostDemoEnabled ? 'rgba(168,85,247,0.5)' : 'rgba(140,120,130,0.35)'}`,
+                background: store.ghostDemoEnabled ? 'rgba(155,161,170,0.18)' : 'rgba(78,80,83,0.15)',
+                color: store.ghostDemoEnabled ? '#e6e8eb' : 'rgba(170,150,160,0.7)',
+                border: `1px solid ${store.ghostDemoEnabled ? 'rgba(155,161,170,0.5)' : 'rgba(140,120,130,0.35)'}`,
                 transition: 'all 0.15s'
               }}
             >
@@ -505,9 +505,9 @@ function MainLayout() {
                   padding: '4px 12px',
                   borderRadius: 9999,
                   cursor: 'pointer',
-                  background: 'rgba(103,232,249,0.12)',
-                  color: '#a5f3fc',
-                  border: '1px solid rgba(103,232,249,0.45)',
+                  background: 'rgba(231,165,64,0.12)',
+                  color: '#e6e8eb',
+                  border: '1px solid rgba(231,165,64,0.45)',
                   transition: 'all 0.15s'
                 }}
               >
@@ -531,7 +531,7 @@ function MainLayout() {
                 cursor: 'pointer',
                 background: store.tipsEnabled
                   ? 'linear-gradient(135deg, rgba(255,255,255,0.12), rgba(148,163,184,0.18))'
-                  : 'rgba(80,70,90,0.15)',
+                  : 'rgba(78,80,83,0.15)',
                 color: store.tipsEnabled ? '#e8eef8' : 'rgba(170,150,160,0.7)',
                 border: `1px solid ${store.tipsEnabled ? 'rgba(226,232,240,0.55)' : 'rgba(140,120,130,0.35)'}`,
                 boxShadow: store.tipsEnabled

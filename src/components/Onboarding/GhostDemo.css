@@ -25,16 +25,16 @@
 .ghost-demo-scrim {
   position: absolute;
   inset: 0;
-  background: rgba(4, 2, 12, 0.12);
+  background: rgba(5, 7, 10, 0.12);
   pointer-events: none; /* never block the app — ghost fires real events */
 }
 
 .ghost-demo-ring {
   position: fixed;
-  border: 2px solid rgba(167, 139, 250, 0.95);
+  border: 2px solid rgba(155, 161, 170, 0.95);
   border-radius: 14px;
   box-shadow:
-    0 0 0 9999px rgba(4, 2, 12, 0.45), 0 0 0 1px rgba(168, 85, 247, 0.65);
+    0 0 0 9999px rgba(5, 7, 10, 0.45), 0 0 0 1px rgba(155, 161, 170, 0.65);
   pointer-events: none;
   z-index: 120001;
   transition: left 0.25s, top 0.25s, width 0.25s, height 0.25s;
@@ -42,8 +42,8 @@
 }
 
 @keyframes ghost-ring-pulse {
-  0%, 100% { box-shadow: 0 0 0 9999px rgba(4, 2, 12, 0.42), 0 0 0 1px rgba(168, 85, 247, 0.5); }
-  50% { box-shadow: 0 0 0 9999px rgba(4, 2, 12, 0.5), 0 0 0 1px rgba(103, 232, 249, 0.55); }
+  0%, 100% { box-shadow: 0 0 0 9999px rgba(5, 7, 10, 0.42), 0 0 0 1px rgba(155, 161, 170, 0.5); }
+  50% { box-shadow: 0 0 0 9999px rgba(5, 7, 10, 0.5), 0 0 0 1px rgba(231, 165, 64, 0.55); }
 }
 
 .ghost-demo-operator {
@@ -125,9 +125,9 @@
   font-size: 0.62rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #e9d5ff;
+  color: #e6e8eb;
   margin-top: 4px;
-  text-shadow: 0 0 8px rgba(168, 85, 247, 0.8), 0 0 14px rgba(0, 229, 255, 0.5);
+  text-shadow: 0 0 8px rgba(155, 161, 170, 0.8), 0 0 14px rgba(231, 165, 64, 0.5);
   background: transparent;
 }
 
@@ -179,9 +179,9 @@
   width: min(300px, calc(100vw - 32px));
   padding: 12px 14px 10px;
   border-radius: 14px;
-  background: rgba(16, 10, 32, 0.96);
-  border: 1.5px solid rgba(167, 139, 250, 0.65);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(124, 58, 237, 0.35);
+  background: rgba(19, 21, 24, 0.96);
+  border: 1.5px solid rgba(155, 161, 170, 0.65);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(155, 161, 170, 0.35);
   pointer-events: none;
   animation: ghost-bubble-in 0.28s ease-out;
 }
@@ -196,20 +196,20 @@
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #c4b5fd;
+  color: #e6e8eb;
   margin-bottom: 6px;
 }
 
 .ghost-demo-bubble-text {
   font-size: 0.88rem;
   line-height: 1.45;
-  color: #f3e8ff;
+  color: #e6e8eb;
 }
 
 .ghost-demo-bubble-meta {
   margin-top: 8px;
   font-size: 0.62rem;
-  color: rgba(180, 170, 210, 0.55);
+  color: rgba(155, 161, 170, 0.55);
   letter-spacing: 0.04em;
 }
 
@@ -224,8 +224,8 @@
   gap: 10px;
   padding: 8px 14px;
   border-radius: 999px;
-  background: rgba(12, 8, 24, 0.94);
-  border: 1px solid rgba(168, 85, 247, 0.5);
+  background: rgba(14, 16, 19, 0.94);
+  border: 1px solid rgba(155, 161, 170, 0.5);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
   pointer-events: auto;
 }
@@ -233,14 +233,14 @@
 .ghost-demo-bar-title {
   font-size: 0.72rem;
   font-weight: 700;
-  color: #e9d5ff;
+  color: #e6e8eb;
   white-space: nowrap;
 }
 
 .ghost-demo-bar-btn {
-  border: 1px solid rgba(139, 92, 246, 0.4);
-  background: rgba(40, 25, 70, 0.8);
-  color: #e8e0ff;
+  border: 1px solid rgba(155, 161, 170, 0.4);
+  background: rgba(26, 29, 34, 0.8);
+  color: #e6e8eb;
   font-size: 0.7rem;
   font-weight: 600;
   padding: 5px 12px;
@@ -249,7 +249,7 @@
 }
 
 .ghost-demo-bar-btn:hover {
-  border-color: rgba(192, 132, 252, 0.7);
+  border-color: rgba(155, 161, 170, 0.7);
   color: #fff;
 }
 
@@ -265,7 +265,7 @@
   align-items: center;
   gap: 4px;
   padding-right: 4px;
-  border-right: 1px solid rgba(139, 92, 246, 0.3);
+  border-right: 1px solid rgba(155, 161, 170, 0.3);
   margin-right: 4px;
 }
 
@@ -274,7 +274,7 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(196, 181, 253, 0.75);
+  color: rgba(230, 232, 235, 0.75);
   margin-right: 2px;
 }
 
@@ -295,9 +295,9 @@
 .ghost-demo-bar-speed-btn.is-on {
   opacity: 1;
   color: #fff;
-  border-color: rgba(0, 229, 255, 0.75);
-  background: linear-gradient(135deg, rgba(0, 229, 255, 0.3), rgba(168, 85, 247, 0.35));
-  box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.35);
+  border-color: rgba(231, 165, 64, 0.75);
+  background: linear-gradient(135deg, rgba(231, 165, 64, 0.3), rgba(155, 161, 170, 0.35));
+  box-shadow: 0 0 0 1px rgba(231, 165, 64, 0.35);
 }
 
 /* Brief flash when ghost "clicks" a control */

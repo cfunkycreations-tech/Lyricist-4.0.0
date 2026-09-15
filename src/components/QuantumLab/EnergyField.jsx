@@ -13,7 +13,7 @@ import React, { useEffect, useRef } from 'react';
 // engine state (energy, links) but never mutates it.
 // ============================================================
 
-const PALETTE = ['#a855f7', '#c026ff', '#00e5ff', '#10f0a0', '#00f0ff'];
+const PALETTE = ['#9ba1aa', '#9ba1aa', '#e7a540', '#10f0a0', '#e7a540'];
 
 export default function EnergyField({ wrapRef, gridRef, links = [], energyById = {}, finals = [], showEntanglement = true, running = false }) {
   const canvasRef = useRef(null);
@@ -99,7 +99,7 @@ export default function EnergyField({ wrapRef, gridRef, links = [], energyById =
         P.finals.forEach((f, i) => {
           const a = st.centers[f.id];
           if (!a) return;
-          const hue = f.slot === 'B' ? '#00e5ff' : '#10f0a0';
+          const hue = f.slot === 'B' ? '#e7a540' : '#10f0a0';
           // brighter, steadier beams so links read over the background
           beam(ctx, a, focal, hue, dash * 0.4, 0.72 + 0.12 * Math.sin(st.t * 0.02 + i));
         });

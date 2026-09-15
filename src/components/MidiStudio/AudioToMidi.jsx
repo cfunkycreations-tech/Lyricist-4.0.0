@@ -99,7 +99,7 @@ export default function AudioToMidi({ onNotes }) {
   return (
     <div className="card-cosmic" style={{ borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <h4 style={{ margin: 0, fontSize: '0.85rem' }}><Icon i={Mic} />Audio → MIDI</h4>
-      <p style={{ margin: 0, fontSize: '0.68rem', color: 'rgba(196,181,253,0.7)', lineHeight: 1.5 }}>
+      <p style={{ margin: 0, fontSize: '0.68rem', color: 'rgba(230,232,235,0.7)', lineHeight: 1.5 }}>
         Upload a track or hum a melody — Spotify's open-source <em>basic-pitch</em> model
         extracts the notes on your machine and drops them into the sequencer below. Nothing is uploaded anywhere.
       </p>
@@ -145,12 +145,12 @@ export default function AudioToMidi({ onNotes }) {
 
       {converting && (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.68rem', color: '#00e5ff', marginBottom: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.68rem', color: '#e7a540', marginBottom: 4 }}>
             <RefreshCw size={12} className="pulse-glow" />
             <Wand2 size={12} /> Extracting notes from “{sourceName}” — {Math.round(progress * 100)}%
           </div>
           <div style={{ height: 5, borderRadius: 4, background: 'rgba(255,45,149,0.15)', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${progress * 100}%`, background: 'linear-gradient(90deg,#ff2d95,#00e5ff)', boxShadow: '0 0 0 1px rgba(255,45,149,0.8)', transition: 'width 0.2s' }} />
+            <div style={{ height: '100%', width: `${progress * 100}%`, background: 'linear-gradient(90deg,#ff2d95,#e7a540)', boxShadow: '0 0 0 1px rgba(255,45,149,0.8)', transition: 'width 0.2s' }} />
           </div>
         </div>
       )}

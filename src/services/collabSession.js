@@ -89,7 +89,7 @@ async function roomIdFromCode(code) {
 
 /* ── Session ───────────────────────────────────────────────────────────── */
 
-const NAME_COLORS = ['#10f0a0', '#00e5ff', '#a855f7', '#ff6f00', '#ff00aa', '#c026ff'];
+const NAME_COLORS = ['#10f0a0', '#e7a540', '#9ba1aa', '#ff6f00', '#9ba1aa', '#9ba1aa'];
 
 /**
  * Rooms this window already has open.

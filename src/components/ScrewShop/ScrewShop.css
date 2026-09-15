@@ -4,12 +4,12 @@
 
 .screw {
   --sc-line: var(--lx-line, hsla(158 60% 70% / .16));
-  --sc-line-hot: var(--lx-line-hot, hsla(262 70% 70% / .30));
+  --sc-line-hot: var(--lx-line-hot, hsla(216 8% 64% / .30));
   --sc-emerald: var(--lx-emerald, hsl(158 84% 40%));
   --sc-emerald-lit: var(--lx-emerald-lit, hsl(158 80% 58%));
   --sc-green2: var(--lx-green2, hsl(152 79% 44%));
-  --sc-violet: var(--lx-violet, hsl(262 85% 71%));
-  --sc-magenta: var(--lx-magenta, hsl(305 75% 66%));
+  --sc-violet: var(--lx-violet, hsl(216 8% 64%));
+  --sc-magenta: var(--lx-magenta, hsl(216 8% 64%));
   --sc-text: #EAF2FF;
   --sc-dim: #9FB2D4;
   --sc-faint: #64789B;
@@ -64,11 +64,11 @@
   opacity: .34;
   background:
     conic-gradient(from 0deg,
-      hsla(262 85% 71% / 0) 0deg,
-      hsla(262 85% 71% / .40) 55deg,
+      hsla(216 8% 64% / 0) 0deg,
+      hsla(216 8% 64% / .40) 55deg,
       hsla(158 80% 58% / .10) 140deg,
-      hsla(305 75% 66% / .34) 250deg,
-      hsla(262 85% 71% / 0) 360deg),
+      hsla(216 8% 64% / .34) 250deg,
+      hsla(216 8% 64% / 0) 360deg),
     repeating-radial-gradient(circle at 50% 50%,
       hsla(158 80% 58% / 0) 0 3px,
       hsla(158 80% 58% / .20) 3px 4px);
@@ -87,8 +87,8 @@
   background: linear-gradient(100deg,
     transparent 38%,
     hsla(158 80% 58% / .09) 47%,
-    hsla(262 85% 71% / .15) 52%,
-    hsla(305 75% 66% / .07) 57%,
+    hsla(216 8% 64% / .15) 52%,
+    hsla(216 8% 64% / .07) 57%,
     transparent 64%);
   animation: screw-drag 13s ease-in-out infinite;
 }
@@ -102,9 +102,9 @@
 /* The glow breathing under the title, at the speed of a screwed record. */
 @keyframes screw-sink {
   0%, 100% { text-shadow: 0 0 1px var(--sc-emerald-lit), 0 0 3px var(--sc-emerald-lit),
-                          0 0 18px hsla(262 85% 71% / .45), 0 0 44px hsla(262 85% 71% / .18); }
+                          0 0 18px hsla(216 8% 64% / .45), 0 0 44px hsla(216 8% 64% / .18); }
   50%      { text-shadow: 0 0 1px var(--sc-emerald-lit), 0 0 5px var(--sc-emerald-lit),
-                          0 0 30px hsla(262 85% 71% / .62), 0 0 68px hsla(305 75% 66% / .30); }
+                          0 0 30px hsla(216 8% 64% / .62), 0 0 68px hsla(216 8% 64% / .30); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -119,7 +119,7 @@
   font-weight: 400; margin: 2px 0 0; font-size: clamp(38px, 6.5vw, 70px); line-height: .88;
   text-transform: uppercase; color: #fff;
   text-shadow: 0 0 1px var(--sc-emerald-lit), 0 0 3px var(--sc-emerald-lit),
-               0 0 18px hsla(262 85% 71% / .45), 0 0 44px hsla(262 85% 71% / .18);
+               0 0 18px hsla(216 8% 64% / .45), 0 0 44px hsla(216 8% 64% / .18);
   animation: screw-sink 9s ease-in-out infinite;
 }
 .screw-tag { color: var(--sc-dim); font-size: 14px; margin-top: 8px; max-width: 60ch; }
@@ -207,7 +207,7 @@
   font-family: var(--faf-font);
   font-size: 26px; letter-spacing: .05em; text-transform: uppercase;
   background: linear-gradient(96deg, var(--sc-violet), var(--sc-magenta) 45%, var(--sc-emerald));
-  box-shadow: 0 0 0 1px hsla(262 85% 71% / .3), 0 1px 0 rgba(255, 255, 255, .45) inset;
+  box-shadow: 0 0 0 1px hsla(216 8% 64% / .3), 0 1px 0 rgba(255, 255, 255, .45) inset;
 }
 .screw-make:hover:not(:disabled) { filter: brightness(1.1); }
 .screw-make:disabled { opacity: .45; cursor: not-allowed; }

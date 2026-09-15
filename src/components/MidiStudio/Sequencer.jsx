@@ -509,7 +509,7 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
             fontSize: '0.6rem',
             minWidth: 52,
             color: instrumentState === 'ready' ? 'rgba(52,211,153,0.9)'
-              : instrumentState === 'error' ? '#f87171' : 'rgba(196,181,253,0.7)',
+              : instrumentState === 'error' ? '#f87171' : 'rgba(230,232,235,0.7)',
           }}>
             {instrumentState === 'ready' ? 'loaded'
               : instrumentState === 'error' ? 'failed' : 'loading…'}
@@ -565,7 +565,7 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
           </select>
         </label>
 
-        <span style={{ fontSize: '0.62rem', color: 'rgba(196,181,253,0.55)' }}>
+        <span style={{ fontSize: '0.62rem', color: 'rgba(230,232,235,0.55)' }}>
           right-click a note to delete · Del removes the selected note
         </span>
       </div>
@@ -601,20 +601,20 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
             const isC = m % 12 === 0;
             const black = [1, 3, 6, 8, 10].includes(m % 12);
             return (
-              <div key={m} style={{ position: 'absolute', top: r * ROW_H, left: 0, right: 0, height: ROW_H, background: black ? 'rgba(255,45,149,0.045)' : 'transparent', borderTop: isC ? '1px solid rgba(0,229,255,0.25)' : '1px solid rgba(255,255,255,0.03)' }}>
+              <div key={m} style={{ position: 'absolute', top: r * ROW_H, left: 0, right: 0, height: ROW_H, background: black ? 'rgba(255,45,149,0.045)' : 'transparent', borderTop: isC ? '1px solid rgba(231,165,64,0.25)' : '1px solid rgba(255,255,255,0.03)' }}>
                 {/* Playable key: click it to hear the note on the current instrument. */}
                 <div
                   onPointerDown={(e) => { e.stopPropagation(); auditionNote(m); }}
                   title={`${midiToName(m)} — click to hear it`}
                   style={{
                     position: 'absolute', left: 0, top: 0, height: ROW_H, width: KEYBED_W,
-                    background: black ? 'linear-gradient(90deg,#0d0a18,#191330)' : 'linear-gradient(90deg,#2a2440,#3a3358)',
+                    background: black ? 'linear-gradient(90deg,#0f1114,#1a1d22)' : 'linear-gradient(90deg,#303235,#444649)',
                     borderBottom: '1px solid rgba(0,0,0,0.55)',
-                    borderRight: '1px solid rgba(0,229,255,0.18)',
+                    borderRight: '1px solid rgba(231,165,64,0.18)',
                     cursor: 'pointer', zIndex: 3,
                   }}
                 />
-                {isC && <span style={{ position: 'absolute', left: 4, top: -1, fontSize: 8, color: 'rgba(0,229,255,0.95)', fontFamily: "'JetBrains Mono', monospace", zIndex: 4, pointerEvents: 'none' }}>{midiToName(m)}</span>}
+                {isC && <span style={{ position: 'absolute', left: 4, top: -1, fontSize: 8, color: 'rgba(231,165,64,0.95)', fontFamily: "'JetBrains Mono', monospace", zIndex: 4, pointerEvents: 'none' }}>{midiToName(m)}</span>}
               </div>
             );
           })}
@@ -623,7 +623,7 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
             <div key={`b${b}`} style={{ position: 'absolute', top: 0, bottom: 0, left: KEYBED_W + b * secPerBeat * pxPerSec, width: 1, background: b % 4 === 0 ? 'rgba(255,45,149,0.22)' : 'rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
           ))}
           {snapSec > 0 && snapSec * pxPerSec > 7 && Array.from({ length: Math.ceil(totalSec / snapSec) + 1 }, (_, s) => (
-            <div key={`s${s}`} style={{ position: 'absolute', top: 0, bottom: 0, left: KEYBED_W + s * snapSec * pxPerSec, width: 1, background: 'rgba(0,229,255,0.055)', pointerEvents: 'none' }} />
+            <div key={`s${s}`} style={{ position: 'absolute', top: 0, bottom: 0, left: KEYBED_W + s * snapSec * pxPerSec, width: 1, background: 'rgba(231,165,64,0.055)', pointerEvents: 'none' }} />
           ))}
           {/* Notes */}
           {notes.map(n => {
@@ -717,7 +717,7 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
         </div>
       )}
 
-      <div style={{ fontSize: '0.62rem', color: 'rgba(196,181,253,0.55)' }}>
+      <div style={{ fontSize: '0.62rem', color: 'rgba(230,232,235,0.55)' }}>
         {notes.length} notes · {totalSec.toFixed(1)}s at source tempo · {TOOLS.find(t => t.id === tool)?.label} tool
       </div>
     </div>

@@ -47,7 +47,7 @@
   height: 14px;
   margin: -7px 0 0 -7px;
   border-radius: 50%;
-  border: 2px solid var(--accent-neon, #00F0FF);
+  border: 1px solid var(--accent-neon, #E7A540);
   animation: ghost-cursor-ping 0.5s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
 }
 

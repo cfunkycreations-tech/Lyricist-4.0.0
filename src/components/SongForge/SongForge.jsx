@@ -383,10 +383,10 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
     <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden' }}>
       <div className="songforge-shell">
         {/* Controls sidebar */}
-        <div className="songforge-sidebar" style={{ background: 'rgba(0,0,0,0.34)', borderRight: '1px solid rgba(34,211,238,0.2)' }}>
+        <div className="songforge-sidebar" style={{ background: 'rgba(0,0,0,0.34)', borderRight: '1px solid rgba(231,165,64,0.2)' }}>
           <div>
             <h3 style={{ fontSize: '1rem', marginBottom: 4 }}><Icon i={Hammer} />Song Forge</h3>
-            <p style={{ fontSize: '0.72rem', color: 'rgba(196,181,253,0.7)', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.72rem', color: 'rgba(230,232,235,0.7)', lineHeight: 1.5 }}>
               Chain Gemini text + Nano Banana image calls to auto-generate a song and its cover art — either direction.
             </p>
           </div>
@@ -414,9 +414,9 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                   flex: 1,
                   padding: '8px 4px',
                   borderRadius: 8,
-                  border: mode === id ? 'none' : '1px solid rgba(139,92,246,0.25)',
-                  background: mode === id ? 'linear-gradient(135deg,#ff2d95,#a855f7,#00e5ff)' : 'rgba(13,8,28,0.7)',
-                  color: mode === id ? '#fff' : 'rgba(196,181,253,0.6)',
+                  border: mode === id ? 'none' : '1px solid rgba(155,161,170,0.25)',
+                  background: mode === id ? 'linear-gradient(135deg,#ff2d95,#9ba1aa,#e7a540)' : 'rgba(16,18,21,0.7)',
+                  color: mode === id ? '#fff' : 'rgba(230,232,235,0.6)',
                   fontSize: '0.72rem',
                   fontWeight: 700,
                   cursor: 'pointer'
@@ -428,10 +428,10 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
           </div>
 
           <div data-help="Reuses the same Genre, Subgenre, Mood, Topic, and Structure you've set on the Songwriter tab.">
-            <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(103,232,249,0.7)', marginBottom: 5, display: 'block' }}>
+            <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(231,165,64,0.7)', marginBottom: 5, display: 'block' }}>
               Using current Songwriter setup
             </label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.74rem', color: '#e8e0ff' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.74rem', color: '#e6e8eb' }}>
               {/* "Not picked" rather than a blank space after the word Genre.
                   The pickers start empty now, so this panel had two rows that
                   read as if something had failed to load. Nothing is wrong —
@@ -460,9 +460,9 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                 width: '100%',
                 padding: '7px',
                 borderRadius: 8,
-                border: '1px solid rgba(232,121,249,0.35)',
-                background: 'rgba(232,121,249,0.1)',
-                color: '#e879f9',
+                border: '1px solid rgba(155,161,170,0.35)',
+                background: 'rgba(155,161,170,0.1)',
+                color: '#9ba1aa',
                 fontSize: '0.72rem',
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -479,7 +479,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
           {mode === 'songFirst' ? (
             <>
               <div data-help="Override Song Forge's default circular-medallion, magenta/orange neon cover art style just for this song. Leave it blank to keep the signature look.">
-                <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(103,232,249,0.7)', marginBottom: 5, display: 'block' }}>
+                <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(231,165,64,0.7)', marginBottom: 5, display: 'block' }}>
                   Cover Art Style Override (optional)
                 </label>
                 <textarea
@@ -487,13 +487,13 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                   onChange={(e) => setArtStyleOverride(e.target.value)}
                   placeholder="Leave blank for the signature medallion look..."
                   rows={3}
-                  style={{ width: '100%', background: 'rgba(13,8,28,0.7)', border: '1px solid rgba(34,211,238,0.22)', borderRadius: 8, padding: '7px 10px', fontSize: '0.78rem', color: '#e8e0ff', outline: 'none', resize: 'vertical' }}
+                  style={{ width: '100%', background: 'rgba(16,18,21,0.7)', border: '1px solid rgba(231,165,64,0.22)', borderRadius: 8, padding: '7px 10px', fontSize: '0.78rem', color: '#e6e8eb', outline: 'none', resize: 'vertical' }}
                 />
               </div>
 
               {/* Image-to-image reference (4.1.3) */}
               <div data-help="Upload a photo or artwork to use as the visual base layer for the cover. Nano Banana reinterprets YOUR image as the medallion art instead of inventing one from scratch. The neon magenta/orange circular frame is always enforced.">
-                <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(103,232,249,0.7)', marginBottom: 5, display: 'block' }}>
+                <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(231,165,64,0.7)', marginBottom: 5, display: 'block' }}>
                   Reference Image (image-to-image)
                 </label>
                 <input ref={refInputRef} type="file" accept="image/*" onChange={handleUploadReference} style={{ display: 'none' }} />
@@ -514,7 +514,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                     >
                       <X size={12} />
                     </button>
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '3px 8px', fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#00e5ff', background: 'rgba(0,0,0,0.65)', textShadow: '0 0 0 1px rgba(0,229,255,0.6)' }}>
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '3px 8px', fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#e7a540', background: 'rgba(0,0,0,0.65)', textShadow: '0 0 0 1px rgba(231,165,64,0.6)' }}>
                       Base layer for cover art
                     </div>
                   </div>
@@ -539,7 +539,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
           ) : (
             <>
               <div data-help="Type what you want to see, and Nano Banana paints it — or upload your own photo/art below instead. Either becomes the creative seed for the lyrics.">
-                <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(103,232,249,0.7)', marginBottom: 5, display: 'block' }}>
+                <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(231,165,64,0.7)', marginBottom: 5, display: 'block' }}>
                   Describe an image to create
                 </label>
                 <textarea
@@ -547,7 +547,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                   onChange={(e) => setSeedPrompt(e.target.value)}
                   placeholder="e.g. an empty diner at 3am, neon sign flickering in the window..."
                   rows={3}
-                  style={{ width: '100%', background: 'rgba(13,8,28,0.7)', border: '1px solid rgba(34,211,238,0.22)', borderRadius: 8, padding: '7px 10px', fontSize: '0.78rem', color: '#e8e0ff', outline: 'none', resize: 'vertical' }}
+                  style={{ width: '100%', background: 'rgba(16,18,21,0.7)', border: '1px solid rgba(231,165,64,0.22)', borderRadius: 8, padding: '7px 10px', fontSize: '0.78rem', color: '#e6e8eb', outline: 'none', resize: 'vertical' }}
                 />
                 <button
                   onClick={handleGenerateSeedImage}
@@ -559,14 +559,14 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                 </button>
               </div>
 
-              <div style={{ textAlign: 'center', fontSize: '0.65rem', color: 'rgba(148,130,200,0.5)' }}>— or —</div>
+              <div style={{ textAlign: 'center', fontSize: '0.65rem', color: 'rgba(155,161,170,0.5)' }}>— or —</div>
 
               <div>
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUploadImage} style={{ display: 'none' }} />
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   data-help="Use your own photo or artwork as the song's creative seed instead of generating one."
-                  style={{ width: '100%', padding: '9px', borderRadius: 8, border: '1px solid rgba(139,92,246,0.25)', background: 'rgba(13,8,28,0.7)', color: 'rgba(196,181,253,0.7)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                  style={{ width: '100%', padding: '9px', borderRadius: 8, border: '1px solid rgba(155,161,170,0.25)', background: 'rgba(16,18,21,0.7)', color: 'rgba(230,232,235,0.7)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
                   <Upload size={13} /> Upload Your Own Image
                 </button>
@@ -574,11 +574,11 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
 
               {seedImage && (
                 <>
-                  <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(34,211,238,0.3)' }}>
+                  <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(231,165,64,0.3)' }}>
                     <img src={seedImage.dataUrl} alt="Seed" style={{ width: '100%', display: 'block' }} />
                   </div>
                   <div data-help="Optional extra direction for the lyrics — a mood word, a memory, a perspective — on top of whatever the image itself suggests.">
-                    <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(103,232,249,0.7)', marginBottom: 5, display: 'block' }}>
+                    <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(231,165,64,0.7)', marginBottom: 5, display: 'block' }}>
                       Extra Direction (optional)
                     </label>
                     <textarea
@@ -586,7 +586,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                       onChange={(e) => setImageNotes(e.target.value)}
                       placeholder="e.g. write it from the perspective of the person who left..."
                       rows={2}
-                      style={{ width: '100%', background: 'rgba(13,8,28,0.7)', border: '1px solid rgba(34,211,238,0.22)', borderRadius: 8, padding: '7px 10px', fontSize: '0.78rem', color: '#e8e0ff', outline: 'none', resize: 'vertical' }}
+                      style={{ width: '100%', background: 'rgba(16,18,21,0.7)', border: '1px solid rgba(231,165,64,0.22)', borderRadius: 8, padding: '7px 10px', fontSize: '0.78rem', color: '#e6e8eb', outline: 'none', resize: 'vertical' }}
                     />
                   </div>
                   <button
@@ -603,8 +603,8 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
           )}
 
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontWeight: 400 }} data-help="When on, every finished song + cover art pair is automatically saved into Documents\Lyricist Song Forge.">
-            <input type="checkbox" checked={autoSave} onChange={(e) => setAutoSave(e.target.checked)} style={{ marginTop: 3, accentColor: '#e879f9', cursor: 'pointer' }} />
-            <span style={{ fontSize: '0.7rem', color: '#c4b5fd', lineHeight: 1.4 }}>
+            <input type="checkbox" checked={autoSave} onChange={(e) => setAutoSave(e.target.checked)} style={{ marginTop: 3, accentColor: '#9ba1aa', cursor: 'pointer' }} />
+            <span style={{ fontSize: '0.7rem', color: '#e6e8eb', lineHeight: 1.4 }}>
               Auto-save to Documents\Lyricist Song Forge
             </span>
           </label>
@@ -612,7 +612,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
         </div>
 
         {/* Results */}
-        <div className="songforge-main" style={{ background: 'rgba(7,5,15,0.45)' }}>
+        <div className="songforge-main" style={{ background: 'rgba(8,10,13,0.45)' }}>
           {errorMsg && (
             <div className="pill-red" style={{ padding: '10px 14px', borderRadius: 8, fontSize: '0.82rem', marginBottom: 16 }}>
               {errorMsg}
@@ -622,7 +622,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
           {!result && !busy && !errorMsg && (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 300 }}>
               <div className="empty-glyph"><Hammer size={44} strokeWidth={1.25} /></div>
-              <p style={{ color: 'rgba(196,181,253,0.7)', fontSize: '0.88rem', textAlign: 'center', maxWidth: 360 }}>
+              <p style={{ color: 'rgba(230,232,235,0.7)', fontSize: '0.88rem', textAlign: 'center', maxWidth: 360 }}>
                 {mode === 'songFirst'
                   ? 'Set up your song on the Songwriter tab, then click "Forge Song + Cover Art" to have Gemini write it and paint the cover.'
                   : 'Generate or upload an image on the left, then have Gemini write a song inspired by it.'}
@@ -642,7 +642,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                     style={{ fontSize: '1rem', fontWeight: 700, background: 'transparent', border: 'none', borderBottom: '1px dashed rgba(255,45,149,0.3)', color: '#ff8020', outline: 'none', minWidth: 120, flex: 1 }}
                   />
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <button onClick={handleCopyLyrics} style={{ fontSize: '0.7rem', background: 'transparent', border: '1px solid rgba(34,211,238,0.3)', color: copied ? '#34d399' : 'rgba(196,181,253,0.7)', padding: '4px 10px', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <button onClick={handleCopyLyrics} style={{ fontSize: '0.7rem', background: 'transparent', border: '1px solid rgba(231,165,64,0.3)', color: copied ? '#34d399' : 'rgba(230,232,235,0.7)', padding: '4px 10px', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                       <Copy size={12} /> {copied ? 'Copied' : 'Copy'}
                     </button>
                     <button
@@ -656,7 +656,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                     </button>
                   </div>
                 </div>
-                <pre className="songforge-lyrics-text" style={{ fontFamily: 'var(--faf-font)', color: '#e8e0ff', whiteSpace: 'pre-wrap', margin: 0 }}>
+                <pre className="songforge-lyrics-text" style={{ fontFamily: 'var(--faf-font)', color: '#e6e8eb', whiteSpace: 'pre-wrap', margin: 0 }}>
                   {result.song.rawText}
                 </pre>
               </div>
@@ -674,7 +674,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                     onClick={handleRemixArt}
                     disabled={remixLoading}
                     data-help="Re-rolls just the cover art with a fresh generation, keeping the same lyrics. Uses the current title and style override."
-                    style={{ border: '1px solid rgba(232,121,249,0.35)', background: 'rgba(232,121,249,0.1)', color: '#e879f9', padding: '8px 16px', borderRadius: 8, fontSize: '0.76rem', fontWeight: 700, cursor: remixLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                    style={{ border: '1px solid rgba(155,161,170,0.35)', background: 'rgba(155,161,170,0.1)', color: '#9ba1aa', padding: '8px 16px', borderRadius: 8, fontSize: '0.76rem', fontWeight: 700, cursor: remixLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
                   >
                     <RefreshCw size={13} className={remixLoading ? 'pulse-glow' : ''} /> {remixLoading ? 'Remixing...' : 'Remix Art'}
                   </button>

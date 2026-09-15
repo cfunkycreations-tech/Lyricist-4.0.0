@@ -110,13 +110,13 @@ export default function ToolsHub() {
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
           <div style={{ marginRight: 'auto' }}>
             <h3 style={{ fontSize: '1.05rem', margin: 0 }}><Icon i={Blocks} />Community AI Tools Hub</h3>
-            <p style={{ fontSize: '0.72rem', color: 'rgba(196,181,253,0.7)', margin: '4px 0 0' }}>
+            <p style={{ fontSize: '0.72rem', color: 'rgba(230,232,235,0.7)', margin: '4px 0 0' }}>
               A shared shelf of AI tools — add the ones you rely on, upvote the ones that earn it.
             </p>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
-            <Search size={13} style={{ position: 'absolute', left: 9, color: 'rgba(0,229,255,0.6)' }} />
+            <Search size={13} style={{ position: 'absolute', left: 9, color: 'rgba(231,165,64,0.6)' }} />
             <input
               className="input-cosmic"
               style={{ borderRadius: 9999, padding: '6px 12px 6px 28px', fontSize: '0.74rem', width: 180 }}
@@ -145,7 +145,7 @@ export default function ToolsHub() {
           {CATEGORIES.map(c => (
             <button key={c} onClick={() => setCategory(c)}
               className={category === c ? 'pill-purple' : ''}
-              style={{ padding: '4px 12px', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', background: category === c ? undefined : 'rgba(13,8,28,0.7)', color: category === c ? undefined : 'rgba(196,181,253,0.6)', border: category === c ? undefined : '1px solid rgba(139,92,246,0.25)' }}>
+              style={{ padding: '4px 12px', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', background: category === c ? undefined : 'rgba(16,18,21,0.7)', color: category === c ? undefined : 'rgba(230,232,235,0.6)', border: category === c ? undefined : '1px solid rgba(155,161,170,0.25)' }}>
               {c}
             </button>
           ))}
@@ -188,10 +188,10 @@ export default function ToolsHub() {
                 </button>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.86rem', color: '#00e5ff', textShadow: '0 0 0 1px rgba(0,229,255,0.5)' }}>{t.name}</span>
+                    <span style={{ fontWeight: 800, fontSize: '0.86rem', color: '#e7a540', textShadow: '0 0 0 1px rgba(231,165,64,0.5)' }}>{t.name}</span>
                     <span className="pill-cyan" style={{ padding: '1px 8px', borderRadius: 9999, fontSize: '0.58rem', fontWeight: 700 }}>{t.category}</span>
                   </div>
-                  <p style={{ fontSize: '0.7rem', color: 'rgba(232,224,255,0.75)', margin: '6px 0 0', lineHeight: 1.5 }}>
+                  <p style={{ fontSize: '0.7rem', color: 'rgba(230,232,235,0.75)', margin: '6px 0 0', lineHeight: 1.5 }}>
                     {t.description || 'No description yet.'}
                   </p>
                 </div>
@@ -203,7 +203,7 @@ export default function ToolsHub() {
             </div>
           ))}
           {!visible.length && (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'rgba(196,181,253,0.6)', fontSize: '0.8rem', padding: 30 }}>
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'rgba(230,232,235,0.6)', fontSize: '0.8rem', padding: 30 }}>
               Nothing here yet — be the first to share a tool in this category.
             </div>
           )}

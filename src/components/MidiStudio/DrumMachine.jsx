@@ -457,7 +457,7 @@ export default function DrumMachine() {
 
       {/* Effects rack */}
       {fxTarget && (
-        <div style={{ border: '1px solid rgba(255,45,149,0.3)', borderRadius: 10, padding: 12, background: 'rgba(13,8,28,0.5)' }}>
+        <div style={{ border: '1px solid rgba(255,45,149,0.3)', borderRadius: 10, padding: 12, background: 'rgba(16,18,21,0.5)' }}>
           <div style={{ fontSize: '0.72rem', fontWeight: 700, marginBottom: 8, color: '#ff2d95' }}>
             {fxOpen === 'master' ? 'Master' : KIT.find((k) => k.id === fxOpen)?.name} — Effects Rack
           </div>
@@ -486,7 +486,7 @@ export default function DrumMachine() {
         </div>
       )}
 
-      <div style={{ fontSize: '0.6rem', color: 'rgba(196,181,253,0.45)' }}>
+      <div style={{ fontSize: '0.6rem', color: 'rgba(230,232,235,0.45)' }}>
         Click a step to place a hit · Shift-click for an accent · every track can play your own sample
       </div>
     </div>

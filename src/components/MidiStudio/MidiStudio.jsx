@@ -131,7 +131,7 @@ export default function MidiStudio() {
         <div className="midi-sidebar">
           <div>
             <h3 style={{ fontSize: '1rem', marginBottom: 4 }}><Icon i={Piano} />MIDI Studio</h3>
-            <p style={{ fontSize: '0.72rem', color: 'rgba(196,181,253,0.7)', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.72rem', color: 'rgba(230,232,235,0.7)', lineHeight: 1.5 }}>
               Turn any audio — a Suno track, a guitar riff, or a hummed voice memo — into
               editable MIDI, tweak it in the sequencer, and watch Milkdrop dance to it.
               Everything runs offline on your machine.
@@ -157,9 +157,9 @@ export default function MidiStudio() {
           {/* Rack for the roll + sampler. Collapsed by default so it doesn't
               push the drum machine off the page. */}
           {!OFF.has('seq') && (
-            <div data-demo="midi-roll" style={{ border: '1px solid rgba(0,229,255,0.3)', borderRadius: 10, padding: 12, background: 'rgba(13,8,28,0.5)' }}>
+            <div data-demo="midi-roll" style={{ border: '1px solid rgba(231,165,64,0.3)', borderRadius: 10, padding: 12, background: 'rgba(16,18,21,0.5)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#00e5ff' }}>
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#e7a540' }}>
                   Piano Roll &amp; Sampler — Effects Rack
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
@@ -185,7 +185,7 @@ export default function MidiStudio() {
                   <FxToggles fx={rollFx} onChange={patchFx} />
                 </div>
               ) : (
-                <div style={{ fontSize: '0.6rem', color: 'rgba(196,181,253,0.5)', marginTop: 6 }}>
+                <div style={{ fontSize: '0.6rem', color: 'rgba(230,232,235,0.5)', marginTop: 6 }}>
                   Filter, drive, bitcrush, EQ, compression, delay and reverb — applied to the piano roll
                   and to every sample you preview in the library.
                 </div>

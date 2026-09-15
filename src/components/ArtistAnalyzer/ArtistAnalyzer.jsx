@@ -373,7 +373,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
         }}
       >
         <div data-help="Type the name of any artist you admire. Ghost Rider will study how they write so it can help you write in a similar style — without ever copying their actual songs.">
-          <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+          <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
             Artist Name
           </label>
           <input
@@ -383,12 +383,12 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
             data-demo="gr-artist"
             style={{
               width: '100%',
-              background: 'rgba(13,8,28,0.7)',
-              border: '1px solid rgba(139,92,246,0.22)',
+              background: 'rgba(16,18,21,0.7)',
+              border: '1px solid rgba(155,161,170,0.22)',
               borderRadius: 8,
               padding: '7px 10px',
               fontSize: '0.82rem',
-              color: '#e8e0ff',
+              color: '#e6e8eb',
               outline: 'none',
               fontFamily: 'var(--faf-font)'
             }}
@@ -396,7 +396,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
         </div>
 
         <div data-help="Optional. Narrow the study to a certain time period or side of the artist — like a specific album era or their early sound. Leave it blank to look at everything.">
-          <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+          <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
             Focus Angle / Era (optional)
           </label>
           <input
@@ -405,12 +405,12 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
             placeholder="e.g. Good Kid M.A.A.D City era..."
             style={{
               width: '100%',
-              background: 'rgba(13,8,28,0.7)',
-              border: '1px solid rgba(139,92,246,0.22)',
+              background: 'rgba(16,18,21,0.7)',
+              border: '1px solid rgba(155,161,170,0.22)',
               borderRadius: 8,
               padding: '7px 10px',
               fontSize: '0.82rem',
-              color: '#e8e0ff',
+              color: '#e6e8eb',
               outline: 'none',
               fontFamily: 'var(--faf-font)'
             }}
@@ -418,7 +418,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
         </div>
 
         <div data-help="Choose what to study about the artist. Lyrical Style = their word choices and storytelling. Flow & Cadence = their rhythm and delivery. Common Themes = what they tend to write about. Full Analysis = all of it together.">
-          <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+          <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
             Analysis Type
           </label>
           <select
@@ -426,12 +426,12 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
             onChange={(e) => setTab(e.target.value)}
             style={{
               width: '100%',
-              background: 'rgba(13,8,28,0.7)',
-              border: '1px solid rgba(139,92,246,0.22)',
+              background: 'rgba(16,18,21,0.7)',
+              border: '1px solid rgba(155,161,170,0.22)',
               borderRadius: 8,
               padding: '7px 10px',
               fontSize: '0.82rem',
-              color: '#e8e0ff',
+              color: '#e6e8eb',
               outline: 'none',
               fontFamily: 'var(--faf-font)'
             }}
@@ -463,7 +463,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
         </button>
 
         {/* Auto-save setting (replaces the old in-app saved-reports list) */}
-        <div style={{ marginTop: 10, borderTop: '1px solid rgba(139,92,246,0.15)', paddingTop: 14 }}>
+        <div style={{ marginTop: 10, borderTop: '1px solid rgba(155,161,170,0.15)', paddingTop: 14 }}>
           <label
             style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}
             data-help="When this is on, every artist breakdown is automatically saved as a text file in your Documents folder, inside a folder called 'Lyricist Style Reports'. Turn it off if you'd rather save them yourself with the Save Report button."
@@ -472,11 +472,11 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
               type="checkbox"
               checked={autoSaveReports}
               onChange={(e) => setAutoSaveReports(e.target.checked)}
-              style={{ marginTop: 3, accentColor: '#e879f9', cursor: 'pointer' }}
+              style={{ marginTop: 3, accentColor: '#9ba1aa', cursor: 'pointer' }}
             />
-            <span style={{ fontSize: '0.72rem', color: '#c4b5fd', lineHeight: 1.4 }}>
+            <span style={{ fontSize: '0.72rem', color: '#e6e8eb', lineHeight: 1.4 }}>
               Automatically save reports to my <strong>Documents</strong> folder
-              <span style={{ display: 'block', fontSize: '0.6rem', color: 'rgba(148,130,200,0.6)', marginTop: 2 }}>
+              <span style={{ display: 'block', fontSize: '0.6rem', color: 'rgba(155,161,170,0.6)', marginTop: 2 }}>
                 Saved to: Documents\Lyricist Style Reports
               </span>
             </span>
@@ -485,7 +485,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
       </div>
 
       {/* Main Analysis Output View */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'rgba(7,5,15,0.45)' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'rgba(8,10,13,0.45)' }}>
         {/* Workspace Header */}
         <div
           style={{
@@ -493,12 +493,12 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '10px 20px',
-            borderBottom: '1px solid rgba(139,92,246,0.18)',
-            background: 'rgba(8,5,18,0.7)',
+            borderBottom: '1px solid rgba(155,161,170,0.18)',
+            background: 'rgba(10,12,15,0.7)',
             flexShrink: 0
           }}
         >
-          <span style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.5)' }}>
+          <span style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.5)' }}>
             Artist Intelligence Report
           </span>
 
@@ -517,9 +517,9 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                   fontWeight: 600,
                   padding: '4px 12px',
                   borderRadius: 6,
-                  border: '1px solid rgba(168,85,247,0.4)',
-                  background: 'rgba(168,85,247,0.1)',
-                  color: '#e879f9',
+                  border: '1px solid rgba(155,161,170,0.4)',
+                  background: 'rgba(155,161,170,0.1)',
+                  color: '#9ba1aa',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -543,16 +543,16 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
         {/* Workspace Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20, background: 'rgba(0,0,0,0.26)' }}>
           {analysis && (
-            <div style={{ background: 'rgba(13,8,28,0.7)', border: '1px solid rgba(139,92,246,0.22)', borderRadius: 10, padding: 18 }}>
-              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#c4b5fd', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ background: 'rgba(16,18,21,0.7)', border: '1px solid rgba(155,161,170,0.22)', borderRadius: 10, padding: 18 }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e6e8eb', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <BookOpen size={16} />
                 Lyrical Analysis Report: {artist}
               </h4>
               
               {/* Dynamic Emotional Arc intensity chart */}
-              <div style={{ marginBottom: 18, background: 'rgba(13,8,28,0.9)', borderRadius: 8, border: '1px solid rgba(139,92,246,0.15)', padding: 12 }}>
+              <div style={{ marginBottom: 18, background: 'rgba(16,18,21,0.9)', borderRadius: 8, border: '1px solid rgba(155,161,170,0.15)', padding: 12 }}>
                 <span
-                  style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(167,139,250,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: 10 }}
+                  style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(155,161,170,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: 10 }}
                   data-help="A quick picture of how the ENERGY of a song typically rises and falls across its parts — lower at the intro, peaking at the chorus, easing out at the end. A guide for shaping your song's emotional ride."
                 >
                   <Icon i={TrendingUp} />Stylistic Intensity Arc (Section-by-Section)
@@ -566,19 +566,19 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                           style={{
                             width: '100%',
                             height: `${val}%`,
-                            background: 'linear-gradient(0deg, #7c3aed, #22d3ee)',
+                            background: 'linear-gradient(0deg, #9ba1aa, #e7a540)',
                             borderRadius: '4px 4px 0 0',
-                            boxShadow: '0 0 0 1px rgba(34,211,238,0.3)'
+                            boxShadow: '0 0 0 1px rgba(231,165,64,0.3)'
                           }}
                         />
-                        <span style={{ fontSize: '0.54rem', color: 'rgba(167,139,250,0.45)' }}>{sections[idx]}</span>
+                        <span style={{ fontSize: '0.54rem', color: 'rgba(155,161,170,0.45)' }}>{sections[idx]}</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              <pre style={{ fontSize: '0.84rem', color: '#e8e0ff', whiteSpace: 'pre-wrap', lineHeight: 1.8, fontFamily: 'inherit' }}>
+              <pre style={{ fontSize: '0.84rem', color: '#e6e8eb', whiteSpace: 'pre-wrap', lineHeight: 1.8, fontFamily: 'inherit' }}>
                 {analysis}
               </pre>
             </div>
@@ -587,37 +587,37 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
           {/* Style DNA — rhythm, rhyme density, image clusters (4.2.0) */}
           {(styleDNA || loadingDNA) && (
             <div
-              style={{ background: 'rgba(13,8,28,0.85)', border: '1px solid rgba(0,229,255,0.35)', borderRadius: 12, padding: 18 }}
+              style={{ background: 'rgba(16,18,21,0.85)', border: '1px solid rgba(231,165,64,0.35)', borderRadius: 12, padding: 18 }}
               data-help="Style DNA is a compact fingerprint pulled from the report: how they ride the beat (rhythm), how hard they rhyme (rhyme density), and recurring image clusters (metaphors/scenes). Used as a cheat sheet when you ghostwrite."
             >
-              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#00e5ff', marginBottom: 10 }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e7a540', marginBottom: 10 }}>
                 <Icon i={Dna} />Style DNA {loadingDNA ? '(building…)' : ''}
               </h4>
               {styleDNA && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, fontSize: '0.82rem' }}>
                   <div>
-                    <div style={{ color: 'rgba(167,139,250,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Rhythm / pocket</div>
-                    <div style={{ color: '#e8e0ff', marginTop: 4 }}>{styleDNA.rhythm || '—'}</div>
+                    <div style={{ color: 'rgba(155,161,170,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Rhythm / pocket</div>
+                    <div style={{ color: '#e6e8eb', marginTop: 4 }}>{styleDNA.rhythm || '—'}</div>
                   </div>
                   <div>
-                    <div style={{ color: 'rgba(167,139,250,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Rhyme density</div>
+                    <div style={{ color: 'rgba(155,161,170,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Rhyme density</div>
                     <div style={{ color: '#39ff14', marginTop: 4, fontWeight: 700 }}>{styleDNA.rhymeDensity || '—'}</div>
                   </div>
                   <div>
-                    <div style={{ color: 'rgba(167,139,250,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Emotional temp</div>
+                    <div style={{ color: 'rgba(155,161,170,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Emotional temp</div>
                     <div style={{ color: '#ff2d95', marginTop: 4 }}>{styleDNA.emotionalTemp != null ? `${styleDNA.emotionalTemp}/100` : '—'}</div>
                   </div>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <div style={{ color: 'rgba(167,139,250,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Cadence notes</div>
-                    <div style={{ color: '#e8e0ff', marginTop: 4 }}>{styleDNA.cadenceNotes || '—'}</div>
+                    <div style={{ color: 'rgba(155,161,170,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Cadence notes</div>
+                    <div style={{ color: '#e6e8eb', marginTop: 4 }}>{styleDNA.cadenceNotes || '—'}</div>
                   </div>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <div style={{ color: 'rgba(167,139,250,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Image clusters</div>
+                    <div style={{ color: 'rgba(155,161,170,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Image clusters</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                       {(Array.isArray(styleDNA.imageClusters) ? styleDNA.imageClusters : []).map((img, i) => (
                         <span key={i} className="suno-chip" style={{ fontSize: '0.7rem' }}>{img}</span>
                       ))}
-                      {!styleDNA.imageClusters?.length && <span style={{ color: 'rgba(180,170,200,0.5)' }}>—</span>}
+                      {!styleDNA.imageClusters?.length && <span style={{ color: 'rgba(155,161,170,0.5)' }}>—</span>}
                     </div>
                   </div>
                   <div style={{ gridColumn: '1 / -1', marginTop: 8 }}>
@@ -638,9 +638,9 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                       style={{
                         padding: '8px 14px',
                         borderRadius: 8,
-                        border: '1px solid rgba(0,229,255,0.5)',
+                        border: '1px solid rgba(231,165,64,0.5)',
                         background: 'rgba(0,40,60,0.5)',
-                        color: '#a5f3fc',
+                        color: '#e6e8eb',
                         fontWeight: 700,
                         fontSize: '0.78rem',
                         cursor: 'pointer',
@@ -656,12 +656,12 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
 
           {/* Ghost Rider Mimic section */}
           {artist.trim() && (
-            <div style={{ background: 'rgba(13,8,28,0.85)', border: '1px solid rgba(34,211,238,0.22)', borderRadius: 12, padding: 18 }}>
-              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#67e8f9', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ background: 'rgba(16,18,21,0.85)', border: '1px solid rgba(231,165,64,0.22)', borderRadius: 12, padding: 18 }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e7a540', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span><Ghost size={18} strokeWidth={1.6} /></span>
                 Ghost Rider — Write in the style of {artist}
               </h4>
-              <p style={{ fontSize: '0.74rem', color: 'rgba(167,139,250,0.5)', marginBottom: 14 }}>
+              <p style={{ fontSize: '0.74rem', color: 'rgba(155,161,170,0.5)', marginBottom: 14 }}>
                 Captures the authentic artistic voice, flow structures, and vocabulary without using any celebrity names.
               </p>
 
@@ -673,12 +673,12 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                   placeholder="Optional Topic: e.g. childhood memories, neon rain..."
                   style={{
                     flex: 1,
-                    background: 'rgba(13,8,28,0.7)',
-                    border: '1px solid rgba(139,92,246,0.22)',
+                    background: 'rgba(16,18,21,0.7)',
+                    border: '1px solid rgba(155,161,170,0.22)',
                     borderRadius: 8,
                     padding: '7px 10px',
                     fontSize: '0.82rem',
-                    color: '#e8e0ff',
+                    color: '#e6e8eb',
                     outline: 'none'
                   }}
                 />
@@ -708,7 +708,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                   {/* Lyrics Display */}
                   <div style={{ position: 'relative' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <span style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', color: 'rgba(167,139,250,0.6)' }}>
+                      <span style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', color: 'rgba(155,161,170,0.6)' }}>
                         Generated Lyrics
                       </span>
                       <button
@@ -716,8 +716,8 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                         style={{
                           fontSize: '0.68rem',
                           background: 'transparent',
-                          border: '1px solid rgba(139,92,246,0.3)',
-                          color: copied === 'ghost' ? '#34d399' : 'rgba(196,181,253,0.7)',
+                          border: '1px solid rgba(155,161,170,0.3)',
+                          color: copied === 'ghost' ? '#34d399' : 'rgba(230,232,235,0.7)',
                           padding: '2px 8px',
                           borderRadius: 4,
                           cursor: 'pointer'
@@ -727,17 +727,17 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                       </button>
                     </div>
 
-                    <pre style={{ background: 'rgba(13,8,28,0.9)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: 8, padding: 14, fontSize: '0.8rem', fontFamily: 'var(--faf-font)', color: '#e8e0ff', whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+                    <pre style={{ background: 'rgba(16,18,21,0.9)', border: '1px solid rgba(155,161,170,0.15)', borderRadius: 8, padding: 14, fontSize: '0.8rem', fontFamily: 'var(--faf-font)', color: '#e6e8eb', whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
                       {ghostLyrics}
                     </pre>
                   </div>
 
                   {/* Suno tags generator */}
                   {sunoTags && (
-                    <div style={{ background: 'rgba(13,8,28,0.9)', border: '1px solid rgba(232,121,249,0.3)', borderRadius: 8, padding: 12 }}>
+                    <div style={{ background: 'rgba(16,18,21,0.9)', border: '1px solid rgba(155,161,170,0.3)', borderRadius: 8, padding: 12 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <span
-                          style={{ fontSize: '0.62rem', fontWeight: 700, color: '#e879f9', textTransform: 'uppercase', letterSpacing: '0.12em' }}
+                          style={{ fontSize: '0.62rem', fontWeight: 700, color: '#9ba1aa', textTransform: 'uppercase', letterSpacing: '0.12em' }}
                           data-help="Suno is a popular app that turns lyrics into actual music. These are safe style keywords (genre, mood, instruments — no artist names) you can paste into Suno to get a beat that matches this song."
                         >
                           <Icon i={Tags} />Safe Suno AI Style Keywords (Ready to Paste)
@@ -747,8 +747,8 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                           style={{
                             fontSize: '0.68rem',
                             background: 'transparent',
-                            border: '1px solid rgba(232,121,249,0.3)',
-                            color: copied === 'suno' ? '#34d399' : 'rgba(232,121,249,0.7)',
+                            border: '1px solid rgba(155,161,170,0.3)',
+                            color: copied === 'suno' ? '#34d399' : 'rgba(155,161,170,0.7)',
                             padding: '2px 8px',
                             borderRadius: 4,
                             cursor: 'pointer'
@@ -767,8 +767,8 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                               borderRadius: 12,
                               fontSize: '0.68rem',
                               fontWeight: 600,
-                              background: 'rgba(232,121,249,0.1)',
-                              border: '1px solid rgba(232,121,249,0.2)',
+                              background: 'rgba(155,161,170,0.1)',
+                              border: '1px solid rgba(155,161,170,0.2)',
                               color: '#f472b6'
                             }}
                           >
@@ -826,9 +826,9 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
 
                   {/* Checked Output */}
                   {(clichés.length > 0 || plagiarismRisk !== null || themeCheck !== null) && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'rgba(13,8,28,0.5)', padding: 12, borderRadius: 8, border: '1px solid rgba(139,92,246,0.18)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'rgba(16,18,21,0.5)', padding: 12, borderRadius: 8, border: '1px solid rgba(155,161,170,0.18)' }}>
                       <span
-                        style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', color: 'rgba(167,139,250,0.5)' }}
+                        style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', color: 'rgba(155,161,170,0.5)' }}
                         data-help="Results of the originality check. Plagiarism Risk = how close your lines are to known famous songs (lower is safer). Clichés = overused phrases to consider replacing. Theme check = whether your lines stayed on topic."
                       >
                         Intelligence Checks Result
@@ -843,7 +843,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                               {plagiarismRisk.score}%
                             </span>
                           </div>
-                          <div style={{ height: '6px', background: 'rgba(13,8,28,0.8)', borderRadius: 3, overflow: 'hidden' }}>
+                          <div style={{ height: '6px', background: 'rgba(16,18,21,0.8)', borderRadius: 3, overflow: 'hidden' }}>
                             <div
                               style={{
                                 height: '100%',
@@ -869,7 +869,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
                             {clichés.map((c, idx) => (
-                              <div key={idx} style={{ fontSize: '0.65rem', color: 'rgba(167,139,250,0.8)' }}>
+                              <div key={idx} style={{ fontSize: '0.65rem', color: 'rgba(155,161,170,0.8)' }}>
                                 • "{c.phrase}": {c.reason}. <span style={{ color: '#34d399' }}>Try: "{c.replacement}"</span>
                               </div>
                             ))}
@@ -885,7 +885,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                       {/* Theme check */}
                       {themeCheck && (
                         <div>
-                          <span style={{ fontSize: '0.7rem', color: themeCheck.length > 0 ? '#a855f7' : '#34d399' }}>
+                          <span style={{ fontSize: '0.7rem', color: themeCheck.length > 0 ? '#9ba1aa' : '#34d399' }}>
                             {themeCheck.length > 0
                               ? `Found ${themeCheck.length} off-topic lines: "${themeCheck.join(', ')}"`
                               : 'Theme consistency check passed.'}
@@ -902,10 +902,10 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
           {!analysis && !loadingAnalysis && !loadingGhost && (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, paddingBottom: 60, userSelect: 'none' }}>
               <div className="empty-glyph"><Search size={44} strokeWidth={1.25} /></div>
-              <p style={{ color: 'rgba(196,181,253,0.7)', fontWeight: 500, fontSize: '0.88rem', textAlign: 'center' }}>
+              <p style={{ color: 'rgba(230,232,235,0.7)', fontWeight: 500, fontSize: '0.88rem', textAlign: 'center' }}>
                 Enter an artist name and click Analyze to produce a Style Report.
               </p>
-              <p style={{ color: 'rgba(148,130,200,0.4)', fontSize: '0.78rem', textAlign: 'center' }}>
+              <p style={{ color: 'rgba(155,161,170,0.4)', fontSize: '0.78rem', textAlign: 'center' }}>
                 Or use Ghost Rider to mimic writing, create Suno tags, and check lyrics for originality.
               </p>
             </div>

@@ -74,14 +74,14 @@ export function openPopout(display, { onClose } = {}) {
     font-family:'Segoe UI',system-ui,sans-serif;cursor:default}
   canvas{display:block;width:100vw;height:100vh}
   #bar{position:fixed;top:0;left:0;right:0;padding:10px 14px;display:flex;gap:10px;
-    align-items:center;justify-content:space-between;color:#c4b5fd;font-size:12px;
+    align-items:center;justify-content:space-between;color:#e6e8eb;font-size:12px;
     background:linear-gradient(180deg,rgba(0,0,0,.75),transparent);
     opacity:0;transition:opacity .2s}
   body:hover #bar{opacity:1}
   #close{background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.5);
     color:#fca5a5;border-radius:999px;padding:5px 14px;cursor:pointer;font-size:12px}
   #close:hover{background:rgba(248,113,113,.3)}
-  #name{font-family:'JetBrains Mono',monospace;color:rgba(0,229,255,.85);
+  #name{font-family:'JetBrains Mono',monospace;color:rgba(231,165,64,.85);
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%}
 </style></head><body>
   <canvas id="viz"></canvas>

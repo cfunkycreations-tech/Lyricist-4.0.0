@@ -4,7 +4,7 @@ import { useLyricStore, DEFAULT_CONFIG } from '../../context/LyricStore.jsx';
 import { Save, RefreshCw, Key, Shield, HelpCircle, Hammer, FolderOpen } from 'lucide-react';
 import { normalizeApiKey } from '../../services/AIService.js';
 import { IMAGE_MODELS, DEFAULT_IMAGE_MODEL } from '../../services/GeminiService.js';
-import { PRISM_NAMES, ACCENT_PRESETS, accentHex } from '../../services/prismTheme.js';
+import { PRISM_NAMES, ACCENT_PRESETS, accentHex, getPrism } from '../../services/prismTheme.js';
 import { isEnabled as analyticsEnabled, optIn, optOut } from '../../services/analytics.js';
 import { Icon } from '../common/Glyph.jsx';
 
@@ -105,12 +105,12 @@ function ModelSelector({ value, onChange }) {
         onClick={() => setIsOpen(!isOpen)}
         style={{
           width: '100%',
-          background: 'rgba(13,8,28,0.7)',
-          border: '1px solid rgba(139,92,246,0.22)',
+          background: 'rgba(16,18,21,0.7)',
+          border: '1px solid rgba(155,161,170,0.22)',
           borderRadius: 8,
           padding: '8px 11px',
           fontSize: '0.84rem',
-          color: '#e8e0ff',
+          color: '#e6e8eb',
           outline: 'none',
           fontFamily: 'var(--faf-font)',
           display: 'flex',
@@ -122,7 +122,7 @@ function ModelSelector({ value, onChange }) {
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {label}
         </span>
-        <span style={{ marginLeft: 8, color: 'rgba(167,139,250,0.5)', fontSize: '0.6rem' }}>
+        <span style={{ marginLeft: 8, color: 'rgba(155,161,170,0.5)', fontSize: '0.6rem' }}>
           {isOpen ? '▲' : '▼'}
         </span>
       </button>
@@ -135,10 +135,10 @@ function ModelSelector({ value, onChange }) {
             top: 'calc(100% + 4px)',
             left: 0,
             right: 0,
-            background: '#0d0818',
-            border: '1px solid rgba(139,92,246,0.35)',
+            background: '#0e1013',
+            border: '1px solid rgba(155,161,170,0.35)',
             borderRadius: 10,
-            boxShadow: '0 0 0 1px rgba(88,28,135,0.4)',
+            boxShadow: '0 0 0 1px rgba(26,29,34,0.4)',
             display: 'flex',
             flexDirection: 'column',
             maxHeight: 360,
@@ -146,7 +146,7 @@ function ModelSelector({ value, onChange }) {
           }}
         >
           {/* Filter Bar */}
-          <div style={{ padding: 8, borderBottom: '1px solid rgba(139,92,246,0.2)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ padding: 8, borderBottom: '1px solid rgba(155,161,170,0.2)', display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ display: 'flex', gap: 4 }}>
               <input
                 autoFocus
@@ -156,12 +156,12 @@ function ModelSelector({ value, onChange }) {
                 style={{
                   flex: 1,
                   minWidth: 0,
-                  background: 'rgba(13,8,28,0.7)',
-                  border: '1px solid rgba(139,92,246,0.22)',
+                  background: 'rgba(16,18,21,0.7)',
+                  border: '1px solid rgba(155,161,170,0.22)',
                   borderRadius: 8,
                   padding: '6px 10px',
                   fontSize: '0.78rem',
-                  color: '#e8e0ff',
+                  color: '#e6e8eb',
                   outline: 'none'
                 }}
               />
@@ -171,11 +171,11 @@ function ModelSelector({ value, onChange }) {
                 disabled={loading}
                 title="Re-download the latest model list from OpenRouter"
                 style={{
-                  background: 'rgba(13,8,28,0.7)',
-                  border: '1px solid rgba(139,92,246,0.22)',
+                  background: 'rgba(16,18,21,0.7)',
+                  border: '1px solid rgba(155,161,170,0.22)',
                   borderRadius: 8,
                   padding: '6px 9px',
-                  color: 'rgba(167,139,250,0.8)',
+                  color: 'rgba(155,161,170,0.8)',
                   cursor: loading ? 'wait' : 'pointer',
                   display: 'flex',
                   alignItems: 'center'
@@ -199,9 +199,9 @@ function ModelSelector({ value, onChange }) {
                     border: 'none',
                     cursor: 'pointer',
                     fontFamily: 'var(--faf-font)',
-                    background: filterType === type ? 'rgba(124,58,237,0.5)' : 'rgba(13,8,28,0.6)',
-                    color: filterType === type ? '#e8e0ff' : 'rgba(167,139,250,0.5)',
-                    boxShadow: filterType === type ? '0 0 0 1px rgba(124,58,237,0.3)' : 'none'
+                    background: filterType === type ? 'rgba(155,161,170,0.5)' : 'rgba(16,18,21,0.6)',
+                    color: filterType === type ? '#e6e8eb' : 'rgba(155,161,170,0.5)',
+                    boxShadow: filterType === type ? '0 0 0 1px rgba(155,161,170,0.3)' : 'none'
                   }}
                 >
                   {txt}
@@ -219,11 +219,11 @@ function ModelSelector({ value, onChange }) {
                   type="button"
                   onClick={() => loadModels(true)}
                   style={{
-                    background: 'rgba(124,58,237,0.3)',
-                    border: '1px solid rgba(139,92,246,0.4)',
+                    background: 'rgba(155,161,170,0.3)',
+                    border: '1px solid rgba(155,161,170,0.4)',
                     borderRadius: 6,
                     padding: '2px 10px',
-                    color: '#e8e0ff',
+                    color: '#e6e8eb',
                     fontSize: '0.72rem',
                     cursor: 'pointer'
                   }}
@@ -233,7 +233,7 @@ function ModelSelector({ value, onChange }) {
               </div>
             )}
             {!loading && filtered.length === 0 && (
-              <div style={{ padding: 10, color: 'rgba(148,130,200,0.4)', fontSize: '0.78rem', textAlign: 'center' }}>
+              <div style={{ padding: 10, color: 'rgba(155,161,170,0.4)', fontSize: '0.78rem', textAlign: 'center' }}>
                 No models match.
               </div>
             )}
@@ -253,7 +253,7 @@ function ModelSelector({ value, onChange }) {
                     width: '100%',
                     textAlign: 'left',
                     padding: '8px 12px',
-                    background: isSelected ? 'rgba(124,58,237,0.2)' : 'transparent',
+                    background: isSelected ? 'rgba(155,161,170,0.2)' : 'transparent',
                     border: 'none',
                     cursor: 'pointer',
                     display: 'flex',
@@ -262,15 +262,15 @@ function ModelSelector({ value, onChange }) {
                     gap: 8,
                     transition: 'background 0.1s'
                   }}
-                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(88,28,135,0.2)'; }}
+                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(26,29,34,0.2)'; }}
                   onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
                 >
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', color: isSelected ? '#c084fc' : '#e8e0ff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', color: isSelected ? '#9ba1aa' : '#e6e8eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {isFree ? '🆓 ' : ''}{m.id}
                     </div>
                     {m.name && m.name !== m.id && (
-                      <div style={{ fontSize: '0.65rem', color: 'rgba(148,130,200,0.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: '0.65rem', color: 'rgba(155,161,170,0.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {m.name}
                       </div>
                     )}
@@ -279,7 +279,7 @@ function ModelSelector({ value, onChange }) {
                     {isFree ? (
                       <span style={{ color: '#34d399', fontWeight: 700 }}>FREE</span>
                     ) : m.pricing ? (
-                      <span style={{ color: 'rgba(148,130,200,0.5)' }}>
+                      <span style={{ color: 'rgba(155,161,170,0.5)' }}>
                         ${(parseFloat(m.pricing.prompt || 0) * 1000000).toFixed(2)}/M
                       </span>
                     ) : null}
@@ -289,7 +289,7 @@ function ModelSelector({ value, onChange }) {
             })}
           </div>
 
-          <div style={{ padding: '5px 12px', borderTop: '1px solid rgba(139,92,246,0.2)', fontSize: '0.62rem', color: 'rgba(148,130,200,0.35)', textAlign: 'right' }}>
+          <div style={{ padding: '5px 12px', borderTop: '1px solid rgba(155,161,170,0.2)', fontSize: '0.62rem', color: 'rgba(155,161,170,0.35)', textAlign: 'right' }}>
             {filtered.length} model{filtered.length === 1 ? '' : 's'} shown
           </div>
         </div>
@@ -384,22 +384,22 @@ export default function Settings() {
           fontFamily: 'var(--faf-font)',
           fontSize: '1.3rem',
           fontWeight: 800,
-          color: '#e8e0ff',
+          color: '#e6e8eb',
           marginBottom: 4,
-          background: 'linear-gradient(90deg, #e879f9, #a855f7, #22d3ee)',
+          background: 'linear-gradient(90deg, #9ba1aa, #9ba1aa, #e7a540)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent'
         }}
       >
         Settings
       </h2>
-      <p style={{ fontSize: '0.78rem', color: 'rgba(210,195,255,0.85)', marginBottom: 24, lineHeight: 1.6 }}>
+      <p style={{ fontSize: '0.78rem', color: 'rgba(230,232,235,0.85)', marginBottom: 24, lineHeight: 1.6 }}>
         Configure your OpenRouter API key and assistant models. Your key is stored securely in your local environment.
       </p>
 
       {/* API Key box */}
       <div style={{ marginBottom: 18 }} data-help="Your API key is like a password that lets Lyricist use an AI to write lyrics. You get one free from OpenRouter (link below), paste it here, and you're ready. It stays private on your computer — it's never sent to us.">
-        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
           OpenRouter API Key
         </label>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -411,12 +411,12 @@ export default function Settings() {
             data-demo="settings-key"
             style={{
               flex: 1,
-              background: 'rgba(13,8,28,0.7)',
-              border: '1px solid rgba(139,92,246,0.22)',
+              background: 'rgba(16,18,21,0.7)',
+              border: '1px solid rgba(155,161,170,0.22)',
               borderRadius: 8,
               padding: '8px 11px',
               fontSize: '0.84rem',
-              color: '#e8e0ff',
+              color: '#e6e8eb',
               outline: 'none',
               fontFamily: 'var(--faf-font)'
             }}
@@ -426,9 +426,9 @@ export default function Settings() {
             style={{
               padding: '7px 14px',
               borderRadius: 8,
-              border: '1px solid rgba(139,92,246,0.25)',
-              background: 'rgba(13,8,28,0.7)',
-              color: 'rgba(196,181,253,0.7)',
+              border: '1px solid rgba(155,161,170,0.25)',
+              background: 'rgba(16,18,21,0.7)',
+              color: 'rgba(230,232,235,0.7)',
               fontSize: '0.78rem',
               fontWeight: 600,
               cursor: 'pointer',
@@ -438,9 +438,9 @@ export default function Settings() {
             {showKey ? 'Hide' : 'Show'}
           </button>
         </div>
-        <p style={{ fontSize: '0.65rem', color: 'rgba(148,130,200,0.35)', marginTop: 5 }}>
+        <p style={{ fontSize: '0.65rem', color: 'rgba(155,161,170,0.35)', marginTop: 5 }}>
           Get your key at{' '}
-          <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" style={{ color: '#c084fc', textDecoration: 'underline' }}>
+          <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" style={{ color: '#9ba1aa', textDecoration: 'underline' }}>
             openrouter.ai/keys
           </a>. Buy or load credits on OpenRouter to use premium models.
         </p>
@@ -462,17 +462,17 @@ export default function Settings() {
           placeholder="hf_… (more free songs per day)"
           style={{
             width: '100%',
-            background: 'rgba(13,8,28,0.7)',
+            background: 'rgba(16,18,21,0.7)',
             border: '1px solid rgba(43,232,160,0.3)',
             borderRadius: 8,
             padding: '8px 11px',
             fontSize: '0.84rem',
-            color: '#e8e0ff',
+            color: '#e6e8eb',
             outline: 'none',
             fontFamily: 'var(--faf-font)'
           }}
         />
-        <p style={{ fontSize: '0.65rem', color: 'rgba(148,130,200,0.45)', marginTop: 5, lineHeight: 1.5 }}>
+        <p style={{ fontSize: '0.65rem', color: 'rgba(155,161,170,0.45)', marginTop: 5, lineHeight: 1.5 }}>
           Making songs is free either way. A free account at{' '}
           <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" style={{ color: '#2BE8A0', textDecoration: 'underline' }}>
             huggingface.co/settings/tokens
@@ -490,35 +490,35 @@ export default function Settings() {
           Accent colour
         </label>
 
-        {/* THE FULL-SPECTRUM TRACK.
-            The slider paints the spectrum it actually produces. A grey rail
+        {/* THE ACCENT TRACK.
+            The slider paints the colours it actually produces. A grey rail
             with a number next to it makes you drag and check, drag and check;
-            a rail showing the colours lets you aim. The stops are the same
-            hues prismTheme.js generates (100% saturation, 50% lightness,
-            starting at 184° so position zero is the default electric cyan),
-            so what you point at is what you get. */}
+            a rail showing the colours lets you aim. The stops are the arc
+            prismTheme.js generates (crimson → amber → emerald, no cyan or
+            purple), so what you point at is what you get. The position is
+            read back with getPrism(), which is what is actually painted. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <input
             type="range"
             min="0"
             max="100"
-            value={Math.round((store.config.prism ?? 0) * 100)}
+            value={Math.round((getPrism()) * 100)}
             onChange={(e) => handleUpdate('prism', Number(e.target.value) / 100)}
             className="prism-range"
-            style={{ flex: 1, accentColor: accentHex(store.config.prism ?? 0) }}
+            style={{ flex: 1, accentColor: accentHex(getPrism()) }}
           />
           <span
             aria-hidden="true"
             style={{
               width: 26, height: 26, borderRadius: 6, flexShrink: 0,
-              background: accentHex(store.config.prism ?? 0),
-              boxShadow: `0 0 8px ${accentHex(store.config.prism ?? 0)}`,
+              background: accentHex(getPrism()),
+              boxShadow: `0 0 8px ${accentHex(getPrism())}`,
               border: '1px solid rgba(255,255,255,0.12)',
             }}
           />
           <button
             type="button"
-            onClick={() => handleUpdate('prism', (((store.config.prism ?? 0) * 100 + 17) % 101) / 100)}
+            onClick={() => handleUpdate('prism', (((getPrism()) * 100 + 17) % 101) / 100)}
             style={{
               padding: '6px 14px',
               borderRadius: 999,
@@ -564,10 +564,10 @@ export default function Settings() {
           ))}
         </div>
 
-        <p style={{ fontSize: '0.65rem', color: 'rgba(148,130,200,0.45)', marginTop: 7, lineHeight: 1.5 }}>
-          {PRISM_NAMES[Math.round((store.config.prism ?? 0) * (PRISM_NAMES.length - 1))]}
-          {' '}<span className="ql-mono">{accentHex(store.config.prism ?? 0).toUpperCase()}</span>
-          {' — '}moves the accent and the background prism together. Left is home.
+        <p style={{ fontSize: '0.65rem', color: 'rgba(155,161,170,0.45)', marginTop: 7, lineHeight: 1.5 }}>
+          {PRISM_NAMES[Math.round((getPrism()) * (PRISM_NAMES.length - 1))]}
+          {' '}<span className="ql-mono">{accentHex(getPrism()).toUpperCase()}</span>
+          {' — '}moves the accent across the app. Amber is home.
         </p>
       </div>
 
@@ -610,7 +610,7 @@ export default function Settings() {
             }} />
             {statsOn ? 'Sharing anonymous usage stats' : 'Not sharing — collection is off'}
           </button>
-          <p style={{ fontSize: '0.65rem', color: 'rgba(148,130,200,0.45)', marginTop: 6, lineHeight: 1.55 }}>
+          <p style={{ fontSize: '0.65rem', color: 'rgba(155,161,170,0.45)', marginTop: 6, lineHeight: 1.55 }}>
             Collected: which tab you opened, that a grid was loaded, that a verse was generated,
             that an album was exported, that a stem split was requested — plus counts and engine
             names. <b>Never collected:</b> your lyrics, keywords, prompts, model output, file names,
@@ -621,7 +621,7 @@ export default function Settings() {
 
       {/* Stemmer cloud key (optional) */}
       <div style={{ marginBottom: 18 }} data-help="Optional. Only needed for high-fidelity Cloud stem extraction. Local and Offline modes work with no key and no GPU. Cloud mode runs Demucs on Replicate’s servers under your own key, which is how a 4 GB VRAM machine gets pro stems.">
-        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
           Cloud Stem Extraction Key (Replicate) — optional
         </label>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -632,20 +632,20 @@ export default function Settings() {
             placeholder="r8_… (only for Stemmer Cloud mode)"
             style={{
               flex: 1,
-              background: 'rgba(13,8,28,0.7)',
-              border: '1px solid rgba(0,229,255,0.28)',
+              background: 'rgba(16,18,21,0.7)',
+              border: '1px solid rgba(231,165,64,0.28)',
               borderRadius: 8,
               padding: '8px 11px',
               fontSize: '0.84rem',
-              color: '#e8e0ff',
+              color: '#e6e8eb',
               outline: 'none',
               fontFamily: 'var(--faf-font)'
             }}
           />
         </div>
-        <p style={{ fontSize: '0.65rem', color: 'rgba(148,130,200,0.45)', marginTop: 5, lineHeight: 1.5 }}>
+        <p style={{ fontSize: '0.65rem', color: 'rgba(155,161,170,0.45)', marginTop: 5, lineHeight: 1.5 }}>
           Offline Stemmer needs nothing — it runs on your CPU. Cloud mode uses{' '}
-          <a href="https://replicate.com/account/api-tokens" target="_blank" rel="noopener noreferrer" style={{ color: '#67e8f9', textDecoration: 'underline' }}>
+          <a href="https://replicate.com/account/api-tokens" target="_blank" rel="noopener noreferrer" style={{ color: '#e7a540', textDecoration: 'underline' }}>
             Replicate
           </a>{' '}
           (Demucs) so weak PCs still get pro ML stems. Key stays on your machine.
@@ -657,9 +657,9 @@ export default function Settings() {
             style={{
               padding: '6px 12px',
               borderRadius: 999,
-              border: `1px solid ${(store.config.stemmerMode || 'offline') === 'offline' ? 'rgba(0,229,255,0.65)' : 'rgba(100,100,120,0.35)'}`,
-              background: (store.config.stemmerMode || 'offline') === 'offline' ? 'rgba(0,229,255,0.15)' : 'rgba(13,8,28,0.5)',
-              color: '#e8e0ff',
+              border: `1px solid ${(store.config.stemmerMode || 'offline') === 'offline' ? 'rgba(231,165,64,0.65)' : 'rgba(100,100,120,0.35)'}`,
+              background: (store.config.stemmerMode || 'offline') === 'offline' ? 'rgba(231,165,64,0.15)' : 'rgba(16,18,21,0.5)',
+              color: '#e6e8eb',
               fontSize: '0.72rem',
               fontWeight: 700,
               cursor: 'pointer',
@@ -673,9 +673,9 @@ export default function Settings() {
             style={{
               padding: '6px 12px',
               borderRadius: 999,
-              border: `1px solid ${store.config.stemmerMode === 'cloud' ? 'rgba(168,85,247,0.7)' : 'rgba(100,100,120,0.35)'}`,
-              background: store.config.stemmerMode === 'cloud' ? 'rgba(168,85,247,0.18)' : 'rgba(13,8,28,0.5)',
-              color: '#e8e0ff',
+              border: `1px solid ${store.config.stemmerMode === 'cloud' ? 'rgba(155,161,170,0.7)' : 'rgba(100,100,120,0.35)'}`,
+              background: store.config.stemmerMode === 'cloud' ? 'rgba(155,161,170,0.18)' : 'rgba(16,18,21,0.5)',
+              color: '#e6e8eb',
               fontSize: '0.72rem',
               fontWeight: 700,
               cursor: 'pointer',
@@ -688,7 +688,7 @@ export default function Settings() {
 
       {/* Model select */}
       <div style={{ marginBottom: 18 }} data-help="The AI 'brain' that writes your lyrics. Models marked FREE cost nothing to use. Paid ones can be smarter but charge a tiny amount per use. If you're not sure, pick any FREE model to start.">
-        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
           Assistant Model
         </label>
         <ModelSelector
@@ -722,8 +722,8 @@ export default function Settings() {
               fontWeight: 700,
               cursor: 'pointer',
               fontFamily: 'var(--faf-font)',
-              background: store.config.fusionEnabled ? 'linear-gradient(135deg,#ff2d95,#a855f7)' : 'rgba(60,40,70,0.6)',
-              color: store.config.fusionEnabled ? '#fff' : 'rgba(180,150,170,0.6)',
+              background: store.config.fusionEnabled ? 'linear-gradient(135deg,#ff2d95,#9ba1aa)' : 'rgba(53,55,58,0.6)',
+              color: store.config.fusionEnabled ? '#fff' : 'rgba(155,161,170,0.6)',
               boxShadow: store.config.fusionEnabled ? '0 0 0 1px rgba(255,45,149,0.5)' : 'none',
               transition: 'all 0.2s'
             }}
@@ -769,18 +769,18 @@ export default function Settings() {
       </div>
 
       {/* Song Forge — OpenRouter only (same key as everything else) */}
-      <div style={{ marginBottom: 22, background: 'rgba(34,211,238,0.06)', border: '1px solid rgba(34,211,238,0.22)', borderRadius: 10, padding: 14 }}>
-        <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(103,232,249,0.85)', marginBottom: 3 }}>
+      <div style={{ marginBottom: 22, background: 'rgba(231,165,64,0.06)', border: '1px solid rgba(231,165,64,0.22)', borderRadius: 10, padding: 14 }}>
+        <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(231,165,64,0.85)', marginBottom: 3 }}>
           <Icon i={Hammer} />Song Forge — OpenRouter (Song + Cover Art)
         </div>
-        <p style={{ fontSize: '0.68rem', color: 'rgba(210,195,255,0.75)', marginBottom: 12, lineHeight: 1.4 }}>
+        <p style={{ fontSize: '0.68rem', color: 'rgba(230,232,235,0.75)', marginBottom: 12, lineHeight: 1.4 }}>
           Song Forge uses <strong>the same OpenRouter key</strong> as the rest of Lyricist — one key for lyrics
           and for Nano Banana cover art (image models on OpenRouter). No Google AI Studio key. No second account.
         </p>
 
         <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
           <div style={{ flex: '1 1 200px' }} data-help="Image model on OpenRouter for cover art (Nano Banana 2 family when available on your account). Lyrics still use the main OpenRouter model above.">
-            <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+            <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
               Cover Art Model (OpenRouter)
             </label>
             <select
@@ -788,12 +788,12 @@ export default function Settings() {
               onChange={(e) => handleUpdate('geminiImageModel', e.target.value)}
               style={{
                 width: '100%',
-                background: 'rgba(13,8,28,0.7)',
-                border: '1px solid rgba(34,211,238,0.25)',
+                background: 'rgba(16,18,21,0.7)',
+                border: '1px solid rgba(231,165,64,0.25)',
                 borderRadius: 8,
                 padding: '8px 11px',
                 fontSize: '0.78rem',
-                color: '#e8e0ff',
+                color: '#e6e8eb',
                 outline: 'none',
                 fontFamily: 'var(--faf-font)'
               }}
@@ -808,7 +808,7 @@ export default function Settings() {
           </div>
 
           <div style={{ flex: '1 1 120px' }} data-help="Shape of the cover art canvas before it's framed into the circular medallion. 1:1 (square) works best for the medallion look.">
-            <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+            <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
               Aspect Ratio
             </label>
             <select
@@ -816,12 +816,12 @@ export default function Settings() {
               onChange={(e) => handleUpdate('imageAspectRatio', e.target.value)}
               style={{
                 width: '100%',
-                background: 'rgba(13,8,28,0.7)',
-                border: '1px solid rgba(34,211,238,0.25)',
+                background: 'rgba(16,18,21,0.7)',
+                border: '1px solid rgba(231,165,64,0.25)',
                 borderRadius: 8,
                 padding: '8px 11px',
                 fontSize: '0.78rem',
-                color: '#e8e0ff',
+                color: '#e6e8eb',
                 outline: 'none',
                 fontFamily: 'var(--faf-font)'
               }}
@@ -833,7 +833,7 @@ export default function Settings() {
           </div>
 
           <div style={{ flex: '1 1 120px' }} data-help="Resolution of the generated cover art. Higher looks sharper on big screens but costs a bit more and takes longer.">
-            <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+            <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
               Resolution
             </label>
             <select
@@ -841,12 +841,12 @@ export default function Settings() {
               onChange={(e) => handleUpdate('imageSize', e.target.value)}
               style={{
                 width: '100%',
-                background: 'rgba(13,8,28,0.7)',
-                border: '1px solid rgba(34,211,238,0.25)',
+                background: 'rgba(16,18,21,0.7)',
+                border: '1px solid rgba(231,165,64,0.25)',
                 borderRadius: 8,
                 padding: '8px 11px',
                 fontSize: '0.78rem',
-                color: '#e8e0ff',
+                color: '#e6e8eb',
                 outline: 'none',
                 fontFamily: 'var(--faf-font)'
               }}
@@ -859,7 +859,7 @@ export default function Settings() {
         </div>
 
         <div data-help="Song Forge's default look frames every cover in a circular medallion with a magenta-to-orange neon glow. Type your own art style here to override that default — leave it blank to keep the signature Lyricist look.">
-          <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
+          <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
             Custom Cover Art Style (optional — overrides the default medallion look)
           </label>
           <textarea
@@ -869,12 +869,12 @@ export default function Settings() {
             rows={2}
             style={{
               width: '100%',
-              background: 'rgba(13,8,28,0.7)',
-              border: '1px solid rgba(34,211,238,0.25)',
+              background: 'rgba(16,18,21,0.7)',
+              border: '1px solid rgba(231,165,64,0.25)',
               borderRadius: 8,
               padding: '8px 11px',
               fontSize: '0.76rem',
-              color: '#e8e0ff',
+              color: '#e6e8eb',
               outline: 'none',
               resize: 'vertical',
               fontFamily: 'var(--faf-font)'
@@ -885,8 +885,8 @@ export default function Settings() {
 
       {/* Temperature */}
       <div style={{ marginBottom: 18 }} data-help="How wild or safe the AI gets. Slide left for predictable, on-the-nose lyrics; slide right for surprising, out-there ideas. Around 0.7–1.0 is a good sweet spot for most songs. ('Temperature' is just the AI word for this.)">
-        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
-          Creativity / Temperature — <span style={{ color: '#c084fc' }}>{store.config.temperature}</span>
+        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
+          Creativity / Temperature — <span style={{ color: '#9ba1aa' }}>{store.config.temperature}</span>
         </label>
         {/* Hard stop at 1.1. It used to run to 2.0 labelled "Wildly Creative",
             which is not what happens up there — the words break apart. Chris
@@ -900,9 +900,9 @@ export default function Settings() {
           step="0.05"
           value={Math.min(store.config.temperature, 1.1)}
           onChange={(e) => handleUpdate('temperature', parseFloat(e.target.value))}
-          style={{ width: '100%', accentColor: '#a855f7' }}
+          style={{ width: '100%', accentColor: '#9ba1aa' }}
         />
-        <div style={{ display: 'flex', fontSize: '0.62rem', color: 'rgba(148,130,200,0.35)', marginTop: 3, justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', fontSize: '0.62rem', color: 'rgba(155,161,170,0.35)', marginTop: 3, justifyContent: 'space-between' }}>
           <span>0 — Precise</span>
           <span>0.85 — Sweet spot</span>
           <span>1.1 — As wild as it goes</span>
@@ -921,8 +921,8 @@ export default function Settings() {
 
       {/* Max tokens */}
       <div style={{ marginBottom: 18 }} data-help="How much the AI can write at once. Higher means it can produce longer lyrics in one go, but uses a bit more of your credits. ('Tokens' are the small chunks of text AI counts — roughly a token is part of a word.) 2000 is plenty for a full song.">
-        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
-          Max Response Length — <span style={{ color: '#c084fc' }}>{store.config.maxTokens} tokens</span>
+        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
+          Max Response Length — <span style={{ color: '#9ba1aa' }}>{store.config.maxTokens} tokens</span>
         </label>
         <input
           type="range"
@@ -931,9 +931,9 @@ export default function Settings() {
           step="100"
           value={store.config.maxTokens}
           onChange={(e) => handleUpdate('maxTokens', parseInt(e.target.value))}
-          style={{ width: '100%', accentColor: '#a855f7' }}
+          style={{ width: '100%', accentColor: '#9ba1aa' }}
         />
-        <div style={{ display: 'flex', justifyBetween: 'space-between', fontSize: '0.62rem', color: 'rgba(148,130,200,0.35)', marginTop: 3, justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', justifyBetween: 'space-between', fontSize: '0.62rem', color: 'rgba(155,161,170,0.35)', marginTop: 3, justifyContent: 'space-between' }}>
           <span>500</span>
           <span>2000</span>
           <span>4000</span>
@@ -942,15 +942,15 @@ export default function Settings() {
 
       {/* Your own voice — the voice pack folder */}
       <div style={{ marginBottom: 18 }} data-help="Record the tour in your own voice instead of the built-in one. Click the button, drop your recordings in the folder that opens, and restart the app. Name them splash.mp3 for the opening video and card-01.mp3 through card-18.mp3 for the tour cards. Anything you don't record keeps the built-in voice.">
-        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', marginBottom: 5, display: 'block' }}>
-          Your Own Voice — <span style={{ color: voiceCount > 0 ? '#34d399' : '#c084fc' }}>
+        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
+          Your Own Voice — <span style={{ color: voiceCount > 0 ? '#34d399' : '#9ba1aa' }}>
             {voiceCount > 0 ? `${voiceCount} recording${voiceCount === 1 ? '' : 's'} in use` : 'using the built-in voice'}
           </span>
         </label>
-        <p style={{ fontSize: '0.72rem', color: 'rgba(196,181,253,0.6)', margin: '0 0 8px', lineHeight: 1.5 }}>
+        <p style={{ fontSize: '0.72rem', color: 'rgba(230,232,235,0.6)', margin: '0 0 8px', lineHeight: 1.5 }}>
           Drop your own recordings in this folder and the app plays them instead of the built-in
-          narration — <code style={{ color: '#67e8f9' }}>splash.mp3</code> over the opening video,
-          <code style={{ color: '#67e8f9' }}> card-01.mp3</code> to <code style={{ color: '#67e8f9' }}>card-18.mp3</code> for
+          narration — <code style={{ color: '#e7a540' }}>splash.mp3</code> over the opening video,
+          <code style={{ color: '#e7a540' }}> card-01.mp3</code> to <code style={{ color: '#e7a540' }}>card-18.mp3</code> for
           the tour. mp3, m4a, wav and ogg all work. Restart the app to pick up new files.
         </p>
         <button
@@ -959,7 +959,7 @@ export default function Settings() {
             padding: '8px 18px',
             borderRadius: 8,
             border: '1px solid rgba(52,211,153,0.4)',
-            background: 'rgba(13,8,28,0.7)',
+            background: 'rgba(16,18,21,0.7)',
             color: '#34d399',
             fontSize: '0.78rem',
             fontWeight: 700,
@@ -997,9 +997,9 @@ export default function Settings() {
           style={{
             padding: '9px 22px',
             borderRadius: 8,
-            border: '1px solid rgba(139,92,246,0.25)',
-            background: 'rgba(13,8,28,0.7)',
-            color: 'rgba(196,181,253,0.6)',
+            border: '1px solid rgba(155,161,170,0.25)',
+            background: 'rgba(16,18,21,0.7)',
+            color: 'rgba(230,232,235,0.6)',
             fontSize: '0.84rem',
             fontWeight: 600,
             cursor: 'pointer',
@@ -1011,22 +1011,22 @@ export default function Settings() {
       </div>
 
       {/* Config Summary panel */}
-      <div style={{ background: 'rgba(13,8,28,0.8)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: 10, padding: 16 }}>
-        <div style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.5)', marginBottom: 10 }}>
+      <div style={{ background: 'rgba(16,18,21,0.8)', border: '1px solid rgba(155,161,170,0.2)', borderRadius: 10, padding: 16 }}>
+        <div style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.5)', marginBottom: 10 }}>
           Current Configuration Status
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[
             ['API Key Status', store.config.openRouterApiKey ? 'Configured' : 'Not configured', store.config.openRouterApiKey ? '#34d399' : '#f87171'],
-            ['Active Model', store.config.model, '#e8e0ff'],
-            ['Assistant Temperature', store.config.temperature, '#c4b5fd'],
-            ['Token Cap', store.config.maxTokens, '#c4b5fd'],
+            ['Active Model', store.config.model, '#e6e8eb'],
+            ['Assistant Temperature', store.config.temperature, '#e6e8eb'],
+            ['Token Cap', store.config.maxTokens, '#e6e8eb'],
             ['Song Forge (OpenRouter)', store.config.openRouterApiKey ? 'Same key as studio' : 'OpenRouter key needed', store.config.openRouterApiKey ? '#34d399' : '#f87171'],
-            ['Song Forge Text Model', store.config.geminiTextModel, '#67e8f9'],
-            ['Song Forge Art Model', store.config.geminiImageModel, '#67e8f9']
+            ['Song Forge Text Model', store.config.geminiTextModel, '#e7a540'],
+            ['Song Forge Art Model', store.config.geminiImageModel, '#e7a540']
           ].map(([k, v, c]) => (
             <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.75rem', color: 'rgba(196,181,253,0.7)' }}>{k}</span>
+              <span style={{ fontSize: '0.75rem', color: 'rgba(230,232,235,0.7)' }}>{k}</span>
               <span style={{ fontSize: '0.75rem', fontFamily: "'JetBrains Mono', monospace", color: c, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '300px' }}>
                 {v}
               </span>
