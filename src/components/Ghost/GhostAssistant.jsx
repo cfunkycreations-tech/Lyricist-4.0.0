@@ -12,7 +12,7 @@ import GhostHand from './GhostHand.jsx';
 import GhostJobs from './GhostJobs.jsx';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import {
-  speak, hush, loadVoice, voiceState, playSample, VOICES, getVoiceName, setVoiceName,
+  speak, hush, loadVoice, voiceState, playSample, VOICES, getVoiceName, setVoiceName, prewarm,
   getVoiceSpeed, setVoiceSpeed, getVoiceWarmth, setVoiceWarmth, SPEED_MIN, SPEED_MAX,
 } from '../../services/GhostVoice.js';
 
@@ -190,13 +190,17 @@ export default function GhostAssistant({ tab, config, getContext }) {
     if (handStopped()) throw new Error('Stopped.');
     const readingTime = () => new Promise((r) => setTimeout(r, Math.min(4500, 900 + line.split(/\s+/).length * 260)));
     captionHand(line);
+    let spoken = null;
     try {
-      const spoken = voiceOnRef.current ? await speak(line) : null;
+      spoken = voiceOnRef.current ? await speak(line) : null;
       if (!spoken?.ok) await readingTime();
     } finally {
       clearCaption();
     }
-    return `said "${line.length > 60 ? `${line.slice(0, 57)}…` : line}"`;
+    const said = `said "${line.length > 60 ? `${line.slice(0, 57)}…` : line}"`;
+    // A line that was shown but not heard is reported, never passed off as spoken.
+    if (voiceOnRef.current && spoken && !spoken.ok) return { said, warn: `not heard: ${spoken.error}` };
+    return said;
   }), []);
 
   // How the hand moves: normal, fast, or off for runs nobody is watching.
@@ -309,14 +313,14 @@ export default function GhostAssistant({ tab, config, getContext }) {
    * first, then the reply is spoken while the hand works, and OBS stops last,
    * even after a Stop.
    */
-  const runActions = async (text, actions) => {
+  const runActions = async (text, actions, { quiet = false } = {}) => {
     const first = actions.filter((a) => a.name === 'obs_record_start' || SETUP_ACTIONS.has(a.name));
     const last = actions.filter((a) => a.name === 'obs_record_stop');
     const middle = actions.filter((a) => !first.includes(a) && !last.includes(a));
     const narrated = actions.some((a) => NARRATING_ACTIONS.has(a.name));
     const done = [];
     for (const a of first) done.push({ name: a.name, ...(await runGhostAction(a.name, a.args)) });
-    if (voiceOnRef.current && !narrated && text) speak(text).then(voiceFailed);
+    if (!quiet && voiceOnRef.current && !narrated && text) speak(text).then(voiceFailed);
     for (const a of middle) {
       if (handStopped()) { done.push({ name: a.name, ok: false, said: 'stopped before this step' }); break; }
       const r = await runGhostAction(a.name, a.args);
@@ -360,12 +364,35 @@ spoken line of talk.${attempt ? `\n\nThe last try at this step did not work (${s
         if (!acts.length) {
           return { ok: false, said: r.text ? `it only talked: "${r.text.slice(0, 140)}"` : 'it did nothing for this step', did: [] };
         }
-        const did = await runActions(r.text, acts);
+        // The step's own line was already spoken before it started; the model's
+        // reply text is not read over the top of the work.
+        const did = await runActions(r.text, acts, { quiet: true });
         const bad = did.find((d) => !d.ok);
         return { ok: !bad, said: bad ? bad.said : (r.text || did.map((d) => d.said).filter(Boolean).join('; ')), did };
       },
       record: (on) => runGhostAction(on ? 'obs_record_start' : 'obs_record_stop'),
-      onJobStart: (job) => { resetHandStop(); setHandSpeedOverride(job?.mode === 'batch' ? 'off' : null); },
+      // Narration for a job is ON whenever a job runs: it is being filmed. The
+      // caption shows either way; the voice needs Voice on, and a voice that
+      // fails says why in the panel instead of going quiet.
+      prewarm: (lines) => { if (voiceOnRef.current) prewarm(lines); },
+      narrate: async (line) => {
+        const r = await runGhostAction('say', { text: line });
+        if (r.warn || (!r.ok && r.said)) setVoiceNote(`The voice did not play: ${r.warn || r.said}`);
+        return r;
+      },
+      onJobStart: (job) => {
+        resetHandStop();
+        setHandSpeedOverride(job?.mode === 'batch' ? 'off' : null);
+        // A job is filmed and narrated. Chris: "it's supposed to be talking
+        // throughout this process". The voice comes on for it, not left to a
+        // toggle he may not have pressed, and starts loading straight away.
+        if (job?.mode !== 'batch' && !voiceOnRef.current) {
+          voiceOnRef.current = true;
+          setVoiceOn(true);
+          try { localStorage.setItem(VOICE_KEY, '1'); } catch { /* storage blocked */ }
+        }
+        if (job?.mode !== 'batch') loadVoice().catch((e) => setVoiceNote(`The voice would not start: ${e?.message || e}`));
+      },
       onJobEnd: () => setHandSpeedOverride(null),
       onStop: () => { stopHand(); hush(); },
       keepAwake: (on) => { try { window.lyricistAPI?.ghostKeepAwake?.(on)?.catch?.(() => {}); } catch { /* browser */ } },

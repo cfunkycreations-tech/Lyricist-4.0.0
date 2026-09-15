@@ -188,10 +188,16 @@ async function runOne(id) {
       if (stopped()) return;
       if (!steps?.length) throw new Error('The plan came back empty.');
       jobs = jobs.map((j) => (j.id !== id ? j : {
-        ...j, steps: steps.map((text) => ({ text, status: 'pending', said: '', did: [] })),
+        ...j,
+        steps: steps.map((s) => (typeof s === 'string'
+          ? { text: s, line: '', status: 'pending', said: '', did: [] }
+          : { text: s.text, line: s.line || '', status: 'pending', said: '', did: [] })),
       }));
       emit();
-      logTo(id, `plan: ${steps.map((s, i) => `${i + 1}. ${s}`).join('  ')}`);
+      logTo(id, `plan: ${get(id).steps.map((s, i) => `${i + 1}. ${s.text}`).join('  ')}`);
+      // Make every spoken line NOW, while OBS starts and the first steps run,
+      // so each line plays the moment its step begins instead of after a wait.
+      deps.prewarm?.(get(id).steps.map((s) => s.line).filter(Boolean));
 
       if (job.mode === 'checkpoints') {
         patch(id, { status: 'awaiting', awaiting: 'plan', note: 'Check the steps, then approve the plan.' });
@@ -216,6 +222,13 @@ async function runOne(id) {
       const step = get(id).steps[i];
       if (step.status === 'done' || step.status === 'skipped') continue;
       if (stopped()) return;
+
+      // SAY IT, THEN DO IT. The line plays in full before the hand moves, the
+      // way a person talks a viewer through what they are about to press.
+      if (step.line && deps.narrate) {
+        await limit(deps.narrate(step.line), 30000, 'narration took too long');
+        if (stopped()) return;
+      }
 
       let attempt = 0;
       let result = null;
@@ -242,7 +255,11 @@ async function runOne(id) {
           break;
         }
 
-        if (result.ok) break;
+        if (result.ok) {
+          // A beat between steps, so it reads as someone working, not a script firing.
+          if (get(id).mode !== 'batch') await new Promise((r) => setTimeout(r, 900));
+          break;
+        }
         if (attempt < 1) { attempt += 1; continue; }
         logTo(id, `step ${i + 1} failed: ${result.said}`);
         await stopRec();

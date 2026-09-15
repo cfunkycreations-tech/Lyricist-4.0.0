@@ -656,18 +656,39 @@ happen. Every step is one piece of work on one tab (study the artist on Ghost
 Rider, write in the style, save the Suno tags, send to Songwriter...). Keep every
 step they asked for, in their order, and add nothing they did not ask for. Where
 they left a choice open (which artist, what topic) say what you picked inside the
-step. Leave recording out: the job starts and stops OBS itself. Nothing but the
-numbered list.`;
+step. Leave recording out: the job starts and stops OBS itself.
+
+This is being filmed. After each step put " || " and ONE short line you say out
+loud while doing it, in the voice described above: talking to the viewers, like
+a guy showing friends the app. Under 16 words, no step numbers. Example:
+1. Study Radiohead on Ghost Rider || Alright, check it out. We're gonna pull Radiohead apart first.
+
+Nothing but the numbered list.`;
   const { text } = await askGhost({ history: [], question, config, tab, context, signal });
   const steps = String(text || '')
     .split('\n')
     .map((l) => l.match(/^\s*\d+\s*[.):-]\s*(.+)$/)?.[1]?.trim())
     .filter(Boolean)
-    .filter((s) => !/\b(obs|record(ing)?)\b/i.test(s) || /\bsong\b/i.test(s))
+    .map((l) => {
+      const [step, line] = l.split(/\s*\|\|\s*/);
+      return { text: step.trim(), line: String(line || '').replace(/^["']|["']$/g, '').trim() };
+    })
+    .filter((s) => s.text && (!/\b(obs|record(ing)?)\b/i.test(s.text) || /\bsong\b/i.test(s.text)))
     .slice(0, 16);
-  if (steps.length) return steps;
+  const withLines = (list) => list.map((s, i) => ({
+    text: s.text,
+    line: s.line || spokenFor(s.text, i),
+  }));
+  if (steps.length) return withLines(steps);
   // The model would not plan: fall back to his own words, split where he split them.
-  return splitWorkflow(prompt).filter((s) => !/^(record|obs)\b/i.test(s));
+  return withLines(splitWorkflow(prompt).filter((s) => !/^(record|obs)\b/i.test(s)).map((t) => ({ text: t })));
+}
+
+/** A spoken line for a step the planner gave none for, so no step is silent. */
+function spokenFor(step, i) {
+  const what = step.replace(/\.$/, '').replace(/^./, (c) => c.toLowerCase());
+  const openers = ['Alright, check it out.', 'Now watch this.', 'Next up.', 'Here we go.', 'Okay.'];
+  return i === 0 ? `Alright, check it out. First we're gonna ${what}.` : `${openers[i % openers.length]} We're gonna ${what}.`;
 }
 
 /**
