@@ -124,8 +124,11 @@ export async function moveHandTo(el) {
     checkStop();
     r = el.getBoundingClientRect();
   }
-  const x = r.left + Math.min(r.width / 2, 60);
-  const y = r.top + r.height / 2;
+  // Never off the edge of the window. A control inside a clipped or
+  // horizontally scrolled panel can report a position outside the viewport, and
+  // a hand that glides off screen reads as the Ghost wandering away mid-demo.
+  const x = Math.min(window.innerWidth - 12, Math.max(12, r.left + Math.min(r.width / 2, 60)));
+  const y = Math.min(window.innerHeight - 12, Math.max(12, r.top + r.height / 2));
   const dur = Math.round(Math.min(sp.moveMax, Math.max(sp.moveMin, Math.hypot(x - state.x, y - state.y) * sp.perPx)));
   Object.assign(state, { x, y, dur });
   emit();
