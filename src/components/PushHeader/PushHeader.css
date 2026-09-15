@@ -102,9 +102,11 @@ button.pc:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
 .pc-pad.lv-hot::before { opacity: 1; --hue: var(--h); }
 .pc-pad.lv-white::before { opacity: 1; background: #F4F6FA; }
 
-/* ── visuals on: only the pads go clear, so the picture shows in the pad square ── */
-.viz-on .pc-pad { background: transparent; }
-.viz-on .pc-pad::after {
+/* ── visuals on: only the 9x9 square goes clear (pads, the row above, the column
+   to the right; the canvas loop marks them .pc-glass) ── */
+.viz-on .pc-glass { background: transparent; text-shadow: 0 1px 2px #000, 0 0 6px #000; }
+.viz-on .pc-glass:not(.pc-pad)::before { opacity: 0; }
+.viz-on .pc-glass::after {
   background: linear-gradient(160deg, rgba(255, 255, 255, .14) 0%, rgba(255, 255, 255, .03) 38%, rgba(255, 255, 255, 0) 55%);
 }
 /* Lit pads tint the glass with their colour instead of covering the picture. */

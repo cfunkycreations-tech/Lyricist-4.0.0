@@ -83,10 +83,29 @@ function usePushVisuals(on, headerRef) {
       const draw = () => {
         const W = header.clientWidth;
         const H = header.clientHeight;
-        if (W && H && !header.querySelector(CELLS)) {
+        const pads = header.querySelectorAll(CELLS);
+        if (W && H && !pads.length) {
           // Pads hidden: nothing to show the picture in, so don't render it.
           if (canvas.width) { canvas.width = 0; canvas.height = 0; }
+          header.querySelectorAll('.pc-glass').forEach((el) => el.classList.remove('pc-glass'));
         } else if (W && H) {
+          // The 9x9 square: the 8x8 pads plus the row of cells above them and the column to their right.
+          let pl = Infinity; let pt = Infinity; let pr = -Infinity; let pb = -Infinity;
+          for (const p of pads) {
+            const q = p.getBoundingClientRect();
+            pl = Math.min(pl, q.left); pt = Math.min(pt, q.top); pr = Math.max(pr, q.right); pb = Math.max(pb, q.bottom);
+          }
+          pt -= S + G;
+          pr += S + G;
+          const glass = [];
+          for (const el of header.querySelectorAll('.pc')) {
+            const q = el.getBoundingClientRect();
+            const mx = (q.left + q.right) / 2;
+            const my = (q.top + q.bottom) / 2;
+            const inside = mx > pl && mx < pr && my > pt && my < pb;
+            el.classList.toggle('pc-glass', inside);
+            if (inside) glass.push(el);
+          }
           // Render at most 1280 wide and scale up; plenty for the inside of squares.
           const rw = Math.min(W, 1280);
           const rh = Math.max(40, Math.round((H * rw) / W));
@@ -98,7 +117,7 @@ function usePushVisuals(on, headerRef) {
           const sx = rw / W;
           const sy = rh / H;
           const boxes = new Map();
-          for (const el of header.querySelectorAll(CELLS)) {
+          for (const el of glass) {
             const cell = el.getBoundingClientRect();
             // A grid hides cells that don't fit; paint only the part its grid actually shows.
             const box = el.parentElement;
@@ -132,6 +151,7 @@ function usePushVisuals(on, headerRef) {
       try { viz?.disconnectAudio?.(getMasterBus()); } catch { /* already gone */ }
       viz = null;
       canvas.remove();
+      header.querySelectorAll('.pc-glass').forEach((el) => el.classList.remove('pc-glass'));
       api.current = { next: () => {}, step: () => {} };
     };
   }, [on, headerRef]);
