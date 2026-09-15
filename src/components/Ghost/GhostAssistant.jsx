@@ -446,7 +446,7 @@ spoken line of talk.${attempt ? `\n\nThe last try at this step did not work (${s
       // A whole workflow in one message runs as a job, one step at a time, so
       // nothing is skipped and OBS starts before the first step. ghostJobs.js.
       if (looksLikeWorkflow(q)) {
-        const record = /(obs|record(ed|ing)?)/i.test(q);
+        const record = /b(obs|record(ed|ing)?)b/i.test(q);
         addJob({ prompt: q, mode: 'full', record });
         setMsgs((m) => [...m, {
           who: 'ghost',
