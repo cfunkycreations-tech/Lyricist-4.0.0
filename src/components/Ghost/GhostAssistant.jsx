@@ -8,7 +8,10 @@ import {
 } from '../../services/ghostCursor.js';
 import GhostHand from './GhostHand.jsx';
 import { useLyricStore } from '../../context/LyricStore.jsx';
-import { speak, hush, loadVoice, voiceState, playSample, VOICES, getVoiceName, setVoiceName } from '../../services/GhostVoice.js';
+import {
+  speak, hush, loadVoice, voiceState, playSample, VOICES, getVoiceName, setVoiceName,
+  getVoiceSpeed, setVoiceSpeed, getVoiceWarmth, setVoiceWarmth, SPEED_MIN, SPEED_MAX,
+} from '../../services/GhostVoice.js';
 
 /**
  * THE GHOST, ALWAYS THERE.
@@ -106,6 +109,8 @@ export default function GhostAssistant({ tab, config, getContext }) {
   const [voiceOn, setVoiceOn] = useState(() => localStorage.getItem(VOICE_KEY) === '1');
   const [voiceNote, setVoiceNote] = useState('');
   const [voiceName, setVoiceName_] = useState(() => getVoiceName());
+  const [voiceSpeed, setVoiceSpeedState] = useState(() => getVoiceSpeed());
+  const [voiceWarmth, setVoiceWarmthState] = useState(() => getVoiceWarmth());
   // See the note at STOW_KEY. Persisted, because a recording session usually
   // means several submissions in a row, and re-arming it every time would
   // defeat the point.
@@ -131,7 +136,27 @@ export default function GhostAssistant({ tab, config, getContext }) {
    * ("female"). Both map to `af_heart`. Turns Voice on if it was off, so a
    * "talk in the woman's voice" prompt cannot silently no-op.
    */
-  useEffect(() => registerGhostAction('set_voice', ({ name } = {}) => {
+  useEffect(() => registerGhostAction('set_voice', ({ name, speed, warmth } = {}) => {
+    // "Talk slower", "warmer": speed and warmth can come on their own, with no
+    // voice named, and only change what they name.
+    const tuned = [];
+    if (speed != null && speed !== '') {
+      const v = setVoiceSpeed(speed);
+      setVoiceSpeedState(v);
+      tuned.push(`speed ${v.toFixed(2)}×`);
+    }
+    if (warmth != null && warmth !== '') {
+      const v = setVoiceWarmth(warmth);
+      setVoiceWarmthState(v);
+      tuned.push(`warmth ${v}`);
+    }
+    if (!name && tuned.length) {
+      if (!voiceOn) {
+        setVoiceOn(true);
+        localStorage.setItem(VOICE_KEY, '1');
+      }
+      return `voice ${tuned.join(', ')}`;
+    }
     const n = String(name || '').trim().toLowerCase();
     const key =
       /wom|fem|girl|lady|heart|bella|nicole/.test(n) ? 'woman' :
@@ -194,6 +219,20 @@ export default function GhostAssistant({ tab, config, getContext }) {
   const cycleHandSpeed = () => {
     const next = HAND_SPEED_NAMES[(HAND_SPEED_NAMES.indexOf(handSpeed) + 1) % HAND_SPEED_NAMES.length];
     setHandSpeedState(setHandSpeed(next));
+  };
+
+  // Speed and warmth. A short line in the new setting after you let go, held
+  // back a moment so a run of + presses says it once, not five times.
+  const previewTimer = useRef(null);
+  useEffect(() => () => clearTimeout(previewTimer.current), []);
+  const previewVoice = () => {
+    clearTimeout(previewTimer.current);
+    previewTimer.current = setTimeout(() => { speak('This is how I sound now.'); }, 450);
+  };
+  const tuneVoice = (what, value, preview = true) => {
+    if (what === 'speed') setVoiceSpeedState(setVoiceSpeed(value));
+    else setVoiceWarmthState(setVoiceWarmth(value));
+    if (preview) previewVoice();
   };
 
   /**
@@ -552,6 +591,45 @@ export default function GhostAssistant({ tab, config, getContext }) {
                   {v.label}
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* Speed in hundredths and warmth. Letting go of a slider says one
+              line in the new setting, so you hear it without asking anything. */}
+          {voiceOn && (
+            <div className="gha-tune">
+              <label htmlFor="gha-speed">Speed</label>
+              <div className="gha-tune-row">
+                <button type="button" aria-label="A hundredth slower" onClick={() => tuneVoice('speed', voiceSpeed - 0.01)}>−</button>
+                <input
+                  id="gha-speed"
+                  type="range"
+                  min={SPEED_MIN}
+                  max={SPEED_MAX}
+                  step="0.01"
+                  value={voiceSpeed}
+                  onChange={(e) => tuneVoice('speed', e.target.value, false)}
+                  onPointerUp={previewVoice}
+                  onKeyUp={previewVoice}
+                />
+                <button type="button" aria-label="A hundredth faster" onClick={() => tuneVoice('speed', voiceSpeed + 0.01)}>+</button>
+                <output htmlFor="gha-speed">{voiceSpeed.toFixed(2)}×</output>
+              </div>
+              <label htmlFor="gha-warmth">Warmth</label>
+              <div className="gha-tune-row">
+                <input
+                  id="gha-warmth"
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={voiceWarmth}
+                  onChange={(e) => tuneVoice('warmth', e.target.value, false)}
+                  onPointerUp={previewVoice}
+                  onKeyUp={previewVoice}
+                />
+                <output htmlFor="gha-warmth">{voiceWarmth}</output>
+              </div>
             </div>
           )}
 

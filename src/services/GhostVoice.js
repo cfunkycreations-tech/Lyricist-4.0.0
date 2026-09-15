@@ -74,6 +74,59 @@ const HIGHPASS_HZ = 55;
 const LOWPASS_HZ = 9000;    // 6.8k was unintelligible. Leave this alone.
 
 /**
+ * WARMER, AND EXACTLY AS FAST AS HE WANTS IT.
+ *
+ * Chris, 2026-09-15: *"make the ghost voice warmer with fine grain control of
+ * speed."*
+ *
+ * SPEED IS ASKED OF THE MODEL, NOT OF PLAYBACK. Kokoro says the words faster or
+ * slower at the same pitch. Turning playbackRate instead would drag the pitch
+ * along, so a slower ghost would also come out deeper. Hundredths, 0.50× to 1.50×.
+ *
+ * WARMTH IS TONE, AFTER THE VOICE. More body low down, the hard edge around
+ * 3 kHz and the hiss up top eased back, and a gentle compressor so it sits close,
+ * like a voice on a good mic. 0 is the voice exactly as it was. It works on all
+ * three voices: nothing here cuts bands away the way the ghost's highpass and
+ * lowpass do, so it never turns into a telephone.
+ */
+const SPEED_KEY = 'lyricist.ghost.voicespeed';
+const WARMTH_KEY = 'lyricist.ghost.voicewarmth';
+export const SPEED_MIN = 0.5;
+export const SPEED_MAX = 1.5;
+
+function readSetting(key, fallback, lo, hi) {
+  try {
+    const v = parseFloat(localStorage.getItem(key));
+    return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+let voiceSpeed = readSetting(SPEED_KEY, 1, SPEED_MIN, SPEED_MAX);
+let voiceWarmth = readSetting(WARMTH_KEY, 60, 0, 100);
+
+export const getVoiceSpeed = () => voiceSpeed;
+/** Set the speed, to the hundredth. Anything out of range is clamped, not refused. */
+export function setVoiceSpeed(v) {
+  const n = parseFloat(v);
+  if (!Number.isFinite(n)) return voiceSpeed;
+  voiceSpeed = Math.round(Math.min(SPEED_MAX, Math.max(SPEED_MIN, n)) * 100) / 100;
+  try { localStorage.setItem(SPEED_KEY, String(voiceSpeed)); } catch { /* private mode */ }
+  return voiceSpeed;
+}
+
+export const getVoiceWarmth = () => voiceWarmth;
+/** 0 (the voice as it was) to 100 (as warm as it goes). Takes effect on the next line. */
+export function setVoiceWarmth(v) {
+  const n = parseFloat(v);
+  if (!Number.isFinite(n)) return voiceWarmth;
+  voiceWarmth = Math.round(Math.min(100, Math.max(0, n)));
+  try { localStorage.setItem(WARMTH_KEY, String(voiceWarmth)); } catch { /* private mode */ }
+  return voiceWarmth;
+}
+
+/**
  * WHO IT SOUNDS LIKE.
  *
  * Chris: *"can we give the ghost optional voices? Like normal male and female?
@@ -321,7 +374,11 @@ export function hush() {
  */
 export async function synthesize(line, name = chosen) {
   const voice = VOICES[name] || VOICES.ghost;
-  const key = `${name}|${line}`;
+  // Speed is baked into the audio, so a line at 0.90× and the same line at
+  // 1.00× are two different recordings. Warmth is applied on the way out and
+  // is not part of the key.
+  const speed = voiceSpeed;
+  const key = `${name}|${speed}|${line}`;
   let buffer = cache.get(key);
   if (buffer) return buffer;
 
@@ -338,7 +395,7 @@ export async function synthesize(line, name = chosen) {
     id = 'am_adam';
   }
 
-  const raw = await tts.generate(line, { voice: id, speed: 1 / voice.pitch });
+  const raw = await tts.generate(line, { voice: id, speed: speed / voice.pitch });
   buffer = toBuffer(raw);
   if (cache.size > 40) cache.delete(cache.keys().next().value);
   cache.set(key, buffer);
@@ -376,6 +433,50 @@ export function prewarm(lines, name = chosen) {
   }
 }
 
+/**
+ * WARMTH, as tone after the voice. See the note at SPEED_KEY. `w` is 0 to 1.
+ *
+ * Every stage scales with w, so 0 returns the input untouched and the voice is
+ * exactly what it was before this existed.
+ */
+function warm(context, input, w) {
+  if (!(w > 0)) return input;
+
+  // Body: the chest of the voice, where "warm" mostly lives.
+  const body = context.createBiquadFilter();
+  body.type = 'lowshelf';
+  body.frequency.value = 220;
+  body.gain.value = 6 * w;
+
+  // The hard edge. Kokoro is brightest around 3 kHz, which is what reads as
+  // synthetic and a little cold.
+  const edge = context.createBiquadFilter();
+  edge.type = 'peaking';
+  edge.frequency.value = 3000;
+  edge.Q.value = 0.9;
+  edge.gain.value = -4 * w;
+
+  // Air: ease the top back, gently, so it softens rather than muffles.
+  const air = context.createBiquadFilter();
+  air.type = 'highshelf';
+  air.frequency.value = 7500;
+  air.gain.value = -5 * w;
+
+  // A soft compressor holds it close, like a voice right on a good mic, and
+  // keeps the extra low end from pushing peaks into clipping.
+  const comp = context.createDynamicsCompressor();
+  comp.threshold.value = -24;
+  comp.knee.value = 18;
+  comp.ratio.value = 1 + 2 * w;
+  comp.attack.value = 0.006;
+  comp.release.value = 0.25;
+
+  const makeup = context.createGain();
+  makeup.gain.value = 1 + 0.15 * w;
+
+  return input.connect(body).connect(edge).connect(air).connect(comp).connect(makeup);
+}
+
 /** The shipping graph, in one place, so playing it and measuring it agree. */
 export function ghostChain(context, buffer, name = chosen) {
   const voice = VOICES[name] || VOICES.ghost;
@@ -383,22 +484,23 @@ export function ghostChain(context, buffer, name = chosen) {
   src.buffer = buffer;
   src.playbackRate.value = voice.pitch;   // the asetrate half of the shift
 
-  // An untreated voice goes straight out. The two filters are there to sell the
-  // ghost, and on plain speech they only make it sound like a telephone.
-  if (voice.pitch === 1) {
-    src.connect(context.destination);
-    return src;
+  // An untreated voice skips the ghost's two filters: they are there to sell
+  // the ghost, and on plain speech they only make it sound like a telephone.
+  let tail = src;
+  if (voice.pitch !== 1) {
+    const hp = context.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = HIGHPASS_HZ;
+
+    const lp = context.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = LOWPASS_HZ;
+
+    tail = src.connect(hp).connect(lp);
   }
 
-  const hp = context.createBiquadFilter();
-  hp.type = 'highpass';
-  hp.frequency.value = HIGHPASS_HZ;
-
-  const lp = context.createBiquadFilter();
-  lp.type = 'lowpass';
-  lp.frequency.value = LOWPASS_HZ;
-
-  src.connect(hp).connect(lp).connect(context.destination);
+  // Warmth goes on every voice, last, so it is the same knob whoever is talking.
+  warm(context, tail, voiceWarmth / 100).connect(context.destination);
   return src;
 }
 

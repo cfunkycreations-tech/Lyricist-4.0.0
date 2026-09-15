@@ -372,20 +372,5 @@ body.lyricist-mobile .wiz-card > div:last-child button {
   font-size: 0.7rem !important;
 }
 
-/* ── THE GHOST'S LAUNCHER, on a phone ─────────────────────────────────────
-   bottom: 84px was measured against the desktop footer and the persistent
-   player. With both hidden here, 84px lands the button in the MIDDLE of the
-   Quantum Lab lattice, sitting on top of two word tiles.
-
-   Bottom right corner, and icon-only: `font-size: 0` collapses the label
-   whatever the markup is, and the face gets its size back. A round 33px button
-   is all a 412px-tall screen can spare for something that is always on top of
-   whatever tool you are using. */
-body.lyricist-mobile .gha-launch {
-  right: 8px;
-  bottom: 8px;
-  padding: 8px;
-  gap: 0;
-  font-size: 0;
-}
-body.lyricist-mobile .gha-face { font-size: 17px; }
+/* The Ghost's launcher on a phone moved to components/Ghost/GhostAssistant.css:
+   the Ghost is creator-only now, so its styles ship only with it. */

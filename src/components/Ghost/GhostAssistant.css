@@ -69,6 +69,29 @@
 }
 .gha-picker button:hover { color: #fff; }
 
+/* Speed and warmth. Speed moves in hundredths, so the slider has a − and +
+   either side for the last nudge a mouse cannot land. */
+.gha-tune {
+  display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 7px 10px;
+  padding: 9px 15px; border-bottom: 1px solid rgba(160, 200, 255, .14);
+}
+.gha-tune > label {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 10px;
+  letter-spacing: .18em; text-transform: uppercase; color: #64789B;
+}
+.gha-tune-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.gha-tune-row input[type="range"] { flex: 1 1 auto; min-width: 0; accent-color: hsl(158 80% 55%); }
+.gha-tune-row button {
+  flex: 0 0 auto; width: 24px; height: 24px; padding: 0; border-radius: 6px; cursor: pointer;
+  font-family: inherit; font-size: 14px; line-height: 1; color: #9FB2D4;
+  background: rgba(3, 5, 9, .55); border: 1px solid hsla(262 70% 70% / .28);
+}
+.gha-tune-row button:hover { color: #fff; border-color: hsla(158 80% 58% / .6); }
+.gha-tune-row output {
+  flex: 0 0 auto; min-width: 42px; text-align: right;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 11px; color: #8FF0C4;
+}
+
 .gha-note {
   margin: 0; padding: 9px 15px; font-size: 11.5px; line-height: 1.5;
   color: hsl(35 90% 70%); background: hsla(35 90% 50% / .08);
@@ -179,3 +202,22 @@
   .gha { right: 10px; left: 10px; width: auto; bottom: 132px; }
   .gha-launch { right: 10px; bottom: 76px; }
 }
+
+/* ── THE GHOST'S LAUNCHER, on a phone ─────────────────────────────────────
+   Moved here from mobile/mobile.css so it ships only in a creator build.
+   bottom: 84px was measured against the desktop footer and the persistent
+   player. With both hidden here, 84px lands the button in the MIDDLE of the
+   Quantum Lab lattice, sitting on top of two word tiles.
+
+   Bottom right corner, and icon-only: `font-size: 0` collapses the label
+   whatever the markup is, and the face gets its size back. A round 33px button
+   is all a 412px-tall screen can spare for something that is always on top of
+   whatever tool you are using. */
+body.lyricist-mobile .gha-launch {
+  right: 8px;
+  bottom: 8px;
+  padding: 8px;
+  gap: 0;
+  font-size: 0;
+}
+body.lyricist-mobile .gha-face { font-size: 17px; }
