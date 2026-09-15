@@ -1736,7 +1736,10 @@ app.whenReady().then(() => {
           // in the dev browser and silently fails in the packaged app — the
           // worst kind of bug. The song itself never goes through it: signalling
           // only swaps connection details, then the peers talk directly.
-          "connect-src 'self' wss: https: blob: data:;"
+          // ws://localhost:4455 is OBS's own websocket, plain ws on this
+          // machine only. Without it the Ghost could never reach OBS in the
+          // packaged app: the connect was blocked and simply never settled.
+          "connect-src 'self' wss: https: blob: data: ws://localhost:4455 ws://127.0.0.1:4455;"
         ],
       },
     });
