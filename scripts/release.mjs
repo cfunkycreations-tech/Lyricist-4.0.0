@@ -128,6 +128,28 @@ function run(cmd, cmdArgs, opts = {}) {
 // 1) Vite production build
 run('npm', ['run', 'build']);
 
+// 1b) The Ghost's real-mouse core, Creator only.
+//     package.json extraResources ships build-creator/ as resources/creator.
+//     Creator: libnut (the 1 MB native core of nut-js, main.js pilot()) so a
+//     lesson replays on the real cursor. Customer: a placeholder and nothing
+//     else, so main.js finds no libnut and the pilot stays off.
+const creatorStage = path.join(ROOT, 'build-creator');
+fs.rmSync(creatorStage, { recursive: true, force: true });
+fs.mkdirSync(creatorStage, { recursive: true });
+if (creator) {
+  const libnutSrc = path.join(ROOT, 'node_modules', '@nut-tree-fork', 'libnut-win32', 'build', 'Release');
+  if (!fs.existsSync(path.join(libnutSrc, 'libnut.node'))) {
+    console.error(`Creator build needs ${libnutSrc}\\libnut.node (npm install).`);
+    process.exit(1);
+  }
+  fs.cpSync(libnutSrc, path.join(creatorStage, 'libnut'), {
+    recursive: true,
+    filter: (p) => !/\.(exp|lib)$/i.test(p),
+  });
+} else {
+  fs.writeFileSync(path.join(creatorStage, 'customer.txt'), 'Customer build: no Ghost Pilot.\n', 'utf8');
+}
+
 // 2) electron-builder with named artifacts
 const artifactName = `Lyricist ${fullVersion}${edition} Setup.\${ext}`;
 const builderArgs = [

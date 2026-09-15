@@ -10,6 +10,8 @@ import {
 import { setJobDeps, addJob, subscribeJobs } from '../../services/ghostJobs.js';
 import GhostHand from './GhostHand.jsx';
 import GhostJobs from './GhostJobs.jsx';
+import GhostLessons from './GhostLessons.jsx';
+import { subscribeTeach, beginTeach, endTeach, teachState, playLesson } from '../../services/ghostTeach.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import {
   speak, hush, loadVoice, voiceState, playSample, VOICES, getVoiceName, setVoiceName, prewarm,
@@ -266,6 +268,38 @@ export default function GhostAssistant({ tab, config, getContext }) {
   /* The latest props, for a job that outlives the render that started it. */
   const live = useRef({});
   live.current = { tab, config, getContext };
+
+  /**
+   * TEACHING. F9 starts a take and stops it, from any tab, so the panel never
+   * has to be open on camera. The panel gets out of the way when a take starts
+   * and comes back on Lessons when it ends, to name it. See ghostTeach.js.
+   */
+  const [teach, setTeach] = useState(() => teachState());
+  useEffect(() => subscribeTeach(setTeach), []);
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 'F9' || e.repeat) return;
+      e.preventDefault();
+      const s = teachState();
+      if (s.recording) {
+        endTeach().finally(() => { setView('lessons'); setOpen(true); });
+      } else if (!s.starting && !s.playing) {
+        setOpen(false);
+        beginTeach({ tab: live.current.tab });
+      }
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, []);
+
+  // A lesson is something the Ghost can do by name, in chat or inside a job.
+  useEffect(() => registerGhostAction('play_lesson', async ({ name, obs } = {}) => {
+    const r = await playLesson(String(name || ''), { obs: Boolean(obs) });
+    if (r.stopped) throw new Error('Stopped.');
+    return r.misses.length
+      ? { said: `played "${name}"`, warn: `could not find ${r.misses.join(', ')}` }
+      : `played "${name}"`;
+  }), []);
 
   const [view, setView] = useState('chat');
   const [jobCount, setJobCount] = useState(0);
@@ -544,7 +578,11 @@ spoken line of talk.${attempt ? `\n\nThe last try at this step did not work (${s
         aria-expanded={open}
       >
         <span className="gha-face" aria-hidden="true"><Ghost size={22} strokeWidth={1.5} /></span>
-        <span>{open ? 'Close the Ghost' : 'Ask the Ghost'}</span>
+        <span>
+          {teach.recording ? 'Teaching · F9 stops'
+            : teach.playing ? 'Playing · F10 stops'
+              : open ? 'Close the Ghost' : 'Ask the Ghost'}
+        </span>
       </button>
 
       {open && (
@@ -665,10 +703,13 @@ spoken line of talk.${attempt ? `\n\nThe last try at this step did not work (${s
             <button type="button" aria-pressed={view === 'jobs'} onClick={() => setView('jobs')}>
               Jobs{jobCount ? ` · ${jobCount}` : ''}
             </button>
+            <button type="button" aria-pressed={view === 'lessons'} onClick={() => setView('lessons')}>Lessons</button>
           </div>
 
 
-          {view === 'jobs' ? <GhostJobs /> : (<>
+          {view === 'jobs' ? <GhostJobs /> : view === 'lessons' ? (
+            <GhostLessons tab={tab} onTeachStart={() => setOpen(false)} />
+          ) : (<>
           <div className="gha-log" ref={logRef}>
             {!msgs.length && (
               <div className="gha-empty">

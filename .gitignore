@@ -13,6 +13,7 @@ release/
 # the repo root and does NOT cover juce-backend/build — which holds the fetched
 # JUCE 8 tree and its artefacts (742 MB). These four total ~3.1 GB:
 dist-build/
+build-creator/
 dist-standalone/
 juce-backend/build/
 

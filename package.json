@@ -45,6 +45,10 @@
       {
         "from": "resources/music-caption-rewriter",
         "to": "music-caption-rewriter"
+      },
+      {
+        "from": "build-creator",
+        "to": "creator"
       }
     ],
     "win": {

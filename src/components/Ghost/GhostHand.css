@@ -1,5 +1,5 @@
-/* The Ghost's hand. Customer build. See GhostHand.jsx and services/ghostCursor.js.
-   Not the internal pilot cursor (VirtualCursor.css), which never ships. */
+/* The Ghost on screen. See GhostHand.jsx and services/ghostCursor.js.
+   Not the internal pilot cursor (VirtualCursor.css). */
 
 .ghost-hand,
 .ghost-hand-caption {
@@ -12,29 +12,31 @@
   transition-property: transform;
   transition-timing-function: cubic-bezier(0.45, 0.05, 0.25, 1);
 }
+.ghost-hand-caption { z-index: 100002; }
 
-/* The arrow's tip sits at (4,2) of its 24-unit box. Pull it back so the tip,
-   not the corner of the box, lands on the control. */
-.ghost-hand svg {
+/* The art is placed so its fingertip is the hand's point (inline left/top).
+   The float moves it only a few pixels, so the finger stays on the control. */
+.ghost-hand-art {
+  position: absolute;
   display: block;
-  margin: -2.5px 0 0 -5px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7));
+  max-width: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
+  transform-origin: 88.5% 55%;
+  animation: ghost-hand-float 2.6s ease-in-out infinite;
   transition: scale 0.09s ease-out;
 }
-.ghost-hand.is-pressed svg { scale: 0.82; }
-.ghost-hand.is-typing svg { animation: ghost-hand-type 0.9s ease-in-out infinite; }
+.ghost-hand.is-pressed .ghost-hand-art { scale: 0.9; }
+.ghost-hand.is-typing .ghost-hand-art { animation: ghost-hand-float 2.6s ease-in-out infinite, ghost-hand-type 0.9s ease-in-out infinite; }
+
+@keyframes ghost-hand-float {
+  0%, 100% { translate: 0 0; rotate: -1.5deg; }
+  50% { translate: 0 -4px; rotate: 1.5deg; }
+}
 @keyframes ghost-hand-type {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.55; }
-}
-
-.ghost-hand-badge {
-  position: absolute;
-  left: 17px;
-  top: 17px;
-  font-size: 13px;
-  line-height: 1;
-  filter: none;
+  50% { opacity: 0.7; }
 }
 
 .ghost-hand-ring {
@@ -47,7 +49,7 @@
   height: 14px;
   margin: -7px 0 0 -7px;
   border-radius: 50%;
-  border: 2px solid hsl(262 90% 74%);
+  border: 1px solid rgb(var(--accent-rgb, 231, 165, 64));
   animation: ghost-hand-ping 0.5s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
 }
 @keyframes ghost-hand-ping {
@@ -55,23 +57,56 @@
   to { opacity: 0; scale: 3.4; }
 }
 
+/* A speech bubble with a tail toward the Ghost's head. */
 .ghost-hand-bubble {
+  position: absolute;
   width: max-content;
   max-width: 300px;
-  padding: 7px 11px;
-  border-radius: 10px;
-  background: rgba(8, 6, 16, 0.94);
-  border: 1px solid hsla(262 80% 72% / 0.6);
-  box-shadow: 0 0 0 1px hsla(262 80% 60% / 0.3), 0 8px 22px rgba(0, 0, 0, 0.55);
-  color: #ECE6FF;
-  font-size: 12.5px;
+  padding: 9px 13px 10px;
+  border-radius: 14px;
+  background: rgba(14, 16, 19, 0.96);
+  border: 1px solid rgba(155, 161, 170, 0.6);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  color: #E6E8EB;
+  font-size: 13px;
   line-height: 1.5;
   white-space: pre-wrap;
+  animation: ghost-hand-bubble-in 0.24s ease-out;
+}
+.ghost-hand-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  right: 22px;
+  width: 12px;
+  height: 12px;
+  background: rgba(14, 16, 19, 0.96);
+  border-right: 1px solid rgba(155, 161, 170, 0.6);
+  border-bottom: 1px solid rgba(155, 161, 170, 0.6);
+  transform: rotate(45deg);
+}
+.ghost-hand-bubble.is-right::after { right: auto; left: 22px; }
+.ghost-hand-bubble.is-below::after { bottom: auto; top: -7px; transform: rotate(225deg); }
+
+.ghost-hand-name {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(var(--accent-rgb, 231, 165, 64));
+}
+
+@keyframes ghost-hand-bubble-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ghost-hand,
   .ghost-hand-caption { transition-duration: 0.01ms !important; }
-  .ghost-hand.is-typing svg { animation: none; }
+  .ghost-hand-art { animation: none !important; }
   .ghost-hand-ring { animation-duration: 0.01s; }
+  .ghost-hand-bubble { animation: none; }
 }

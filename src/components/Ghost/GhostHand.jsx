@@ -1,67 +1,112 @@
 import React, { useEffect, useState } from 'react';
 import { subscribeHand, readHand } from '../../services/ghostCursor.js';
+import { subscribeTeach, teachState } from '../../services/ghostTeach.js';
+import ghostSprite from '../../assets/ghost-sprite.png';
 import './GhostHand.css';
-import { Ghost } from 'lucide-react';
 
 /**
- * THE GHOST'S HAND, DRAWN. Customer build, always mounted with the Ghost.
+ * THE GHOST, ON SCREEN, POINTING AT WHAT IT DOES.
  *
- * Position comes from services/ghostCursor.js and moves by CSS transition, not
- * requestAnimationFrame: Electron throttles animation frames in a window it
- * thinks is covered, and a hand that freezes whenever OBS or another app sits
- * on top of Lyricist is the exact failure a recording cannot survive.
+ * Chris, 2026-09-15: *"We need to bring back the actual ghost graphic and have
+ * speech bubbles as it's moving and doing things across the screen."* On
+ * 2026-08-27 the portrait was stripped for a plain pointer; this puts the art
+ * back on his word.
  *
- * pointer-events: none on everything here, or the hand would swallow the very
+ * The art points with its right hand. Its fingertip is placed exactly on the
+ * spot being pressed, so the Ghost is seen pointing at every control it uses,
+ * and what it says floats in a bubble by its head.
+ *
+ * Two sources move it:
+ *   - the drawn hand (services/ghostCursor.js) for chat and jobs;
+ *   - the REAL mouse while a lesson plays (services/ghostTeach.js), so the
+ *     Ghost rides the cursor that is replaying Chris's own path.
+ *
+ * Position moves by CSS transition, not requestAnimationFrame: Electron
+ * throttles animation frames in a window it thinks is covered, and a Ghost
+ * that freezes whenever OBS sits on top of Lyricist would ruin a take.
+ *
+ * pointer-events: none on everything here, or it would swallow the very
  * clicks the Ghost is making under it.
  */
+
+// Where the fingertip is in the art, as a fraction of the square image.
+const TIP_X = 0.885;
+const TIP_Y = 0.55;
+const SIZE = 150;
+
 export default function GhostHand() {
   const [s, setS] = useState(readHand);
+  const [teach, setTeach] = useState(teachState);
+  const [live, setLive] = useState(null);
   useEffect(() => subscribeHand(setS), []);
+  useEffect(() => subscribeTeach(setTeach), []);
 
-  if (!s.visible) return null;
+  // While a lesson plays, the real cursor is the Ghost's hand.
+  const riding = Boolean(teach.playing);
+  useEffect(() => {
+    if (!riding) { setLive(null); return undefined; }
+    const onMove = (e) => setLive({ x: e.clientX, y: e.clientY, down: e.buttons > 0 });
+    window.addEventListener('pointermove', onMove, { capture: true, passive: true });
+    window.addEventListener('pointerdown', onMove, { capture: true, passive: true });
+    window.addEventListener('pointerup', onMove, { capture: true, passive: true });
+    return () => {
+      window.removeEventListener('pointermove', onMove, { capture: true });
+      window.removeEventListener('pointerdown', onMove, { capture: true });
+      window.removeEventListener('pointerup', onMove, { capture: true });
+    };
+  }, [riding]);
 
-  const at = { transform: `translate3d(${s.x}px, ${s.y}px, 0)`, transitionDuration: `${s.dur}ms` };
-  // Keep the caption on screen: flip it left near the right edge, up near the bottom.
-  const flipX = s.x > window.innerWidth - 340;
-  const flipY = s.y > window.innerHeight - 140;
+  const x = riding && live ? live.x : s.x;
+  const y = riding && live ? live.y : s.y;
+  const pressed = riding && live ? live.down : s.pressed;
+  const caption = s.caption;
+  if (!(riding ? Boolean(live) : s.visible)) return null;
+
+  const at = { transform: `translate3d(${x}px, ${y}px, 0)`, transitionDuration: `${riding ? 0 : s.dur}ms` };
+
+  // The bubble sits above the Ghost's head and flips to stay on screen.
+  const headX = -SIZE * (TIP_X - 0.7);
+  const headY = -SIZE * (TIP_Y - 0.2);
+  const flipX = x < 330;
+  const flipY = y < 190;
 
   return (
     <>
       <div
-        className={`ghost-hand${s.pressed ? ' is-pressed' : ''}${s.typing ? ' is-typing' : ''}`}
+        className={`ghost-hand${pressed ? ' is-pressed' : ''}${s.typing ? ' is-typing' : ''}`}
         style={at}
         aria-hidden="true"
       >
-        <svg viewBox="0 0 24 24" width="30" height="30">
-          <path
-            d="M4 2 L4 19.5 L8.6 15.2 L11.4 21.6 L14.3 20.3 L11.6 14.2 L18 13.8 Z"
-            fill="#E9E2FF"
-            stroke="#12081F"
-            strokeWidth="1.4"
-            strokeLinejoin="round"
-          />
-        </svg>
-        <span className="ghost-hand-badge"><Ghost size={14} strokeWidth={1.75} /></span>
+        <img
+          className="ghost-hand-art"
+          src={ghostSprite}
+          alt=""
+          draggable="false"
+          style={{ width: SIZE, height: SIZE, left: -SIZE * TIP_X, top: -SIZE * TIP_Y }}
+        />
       </div>
 
-      {s.ring > 0 && (
+      {s.ring > 0 && !riding && (
         <span
           key={s.ring}
           className="ghost-hand-ring"
-          style={{ transform: `translate3d(${s.x}px, ${s.y}px, 0)` }}
+          style={{ transform: `translate3d(${x}px, ${y}px, 0)` }}
           aria-hidden="true"
         />
       )}
 
-      {s.caption && (
+      {caption && (
         <div className="ghost-hand-caption" style={at} role="status" aria-live="polite">
           <div
-            className="ghost-hand-bubble"
+            className={`ghost-hand-bubble${flipX ? ' is-right' : ''}${flipY ? ' is-below' : ''}`}
             style={{
-              transform: `translate(${flipX ? 'calc(-100% - 18px)' : '26px'}, ${flipY ? 'calc(-100% - 10px)' : '28px'})`,
+              left: headX,
+              top: headY,
+              transform: `translate(${flipX ? '24px' : 'calc(-100% + 18px)'}, ${flipY ? `${SIZE * 0.55}px` : 'calc(-100% - 14px)'})`,
             }}
           >
-            {s.caption}
+            <span className="ghost-hand-name">Ghost</span>
+            {caption}
           </div>
         </div>
       )}

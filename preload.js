@@ -109,6 +109,14 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   // Ghost jobs: open OBS when it is closed, and keep the PC awake overnight.
   obsLaunch: (opts) => ipcRenderer.invoke('obs-launch', opts || {}),
   ghostKeepAwake: (on) => ipcRenderer.invoke('ghost-keep-awake', { on }),
+  // Ghost lessons: Chris records himself, the Ghost replays it on the real cursor.
+  pilotReplay: (events) => ipcRenderer.invoke('pilot-replay', { events }),
+  pilotReplayStop: () => ipcRenderer.invoke('pilot-replay-stop'),
+  lessonSave: (lesson) => ipcRenderer.invoke('ghost-lesson-save', lesson),
+  lessonList: () => ipcRenderer.invoke('ghost-lesson-list'),
+  lessonLoad: (name) => ipcRenderer.invoke('ghost-lesson-load', { name }),
+  lessonDelete: (name) => ipcRenderer.invoke('ghost-lesson-delete', { name }),
+  lessonReveal: () => ipcRenderer.invoke('ghost-lesson-reveal'),
 
   // Real Windows VST3 Plugin Scanner & Native Window Hosting
   vst3ScanSystem: () => ipcRenderer.invoke('vst3-scan-system'),

@@ -29,18 +29,32 @@ const captionSkill = require('./captionSkill');
       creator build. In the shipped customer app both are false, every handler
       short-circuits, and nut-js is never touched.
    ══════════════════════════════════════════════════════════════════════════ */
-const PILOT_ENABLED = !app.isPackaged || process.env.VITE_FAFO_INTERNAL_BUILD === 'true';
+/* LIBNUT, NOT ALL OF NUT-JS. Chris, 2026-09-15: teach the Ghost by recording
+   his own mouse, then replay it on the real Windows cursor in the Creator
+   installer. nut-js drags in jimp and friends; its native core libnut is one
+   1 MB file with no dependencies. release.mjs --creator copies it into
+   resources/creator/libnut. A customer installer has nothing there, so the
+   pilot stays off exactly as rule 2 says. */
+const PILOT_LIBNUT = app.isPackaged
+  ? path.join(process.resourcesPath, 'creator', 'libnut', 'libnut.node')
+  : path.join(__dirname, 'node_modules', '@nut-tree-fork', 'libnut-win32', 'build', 'Release', 'libnut.node');
+const PILOT_ENABLED = !app.isPackaged
+  || process.env.VITE_FAFO_INTERNAL_BUILD === 'true'
+  || fs.existsSync(PILOT_LIBNUT);
 
 let _pilot = null;
 function pilot() {
   // Lazy on purpose — see rule 1 above. Only the creator build ever gets here.
   if (_pilot) return _pilot;
-  const { mouse, keyboard, straightTo, Point, Button } = require('@nut-tree-fork/nut-js');
-  mouse.config.mouseSpeed = 800;      // humanize the glide
-  keyboard.config.autoDelayMs = 50;   // humanize the typing cadence
-  _pilot = { mouse, keyboard, straightTo, Point, Button };
+  const nut = require(PILOT_LIBNUT);
+  // Timing is ours: a replay schedules every event itself.
+  nut.setMouseDelay(0);
+  nut.setKeyboardDelay(0);
+  _pilot = nut;
   return _pilot;
 }
+
+const pilotSleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* THE COORDINATE FIX.
 
@@ -65,23 +79,35 @@ function toScreenPoint(sender, viewX, viewY) {
 
 ipcMain.handle('pilot-move', async (event, { x, y }) => {
   if (!PILOT_ENABLED) return { ok: false, error: 'Ghost Pilot is disabled in this build.' };
-  const { mouse, straightTo, Point } = pilot();
-  const p = toScreenPoint(event.sender, x, y);
-  await mouse.move(straightTo(new Point(p.x, p.y)));
+  const nut = pilot();
+  const to = toScreenPoint(event.sender, x, y);
+  const from = nut.getMousePos();
+  // Eased in and out, a little longer for a longer trip, like a hand.
+  const ms = Math.min(900, Math.max(180, Math.hypot(to.x - from.x, to.y - from.y) * 0.9));
+  const steps = Math.max(8, Math.round(ms / 12));
+  for (let i = 1; i <= steps; i++) {
+    const k = i / steps;
+    const e = k < 0.5 ? 2 * k * k : 1 - ((-2 * k + 2) ** 2) / 2;
+    nut.moveMouse(Math.round(from.x + (to.x - from.x) * e), Math.round(from.y + (to.y - from.y) * e));
+    await pilotSleep(ms / steps);
+  }
   return { ok: true };
 });
 
 ipcMain.handle('pilot-click', async () => {
   if (!PILOT_ENABLED) return { ok: false, error: 'Ghost Pilot is disabled in this build.' };
-  const { mouse, Button } = pilot();
-  await mouse.click(Button.LEFT);
+  pilot().mouseClick('left');
   return { ok: true };
 });
 
 ipcMain.handle('pilot-type', async (event, { text }) => {
   if (!PILOT_ENABLED) return { ok: false, error: 'Ghost Pilot is disabled in this build.' };
-  const { keyboard } = pilot();
-  await keyboard.type(text);
+  const nut = pilot();
+  // A letter at a time with a gap, never one blocking native call for a whole song.
+  for (const ch of String(text || '')) {
+    nut.typeString(ch);
+    await pilotSleep(35);
+  }
   return { ok: true };
 });
 
@@ -117,6 +143,193 @@ ipcMain.handle('ghost-keep-awake', async (_event, { on } = {}) => {
   if (on && ghostAwakeId == null) ghostAwakeId = powerSaveBlocker.start('prevent-app-suspension');
   if (!on && ghostAwakeId != null) { powerSaveBlocker.stop(ghostAwakeId); ghostAwakeId = null; }
   return { ok: true, awake: ghostAwakeId != null };
+});
+
+/* GHOST LESSONS. Chris, 2026-09-15: "I need to take control of the mouse and go
+   through the steps... and then train the ghost to do exactly what I'm doing.
+   That's the only way this is going to actually look like a human is running
+   the mouse." The renderer records him (src/services/ghostTeach.js) and plays a
+   lesson back here, on the real cursor, at his own timing, one stretch at a
+   time. F10 stops a replay from anywhere, even with OBS in front. */
+let replayAbort = false;
+let wheelAcc = 0;
+// Chromium wheel notches to Windows wheel units for libnut. Calibrated live.
+const WHEEL_UNIT = 1;
+const REPLAY_KEYS = {
+  Enter: 'enter', Backspace: 'backspace', Tab: 'tab', Escape: 'escape', Delete: 'delete',
+  ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+  Home: 'home', End: 'end', PageUp: 'pageup', PageDown: 'pagedown', ' ': 'space',
+};
+
+ipcMain.handle('pilot-replay', async (event, { events = [] } = {}) => {
+  if (!PILOT_ENABLED) return { ok: false, error: 'Ghost Pilot is disabled in this build.' };
+  const nut = pilot();
+  const { globalShortcut } = require('electron');
+  const win = BrowserWindow.fromWebContents(event.sender);
+
+  /* THE REAL MOUSE CLICKS WHATEVER IS ON TOP. The first live test ran with
+     another window over Lyricist and the clicks went to that window. So the
+     window is brought to the front first, a press outside it is never made,
+     and a replay that loses focus stops rather than typing into another app. */
+  const front = async () => {
+    if (!win || win.isDestroyed()) return false;
+    if (win.isFocused()) return true;
+    if (win.isMinimized()) win.restore();
+    win.setAlwaysOnTop(true);
+    win.show();
+    win.focus();
+    win.moveTop();
+    await pilotSleep(150);
+    win.setAlwaysOnTop(false);
+    return win.isFocused();
+  };
+  const inside = (p) => {
+    const b = win.getContentBounds();
+    const tl = screen.dipToScreenPoint({ x: b.x, y: b.y });
+    const br = screen.dipToScreenPoint({ x: b.x + b.width, y: b.y + b.height });
+    return p.x >= tl.x && p.x < br.x && p.y >= tl.y && p.y < br.y;
+  };
+  if (!(await front())) {
+    return { ok: false, error: 'Lyricist could not come to the front, so nothing was played. It would have clicked another window.' };
+  }
+
+  replayAbort = false;
+  let stopKey = false;
+  try { stopKey = globalShortcut.register('F10', () => { replayAbort = true; }); } catch { /* taken */ }
+  const held = new Set();
+  const skipped = new Set();
+  let lost = null;
+  const start = Date.now();
+  try {
+    for (const ev of events) {
+      if (replayAbort) break;
+      const wait = start + (ev.t || 0) - Date.now();
+      if (wait > 0) await pilotSleep(wait);
+      if (replayAbort) break;
+      if (ev.type !== 'move' && ev.type !== 'up' && !win.isFocused() && !(await front())) {
+        lost = 'Lyricist lost focus, so the lesson stopped instead of pressing keys in another app.';
+        break;
+      }
+      let p = null;
+      if (ev.type !== 'key') {
+        p = toScreenPoint(event.sender, ev.x, ev.y);
+        nut.moveMouse(Math.round(p.x), Math.round(p.y));
+      }
+      const btn = ev.button === 2 ? 'right' : ev.button === 1 ? 'middle' : 'left';
+      if (ev.type === 'down') {
+        if (!inside(p)) { skipped.add(btn); continue; }
+        nut.mouseToggle('down', btn);
+        held.add(btn);
+      } else if (ev.type === 'up') {
+        if (skipped.delete(btn) || !held.has(btn)) continue;
+        nut.mouseToggle('up', btn);
+        held.delete(btn);
+      } else if (ev.type === 'wheel') {
+        if (!inside(p)) continue;
+        wheelAcc += Number(ev.notches) || 0;
+        const whole = Math.trunc(wheelAcc);
+        if (whole) {
+          nut.scrollMouse(0, -whole * WHEEL_UNIT);
+          wheelAcc -= whole;
+        }
+      } else if (ev.type === 'key' && ev.key) {
+        const mods = [];
+        if (ev.ctrl) mods.push('control');
+        if (ev.alt) mods.push('alt');
+        if (ev.meta) mods.push('command');
+        if (ev.key.length === 1 && !mods.length) {
+          nut.typeString(ev.key);
+        } else {
+          if (ev.shift) mods.push('shift');
+          const name = REPLAY_KEYS[ev.key]
+            || (ev.key.length === 1 ? ev.key.toLowerCase() : /^F\d{1,2}$/.test(ev.key) ? ev.key.toLowerCase() : null);
+          if (name) nut.keyTap(name, mods);
+        }
+      }
+    }
+  } catch (e) {
+    return { ok: false, error: e?.message || String(e) };
+  } finally {
+    // Never leave a button held down when a replay ends or is stopped.
+    held.forEach((b) => { try { nut.mouseToggle('up', b); } catch { /* released */ } });
+    if (stopKey) { try { globalShortcut.unregister('F10'); } catch { /* gone */ } }
+  }
+  if (lost) return { ok: false, error: lost };
+  return { ok: true, stopped: replayAbort };
+});
+
+ipcMain.handle('pilot-replay-stop', async () => {
+  replayAbort = true;
+  return { ok: true };
+});
+
+const lessonsDir = () => {
+  const dir = path.join(app.getPath('documents'), 'Lyricist Ghost', 'Lessons');
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+};
+const lessonBase = (name) => String(name || '').replace(/[\\/:*?"<>|]/g, '-').replace(/\s+/g, ' ').trim().slice(0, 120) || 'Lesson';
+const lessonPath = (name) => path.join(lessonsDir(), `${lessonBase(name)}.json`);
+
+ipcMain.handle('ghost-lesson-save', async (_event, lesson) => {
+  try {
+    // A new lesson never overwrites an old one with the same name.
+    const base = lessonBase(lesson?.name);
+    let name = base;
+    for (let n = 2; fs.existsSync(lessonPath(name)); n++) name = `${base} ${n}`;
+    const full = lessonPath(name);
+    fs.writeFileSync(full, JSON.stringify({ ...lesson, name }), 'utf8');
+    return { ok: true, name, path: full };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('ghost-lesson-list', async () => {
+  try {
+    const dir = lessonsDir();
+    const lessons = fs.readdirSync(dir).filter((f) => f.toLowerCase().endsWith('.json')).map((f) => {
+      const full = path.join(dir, f);
+      try {
+        const j = JSON.parse(fs.readFileSync(full, 'utf8'));
+        return {
+          name: f.slice(0, -5),
+          createdAt: j.createdAt || fs.statSync(full).mtimeMs,
+          duration: j.duration || 0,
+          clicks: (j.events || []).filter((e) => e.type === 'down').length,
+          startTab: j.startTab || null,
+        };
+      } catch {
+        return null;
+      }
+    }).filter(Boolean).sort((a, b) => b.createdAt - a.createdAt);
+    return { ok: true, lessons, dir };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('ghost-lesson-load', async (_event, { name } = {}) => {
+  try {
+    return { ok: true, lesson: JSON.parse(fs.readFileSync(lessonPath(name), 'utf8')) };
+  } catch (e) {
+    return { ok: false, error: `No lesson called "${name}": ${e.message}` };
+  }
+});
+
+// To the Recycle Bin, so a lesson deleted by mistake can come back.
+ipcMain.handle('ghost-lesson-delete', async (_event, { name } = {}) => {
+  try {
+    await shell.trashItem(lessonPath(name));
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('ghost-lesson-reveal', async () => {
+  shell.openPath(lessonsDir());
+  return { ok: true };
 });
 
 // One copy at a time. A second instance can't take the profile lock the first
