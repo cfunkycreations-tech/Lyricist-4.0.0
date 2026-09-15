@@ -169,13 +169,18 @@ export default function GhostPilotLayer() {
 
           // Bookends the operator can call independently. `withObs:true` on the
           // walkthrough uses these internally.
+          // A failure THROWS, so it lands as ✗. It used to return a sentence,
+          // which the bus counts as done: Chris's run showed "✓ OBS did not
+          // start: ErrorError". startRecord opens OBS itself when it is closed.
           obs_record_start: async () => {
             const r = await runGhostScript([{ action: 'obs_record_start' }]);
-            return r.ok ? 'OBS recording started.' : { said: `OBS did not start: ${r.error}`, warn: r.error };
+            if (!r.ok) throw new Error(`OBS did not start recording: ${r.error}`);
+            return 'OBS is recording';
           },
           obs_record_stop: async () => {
             const r = await runGhostScript([{ action: 'obs_record_stop' }]);
-            return r.ok ? 'OBS recording stopped.' : { said: `OBS did not stop: ${r.error}`, warn: r.error };
+            if (!r.ok) throw new Error(`OBS did not stop recording: ${r.error}`);
+            return 'OBS stopped recording';
           },
 
           // Generic pilot passthrough — a prompt can compose any pilot verb by

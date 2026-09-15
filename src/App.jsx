@@ -271,9 +271,16 @@ function MainLayout() {
    * that door is the same one a person uses.
    */
   useEffect(() => registerGhostAction('open_tab', async ({ tab }) => {
-    const id = String(tab || '').trim();
-    const known = tabs.some((t) => t.id === id);
-    if (!known) throw new Error(`There is no "${id}" tab.`);
+    // The Ghost may say the tab's real name ("Black Hole Studios") or its id.
+    // Chris: "it's not one man band! it's black hole studio's!" The log says
+    // the name on the tab, never the id underneath.
+    const raw = String(tab || '').trim();
+    const bare = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const found = tabs.find((t) => t.id === raw)
+      || tabs.find((t) => bare(t.label) === bare(raw))
+      || tabs.find((t) => bare(raw).length > 3 && (bare(t.label).includes(bare(raw)) || bare(raw).includes(bare(t.label))));
+    if (!found) throw new Error(`There is no "${raw}" tab.`);
+    const id = found.id;
     setActiveTab(id);
     // Do not report the tab open until it is ON SCREEN. Returning straight
     // away let the next action run against the tab being left: "open The
@@ -284,7 +291,7 @@ function MainLayout() {
       if (pane && pane.style.display !== 'none') break;
       await new Promise((r) => setTimeout(r, 50));
     }
-    return `opened ${id}`;
+    return `opened ${found.label}`;
   }), []);
 
   useEffect(() => {

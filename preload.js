@@ -106,6 +106,9 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   pilotMove: (x, y) => ipcRenderer.invoke('pilot-move', { x, y }),
   pilotClick: () => ipcRenderer.invoke('pilot-click'),
   pilotType: (text) => ipcRenderer.invoke('pilot-type', { text }),
+  // Ghost jobs: open OBS when it is closed, and keep the PC awake overnight.
+  obsLaunch: () => ipcRenderer.invoke('obs-launch'),
+  ghostKeepAwake: (on) => ipcRenderer.invoke('ghost-keep-awake', { on }),
 
   // Real Windows VST3 Plugin Scanner & Native Window Hosting
   vst3ScanSystem: () => ipcRenderer.invoke('vst3-scan-system'),

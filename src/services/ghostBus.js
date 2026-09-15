@@ -104,18 +104,43 @@ export function watchGhostActions(fn) {
  * conversation, `warn` says in plain words what does not look right about what
  * it just did. A plain string still works and still means "no undo needed".
  */
+/**
+ * WHICH TAB OWNS AN ACTION, so the Ghost opens it itself.
+ *
+ * Chris's test run, 2026-09-15: "✗ I cannot do set_lyrics from here. Open the
+ * tab it belongs to first." A person would just open the tab, so the bus does.
+ */
+const ACTION_TAB = [
+  [/^songwriter_/, 'songwriter'],
+  [/^ghostrider_/, 'analyzer'],
+  [/^songforge_/, 'songforge'],
+  [/^matrix_/, 'quantum'],
+  [/^(blackhole_|set_lyrics$|append_lyrics$|write_caption$|set_caption$|set_length$|set_takes$|roll_take_number$|set_engine$|lay_out_song$|make_the_song$|stop$)/, 'onemanband'],
+];
+export const tabForAction = (name) => ACTION_TAB.find(([re]) => re.test(name))?.[1] || null;
+
+const waitFor = async (name, ms) => {
+  let fn = handlers.get(name);
+  for (let waited = 0; !fn && waited < ms; waited += 100) {
+    await new Promise((r) => setTimeout(r, 100));
+    fn = handlers.get(name);
+  }
+  return fn;
+};
+
 export async function runGhostAction(name, args = {}) {
   // A tab mounts on its first open, and its actions register in an effect a
   // frame or two after that. "open_tab" then "songwriter_write_song" in the
   // same breath used to fail on the second one for no reason a person would
   // see, so give a freshly opened tab a moment to hand its controls over.
-  let fn = handlers.get(name);
-  for (let waited = 0; !fn && waited < 2000; waited += 100) {
-    await new Promise((r) => setTimeout(r, 100));
-    fn = handlers.get(name);
+  let fn = await waitFor(name, handlers.has(name) ? 0 : 600);
+  const owner = tabForAction(name);
+  if (!fn && owner && handlers.get('open_tab')) {
+    try { await handlers.get('open_tab')({ tab: owner }); } catch { /* reported below */ }
+    fn = await waitFor(name, 4000);
   }
   if (!fn) {
-    return { ok: false, said: `I cannot do "${name}" from here. Open the tab it belongs to first.` };
+    return { ok: false, said: `"${name}" is not something any tab offers.` };
   }
   try {
     // Show it the way a person would do it, then do it. See BEFORE in ghostHands.js.

@@ -121,11 +121,14 @@ export async function resolveGhostModel() {
  * pool model), and the family preference is only an order to look in. Returns
  * null when what they have is already strong, or when OpenRouter is unreachable.
  */
+// Chris, 2026-09-15: "Don't ever suggest an anthropic model for anything in my
+// app, too fucking expensive." Anthropic ids are never suggested, not even as
+// the last-resort pick.
 const STRONG_FAMILIES = [
-  /^anthropic\/claude-sonnet/,
   /^google\/gemini-[\d.]+-pro/,
   /^openai\/gpt-5(\.\d+)?$/,
 ];
+const NEVER_SUGGEST = /^anthropic\//i;
 const canSee = (m) => (m?.architecture?.input_modalities || []).includes('image');
 const canReason = (m) => (m?.supported_parameters || []).includes('reasoning');
 
@@ -138,6 +141,7 @@ export async function suggestStrongModel(current) {
     if (mine && !id.endsWith(':free') && canSee(mine) && canReason(mine)) return null;
 
     const strong = list
+      .filter((m) => !NEVER_SUGGEST.test(m.id))
       .filter((m) => !String(m.id).endsWith(':free') && canSee(m) && canReason(m))
       .filter((m) => (m.context_length || 0) >= 100000)
       .filter((m) => !/preview|beta|exp|image|audio|search|online/i.test(m.id))
@@ -334,8 +338,11 @@ The person sees what you did, not the tag. Available right now:
 ${actions.length ? actions.map((a) => `  - ${a}`).join('\n') : '  (nothing: no tab has offered anything yet)'}
 
 ACTION NOTES:
-  open_tab {"tab":"onemanband"} switches tabs. A tab has to be open before you
-    can change anything on it, so open it first and say you are doing that.
+  open_tab {"tab":"Black Hole Studios"} switches tabs, by the name on the tab.
+    You rarely need it: any tab's action opens that tab by itself.
+  CALL EVERY TAB BY THE NAME ON IT when you talk: Black Hole Studios (never
+    "one man band" or "onemanband"), Ghost Rider (never "analyzer"), The Matrix
+    (never "quantum"), Song Forge, Songwriter.
   THE LYRICS DO NOT USE <do> AT ALL. Write them as plain tagged text, with real
   line breaks, nothing escaped:
 
@@ -353,11 +360,8 @@ ACTION NOTES:
   append_lyrics {"text":"..."} still exists for adding a section to the end.
   set_length {"seconds":180}, set_takes {"count":2}, roll_take_number {},
     set_engine {"engine":"cloud"|"kaggle"|"local"}, lay_out_song {}.
-  make_the_song {} EMIT IT whenever they want the song made. Do not ask them
-    first, and do not tell them to tap or press anything: the app puts one
-    confirm button under your answer by itself, and it only does that if you
-    actually emitted the action. Saying "tap the button below" without emitting
-    it leaves them looking at no button. Just say you are starting it.
+  make_the_song {} EMIT IT whenever they want the song made or finished. It
+    starts straight away. Do not ask first and never tell them to tap anything.
   stop {} stops a run.
   The <lyrics> tag lands in Black Hole Studios' Input Lyrics. To put words on
   the Songwriter tab instead, use songwriter_set_lyrics.
@@ -377,6 +381,10 @@ ACTION NOTES:
       ghostrider_write {"artist":"...","topic":"..."} writes a verse and hook in that
         artist's style, with Suno tags.
       ghostrider_check {}  ghostrider_send_to_songwriter {}
+      ghostrider_save_tags {} saves the Suno tags it wrote, so Black Hole Studios
+        can build the Input Caption from them.
+      ghostrider_send_dna_to_matrix {} sends the artist's Style DNA to The Matrix.
+      No artist named? Leave "artist" out and it picks one itself. NEVER ask.
     Song Forge (tab "songforge"):
       songforge_forge {"topic":"..."} writes a whole song and paints its cover art.
       songforge_art_first {"prompt":"image idea","notes":"angle for the words"}
@@ -386,7 +394,14 @@ ACTION NOTES:
       matrix_load_keywords {"keywords":"rain, parking lot, promise"}
       matrix_autocraft {"keywords":"..."} loads them, spreads, locks and writes verses A and B.
       matrix_pick {"state":"A"|"B"}  matrix_send_to_songwriter {"state":"A"}
+      matrix_load_dna {} loads the Style DNA Ghost Rider sent and writes verses
+        A and B under it, seeded from the DNA's images.
       matrix_send_to_forge {}  matrix_reset {}
+    Black Hole Studios (tab "onemanband"):
+      blackhole_pull_from_songwriter {} brings the Songwriter song into the Input Lyrics.
+      write_caption {} runs MiniMax's caption skill. An empty Input Caption is
+        fine: it starts from the saved Suno tags and the picks.
+      set_length, set_takes, set_engine, make_the_song as described above.
 
   ANY BUTTON OR BOX ON ANY TAB. When no named action fits, use the controls list
   under WHAT THEY HAVE SO FAR (it is the tab that is showing) and:
@@ -421,9 +436,9 @@ ACTION NOTES:
     person asks you to "run The Matrix", "record a Matrix demo", or "show me
     the Matrix" — do NOT try to script the individual clicks yourself; this
     action IS the demo, and it lines up voice and cursor for you.
-  obs_record_start {} / obs_record_stop {} start and stop the OBS recording via
-    the WebSocket at localhost:4455. Use these on their own when the person
-    wants to bookend something the walkthrough does not cover.
+  obs_record_start {} / obs_record_stop {} start and stop the OBS recording. It
+    opens OBS itself if it is closed. When they say it is being recorded,
+    obs_record_start is your FIRST action and obs_record_stop your LAST.
 
 NEVER describe a button, a tap or a change you are not also emitting as a <do>
 line. Talking about doing something is not doing it. Do not emit an action that
@@ -446,6 +461,11 @@ So when you need something that is not listed:
 Do not announce the problem. Do not ask permission to switch tabs. Do not say
 you are unable. Open the tab and carry on -- that is exactly what a person would
 do, and it is why open_tab exists.
+
+NEVER ASK A QUESTION. NOT ONE. If a detail is missing (which artist, what
+topic, what genre) you pick it yourself, do the work, and say what you picked
+afterwards. "Who should we analyze?" is a failure. A reply that only talks
+and emits no <do> lines when they asked for work is a failure.
 
 DO WHAT YOU ARE ASKED. NO ARGUING. The person using this app knows what they
 want. Whatever they ask for, on whatever tab, you do it: write it, press it,
@@ -609,6 +629,45 @@ export function splitActions(reply) {
   text = text.replace(UNCLOSED, '');
 
   return { text: text.replace(/\n{3,}/g, '\n\n').trim(), actions };
+}
+
+/**
+ * DOES THIS MESSAGE DESCRIBE A WORKFLOW? Several jobs in a row ("analyze the
+ * artist, write in their style, save the tags, send it to Songwriter...") is
+ * run as a job with a step list, not squeezed into a single reply.
+ */
+const WORK_VERB = /\b(pick|analy[sz]e|study|write|save|send|tweak|finish|make|open|record|run|load|fill|press|set|generate|forge|craft|master|export|render|caption|polish|rewrite|put)\b/i;
+export function splitWorkflow(text) {
+  return String(text || '')
+    .split(/\s*(?:[,;\n]|\.\s|\bthen\b|\band then\b|\bafter that\b|\bnext\b)\s*/i)
+    .map((s) => s.replace(/^(and|&|also)\s+/i, '').trim())
+    .filter((s) => s.length > 3 && WORK_VERB.test(s));
+}
+export const looksLikeWorkflow = (text) => splitWorkflow(text).length >= 4;
+
+/** Plan a job: a numbered list of steps, one tab action's worth each. */
+export async function planJob({ prompt, config, tab, context, signal }) {
+  const question = `PLAN THIS JOB. Do not do any of it yet and emit no <do> tags.
+
+THE JOB: ${prompt}
+
+Write it as a numbered list of steps, one line each, in the order they must
+happen. Every step is one piece of work on one tab (study the artist on Ghost
+Rider, write in the style, save the Suno tags, send to Songwriter...). Keep every
+step they asked for, in their order, and add nothing they did not ask for. Where
+they left a choice open (which artist, what topic) say what you picked inside the
+step. Leave recording out: the job starts and stops OBS itself. Nothing but the
+numbered list.`;
+  const { text } = await askGhost({ history: [], question, config, tab, context, signal });
+  const steps = String(text || '')
+    .split('\n')
+    .map((l) => l.match(/^\s*\d+\s*[.):-]\s*(.+)$/)?.[1]?.trim())
+    .filter(Boolean)
+    .filter((s) => !/\b(obs|record(ing)?)\b/i.test(s) || /\bsong\b/i.test(s))
+    .slice(0, 16);
+  if (steps.length) return steps;
+  // The model would not plan: fall back to his own words, split where he split them.
+  return splitWorkflow(prompt).filter((s) => !/^(record|obs)\b/i.test(s));
 }
 
 /**

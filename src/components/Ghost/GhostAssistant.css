@@ -221,3 +221,70 @@ body.lyricist-mobile .gha-launch {
   font-size: 0;
 }
 body.lyricist-mobile .gha-face { font-size: 17px; }
+
+/* Chat / Jobs. */
+.gha-views { display: flex; gap: 6px; padding: 8px 15px; border-bottom: 1px solid rgba(160, 200, 255, .14); }
+.gha-views button {
+  flex: 1 1 0; padding: 6px 10px; border-radius: 8px; cursor: pointer;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+  color: #9FB2D4; background: rgba(3, 5, 9, .55); border: 1px solid hsla(262 70% 70% / .28);
+}
+.gha-views button[aria-pressed="true"] { color: #8FF0C4; background: hsla(158 84% 40% / .18); border-color: hsla(158 80% 58% / .6); }
+
+/* The Jobs view. */
+.ghj { flex: 1 1 auto; overflow-y: auto; display: flex; flex-direction: column; }
+.ghj-new { padding: 12px 15px; display: grid; gap: 8px; border-bottom: 1px solid rgba(160, 200, 255, .14); }
+.ghj-new textarea {
+  width: 100%; box-sizing: border-box; resize: vertical; min-height: 70px;
+  padding: 8px 10px; border-radius: 8px; font-family: inherit; font-size: 12.5px; line-height: 1.5;
+  color: #EAF2FF; background: rgba(3, 5, 9, .7); border: 1px solid hsla(262 70% 70% / .3);
+}
+.ghj-new textarea:focus { outline: none; border-color: hsla(158 80% 58% / .7); }
+.ghj-modes { display: flex; gap: 6px; flex-wrap: wrap; }
+.ghj-modes button, .ghj-go button, .ghj-btns button, .ghj-clear {
+  padding: 6px 11px; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 11.5px; font-weight: 600;
+  color: #9FB2D4; background: rgba(3, 5, 9, .55); border: 1px solid hsla(262 70% 70% / .28);
+}
+.ghj-modes button.on { color: #8FF0C4; background: hsla(158 84% 40% / .18); border-color: hsla(158 80% 58% / .6); }
+.ghj-go { display: flex; gap: 8px; }
+.ghj-go button.go, .ghj-btns button.go { color: #EAF2FF; background: hsla(158 84% 40% / .26); border-color: hsla(158 80% 58% / .6); }
+.ghj-btns button.stop { color: hsl(350 90% 82%); border-color: hsla(350 80% 60% / .5); }
+.ghj-modes button:hover, .ghj-go button:hover:not(:disabled), .ghj-btns button:hover, .ghj-clear:hover { color: #fff; }
+.ghj-go button:disabled { opacity: .45; cursor: default; }
+.ghj-hint { margin: 0; font-size: 11px; line-height: 1.5; color: #64789B; }
+.ghj-rec { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: #9FB2D4; }
+.ghj-rec input { accent-color: hsl(158 80% 55%); }
+
+.ghj-list { padding: 12px 15px; display: grid; gap: 10px; }
+.ghj-empty { margin: 0; font-size: 12px; line-height: 1.6; color: #64789B; }
+.ghj-job { padding: 10px 12px; border-radius: 10px; background: rgba(3, 5, 9, .5); border: 1px solid rgba(160, 200, 255, .14); display: grid; gap: 7px; }
+.ghj-job.s-running, .ghj-job.s-planning { border-color: hsla(158 80% 58% / .5); }
+.ghj-job.s-awaiting { border-color: hsla(35 90% 60% / .55); }
+.ghj-job.s-failed { border-color: hsla(350 80% 60% / .45); }
+.ghj-jhd { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ghj-badge {
+  flex: 0 0 auto; padding: 2px 7px; border-radius: 999px;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase;
+  color: #8FF0C4; border: 1px solid hsla(158 80% 58% / .45);
+}
+.s-failed .ghj-badge, .s-stopped .ghj-badge { color: hsl(350 90% 80%); border-color: hsla(350 80% 60% / .45); }
+.s-awaiting .ghj-badge, .s-paused .ghj-badge { color: hsl(35 90% 74%); border-color: hsla(35 90% 60% / .5); }
+.ghj-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; color: #DCE8FF; }
+.ghj-meta { flex: 0 0 auto; font-size: 10.5px; color: #64789B; }
+.ghj-note { margin: 0; font-size: 11.5px; line-height: 1.5; color: #9FB2D4; }
+.ghj-steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.ghj-steps li { display: grid; grid-template-columns: 16px 1fr; gap: 6px; font-size: 12px; line-height: 1.5; color: #9FB2D4; }
+.ghj-steps li.st-running { color: #EAF2FF; }
+.ghj-steps li.st-running .ghj-mark { color: hsl(158 80% 62%); }
+.ghj-steps li.st-done .ghj-mark { color: hsl(158 80% 55%); }
+.ghj-steps li.st-failed .ghj-mark { color: hsl(350 90% 70%); }
+.ghj-steps li.st-skipped { opacity: .55; }
+.ghj-did { display: grid; gap: 1px; margin-top: 2px; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 10.5px; }
+.ghj-did .ok { color: #7FD8B0; }
+.ghj-did .no { color: hsl(350 90% 76%); }
+.ghj-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.ghj-log {
+  margin: 0; max-height: 180px; overflow: auto; padding: 8px; border-radius: 6px;
+  font-size: 10.5px; line-height: 1.5; white-space: pre-wrap; color: #9FB2D4; background: rgba(0, 0, 0, .45);
+}
+.ghj-clear { justify-self: start; }

@@ -230,6 +230,12 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const [contracts, setContracts] = useState([]);
   const [dnaUsed, setDnaUsed] = useState(null);
   const [stylePressure, setStylePressure] = useState(() => readStylePressure());
+  // Ghost Rider's "send DNA to The Matrix" lands here while this tab is open.
+  useEffect(() => {
+    const pick = () => setStylePressure(readStylePressure());
+    window.addEventListener('lyricist:style-dna', pick);
+    return () => window.removeEventListener('lyricist:style-dna', pick);
+  }, []);
   const [phoneticsOn, setPhoneticsOn] = useState(false);
   const [truthReport, setTruthReport] = useState(null);
 
@@ -800,6 +806,28 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       if (!ghost.current.activeNeural) throw new Error('No Matrix verse yet. Auto-Craft one first.');
       ghost.current.sendToSongwriter();
       return 'sent the verse to Songwriter';
+    },
+    /**
+     * USE THE STYLE DNA. Loads what Ghost Rider sent as the Matrix's style
+     * pressure, seeds the grid with its image motifs when no keywords are
+     * given, and Auto-Crafts under it.
+     */
+    matrix_load_dna: async ({ keywords, craft = true } = {}) => {
+      const dna = readStylePressure();
+      if (!dna) throw new Error('No Style DNA has been sent yet. Study an artist on Ghost Rider first.');
+      setStylePressure(dna);
+      await ghostSettle();
+      const motifs = Array.isArray(dna.imageClusters) ? dna.imageClusters.join(', ') : '';
+      const words = keywords || motifs;
+      if (craft && words) {
+        await loadForGhost(words);
+        await ghost.current.autoCraftVerse();
+        await ghostSettle();
+        const s = ghost.current.status;
+        if (MATRIX_FAILED.test(s.lead)) throw new Error(s.lead + s.rest);
+        return `loaded ${dna.artist || 'the'} Style DNA and wrote verses A and B under it`;
+      }
+      return `loaded ${dna.artist || 'the'} Style DNA as the style pressure`;
     },
     matrix_send_to_forge: () => {
       ghost.current.sendToForge();

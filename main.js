@@ -85,6 +85,35 @@ ipcMain.handle('pilot-type', async (event, { text }) => {
   return { ok: true };
 });
 
+/* GHOST JOBS. Open OBS when a recorded job starts and it is not running, and
+   hold the PC awake while an overnight batch works. Neither touches anything
+   but OBS and the sleep timer, so neither is gated like the pilot above. */
+ipcMain.handle('obs-launch', async () => {
+  const { execFile, spawn } = require('child_process');
+  const running = await new Promise((resolve) => {
+    execFile('tasklist', ['/FI', 'IMAGENAME eq obs64.exe', '/NH'], (err, out) => resolve(!err && /obs64\.exe/i.test(out)));
+  });
+  if (running) return { ok: true, already: true };
+  const candidates = [
+    path.join(process.env.ProgramFiles || 'C:\\Program Files', 'obs-studio', 'bin', '64bit', 'obs64.exe'),
+    path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'obs-studio', 'bin', '64bit', 'obs64.exe'),
+  ];
+  const exe = candidates.find((p) => fs.existsSync(p));
+  if (!exe) return { ok: false, error: 'OBS Studio is not installed in Program Files.' };
+  // OBS finds its own data relative to the working folder, so start it from bin.
+  const child = spawn(exe, ['--disable-shutdown-check'], { cwd: path.dirname(exe), detached: true, stdio: 'ignore' });
+  child.unref();
+  return { ok: true };
+});
+
+let ghostAwakeId = null;
+ipcMain.handle('ghost-keep-awake', async (_event, { on } = {}) => {
+  const { powerSaveBlocker } = require('electron');
+  if (on && ghostAwakeId == null) ghostAwakeId = powerSaveBlocker.start('prevent-app-suspension');
+  if (!on && ghostAwakeId != null) { powerSaveBlocker.stop(ghostAwakeId); ghostAwakeId = null; }
+  return { ok: true, awake: ghostAwakeId != null };
+});
+
 // One copy at a time. A second instance can't take the profile lock the first
 // one holds, so its storage comes up broken and the window can land black —
 // bring the window you already have to the front instead.

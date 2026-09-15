@@ -1,12 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './GhostAssistant.css';
-import { askGhost, splitActions, suggestStrongModel } from '../../services/GhostService.js';
+import { askGhost, suggestStrongModel, planJob, looksLikeWorkflow } from '../../services/GhostService.js';
 import { registerGhostAction, registerGhostActions, runGhostAction, watchGhostActions, availableGhostActions } from '../../services/ghostBus.js';
 import { pressControl, fillControl, chooseControl, describeControls } from '../../services/ghostHands.js';
 import {
   captionHand, clearCaption, stopHand, resetHandStop, handStopped, getHandSpeed, setHandSpeed, HAND_SPEED_NAMES,
+  setHandSpeedOverride,
 } from '../../services/ghostCursor.js';
+import { setJobDeps, addJob, subscribeJobs } from '../../services/ghostJobs.js';
 import GhostHand from './GhostHand.jsx';
+import GhostJobs from './GhostJobs.jsx';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import {
   speak, hush, loadVoice, voiceState, playSample, VOICES, getVoiceName, setVoiceName,
@@ -63,43 +66,21 @@ const VOICE_KEY = 'lyricist.ghost.voice';
  */
 const STOW_KEY = 'lyricist.ghost.stow';
 
-/**
- * THE ONE THING IT ASKS FIRST.
+/*
+ * CLAIMS THAT HAVE TO BE TRUE, AND NO TAP.
  *
- * Chris gave the Ghost everything, and starting a render is the only action in
- * the list that costs anything real: minutes of a graphics card, and on Kaggle a
- * slice of a weekly allowance. I flagged that and he said to put a single tap
- * in, so this is a tap, not a dialog. The Ghost still decides to do it and still
- * says so; the last inch is yours.
- *
- * Everything else runs immediately, because a wrong length or a wrong take
- * number costs one press to put back.
+ * Chris, 2026-08-22: "you shouldn't say it's starting when it's not." And on
+ * 2026-09-15, creator-only now: "don't interrupt again". The tap before
+ * make_the_song is gone, and a reply that TALKS about doing something without
+ * doing it is asked again, once, to actually do it (see askActing).
  */
-/**
- * CLAIMS THAT HAVE TO BE TRUE.
- *
- * Chris, 2026-08-22: *"you shouldn't say it's starting when it's not."*
- *
- * It ended a reply with "I'm starting the run now" and started nothing. The
- * prompt already forbids that in as many words, and it did it anyway, which is
- * the answer: a rule a model can ignore is not a guarantee. This is the same
- * rule enforced afterwards, on the text, where it cannot be ignored.
- *
- * When the words claim an action and the action never came, the claim is not
- * quietly deleted. The button it was talking about is offered instead, so what
- * was a false statement becomes the thing they wanted one tap away.
- */
-const CLAIMS = [
-  {
-    action: 'make_the_song',
-    when: /\b(starting|start(ing)? it|i'?m starting|kick(ing)? it off|making the song now|running it now|off we go|here it goes)\b/i,
-    note: 'It said it was starting the song. It had not, and nothing was spent. The button is here if you want it.',
-  },
-];
+const TALK_NOT_WORK = /\b(i'?m (running|sending|writing|opening|starting|making|pulling|loading|saving|gonna)|let'?s|we'?re gonna|i'?ll|here we go|on it|starting)\b/i;
+const NEEDS_A_TAP = {};
 
-const NEEDS_A_TAP = {
-  make_the_song: { chip: 'Yes, make it', blurb: 'The Ghost wants to start making the song.' },
-};
+// Setup runs before anything speaks; OBS starts before anything is done.
+const SETUP_ACTIONS = new Set(['set_voice']);
+// Actions that narrate on their own, so the reply text is not read over them.
+const NARRATING_ACTIONS = new Set(['run_matrix_walkthrough', 'pilot_run', 'say']);
 
 export default function GhostAssistant({ tab, config, getContext }) {
   const [open, setOpen] = useState(false);
@@ -292,6 +273,120 @@ export default function GhostAssistant({ tab, config, getContext }) {
     }
   };
 
+  /* The latest props, for a job that outlives the render that started it. */
+  const live = useRef({});
+  live.current = { tab, config, getContext };
+
+  const [view, setView] = useState('chat');
+  const [jobCount, setJobCount] = useState(0);
+  useEffect(() => subscribeJobs((list) => {
+    setJobCount(list.filter((j) => ['queued', 'planning', 'running', 'awaiting'].includes(j.status)).length);
+  }), []);
+
+  /** Every open tab describes itself, and the controls on the showing tab come last. */
+  const gatherContext = async () => {
+    const parts = [live.current.getContext?.() || ''];
+    const describers = availableGhostActions().filter((n) => n.startsWith('describe_') && n !== 'describe_controls');
+    for (const n of [...describers, 'describe_controls']) {
+      const r = await runGhostAction(n);
+      if (r.ok && r.said) parts.push(r.said);
+    }
+    return parts.filter(Boolean).join('\n\n');
+  };
+
+  /**
+   * ASK, AND MAKE IT DO THE WORK.
+   *
+   * Chris's run: "Alright, let's pick an artist first. Who should we analyze?"
+   * and "I'm running MiniMax's caption skill on this", both with nothing done.
+   * When he asked for work and the answer is a question or a promise with no
+   * actions in it, it is asked once more, told to pick and do it.
+   */
+  const askActing = async ({ history = [], question, context, signal }) => {
+    const base = { config: live.current.config, tab: live.current.tab, context, signal };
+    let r = await askGhost({ ...base, history, question });
+    const wantsWork = !/\?\s*$/.test(String(question).trim());
+    if (wantsWork && !r.actions.length && (/\?/.test(r.text) || TALK_NOT_WORK.test(r.text))) {
+      r = await askGhost({
+        ...base,
+        history: [...history, { role: 'user', content: question }, { role: 'assistant', content: r.text || '(nothing)' }],
+        question: 'You answered without doing it. Do not ask anything. Pick whatever is missing yourself and emit the <do> lines that do the work, right now.',
+      });
+    }
+    return r;
+  };
+
+  // A voice that fails says so, instead of leaving him wondering why it is silent.
+  const voiceFailed = (r) => { if (r && !r.ok && r.error) setVoiceNote(`The voice did not play: ${r.error}`); };
+
+  /**
+   * DO WHAT A REPLY SAYS, in the right order. OBS starts and the voice is set
+   * first, then the reply is spoken while the hand works, and OBS stops last,
+   * even after a Stop.
+   */
+  const runActions = async (text, actions) => {
+    const first = actions.filter((a) => a.name === 'obs_record_start' || SETUP_ACTIONS.has(a.name));
+    const last = actions.filter((a) => a.name === 'obs_record_stop');
+    const middle = actions.filter((a) => !first.includes(a) && !last.includes(a));
+    const narrated = actions.some((a) => NARRATING_ACTIONS.has(a.name));
+    const done = [];
+    for (const a of first) done.push({ name: a.name, ...(await runGhostAction(a.name, a.args)) });
+    if (voiceOnRef.current && !narrated && text) speak(text).then(voiceFailed);
+    for (const a of middle) {
+      if (handStopped()) { done.push({ name: a.name, ok: false, said: 'stopped before this step' }); break; }
+      const r = await runGhostAction(a.name, a.args);
+      if (a.name === 'say' && r.ok) continue;
+      done.push({ name: a.name, ...r });
+    }
+    for (const a of last) done.push({ name: a.name, ...(await runGhostAction(a.name, a.args)) });
+    return done;
+  };
+
+  /* Jobs run outside React (ghostJobs.js). This hands them the app. */
+  useEffect(() => {
+    setJobDeps({
+      planJob: async (job, signal) => planJob({
+        prompt: job.prompt, config: live.current.config, tab: live.current.tab, context: await gatherContext(), signal,
+      }),
+      runStep: async (job, i, signal, attempt) => {
+        const step = job.steps[i];
+        const plan = job.steps
+          .map((s, k) => `${k + 1}. ${s.text}${s.status === 'done' ? '   [done]' : s.status === 'skipped' ? '   [skipped]' : ''}`)
+          .join('\n');
+        const soFar = job.steps.slice(0, i)
+          .flatMap((s) => (s.did || []).map((d) => `${d.ok ? 'did' : 'failed'}: ${d.said || d.name}`))
+          .join('\n');
+        const question = `YOU ARE RUNNING A JOB ONE STEP AT A TIME.
+
+THE WHOLE JOB: ${job.prompt}
+
+THE PLAN:
+${plan}
+${soFar ? `\nWHAT HAPPENED SO FAR:\n${soFar}\n` : ''}
+DO STEP ${i + 1} NOW, AND ONLY STEP ${i + 1}: ${step.text}
+
+Emit the <do> lines (or the <lyrics> tag) that do this step. Never ask a
+question: pick anything missing yourself. Do not do later steps. Do not emit
+obs_record_start or obs_record_stop, the job records itself. At most one short
+spoken line of talk.${attempt ? `\n\nThe last try at this step did not work (${step.said || 'nothing happened'}). Do it another way.` : ''}`;
+        const r = await askActing({ question, context: await gatherContext(), signal });
+        if (signal.aborted) return { ok: false, said: 'stopped', did: [] };
+        const acts = r.actions.filter((a) => !/^obs_record_/.test(a.name));
+        if (!acts.length) {
+          return { ok: false, said: r.text ? `it only talked: "${r.text.slice(0, 140)}"` : 'it did nothing for this step', did: [] };
+        }
+        const did = await runActions(r.text, acts);
+        const bad = did.find((d) => !d.ok);
+        return { ok: !bad, said: bad ? bad.said : (r.text || did.map((d) => d.said).filter(Boolean).join('; ')), did };
+      },
+      record: (on) => runGhostAction(on ? 'obs_record_start' : 'obs_record_stop'),
+      onJobStart: (job) => { resetHandStop(); setHandSpeedOverride(job?.mode === 'batch' ? 'off' : null); },
+      onJobEnd: () => setHandSpeedOverride(null),
+      onStop: () => { stopHand(); hush(); },
+      keepAwake: (on) => { try { window.lyricistAPI?.ghostKeepAwake?.(on)?.catch?.(() => {}); } catch { /* browser */ } },
+    });
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+
   const send = async (question) => {
     const q = String(question ?? input).trim();
     if (!q || busy) return;
@@ -348,115 +443,32 @@ export default function GhostAssistant({ tab, config, getContext }) {
         return;   // finally{} below clears busy — do not fall through to the model
       }
 
+      // A whole workflow in one message runs as a job, one step at a time, so
+      // nothing is skipped and OBS starts before the first step. ghostJobs.js.
+      if (looksLikeWorkflow(q)) {
+        const record = /(obs|record(ed|ing)?)/i.test(q);
+        addJob({ prompt: q, mode: 'full', record });
+        setMsgs((m) => [...m, {
+          who: 'ghost',
+          text: `That's a whole job, so I'm running it step by step${record ? ' and recording it in OBS' : ''}. It ticks off in Jobs.`,
+        }]);
+        setView('jobs');
+        return;
+      }
+
       const history = msgs
         .filter((m) => m.who === 'you' || m.who === 'ghost')
         .map((m) => ({ role: m.who === 'you' ? 'user' : 'assistant', content: m.text }));
 
-      /**
-       * ASK THE TAB WHAT IT KNOWS, EVERY TIME.
-       *
-       * Chris: *"it needs to be able to go by whatever boxes I choose to put in,
-       * or the tags, like intro verse chorus bridge outro... using the genre I
-       * picked, using the mood I picked."*
-       *
-       * It could not, because the picks and the tags live in the tab and the
-       * Ghost only ever saw the Songwriter text. Any tab that registers
-       * `describe_song` now gets asked before every question, so the answer is
-       * written against the actual song on screen rather than in the abstract.
-       */
-      // Every open tab describes itself now, not only Black Hole Studios, and
-      // the controls on the tab that is showing come last.
-      const parts = [getContext?.() || ''];
-      const describers = availableGhostActions()
-        .filter((n) => n.startsWith('describe_') && n !== 'describe_controls');
-      for (const n of [...describers, 'describe_controls']) {
-        const r = await runGhostAction(n);
-        if (r.ok && r.said) parts.push(r.said);
-      }
-      const context = parts.filter(Boolean).join('\n\n');
-
-      const { text, actions } = await askGhost({
-        history,
-        question: q,
-        config,
-        tab,
-        context,
-        signal: ac.signal,
-      });
-
-      /**
-       * TALKING AND DRIVING AT THE SAME TIME.
-       *
-       * Chris, 2026-08-27, watching an OBS demo of the Matrix macro: *"run the
-       * matrix and talk at the same time. That's the prompt."* Voice used to
-       * fire AFTER the action loop finished — which meant the buttons pressed
-       * silently and the ghost only spoke over an already-changed screen. Fine
-       * for a chat reply, terrible for a recording.
-       *
-       * SETUP FIRST, THEN VOICE, THEN THE REST. A `set_voice` action must apply
-       * BEFORE speak() runs or the narration starts in the previous voice. So
-       * actions run in two waves: any setup verb (currently just set_voice)
-       * fires synchronously up front, then speak() kicks off, then the driving
-       * actions run in parallel with the narration.
-       */
-      const SETUP_ACTIONS = new Set(['set_voice']);
-      // Some actions narrate on their own — a walkthrough scripts the voice
-      // and the cursor together on the pilot's AudioContext. If the ghost box
-      // ALSO speaks its reply text, two voices talk over each other on
-      // different audio pipes and neither one hush()es the other. So when a
-      // narrating action is present, the ghost box stays quiet; its `text` is
-      // still written into the conversation for the log.
-      // `say` narrates step by step on its own too, so the reply is not read
-      // out over the top of it.
-      const NARRATING_ACTIONS = new Set(['run_matrix_walkthrough', 'pilot_run', 'say']);
-
-      const done = [];
-      const waiting = [];
-      const setup = [];
-      const driving = [];
-      let narrated = false;
-      for (const a of actions) {
-        if (NEEDS_A_TAP[a.name]) { waiting.push(a); continue; }
-        if (NARRATING_ACTIONS.has(a.name)) narrated = true;
-        (SETUP_ACTIONS.has(a.name) ? setup : driving).push(a);
-      }
-
-      // Wave 1: setup, awaited so the voice lands in the right skin.
-      for (const a of setup) {
-        const r = await runGhostAction(a.name, a.args);
-        done.push({ name: a.name, ...r });
-      }
-
-      // Wave 2: narration, fire-and-forget — but only when nothing in the
-      // action list is going to speak on its own.
-      if (voiceOn && !narrated) speak(text);
-
-      // Wave 3: the actual driving. Runs in parallel with the voice above (or,
-      // when a walkthrough is in the mix, provides its own voice as it goes).
-      for (const a of driving) {
-        // Stop pressed mid-run: leave everything after this point undone.
-        if (handStopped()) { done.push({ name: a.name, ok: false, said: 'stopped before this step' }); break; }
-        const r = await runGhostAction(a.name, a.args);
-        // A line of narration that played is not something it DID to the song.
-        if (a.name === 'say' && r.ok) continue;
-        done.push({ name: a.name, ...r });
-      }
-
-      // A claim with no action behind it is a lie the app can catch, so catch it.
-      const claimed = CLAIMS.filter((c) => c.when.test(text)
-        && !actions.some((x) => x.name === c.action)
-        && !waiting.some((w) => w.name === c.action));
-      claimed.forEach((c) => waiting.push({ name: c.action, args: {} }));
+      const context = await gatherContext();
+      const { text, actions } = await askActing({ history, question: q, context, signal: ac.signal });
+      const done = await runActions(text, actions);
 
       setMsgs((m) => [...m, {
         who: 'ghost',
-        text: text || 'Done.',
+        text: text || (done.length ? 'Done.' : 'I did not do anything with that. Say it another way.'),
         did: done,
-        waiting,
-        corrections: claimed.map((c) => c.note),
       }]);
-      // Voice already started above, in parallel with the actions. See the
-      // "TALKING AND DRIVING" note.
     } catch (e) {
       setMsgs((m) => [...m, { who: 'error', text: e.message || 'That did not work.' }]);
     } finally {
@@ -635,6 +647,13 @@ export default function GhostAssistant({ tab, config, getContext }) {
 
           {voiceNote && <p className="gha-note">{voiceNote}</p>}
 
+          <div className="gha-views">
+            <button type="button" aria-pressed={view === 'chat'} onClick={() => setView('chat')}>Chat</button>
+            <button type="button" aria-pressed={view === 'jobs'} onClick={() => setView('jobs')}>
+              Jobs{jobCount ? ` · ${jobCount}` : ''}
+            </button>
+          </div>
+
           {suggestion && (
             <div className="gha-tap">
               <span>
@@ -651,6 +670,7 @@ export default function GhostAssistant({ tab, config, getContext }) {
             </div>
           )}
 
+          {view === 'jobs' ? <GhostJobs /> : (<>
           <div className="gha-log" ref={logRef}>
             {!msgs.length && (
               <div className="gha-empty">
@@ -756,6 +776,7 @@ export default function GhostAssistant({ tab, config, getContext }) {
               ? `It can press ${canDo} thing${canDo === 1 ? '' : 's'} right now, in the tabs you have open.`
               : 'It can answer and write. Open a tab and it can press things there too.'}
           </p>
+          </>)}
         </aside>
       )}
     </>

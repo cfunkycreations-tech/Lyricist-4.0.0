@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import TabBackground from '../common/TabBackground.jsx';
 import { registerGhostActions, ghostSettle } from '../../services/ghostBus.js';
+import { randomArtist, saveSunoTags } from '../../services/ghostMemory.js';
+import { writeStylePressure } from '../QuantumLab/quantumFeatures.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { callAI, refineLyrics, analyzeClichés, checkSimilarity, checkThemeConsistency } from '../../services/AIService.js';
 import { Search, Sparkles, BookOpen, AlertTriangle, ShieldCheck, Check, Copy, Save, Heart, Send } from 'lucide-react';
@@ -264,8 +266,8 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
    */
   const ghost = useRef({});
   ghost.current = {
-    artist, tab, analysis, ghostTopic, ghostLyrics, sunoTags, errorMsg,
-    handleAnalyze, handleGhostWrite, handleRunChecks, handleSendToSongwriter,
+    artist, tab, analysis, ghostTopic, ghostLyrics, sunoTags, errorMsg, styleDNA, loadingDNA,
+    handleAnalyze, handleGhostWrite, handleRunChecks, handleSendToSongwriter, extractStyleDNA,
   };
   useEffect(() => registerGhostActions({
     describe_ghostrider: () => {
@@ -279,21 +281,22 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
       ].join('\n');
     },
     ghostrider_study: async ({ artist: who, type, focus: about } = {}) => {
-      if (who) setArtist(String(who));
+      // No artist named: pick one. Chris: "pick a random artist and don't
+      // interrupt again". It never stops to ask.
+      const name = String(who || '').trim() || ghost.current.artist.trim() || randomArtist();
+      setArtist(name);
       if (type && promptBuilders[type]) setTab(type);
       if (about !== undefined) setFocus(String(about));
       await ghostSettle();
-      if (!ghost.current.artist.trim()) throw new Error('Name the artist to study.');
       await ghost.current.handleAnalyze();
       await ghostSettle();
       if (ghost.current.errorMsg) throw new Error(ghost.current.errorMsg);
       return `studied ${ghost.current.artist}, the report is on Ghost Rider`;
     },
     ghostrider_write: async ({ artist: who, topic } = {}) => {
-      if (who) setArtist(String(who));
+      setArtist(String(who || '').trim() || ghost.current.artist.trim() || randomArtist());
       if (topic !== undefined) setGhostTopic(String(topic));
       await ghostSettle();
-      if (!ghost.current.artist.trim()) throw new Error('Name the artist whose style to write in.');
       await ghost.current.handleGhostWrite();
       await ghostSettle();
       const g = ghost.current;
@@ -310,6 +313,41 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
       if (!ghost.current.ghostLyrics) throw new Error('Nothing written on Ghost Rider yet to send.');
       ghost.current.handleSendToSongwriter();
       return 'sent the lyrics to Songwriter';
+    },
+    /**
+     * SAVE THE SUNO TAGS where the rest of the pipeline can reach them.
+     * Black Hole Studios seeds its Input Caption from these when the box is
+     * empty, so MiniMax's caption skill has a description to rewrite.
+     */
+    ghostrider_save_tags: () => {
+      const tags = ghost.current.sunoTags.trim();
+      if (!tags) throw new Error('No Suno tags yet. Write in the style first.');
+      saveSunoTags(tags, ghost.current.artist.trim());
+      return `saved the Suno tags: ${tags}`;
+    },
+    /**
+     * SEND THE STYLE DNA TO THE MATRIX. The DNA is built in the background
+     * after a study, so wait for it, and build it now if it never came.
+     */
+    ghostrider_send_dna_to_matrix: async () => {
+      const g = () => ghost.current;
+      if (!g().artist.trim()) { setArtist(randomArtist()); await ghostSettle(); }
+      if (!g().analysis) {
+        await g().handleAnalyze();
+        await ghostSettle();
+        if (g().errorMsg) throw new Error(g().errorMsg);
+      }
+      await ghostSettle(300);
+      if (!g().loadingDNA && !g().styleDNA) g().extractStyleDNA(g().analysis, g().artist.trim());
+      for (let waited = 0; (g().loadingDNA || !g().styleDNA) && waited < 45000; waited += 250) {
+        await ghostSettle(250);
+        if (!g().loadingDNA && !g().styleDNA && waited > 1000) break;
+      }
+      const dna = g().styleDNA;
+      if (!dna) throw new Error('The Style DNA did not come back from the model. Study the artist again.');
+      writeStylePressure(dna, g().artist.trim());
+      window.dispatchEvent(new CustomEvent('lyricist:style-dna', { detail: dna }));
+      return `sent ${g().artist.trim()}'s Style DNA to The Matrix`;
     },
   }), []);
 

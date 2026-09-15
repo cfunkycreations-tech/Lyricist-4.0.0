@@ -55,7 +55,15 @@ export function subscribeHand(fn) {
   return () => subscribers.delete(fn);
 }
 
+/** A batch job runs with no hand, without changing the setting he picked. */
+let override = null;
+export function setHandSpeedOverride(name) {
+  override = name && name in SPEEDS ? name : null;
+  if (override === 'off') { state.visible = false; emit(); }
+}
+
 export function getHandSpeed() {
+  if (override) return override;
   try {
     const v = localStorage.getItem(HANDS_KEY);
     return v && v in SPEEDS ? v : 'normal';

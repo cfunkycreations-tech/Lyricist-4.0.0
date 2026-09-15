@@ -6,6 +6,7 @@ import { registerGhostActions } from '../../services/ghostBus.js';
 import { EXAMPLES } from '../../services/minimaxExamples.js';
 import { validateCaption, captionBrief } from '../../services/minimaxCaption.js';
 import { runCaptionSkill } from '../../services/captionSkillRunner.js';
+import { readSunoTags } from '../../services/ghostMemory.js';
 
 /**
  * THE SHAPE OF A SONG, IN ONE PRESS.
@@ -957,6 +958,19 @@ export default function OneManBand() {
       fitLength(back);
       return 'put your words back the way they were';
     },
+    /** Songwriter → Black Hole Studios: the song on Songwriter becomes the Input Lyrics. */
+    blackhole_pull_from_songwriter: () => {
+      const t = String(store.getFullText?.() || '').trim();
+      if (!t) throw new Error('Songwriter is empty, so there was nothing to bring over.');
+      const before = lyrics;
+      undoLyrics.current = before;
+      setLyrics(t);
+      fitLength(t);
+      const lines = t.split('\n').filter((l) => l.trim()).length;
+      return before.trim() && before.trim() !== t
+        ? { said: `brought the song from Songwriter into the Input Lyrics, ${lines} lines`, undo: { action: 'restore_lyrics', label: 'Put my words back' } }
+        : `brought the song from Songwriter into the Input Lyrics, ${lines} lines`;
+    },
     append_lyrics: ({ text }) => {
       const add = String(text ?? '').trim();
       if (!add) throw new Error('there was nothing to add');
@@ -983,8 +997,18 @@ export default function OneManBand() {
      */
     write_caption: async ({ instruction } = {}) => {
       const before = caption;
+      // The skill rewrites a description and will not start from nothing. When
+      // the box is empty, seed it from what the pipeline already knows: the
+      // saved Suno tags, the picks, the instruction. Never stop to ask.
+      const saved = readSunoTags();
+      const seed = before.trim() || [
+        saved?.tags,
+        [...genres, ...moods, ...voices].join(', '),
+        String(instruction || ''),
+      ].filter((s) => String(s || '').trim()).join('. ')
+        || 'A full song that fits these lyrics.';
       const r = await runCaptionSkill({
-        caption: before,
+        caption: seed,
         lyrics,
         constraints: String(instruction || ''),
         config: store.config,
@@ -1041,7 +1065,7 @@ export default function OneManBand() {
       return 'started it. The Stop button is in the tab if you change your mind';
     },
     stop: () => { stop(); return 'stopped it'; },
-  }), [busy, kaggle, comfy, lyrics, caption, seconds, store.config]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }), [busy, kaggle, comfy, lyrics, caption, seconds, store.config, genres.join('|'), moods.join('|'), voices.join('|')]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="omb">
