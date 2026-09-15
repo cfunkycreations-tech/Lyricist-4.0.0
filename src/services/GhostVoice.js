@@ -173,7 +173,10 @@ let ctx = null;
 let current = null;         // what is playing, so it can be cut off
 const cache = new Map();    // voice + text -> AudioBuffer, so a repeat is instant
 
-export const voiceState = { ready: false, loading: false, failed: null };
+// backend: 'webgpu' | 'wasm' | null -- which route loadVoice() actually got.
+// Worth surfacing in Settings: it is the difference between a ghost that keeps
+// up on camera and one that stalls the app mid-take.
+export const voiceState = { ready: false, loading: false, failed: null, backend: null };
 
 function audio() {
   if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -229,7 +232,37 @@ export function loadVoice() {
     // Aliased to the web build in vite.config.js: the package's own exports
     // map offers only the node entry, which drags node APIs into the renderer.
     const { KokoroTTS } = await import('kokoro-js');
-    const tts = await KokoroTTS.from_pretrained(MODEL_ID, { dtype: 'q8', device: 'wasm' });
+
+    // WEBGPU FIRST, WASM AS THE FLOOR.
+    //
+    // The one-thread limit above is real and unfixable from file://:
+    // SharedArrayBuffer needs cross-origin isolation we cannot have. But that
+    // ceiling only binds the WASM backend. WebGPU needs neither
+    // SharedArrayBuffer nor isolation, so it runs from file:// and moves the
+    // work off the CPU entirely.
+    //
+    // It needs its own weights -- ONNX Runtime's WebGPU backend will not
+    // execute q8 -- hence model_q4f16.onnx alongside model_quantized.onnx in
+    // scripts/fetch-ghost-voice-model.mjs.
+    //
+    // Fallback is unconditional. A machine with no WebGPU, a driver that
+    // refuses, a missing q4f16 file: all land back on exactly the q8/wasm path
+    // that shipped before, so this can only ever be faster or identical.
+    let tts = null;
+    if (typeof navigator !== 'undefined' && navigator.gpu) {
+      try {
+        tts = await KokoroTTS.from_pretrained(MODEL_ID, { dtype: 'q4f16', device: 'webgpu' });
+        voiceState.backend = 'webgpu';
+      } catch (e) {
+        console.warn('[ghost-voice] WebGPU unavailable, falling back to wasm:', e?.message);
+        tts = null;
+      }
+    }
+    if (!tts) {
+      tts = await KokoroTTS.from_pretrained(MODEL_ID, { dtype: 'q8', device: 'wasm' });
+      voiceState.backend = 'wasm';
+    }
+
     voiceState.ready = true;
     voiceState.loading = false;
     return tts;
@@ -310,6 +343,37 @@ export async function synthesize(line, name = chosen) {
   if (cache.size > 40) cache.delete(cache.keys().next().value);
   cache.set(key, buffer);
   return buffer;
+}
+
+/**
+ * Synthesize ahead of time, off the critical path.
+ *
+ * THIS IS THE FIX FOR THE FREEZE, not the WebGPU switch.
+ *
+ * The pilot has to wait for the voice or the cursor runs ahead of what the
+ * ghost is saying, which ruins a take. But waiting and *stalling* are not the
+ * same thing. synthesize() already memoizes into `cache`, so generating line
+ * N+1 while line N is still playing means the next speak() is a cache hit and
+ * returns instantly -- the wait collapses to zero without breaking sync.
+ *
+ * Fire-and-forget by design: a prewarm that fails is not an error, it just
+ * means that line gets generated normally when its turn comes. Never throws,
+ * never blocks, safe to call with anything.
+ *
+ * Usage from the pilot -- queue the rest of the script as soon as it starts:
+ *   prewarm(remainingLines);
+ *   await speak(lines[0]);
+ */
+export function prewarm(lines, name = chosen) {
+  const list = Array.isArray(lines) ? lines : [lines];
+  for (const raw of list) {
+    const line = speakable(raw);
+    if (!line) continue;
+    // Deliberately not awaited. Errors are swallowed: worst case is a miss.
+    Promise.resolve()
+      .then(() => synthesize(line, name))
+      .catch(() => {});
+  }
 }
 
 /** The shipping graph, in one place, so playing it and measuring it agree. */

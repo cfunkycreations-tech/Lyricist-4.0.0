@@ -1,4 +1,4 @@
-import { synthesize, ghostChain } from './GhostVoice.js';
+import { synthesize, ghostChain, prewarm } from './GhostVoice.js';
 import { startRecord, stopRecord, connectObs, disconnectObs } from './obsClient.js';
 
 // Dummy cursor state so VirtualCursor.jsx doesn't crash on import, 
@@ -126,6 +126,21 @@ export async function runGhostScript(actions) {
   running = true;
   abort = false;
   const log = [];
+
+  // SYNTHESIZE THE WHOLE SCRIPT BEFORE THE CURSOR MOVES.
+  //
+  // The entire action list is known right now, so every line the ghost will say
+  // is known right now too. Kick them all off at once: by the time the cursor
+  // has moved and clicked its way to line 5, line 5 is already sitting in the
+  // cache and speakLine() returns instantly.
+  //
+  // This is what stops the app freezing mid-take. The pilot still WAITS for
+  // each clip -- cursor and voice must stay in sync or the recording is
+  // worthless -- but it waits on a cache hit instead of on inference.
+  //
+  // Fire-and-forget: prewarm never throws and never blocks. If one misses, that
+  // line just gets generated the old way when its turn comes.
+  prewarm(actions.filter((a) => a?.action === 'speak').map((a) => a?.text));
 
   try {
     for (let i = 0; i < actions.length; i++) {

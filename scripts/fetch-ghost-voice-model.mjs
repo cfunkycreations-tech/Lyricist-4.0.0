@@ -36,7 +36,12 @@ const VOICES = ['am_adam', 'am_michael', 'af_heart'];
 
 const FILES = [
   // read by transformers.js, under <localModelPath>/<model id>/
-  ...['config.json', 'tokenizer.json', 'tokenizer_config.json', 'onnx/model_quantized.onnx']
+  // model_quantized.onnx is q8 -- the WASM fallback path.
+  // model_q4f16.onnx is the WebGPU path: ONNX Runtime's WebGPU backend cannot
+  // execute q8, so the fast route needs its own file. It is ~86 MB, slightly
+  // SMALLER than the q8 it sits next to, so bundling both is close to free.
+  ...['config.json', 'tokenizer.json', 'tokenizer_config.json',
+      'onnx/model_quantized.onnx', 'onnx/model_q4f16.onnx']
     .map((f) => ({ from: f, to: path.join(MODEL_ID, f) })),
   // fetched by kokoro-js itself, mirrored at the same relative path
   ...VOICES.map((v) => ({ from: `voices/${v}.bin`, to: path.join('voices', `${v}.bin`) })),
