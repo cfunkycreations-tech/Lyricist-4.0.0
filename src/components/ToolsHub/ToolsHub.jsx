@@ -188,7 +188,7 @@ export default function ToolsHub() {
                 </button>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.86rem', color: '#00e5ff', textShadow: '0 0 8px rgba(0,229,255,0.5)' }}>{t.name}</span>
+                    <span style={{ fontWeight: 800, fontSize: '0.86rem', color: '#00e5ff', textShadow: '0 0 0 1px rgba(0,229,255,0.5)' }}>{t.name}</span>
                     <span className="pill-cyan" style={{ padding: '1px 8px', borderRadius: 9999, fontSize: '0.58rem', fontWeight: 700 }}>{t.category}</span>
                   </div>
                   <p style={{ fontSize: '0.7rem', color: 'rgba(232,224,255,0.75)', margin: '6px 0 0', lineHeight: 1.5 }}>

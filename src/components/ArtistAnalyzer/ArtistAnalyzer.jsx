@@ -390,7 +390,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
               fontSize: '0.82rem',
               color: '#e8e0ff',
               outline: 'none',
-              fontFamily: "'Space Grotesk', sans-serif"
+              fontFamily: 'var(--faf-font)'
             }}
           />
         </div>
@@ -412,7 +412,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
               fontSize: '0.82rem',
               color: '#e8e0ff',
               outline: 'none',
-              fontFamily: "'Space Grotesk', sans-serif"
+              fontFamily: 'var(--faf-font)'
             }}
           />
         </div>
@@ -433,7 +433,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
               fontSize: '0.82rem',
               color: '#e8e0ff',
               outline: 'none',
-              fontFamily: "'Space Grotesk', sans-serif"
+              fontFamily: 'var(--faf-font)'
             }}
           >
             {analysisTabs.map(t => (
@@ -568,7 +568,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                             height: `${val}%`,
                             background: 'linear-gradient(0deg, #7c3aed, #22d3ee)',
                             borderRadius: '4px 4px 0 0',
-                            boxShadow: '0 0 8px rgba(34,211,238,0.3)'
+                            boxShadow: '0 0 0 1px rgba(34,211,238,0.3)'
                           }}
                         />
                         <span style={{ fontSize: '0.54rem', color: 'rgba(167,139,250,0.45)' }}>{sections[idx]}</span>
@@ -727,7 +727,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                       </button>
                     </div>
 
-                    <pre style={{ background: 'rgba(13,8,28,0.9)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: 8, padding: 14, fontSize: '0.8rem', fontFamily: "'Audiowide', 'JetBrains Mono', monospace", color: '#e8e0ff', whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+                    <pre style={{ background: 'rgba(13,8,28,0.9)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: 8, padding: 14, fontSize: '0.8rem', fontFamily: 'var(--faf-font)', color: '#e8e0ff', whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
                       {ghostLyrics}
                     </pre>
                   </div>

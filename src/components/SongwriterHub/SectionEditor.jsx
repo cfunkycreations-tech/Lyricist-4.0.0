@@ -441,7 +441,7 @@ export default function SectionEditor({ section, index }) {
                     fontSize: '0.85rem',
                     color: '#e8eef8',
                     WebkitTextFillColor: '#e8eef8',
-                    fontFamily: "'Audiowide', 'Orbitron', sans-serif",
+                    fontFamily: 'var(--faf-font)',
                     textShadow: 'none',
                     filter: 'none',
                     WebkitTextStroke: '0',

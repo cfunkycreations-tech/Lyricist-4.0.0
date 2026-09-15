@@ -116,7 +116,7 @@ export default function Thesaurus() {
             fontSize: '0.82rem',
             color: '#e8e0ff',
             outline: 'none',
-            fontFamily: "'Space Grotesk', sans-serif"
+            fontFamily: 'var(--faf-font)'
           }}
         />
         <button

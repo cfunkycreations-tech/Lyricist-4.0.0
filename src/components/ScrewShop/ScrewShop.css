@@ -115,7 +115,7 @@
   text-transform: uppercase; color: var(--sc-faint);
 }
 .screw-title {
-  font-family: "Haettenschweiler", "Arial Narrow Bold", Impact, system-ui, sans-serif;
+  font-family: var(--faf-font);
   font-weight: 400; margin: 2px 0 0; font-size: clamp(38px, 6.5vw, 70px); line-height: .88;
   text-transform: uppercase; color: #fff;
   text-shadow: 0 0 1px var(--sc-emerald-lit), 0 0 3px var(--sc-emerald-lit),
@@ -204,10 +204,10 @@
 .screw-go { margin-top: 20px; }
 .screw-make {
   width: 100%; border: 0; cursor: pointer; border-radius: 10px; padding: 16px; color: #03070A;
-  font-family: "Haettenschweiler", "Arial Narrow Bold", Impact, system-ui, sans-serif;
+  font-family: var(--faf-font);
   font-size: 26px; letter-spacing: .05em; text-transform: uppercase;
   background: linear-gradient(96deg, var(--sc-violet), var(--sc-magenta) 45%, var(--sc-emerald));
-  box-shadow: 0 0 30px hsla(262 85% 71% / .3), 0 1px 0 rgba(255, 255, 255, .45) inset;
+  box-shadow: 0 0 0 1px hsla(262 85% 71% / .3), 0 1px 0 rgba(255, 255, 255, .45) inset;
 }
 .screw-make:hover:not(:disabled) { filter: brightness(1.1); }
 .screw-make:disabled { opacity: .45; cursor: not-allowed; }

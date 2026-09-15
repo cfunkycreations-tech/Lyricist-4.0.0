@@ -112,7 +112,7 @@ function ModelSelector({ value, onChange }) {
           fontSize: '0.84rem',
           color: '#e8e0ff',
           outline: 'none',
-          fontFamily: "'Space Grotesk', sans-serif",
+          fontFamily: 'var(--faf-font)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -138,7 +138,7 @@ function ModelSelector({ value, onChange }) {
             background: '#0d0818',
             border: '1px solid rgba(139,92,246,0.35)',
             borderRadius: 10,
-            boxShadow: '0 0 30px rgba(88,28,135,0.4)',
+            boxShadow: '0 0 0 1px rgba(88,28,135,0.4)',
             display: 'flex',
             flexDirection: 'column',
             maxHeight: 360,
@@ -198,10 +198,10 @@ function ModelSelector({ value, onChange }) {
                     borderRadius: 6,
                     border: 'none',
                     cursor: 'pointer',
-                    fontFamily: "'Space Grotesk', sans-serif",
+                    fontFamily: 'var(--faf-font)',
                     background: filterType === type ? 'rgba(124,58,237,0.5)' : 'rgba(13,8,28,0.6)',
                     color: filterType === type ? '#e8e0ff' : 'rgba(167,139,250,0.5)',
-                    boxShadow: filterType === type ? '0 0 8px rgba(124,58,237,0.3)' : 'none'
+                    boxShadow: filterType === type ? '0 0 0 1px rgba(124,58,237,0.3)' : 'none'
                   }}
                 >
                   {txt}
@@ -381,7 +381,7 @@ export default function Settings() {
     <div style={{ padding: 28, maxWidth: 680, margin: '0 auto', boxSizing: 'border-box' }}>
       <h2
         style={{
-          fontFamily: "'Syne', sans-serif",
+          fontFamily: 'var(--faf-font)',
           fontSize: '1.3rem',
           fontWeight: 800,
           color: '#e8e0ff',
@@ -418,7 +418,7 @@ export default function Settings() {
               fontSize: '0.84rem',
               color: '#e8e0ff',
               outline: 'none',
-              fontFamily: "'Space Grotesk', sans-serif"
+              fontFamily: 'var(--faf-font)'
             }}
           />
           <button
@@ -432,7 +432,7 @@ export default function Settings() {
               fontSize: '0.78rem',
               fontWeight: 600,
               cursor: 'pointer',
-              fontFamily: "'Space Grotesk', sans-serif"
+              fontFamily: 'var(--faf-font)'
             }}
           >
             {showKey ? 'Hide' : 'Show'}
@@ -469,7 +469,7 @@ export default function Settings() {
             fontSize: '0.84rem',
             color: '#e8e0ff',
             outline: 'none',
-            fontFamily: "'Space Grotesk', sans-serif"
+            fontFamily: 'var(--faf-font)'
           }}
         />
         <p style={{ fontSize: '0.65rem', color: 'rgba(148,130,200,0.45)', marginTop: 5, lineHeight: 1.5 }}>
@@ -529,7 +529,7 @@ export default function Settings() {
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
               cursor: 'pointer',
-              fontFamily: "'Space Grotesk', sans-serif"
+              fontFamily: 'var(--faf-font)'
             }}
           >
             Shift
@@ -606,7 +606,7 @@ export default function Settings() {
             <span aria-hidden="true" style={{
               width: 8, height: 8, borderRadius: '50%',
               background: statsOn ? 'var(--accent-emerald)' : 'var(--text-dim)',
-              boxShadow: statsOn ? '0 0 6px var(--accent-emerald)' : 'none',
+              boxShadow: statsOn ? '0 0 0 1px var(--accent-emerald)' : 'none',
             }} />
             {statsOn ? 'Sharing anonymous usage stats' : 'Not sharing — collection is off'}
           </button>
@@ -639,7 +639,7 @@ export default function Settings() {
               fontSize: '0.84rem',
               color: '#e8e0ff',
               outline: 'none',
-              fontFamily: "'Space Grotesk', sans-serif"
+              fontFamily: 'var(--faf-font)'
             }}
           />
         </div>
@@ -721,10 +721,10 @@ export default function Settings() {
               fontSize: '0.75rem',
               fontWeight: 700,
               cursor: 'pointer',
-              fontFamily: "'Space Grotesk', sans-serif",
+              fontFamily: 'var(--faf-font)',
               background: store.config.fusionEnabled ? 'linear-gradient(135deg,#ff2d95,#a855f7)' : 'rgba(60,40,70,0.6)',
               color: store.config.fusionEnabled ? '#fff' : 'rgba(180,150,170,0.6)',
-              boxShadow: store.config.fusionEnabled ? '0 0 12px rgba(255,45,149,0.5)' : 'none',
+              boxShadow: store.config.fusionEnabled ? '0 0 0 1px rgba(255,45,149,0.5)' : 'none',
               transition: 'all 0.2s'
             }}
           >
@@ -795,7 +795,7 @@ export default function Settings() {
                 fontSize: '0.78rem',
                 color: '#e8e0ff',
                 outline: 'none',
-                fontFamily: "'Space Grotesk', sans-serif"
+                fontFamily: 'var(--faf-font)'
               }}
             >
               {/* Driven from GeminiService so there is ONE list of image models.
@@ -823,7 +823,7 @@ export default function Settings() {
                 fontSize: '0.78rem',
                 color: '#e8e0ff',
                 outline: 'none',
-                fontFamily: "'Space Grotesk', sans-serif"
+                fontFamily: 'var(--faf-font)'
               }}
             >
               {['1:1', '4:5', '3:4', '5:4', '4:3', '16:9', '9:16'].map(r => (
@@ -848,7 +848,7 @@ export default function Settings() {
                 fontSize: '0.78rem',
                 color: '#e8e0ff',
                 outline: 'none',
-                fontFamily: "'Space Grotesk', sans-serif"
+                fontFamily: 'var(--faf-font)'
               }}
             >
               {['1K', '2K', '4K'].map(s => (
@@ -877,7 +877,7 @@ export default function Settings() {
               color: '#e8e0ff',
               outline: 'none',
               resize: 'vertical',
-              fontFamily: "'Space Grotesk', sans-serif"
+              fontFamily: 'var(--faf-font)'
             }}
           />
         </div>
@@ -964,7 +964,7 @@ export default function Settings() {
             fontSize: '0.78rem',
             fontWeight: 700,
             cursor: 'pointer',
-            fontFamily: "'Space Grotesk', sans-serif",
+            fontFamily: 'var(--faf-font)',
           }}
         >
           <Icon i={FolderOpen} />Open my voice folder
@@ -984,7 +984,7 @@ export default function Settings() {
             color: saved ? '#34d399' : '#fff',
             fontSize: '0.84rem',
             fontWeight: 700,
-            fontFamily: "'Space Grotesk', sans-serif",
+            fontFamily: 'var(--faf-font)',
             cursor: 'pointer'
           }}
         >
@@ -1003,7 +1003,7 @@ export default function Settings() {
             fontSize: '0.84rem',
             fontWeight: 600,
             cursor: 'pointer',
-            fontFamily: "'Space Grotesk', sans-serif"
+            fontFamily: 'var(--faf-font)'
           }}
         >
           Reset to Defaults

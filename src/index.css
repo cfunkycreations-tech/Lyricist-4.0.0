@@ -2,25 +2,25 @@
 
 /* ── Bundled custom fonts ── */
 @font-face {
-  font-family: 'Kalnia Glaze';
+  font-family: var(--faf-font);
   src: url('./assets/fonts/KalniaGlaze-Variable.ttf') format('truetype');
   font-weight: 100 900;
   font-style: normal;
 }
 @font-face {
-  font-family: 'Metamorphous';
+  font-family: var(--faf-font);
   src: url('./assets/fonts/Metamorphous-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 @font-face {
-  font-family: 'Orbitron';
+  font-family: var(--faf-font);
   src: url('./assets/fonts/Orbitron-Variable.ttf') format('truetype');
   font-weight: 100 900;
   font-style: normal;
 }
 @font-face {
-  font-family: 'Audiowide';
+  font-family: var(--faf-font);
   src: url('./assets/fonts/Audiowide-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -45,10 +45,10 @@
    place they were always right, and the workstation reads in Space Grotesk.
    ══════════════════════════════════════════════════════════════════════════ */
 body, button, input, select, label, textarea {
-  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--faf-font);
 }
 .lyric-line, .lyric-output, .lyric-text, [contenteditable] {
-  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--faf-font);
 }
 /* Metrics, code, phonetics, clocks. */
 .ql-mono, .metric, .mono, code, kbd, samp, pre {
@@ -230,7 +230,7 @@ body, button, input, select, label, textarea {
 .gradient-title,
 .chrome-title,
 h1.gradient-title {
-  font-family: 'Audiowide', 'Orbitron', sans-serif !important;
+  font-family: var(--faf-font) !important;
   font-weight: 700 !important;
   letter-spacing: 0.02em;
   color: transparent !important;
@@ -245,8 +245,7 @@ h1.gradient-title {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   filter:
-    drop-shadow(0 1px 0 rgba(0, 0, 0, 0.85))
-    drop-shadow(0 0 8px rgba(var(--accent-rgb), 0.55));
+    drop-shadow(0 1px 0 rgba(0, 0, 0, 0.85));
   text-shadow: none !important;
 }
 
@@ -274,8 +273,7 @@ h1.gradient-title {
   filter:
     drop-shadow(0 1px 0 rgba(255, 255, 255, 0.9))
     drop-shadow(0 2px 0 rgba(0, 0, 0, 0.55))
-    drop-shadow(0 3px 0 rgba(0, 0, 0, 0.35))
-    drop-shadow(0 0 10px rgba(200, 210, 230, 0.35));
+    drop-shadow(0 3px 0 rgba(0, 0, 0, 0.35));
   text-shadow: none !important;
 }
 
@@ -398,7 +396,7 @@ html, :host {
   font-feature-settings: normal;
   font-variation-settings: normal;
   -webkit-tap-highlight-color: transparent;
-  font-family: Space Grotesk, ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--faf-font);
   line-height: 1.5;
 }
 
@@ -573,7 +571,7 @@ select option {
   color: #d6c8ff;
   border: 1px solid rgba(var(--accent-rgb), 0.5);
   font-weight: 700;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--faf-font);
   line-height: 1;
   user-select: none;
   transition: background .15s, color .15s, box-shadow .15s;
@@ -605,7 +603,7 @@ select option {
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--faf-font);
   white-space: normal;
   text-align: left;
   pointer-events: none;
@@ -630,13 +628,13 @@ select option {
   background: rgba(14, 8, 28, 0.98);
   color: #f0e8ff;
   border: 1px solid rgba(var(--accent-rgb), 0.5);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6), 0 0 16px rgba(var(--accent-rgb), 0.4), 0 0 8px rgba(16, 240, 160, 0.15);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6), 0 0 16px rgba(var(--accent-rgb), 0.4), 0 0 0 1px rgba(16, 240, 160, 0.15);
   font-size: 0.8rem;
   line-height: 1.55;
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--faf-font);
   text-align: left;
   pointer-events: none; /* never steal hover from the control underneath */
   white-space: normal;
@@ -691,7 +689,7 @@ body.tips-on [data-help] {
   padding: 10px 20px 11px;
   font-size: 0.8rem;
   font-weight: 600;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--faf-font);
   letter-spacing: 0.04em;
   border: 1px solid transparent;
   border-bottom: none;
@@ -787,7 +785,7 @@ body.tips-on [data-help] {
    colour, and one hairline rule under it. No stroke, no stacked bloom. */
 h1:not(.gradient-title):not(.chrome-title),
 h2, h3, h4 {
-  font-family: 'Audiowide', 'Orbitron', sans-serif;
+  font-family: var(--faf-font);
   color: var(--text-primary);
   letter-spacing: 0.06em;
   -webkit-text-stroke: 0;
@@ -798,7 +796,7 @@ h2, h3, h4 {
    heading without being one. */
 .emerald-edge,
 .section-mark {
-  font-family: 'Audiowide', 'Orbitron', sans-serif;
+  font-family: var(--faf-font);
   color: var(--accent-neon);
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -847,7 +845,7 @@ textarea,
 .lyric-line-row input[type="text"],
 .lyric-line-row input:not([type]),
 input.lyric-line-input {
-  font-family: 'Space Grotesk', sans-serif !important;
+  font-family: var(--faf-font) !important;
   color: #e8eef8 !important;
   -webkit-text-fill-color: #e8eef8 !important;
   text-shadow: none !important;
@@ -872,7 +870,7 @@ input.lyric-line-input {
 /* Secondary display marks — section titles that are not the wordmark. */
 .audiowide-chrome,
 .ql-tagline-text {
-  font-family: 'Audiowide', 'Orbitron', sans-serif;
+  font-family: var(--faf-font);
   color: var(--text-primary) !important;
   letter-spacing: 0.08em;
   background-image: none;
@@ -937,9 +935,7 @@ input.lyric-line-input {
   overflow: hidden;
   background: radial-gradient(circle, #1a0f28 0%, #07050f 100%);
   box-shadow:
-    0 0 22px rgba(var(--accent-rgb), 0.55),
-    0 0 55px rgba(var(--accent-rgb), 0.3),
-    inset 0 0 0 3px rgba(var(--accent-rgb), 0.6);
+    0 0 22px rgba(var(--accent-rgb), 0.55), 0 0 55px rgba(var(--accent-rgb), 0.3), inset 0 0 0 3px rgba(var(--accent-rgb), 0.6);
 }
 
 .songforge-medallion img {
@@ -1026,7 +1022,7 @@ input.lyric-line-input {
   font-size: 0.74rem; font-weight: 700; color: var(--accent-neon);
   text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.55);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  font-family: 'Audiowide', 'Orbitron', sans-serif;
+  font-family: var(--faf-font);
 }
 .suno-eq { display: flex; align-items: flex-end; gap: 2px; height: 14px; flex-shrink: 0; }
 .suno-eq-bar { width: 3px; height: 4px; border-radius: 2px; background: linear-gradient(180deg, var(--accent-neon), var(--accent-neon)); opacity: 0.35; }
@@ -1101,7 +1097,7 @@ input.lyric-line-input {
   background: rgba(0, 0, 0, 0.55); border-right: 1px solid rgba(var(--accent-rgb), 0.2);
 }
 .midi-main { flex: 1; min-width: 0; overflow-y: auto; padding: clamp(12px, 1.6vw, 26px); display: flex; flex-direction: column; gap: 16px; }
-.midi-record-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #f87171; box-shadow: 0 0 10px #f87171; animation: pulseGlow 1s infinite; }
+.midi-record-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #f87171; box-shadow: 0 0 0 1px #f87171; animation: pulseGlow 1s infinite; }
 .seq-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 .seq-roll-wrap {
   position: relative; overflow: auto; border-radius: 10px;
@@ -1118,7 +1114,7 @@ input.lyric-line-input {
   box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.65);
   border: 1px solid rgba(255, 255, 255, 0.25);
 }
-.seq-note--selected { outline: 2px solid #00c2ff; box-shadow: 0 0 12px rgba(0, 194, 255, 0.9); z-index: 3; }
+.seq-note--selected { outline: 2px solid #00c2ff; box-shadow: 0 0 0 1px rgba(0, 194, 255, 0.9); z-index: 3; }
 .seq-note--grab { cursor: grab; }
 /* Right-edge resize grip — only shows a handle when there's room to grab one. */
 .seq-note-grip {
@@ -1169,7 +1165,7 @@ input.lyric-line-input {
   box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.5);
 }
 .seq-vel-bar:hover { background: linear-gradient(180deg, #7dfcff, var(--accent-neon)); }
-.seq-vel-bar--selected { background: linear-gradient(180deg, #fff, #00c2ff); box-shadow: 0 0 10px rgba(0, 194, 255, 0.9); z-index: 3; }
+.seq-vel-bar--selected { background: linear-gradient(180deg, #fff, #00c2ff); box-shadow: 0 0 0 1px rgba(0, 194, 255, 0.9); z-index: 3; }
 .seq-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent-neon); box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.9); pointer-events: none; z-index: 4; }
 .viz-canvas-wrap {
   position: relative; width: 100%; aspect-ratio: 16 / 7; min-height: 180px;
@@ -1236,7 +1232,7 @@ input.lyric-line-input {
 .booth-row-name {
   font-size: 0.82rem; font-weight: 700; color: var(--accent-neon);
   text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.5);
-  font-family: 'Audiowide', 'Orbitron', sans-serif;
+  font-family: var(--faf-font);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   display: flex; align-items: center; gap: 6px;
 }
@@ -1426,7 +1422,7 @@ input.lyric-line-input {
   justify-content: center;
 }
 .deck-title {
-  font-family: 'Audiowide', 'Orbitron', sans-serif;
+  font-family: var(--faf-font);
   font-size: 0.66rem;
   letter-spacing: 0.14em;
   color: var(--text-primary);
@@ -1462,11 +1458,11 @@ input.lyric-line-input {
 }
 .deck-right.is-live .deck-led {
   background: var(--accent-emerald);
-  box-shadow: 0 0 6px var(--accent-emerald);
+  box-shadow: 0 0 0 1px var(--accent-emerald);
 }
 .deck-right.is-idle .deck-led {
   background: var(--accent-amber);
-  box-shadow: 0 0 6px var(--accent-amber);
+  box-shadow: 0 0 0 1px var(--accent-amber);
 }
 .deck-right.is-live .deck-text i { color: var(--accent-emerald); }
 .deck-right.is-idle .deck-text i { color: var(--accent-amber); }

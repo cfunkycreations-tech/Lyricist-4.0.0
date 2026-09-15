@@ -205,7 +205,7 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
               fontSize: '0.82rem',
               color: '#e8e0ff',
               outline: 'none',
-              fontFamily: "'Space Grotesk', sans-serif"
+              fontFamily: 'var(--faf-font)'
             }}
           />
           <button
@@ -440,7 +440,7 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
                     background: 'transparent',
                     color: 'rgba(248,113,113,0.7)',
                     cursor: 'pointer',
-                    fontFamily: "'Space Grotesk', sans-serif"
+                    fontFamily: 'var(--faf-font)'
                   }}
                 >
                   Clear
@@ -455,7 +455,7 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
                   fontSize: '0.8rem',
                   color: '#e8e0ff',
                   lineHeight: 1.8,
-                  fontFamily: "'Space Grotesk', sans-serif"
+                  fontFamily: 'var(--faf-font)'
                 }}
               >
                 {scannedLyrics}

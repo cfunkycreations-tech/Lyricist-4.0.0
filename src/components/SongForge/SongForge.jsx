@@ -504,7 +504,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                   <ImageIcon size={13} /> Upload Reference Image
                 </button>
                 {refImage && (
-                  <div style={{ position: 'relative', marginTop: 8, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,45,149,0.4)', boxShadow: '0 0 12px rgba(255,45,149,0.25)' }}>
+                  <div style={{ position: 'relative', marginTop: 8, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,45,149,0.4)', boxShadow: '0 0 0 1px rgba(255,45,149,0.25)' }}>
                     <img src={refImage.dataUrl} alt="Cover art reference" style={{ width: '100%', display: 'block' }} />
                     <button
                       onClick={() => setRefImage(null)}
@@ -514,7 +514,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                     >
                       <X size={12} />
                     </button>
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '3px 8px', fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#00e5ff', background: 'rgba(0,0,0,0.65)', textShadow: '0 0 6px rgba(0,229,255,0.6)' }}>
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '3px 8px', fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#00e5ff', background: 'rgba(0,0,0,0.65)', textShadow: '0 0 0 1px rgba(0,229,255,0.6)' }}>
                       Base layer for cover art
                     </div>
                   </div>
@@ -656,7 +656,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                     </button>
                   </div>
                 </div>
-                <pre className="songforge-lyrics-text" style={{ fontFamily: "'Audiowide', 'JetBrains Mono', monospace", color: '#e8e0ff', whiteSpace: 'pre-wrap', margin: 0 }}>
+                <pre className="songforge-lyrics-text" style={{ fontFamily: 'var(--faf-font)', color: '#e8e0ff', whiteSpace: 'pre-wrap', margin: 0 }}>
                   {result.song.rawText}
                 </pre>
               </div>

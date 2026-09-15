@@ -28,7 +28,7 @@
   max-width: 340px;
   text-align: center;
   color: #f2f5fa;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--faf-font);
 }
 
 /* A phone outline that tips a quarter turn, on a loop. Says the whole thing
@@ -47,7 +47,7 @@
   height: 100%;
   border-radius: 12px;
   border: 2px solid rgba(0, 240, 255, 0.85);
-  box-shadow: 0 0 22px rgba(0, 240, 255, 0.35), inset 0 0 18px rgba(0, 240, 255, 0.12);
+  box-shadow: 0 0 0 1px rgba(0, 240, 255, 0.35);
 }
 .rot-arrow {
   position: absolute;
@@ -64,7 +64,7 @@
 
 .rot-title {
   margin: 0 0 10px;
-  font-family: 'Metamorphous', serif;
+  font-family: var(--faf-font);
   font-size: 1.1rem;
   color: #fff;
   -webkit-text-stroke: 0.4px #00ff9c;
@@ -88,7 +88,7 @@
   border: 1px solid rgba(0, 240, 255, 0.5);
   background: rgba(10, 16, 32, 0.9);
   color: #cfe9ff;
-  font-family: 'Metamorphous', serif;
+  font-family: var(--faf-font);
   font-size: 0.86rem;
   cursor: pointer;
 }

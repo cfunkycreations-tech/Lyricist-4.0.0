@@ -45,7 +45,7 @@
 .mpick-chip.is-lead {
   background: rgba(16, 185, 129, 0.18);
   border-color: hsla(158 80% 58% / 0.55);
-  box-shadow: 0 0 10px hsla(158 80% 58% / 0.18);
+  box-shadow: 0 0 0 1px hsla(158 80% 58% / 0.18);
 }
 
 .mpick-lead {
@@ -78,7 +78,7 @@
   font-size: 0.82rem;
   color: #e8e0ff;
   outline: none;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--faf-font);
 }
 .mpick-add:disabled { opacity: 0.55; cursor: not-allowed; }
 

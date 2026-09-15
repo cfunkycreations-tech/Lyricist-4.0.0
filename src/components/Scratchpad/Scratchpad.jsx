@@ -56,7 +56,7 @@ export default function Scratchpad() {
     color: active ? '#7dffb0' : 'rgba(255,238,190,0.82)',
     cursor: text ? 'pointer' : 'not-allowed',
     opacity: text ? 1 : 0.4,
-    fontFamily: "'Space Grotesk', sans-serif",
+    fontFamily: 'var(--faf-font)',
     transition: 'color 0.15s, background 0.15s',
     display: 'flex',
     alignItems: 'center',
@@ -99,7 +99,7 @@ export default function Scratchpad() {
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, minWidth: 0 }}>
           <h2
             style={{
-              fontFamily: "'Caveat', 'Dancing Script', cursive",
+              fontFamily: 'var(--faf-font)',
               fontSize: '1.85rem',
               fontWeight: 700,
               margin: 0,
@@ -118,7 +118,7 @@ export default function Scratchpad() {
               color: 'rgba(255,226,160,0.5)',
               margin: 0,
               letterSpacing: '0.05em',
-              fontFamily: "'Space Grotesk', sans-serif",
+              fontFamily: 'var(--faf-font)',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis'
@@ -168,7 +168,7 @@ export default function Scratchpad() {
             resize: 'none',
             boxSizing: 'border-box',
             padding: `${RULE_H}px 40px ${RULE_H * 2}px ${MARGIN_X}px`,
-            fontFamily: "'Caveat', 'Dancing Script', cursive",
+            fontFamily: 'var(--faf-font)',
             fontSize: '1.6rem',
             fontWeight: 500,
             lineHeight: `${RULE_H}px`,

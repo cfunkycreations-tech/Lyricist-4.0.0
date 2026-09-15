@@ -1158,7 +1158,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         <span style={{ textAlign: 'left' }}>
           <span style={{
             display: 'block',
-            fontFamily: "'Audiowide', 'Orbitron', sans-serif",
+            fontFamily: 'var(--faf-font)',
             fontSize: '1.15rem',
             letterSpacing: '0.04em',
             color: 'var(--accent-neon, #00f0ff)',
@@ -1210,7 +1210,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           background: 'rgba(255,255,255,0.03)',
           border: '1px solid var(--border-hairline, rgba(160,200,255,0.16))',
           color: '#c8d7f0',
-          fontFamily: "'Space Grotesk', sans-serif",
+          fontFamily: 'var(--faf-font)',
           fontSize: '0.82rem',
           letterSpacing: '0.08em',
         }}
@@ -1430,11 +1430,11 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div style={{ opacity: neuralPick === 'A' ? 1 : 0.55, border: neuralPick === 'A' ? '1px solid rgba(234,255,43,0.5)' : '1px solid transparent', borderRadius: 10, padding: 8 }}>
               <div style={{ fontSize: '0.7rem', color: YLW, marginBottom: 6 }}>STATE A</div>
-              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: "'Space Grotesk', sans-serif", fontSize: '0.92rem', lineHeight: 1.55, color: '#f3ecff' }}>{neuralA || '—'}</pre>
+              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'var(--faf-font)', fontSize: '0.92rem', lineHeight: 1.55, color: '#f3ecff' }}>{neuralA || '—'}</pre>
             </div>
             <div style={{ opacity: neuralPick === 'B' ? 1 : 0.55, border: neuralPick === 'B' ? '1px solid rgba(234,255,43,0.5)' : '1px solid transparent', borderRadius: 10, padding: 8 }}>
               <div style={{ fontSize: '0.7rem', color: YLW, marginBottom: 6 }}>STATE B</div>
-              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: "'Space Grotesk', sans-serif", fontSize: '0.92rem', lineHeight: 1.55, color: '#f3ecff' }}>{neuralB || '—'}</pre>
+              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'var(--faf-font)', fontSize: '0.92rem', lineHeight: 1.55, color: '#f3ecff' }}>{neuralB || '—'}</pre>
             </div>
           </div>
         </div>

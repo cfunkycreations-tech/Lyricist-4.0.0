@@ -8,12 +8,12 @@
   font-family: inherit; font-size: 13px; font-weight: 600; color: #EAF2FF;
   background: linear-gradient(180deg, hsla(158 84% 40% / .22), rgba(5, 7, 12, .92));
   border: 1px solid hsla(158 80% 58% / .55);
-  box-shadow: 0 0 22px hsla(158 80% 58% / .22), 0 10px 30px rgba(0, 0, 0, .55);
+  box-shadow: 0 0 0 1px hsla(158 80% 58% / .22), 0 10px 30px rgba(0, 0, 0, .55);
   backdrop-filter: blur(14px);
 }
-.gha-launch:hover { border-color: hsla(158 80% 68% / .9); box-shadow: 0 0 30px hsla(158 80% 58% / .34), 0 10px 30px rgba(0, 0, 0, .55); }
+.gha-launch:hover { border-color: hsla(158 80% 68% / .9); box-shadow: 0 0 0 1px hsla(158 80% 58% / .34), 0 10px 30px rgba(0, 0, 0, .55); }
 .gha-launch.is-open { background: linear-gradient(180deg, hsla(262 70% 55% / .26), rgba(5, 7, 12, .92)); border-color: hsla(262 80% 72% / .6); }
-.gha-face { font-size: 16px; filter: drop-shadow(0 0 6px hsla(158 80% 60% / .7)); }
+.gha-face { font-size: 16px; filter: none; }
 
 .gha {
   position: fixed; right: 18px; bottom: 140px; z-index: 61;
@@ -23,7 +23,7 @@
   border-radius: 14px; overflow: hidden;
   background: rgba(6, 9, 16, .93);
   border: 1px solid hsla(158 80% 58% / .34);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, .66), 0 0 30px hsla(158 80% 58% / .12);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .66), 0 0 0 1px hsla(158 80% 58% / .12);
   backdrop-filter: blur(20px) saturate(1.2);
 }
 
@@ -185,7 +185,7 @@
   font-family: inherit; font-size: 13px; color: #EAF2FF;
   background: rgba(3, 5, 9, .72); border: 1px solid hsla(262 70% 70% / .3);
 }
-.gha-ask input:focus { outline: none; border-color: hsla(158 80% 58% / .65); box-shadow: 0 0 14px hsla(158 80% 58% / .18); }
+.gha-ask input:focus { outline: none; border-color: hsla(158 80% 58% / .65); box-shadow: 0 0 0 1px hsla(158 80% 58% / .18); }
 .gha-ask button {
   padding: 9px 15px; border-radius: 9px; cursor: pointer;
   font-family: inherit; font-size: 13px; font-weight: 600; color: #EAF2FF;

@@ -8,7 +8,7 @@
   border-radius: 12px;
   background: rgba(10, 16, 32, .62);
   border: 1px solid hsla(158 80% 58% / .45);
-  box-shadow: 0 0 26px hsla(158 80% 58% / .12), inset 0 1px 0 rgba(255,255,255,.05);
+  box-shadow: 0 0 0 1px hsla(158 80% 58% / .12), inset 0 1px 0 rgba(255,255,255,.05);
   backdrop-filter: blur(16px) saturate(1.2);
   flex-shrink: 0;
 }
@@ -17,9 +17,9 @@
   flex-shrink: 0;
   width: 30px; height: 30px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 15px;
+  font-family: var(--faf-font); font-weight: 800; font-size: 15px;
   color: #041b12; background: hsl(158 80% 58%);
-  box-shadow: 0 0 16px hsla(158 80% 58% / .5);
+  box-shadow: 0 0 0 1px hsla(158 80% 58% / .5);
 }
 
 .sh-body { flex: 1; min-width: 0; }
@@ -48,7 +48,7 @@
 
 .sh-go {
   border-radius: 9px; padding: 8px 14px; cursor: pointer;
-  font-family: 'Space Grotesk', sans-serif; font-size: 12.5px; font-weight: 700;
+  font-family: var(--faf-font); font-size: 12.5px; font-weight: 700;
   background: rgba(3, 5, 9, .55); color: #EAF2FF;
   border: 1px solid rgba(139, 92, 246, .45);
 }
@@ -56,7 +56,7 @@
 .sh-go.primary {
   background: hsla(158 84% 40% / .28);
   border-color: hsla(158 80% 58% / .6);
-  box-shadow: 0 0 16px hsla(158 80% 58% / .2);
+  box-shadow: 0 0 0 1px hsla(158 80% 58% / .2);
 }
 
 .sh-fine { margin: 9px 0 0; font-size: 11px; line-height: 1.5; color: #6C7F9E; }

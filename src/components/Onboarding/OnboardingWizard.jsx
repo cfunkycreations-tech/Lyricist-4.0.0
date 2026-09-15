@@ -121,7 +121,7 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
       <div
         className="card-cosmic wiz-card"
         onClick={(e) => e.stopPropagation()}
-        style={{ width: '100%', maxWidth: 560, maxHeight: '88vh', overflowY: 'auto', background: '#0d081c', border: '1px solid rgba(139,92,246,0.4)', borderRadius: 16, padding: '26px 28px', boxShadow: '0 0 50px rgba(124,58,237,0.45)' }}
+        style={{ width: '100%', maxWidth: 560, maxHeight: '88vh', overflowY: 'auto', background: '#0d081c', border: '1px solid rgba(139,92,246,0.4)', borderRadius: 16, padding: '26px 28px', boxShadow: '0 0 0 1px rgba(124,58,237,0.45)' }}
       >
         {/* Top row: step counter + skip */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
@@ -134,12 +134,12 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
         </div>
 
         {/* Icon */}
-        <div style={{ fontSize: '2.6rem', textAlign: 'center', marginBottom: 10, filter: 'drop-shadow(0 0 22px rgba(168,85,247,0.6))' }}>
+        <div style={{ fontSize: '2.6rem', textAlign: 'center', marginBottom: 10, filter: 'none' }}>
           <Glyph name={current.icon} size={40} strokeWidth={1.25} />
         </div>
 
         {/* Title */}
-        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '1.35rem', fontWeight: 800, textAlign: 'center', margin: '0 0 8px', background: 'linear-gradient(90deg, #e879f9, #a855f7, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+        <h2 style={{ fontFamily: 'var(--faf-font)', fontSize: '1.35rem', fontWeight: 800, textAlign: 'center', margin: '0 0 8px', background: 'linear-gradient(90deg, #e879f9, #a855f7, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
           {current.title}
         </h2>
 
@@ -181,7 +181,7 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
         {/* Nav buttons */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <button onClick={() => go(step - 1)} disabled={step === 0}
-            style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid rgba(139,92,246,0.3)', background: 'transparent', color: step === 0 ? 'rgba(167,139,250,0.25)' : 'rgba(196,181,253,0.8)', fontSize: '0.82rem', fontWeight: 600, cursor: step === 0 ? 'not-allowed' : 'pointer', fontFamily: "'Space Grotesk', sans-serif" }}>
+            style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid rgba(139,92,246,0.3)', background: 'transparent', color: step === 0 ? 'rgba(167,139,250,0.25)' : 'rgba(196,181,253,0.8)', fontSize: '0.82rem', fontWeight: 600, cursor: step === 0 ? 'not-allowed' : 'pointer', fontFamily: 'var(--faf-font)' }}>
             ← Back
           </button>
 
@@ -197,4 +197,4 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
 }
 
 const narrBtn = { width: 30, height: 30, borderRadius: 9999, border: '1px solid rgba(139,92,246,0.4)', background: 'rgba(124,58,237,0.15)', color: '#c4b5fd', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 };
-const navBtn = { padding: '10px 26px', borderRadius: 8, border: 'none', color: '#fff', fontSize: '0.86rem', fontWeight: 700, cursor: 'pointer', fontFamily: "'Space Grotesk', sans-serif" };
+const navBtn = { padding: '10px 26px', borderRadius: 8, border: 'none', color: '#fff', fontSize: '0.86rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--faf-font)' };

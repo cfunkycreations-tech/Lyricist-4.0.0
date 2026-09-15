@@ -16,7 +16,7 @@
      transition on transform — a transition here would fight the easing curve
      and add a second, slower lag on top of it. */
   will-change: transform;
-  filter: drop-shadow(0 0 6px rgba(var(--accent-rgb, 0, 240, 255), 0.85))
+  filter:
           drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7));
   transition: scale 0.09s ease-out;
 }

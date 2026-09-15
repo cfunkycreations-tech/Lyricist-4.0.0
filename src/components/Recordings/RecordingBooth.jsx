@@ -262,7 +262,7 @@ export default function RecordingBooth({ onNavigate }) {
           ) : (
             <button
               onClick={stopRecording}
-              style={{ width: '100%', padding: '12px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#f87171,#dc2626)', color: '#fff', fontSize: '0.86rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 0 16px rgba(248,113,113,0.6)' }}
+              style={{ width: '100%', padding: '12px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#f87171,#dc2626)', color: '#fff', fontSize: '0.86rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 0 0 1px rgba(248,113,113,0.6)' }}
             >
               <Square size={14} /> Stop &amp; Save <span className="midi-record-dot" /> {fmtTime(recSeconds)}
             </button>

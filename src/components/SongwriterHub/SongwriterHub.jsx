@@ -426,7 +426,7 @@ export default function SongwriterHub({ ghostRiderData }) {
               fontSize: '0.82rem',
               color: '#e8e0ff',
               outline: 'none',
-              fontFamily: "'Space Grotesk', sans-serif",
+              fontFamily: 'var(--faf-font)',
               resize: 'none'
             }}
           />
@@ -450,7 +450,7 @@ export default function SongwriterHub({ ghostRiderData }) {
               fontSize: '0.82rem',
               color: '#e8e0ff',
               outline: 'none',
-              fontFamily: "'Space Grotesk', sans-serif"
+              fontFamily: 'var(--faf-font)'
             }}
           />
         </div>
@@ -626,7 +626,7 @@ export default function SongwriterHub({ ghostRiderData }) {
               fontSize: '0.82rem',
               color: '#e8e0ff',
               outline: 'none',
-              fontFamily: "'Space Grotesk', sans-serif",
+              fontFamily: 'var(--faf-font)',
               resize: 'none'
             }}
           />
@@ -648,7 +648,7 @@ export default function SongwriterHub({ ghostRiderData }) {
               color: '#fff',
               fontSize: '0.88rem',
               fontWeight: 700,
-              fontFamily: "'Space Grotesk', sans-serif",
+              fontFamily: 'var(--faf-font)',
               cursor: isGenerating ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -712,7 +712,7 @@ export default function SongwriterHub({ ghostRiderData }) {
                     width: '100%', minHeight: 130, borderRadius: 8, padding: 10,
                     background: 'rgba(0,0,0,0.26)', border: '1px solid rgba(255,255,255,0.15)',
                     color: '#f3ecff', fontSize: '0.8rem', lineHeight: 1.6, resize: 'vertical',
-                    fontFamily: "'Space Grotesk', sans-serif",
+                    fontFamily: 'var(--faf-font)',
                   }}
                 />
                 <button
@@ -1000,11 +1000,11 @@ export default function SongwriterHub({ ghostRiderData }) {
               border: '1px solid rgba(139,92,246,0.35)',
               borderRadius: 14,
               padding: 24,
-              boxShadow: '0 0 40px rgba(124,58,237,0.4)'
+              boxShadow: '0 0 0 1px rgba(124,58,237,0.4)'
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ fontSize: '1.2rem', fontFamily: "'Syne', sans-serif", fontWeight: 800 }}>
+              <h3 style={{ fontSize: '1.2rem', fontFamily: 'var(--faf-font)', fontWeight: 800 }}>
                 <Icon i={GitBranch} />Alternate Bridge Variations
               </h3>
               <button
@@ -1026,7 +1026,7 @@ export default function SongwriterHub({ ghostRiderData }) {
                 <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#e879f9', display: 'block', marginBottom: 8 }} data-help="A bridge that changes the STORY — adds a surprise, a new point of view, or a turn in what the song is saying.">
                   NARRATIVE TWIST
                 </span>
-                <pre style={{ fontSize: '0.74rem', fontFamily: "'Audiowide', 'JetBrains Mono', monospace", color: '#e8e0ff', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                <pre style={{ fontSize: '0.74rem', fontFamily: 'var(--faf-font)', color: '#e8e0ff', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                   {bridgeVars.A}
                 </pre>
                 <button
@@ -1051,7 +1051,7 @@ export default function SongwriterHub({ ghostRiderData }) {
                 <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#22d3ee', display: 'block', marginBottom: 8 }} data-help="A bridge that hits the hardest FEELING — the most heartfelt, intense moment of the whole song.">
                   EMOTIONAL PEAK
                 </span>
-                <pre style={{ fontSize: '0.74rem', fontFamily: "'Audiowide', 'JetBrains Mono', monospace", color: '#e8e0ff', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                <pre style={{ fontSize: '0.74rem', fontFamily: 'var(--faf-font)', color: '#e8e0ff', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                   {bridgeVars.B}
                 </pre>
                 <button
@@ -1076,7 +1076,7 @@ export default function SongwriterHub({ ghostRiderData }) {
                 <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#34d399', display: 'block', marginBottom: 8 }} data-help="A bridge that changes the SOUND and rhythm — a different flow or energy, so the ear gets something fresh before the last chorus.">
                   SONIC SHIFT
                 </span>
-                <pre style={{ fontSize: '0.74rem', fontFamily: "'Audiowide', 'JetBrains Mono', monospace", color: '#e8e0ff', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                <pre style={{ fontSize: '0.74rem', fontFamily: 'var(--faf-font)', color: '#e8e0ff', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                   {bridgeVars.C}
                 </pre>
                 <button

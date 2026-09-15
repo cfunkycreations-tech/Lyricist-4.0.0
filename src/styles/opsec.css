@@ -247,6 +247,30 @@ label { color: var(--faf-text-2) !important; font-weight: 500; }
 .deck-right { background: var(--faf-ink-3); border-color: var(--faf-line-2); }
 .deck-right:hover { box-shadow: none; border-color: rgba(var(--accent-rgb), 0.5); }
 
+/* ── keys that were neon gradient pills ──
+   Inline gradient fills and 999px pill corners on buttons, anywhere in the app,
+   become the same machined key as everything else. The Stemmer's primary
+   "Save All Stems" is the one light key on its page. */
+button[style*="linear-gradient"]:not(.pc),
+.stemmer-btn, .stemmer-btn-emerald {
+  background: linear-gradient(180deg, #1F2227 0%, #17191D 100%) !important;
+  border: 1px solid var(--faf-line-2) !important;
+  color: var(--faf-text) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 1px rgba(0, 0, 0, 0.55) !important;
+}
+button[style*="linear-gradient"]:not(.pc):hover:not(:disabled),
+.stemmer-btn:hover:not(:disabled) { border-color: rgba(var(--accent-rgb), 0.55) !important; }
+.stemmer-btn-gold {
+  background: linear-gradient(180deg, #F2F3F5, #C8CCD2) !important;
+  color: #0A0B0D !important;
+  border: 1px solid #0A0B0D !important;
+  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, 0.6) !important;
+}
+button[style*="border-radius: 9999px"]:not(.pc), button[style*="border-radius: 999px"]:not(.pc),
+.stemmer-btn, .stemmer-btn-gold, .stemmer-btn-emerald { border-radius: 4px !important; }
+.stemmer-progress-bar { background: var(--faf-ink-1); border: 1px solid var(--faf-line); border-radius: 2px; }
+.stemmer-progress-fill { background: rgb(var(--accent-rgb)) !important; border-radius: 0; }
+
 /* Big empty-state marks: a quiet line icon, not a glowing emoji. */
 .empty-glyph { color: var(--faf-text-3); display: flex; justify-content: center; }
 

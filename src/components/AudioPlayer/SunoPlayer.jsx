@@ -374,7 +374,7 @@ export default function SunoPlayer() {
         <div className="suno-popover" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
           <textarea
             className="input-cosmic"
-            style={{ width: '100%', minHeight: 62, resize: 'vertical', borderRadius: 8, padding: '7px 10px', fontSize: '0.74rem', fontFamily: "'Space Grotesk', sans-serif", lineHeight: 1.4 }}
+            style={{ width: '100%', minHeight: 62, resize: 'vertical', borderRadius: 8, padding: '7px 10px', fontSize: '0.74rem', fontFamily: 'var(--faf-font)', lineHeight: 1.4 }}
             placeholder={"Paste Suno links — one per line:\nhttps://suno.com/song/…\nhttps://suno.com/playlist/…"}
             value={urlDraft}
             onChange={(e) => setUrlDraft(e.target.value)}

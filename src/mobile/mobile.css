@@ -83,7 +83,7 @@ body.lyricist-mobile .app-footer  { display: none !important; }
 }
 
 .mob-wordmark {
-  font-family: 'Audiowide', 'Orbitron', monospace;
+  font-family: var(--faf-font);
   font-size: 0.98rem;
   letter-spacing: 0.09em;
   color: #fff;
@@ -96,7 +96,7 @@ body.lyricist-mobile .app-footer  { display: none !important; }
 .mob-bar-title {
   flex: 1;
   text-align: center;
-  font-family: 'Metamorphous', serif;
+  font-family: var(--faf-font);
   font-size: 0.95rem;
   color: #fff;
   -webkit-text-stroke: 0.4px #00ff9c;
@@ -165,7 +165,7 @@ body.lyricist-mobile .app-footer  { display: none !important; }
   background: linear-gradient(180deg, rgba(10, 16, 32, 0.94), rgba(4, 6, 15, 0.94));
   border: 1px solid rgba(0, 240, 255, 0.30);
   border-radius: 11px;
-  box-shadow: 0 0 14px rgba(0, 240, 255, 0.09), inset 0 0 20px rgba(192, 38, 255, 0.05);
+  box-shadow: 0 0 0 1px rgba(0, 240, 255, 0.09);
   color: inherit;
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
@@ -173,7 +173,7 @@ body.lyricist-mobile .app-footer  { display: none !important; }
 .mob-tile:active { transform: scale(0.97); }
 .mob-tile.is-active {
   border-color: rgba(0, 255, 156, 0.85);
-  box-shadow: 0 0 20px rgba(0, 255, 156, 0.32), inset 0 0 20px rgba(0, 255, 156, 0.08);
+  box-shadow: 0 0 0 1px rgba(0, 255, 156, 0.32);
 }
 
 .mob-tile-ico {
@@ -181,7 +181,7 @@ body.lyricist-mobile .app-footer  { display: none !important; }
   width: 24px;
   height: 24px;
   object-fit: contain;
-  filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.5));
+  filter: none;
 }
 .mob-tile-emoji { font-size: 18px; line-height: 24px; text-align: center; }
 
@@ -192,7 +192,7 @@ body.lyricist-mobile .app-footer  { display: none !important; }
    tile, and truncating them to "Recordi..." makes the launcher unreadable,
    which is the whole job of this screen. Two lines, then clamp. */
 .mob-tile-name {
-  font-family: 'Metamorphous', serif;
+  font-family: var(--faf-font);
   font-size: 0.60rem;
   line-height: 1.1;
   color: #fff;
@@ -224,7 +224,7 @@ body.lyricist-mobile .app-footer  { display: none !important; }
 }
 .mob-support-line { font-size: 0.58rem; color: #8b93a3; margin-right: 4px; }
 .mob-pill {
-  font-family: 'Metamorphous', serif;
+  font-family: var(--faf-font);
   font-size: 0.6rem;
   padding: 4px 10px;
   border-radius: 999px;

@@ -19,7 +19,7 @@
   inset: 0;
   z-index: 120000;
   pointer-events: none; /* UI underneath stays live for real clicks */
-  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-family: var(--faf-font);
 }
 
 .ghost-demo-scrim {
@@ -34,9 +34,7 @@
   border: 2px solid rgba(167, 139, 250, 0.95);
   border-radius: 14px;
   box-shadow:
-    0 0 0 9999px rgba(4, 2, 12, 0.45),
-    0 0 24px rgba(168, 85, 247, 0.65),
-    inset 0 0 20px rgba(103, 232, 249, 0.15);
+    0 0 0 9999px rgba(4, 2, 12, 0.45), 0 0 0 1px rgba(168, 85, 247, 0.65);
   pointer-events: none;
   z-index: 120001;
   transition: left 0.25s, top 0.25s, width 0.25s, height 0.25s;
@@ -44,8 +42,8 @@
 }
 
 @keyframes ghost-ring-pulse {
-  0%, 100% { box-shadow: 0 0 0 9999px rgba(4, 2, 12, 0.42), 0 0 18px rgba(168, 85, 247, 0.5); }
-  50% { box-shadow: 0 0 0 9999px rgba(4, 2, 12, 0.5), 0 0 32px rgba(103, 232, 249, 0.55); }
+  0%, 100% { box-shadow: 0 0 0 9999px rgba(4, 2, 12, 0.42), 0 0 0 1px rgba(168, 85, 247, 0.5); }
+  50% { box-shadow: 0 0 0 9999px rgba(4, 2, 12, 0.5), 0 0 0 1px rgba(103, 232, 249, 0.55); }
 }
 
 .ghost-demo-operator {
@@ -75,7 +73,7 @@
   flex-direction: column;
   align-items: center;
   opacity: 1;
-  filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.75)) drop-shadow(0 0 32px rgba(0, 229, 255, 0.4));
+  filter: none;
   animation: ghost-float 2.4s ease-in-out infinite;
   pointer-events: none;
   background: transparent !important;
@@ -110,9 +108,7 @@
   position: relative;
   z-index: 1;
   /* soft neon edge only — does not fill a bubble behind him */
-  filter:
-    drop-shadow(0 0 10px rgba(0, 229, 255, 0.55))
-    drop-shadow(0 0 20px rgba(168, 85, 247, 0.5));
+  filter: none;
   animation: ghost-glow-pulse 1.8s ease-in-out infinite;
   /* Real PNG transparency — no blend hacks, no bubble */
   mix-blend-mode: normal;
@@ -146,7 +142,7 @@
   vertical-align: middle;
   margin-right: 8px;
   box-shadow: none !important;
-  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.65));
+  filter: none;
   animation: ghost-glow-pulse 1.8s ease-in-out infinite;
 }
 
@@ -162,15 +158,10 @@
 
 @keyframes ghost-glow-pulse {
   0%, 100% {
-    filter:
-      drop-shadow(0 0 8px rgba(0, 229, 255, 0.45))
-      drop-shadow(0 0 16px rgba(168, 85, 247, 0.4));
+    filter: none;
   }
   50% {
-    filter:
-      drop-shadow(0 0 16px rgba(0, 229, 255, 0.85))
-      drop-shadow(0 0 28px rgba(168, 85, 247, 0.75))
-      drop-shadow(0 0 18px rgba(16, 240, 160, 0.4));
+    filter: none;
   }
 }
 
@@ -178,7 +169,7 @@
   position: relative;
   width: 28px;
   height: 28px;
-  filter: drop-shadow(0 0 8px rgba(224, 242, 254, 0.8));
+  filter: none;
   transition: transform 0.08s;
 }
 
@@ -190,7 +181,7 @@
   border-radius: 14px;
   background: rgba(16, 10, 32, 0.96);
   border: 1.5px solid rgba(167, 139, 250, 0.65);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 0 20px rgba(124, 58, 237, 0.35);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(124, 58, 237, 0.35);
   pointer-events: none;
   animation: ghost-bubble-in 0.28s ease-out;
 }
@@ -298,7 +289,7 @@
 .ghost-demo-bar-voice.is-on {
   border-color: rgba(57, 255, 20, 0.6);
   color: #bbf7d0;
-  box-shadow: 0 0 10px rgba(57, 255, 20, 0.25);
+  box-shadow: 0 0 0 1px rgba(57, 255, 20, 0.25);
 }
 
 .ghost-demo-bar-speed-btn.is-on {
@@ -306,7 +297,7 @@
   color: #fff;
   border-color: rgba(0, 229, 255, 0.75);
   background: linear-gradient(135deg, rgba(0, 229, 255, 0.3), rgba(168, 85, 247, 0.35));
-  box-shadow: 0 0 10px rgba(0, 229, 255, 0.35);
+  box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.35);
 }
 
 /* Brief flash when ghost "clicks" a control */

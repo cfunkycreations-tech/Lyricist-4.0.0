@@ -95,7 +95,7 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
     <div style={{ padding: '18px 22px 40px', minHeight: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
       <div>
-        <h2 className="emerald-edge" style={{ fontFamily: "'Audiowide', sans-serif", fontSize: '1.5rem', margin: 0, letterSpacing: '0.04em' }}>
+        <h2 className="emerald-edge" style={{ fontFamily: 'var(--faf-font)', fontSize: '1.5rem', margin: 0, letterSpacing: '0.04em' }}>
           COLLABORATION
         </h2>
         <p style={{ fontSize: '0.78rem', color: 'rgba(200,190,220,0.75)', margin: '6px 0 0', maxWidth: 760, lineHeight: 1.6 }}>
@@ -199,7 +199,7 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
               <div style={{ fontSize: '0.66rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(200,190,220,0.55)' }}>
                 Session code — send this to them
               </div>
-              <div className="ql-mono" style={{ fontSize: '1.7rem', letterSpacing: '0.16em', color: 'var(--ql-grn, #10f0a0)', textShadow: '0 0 14px rgba(16,240,160,0.5)' }}>
+              <div className="ql-mono" style={{ fontSize: '1.7rem', letterSpacing: '0.16em', color: 'var(--ql-grn, #10f0a0)', textShadow: '0 0 0 1px rgba(16,240,160,0.5)' }}>
                 {session.code}
               </div>
             </div>
@@ -244,7 +244,7 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
               onChange={(e) => applyLocalEdit(session.text, e.target.value)}
               placeholder={'Start writing. Whatever you type shows up on their screen, and theirs shows up here.'}
               className="ql-keywords-input"
-              style={{ minHeight: 380, flex: 1, fontSize: '0.95rem', lineHeight: 1.65, fontFamily: "'Space Grotesk', sans-serif" }}
+              style={{ minHeight: 380, flex: 1, fontSize: '0.95rem', lineHeight: 1.65, fontFamily: 'var(--faf-font)' }}
               data-help="One shared page. Both of you can type at once — edits are merged, so you will not wipe out each other's line."
             />
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

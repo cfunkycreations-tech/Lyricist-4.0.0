@@ -456,7 +456,7 @@ function MainLayout() {
                 background: 'rgba(0,229,255,0.14)',
                 color: '#67e8f9',
                 border: '1px solid rgba(0,229,255,0.45)',
-                boxShadow: '0 0 12px rgba(0,229,255,0.2)',
+                boxShadow: '0 0 0 1px rgba(0,229,255,0.2)',
                 transition: 'all 0.15s'
               }}
             >

@@ -22,7 +22,7 @@
   border-radius: 12px; padding: 14px;
   backdrop-filter: blur(16px) saturate(1.15);
 }
-.es-card.is-ready { border-color: hsla(158 80% 58% / .5); box-shadow: 0 0 22px hsla(158 80% 58% / .10); }
+.es-card.is-ready { border-color: hsla(158 80% 58% / .5); box-shadow: 0 0 0 1px hsla(158 80% 58% / .10); }
 
 .es-card > header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
 .es-card h4 { margin: 0; font-size: 14.5px; color: #fff; letter-spacing: .01em; }
@@ -63,7 +63,7 @@
 .es-go.primary {
   background: hsla(158 84% 40% / .22);
   border-color: hsla(158 80% 58% / .55);
-  box-shadow: 0 0 16px hsla(158 80% 58% / .16);
+  box-shadow: 0 0 0 1px hsla(158 80% 58% / .16);
 }
 
 /* The paste box. Kaggle shows the code on screen now instead of downloading a
@@ -81,7 +81,7 @@
 .es-input:focus {
   outline: none;
   border-color: hsla(158 80% 58% / .65);
-  box-shadow: 0 0 14px hsla(158 80% 58% / .18);
+  box-shadow: 0 0 0 1px hsla(158 80% 58% / .18);
 }
 
 .es-link {

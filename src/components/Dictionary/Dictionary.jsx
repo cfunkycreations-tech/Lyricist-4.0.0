@@ -100,7 +100,7 @@ export default function Dictionary() {
             fontSize: '0.82rem',
             color: '#e8e0ff',
             outline: 'none',
-            fontFamily: "'Space Grotesk', sans-serif"
+            fontFamily: 'var(--faf-font)'
           }}
         />
         <button
@@ -140,7 +140,7 @@ export default function Dictionary() {
         {entries && entries.map((entry, ei) => (
           <div key={ei} style={{ background: 'rgba(13,8,28,0.7)', border: '1px solid rgba(139,92,246,0.22)', borderRadius: 10, padding: 18 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-              <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '1.4rem', fontWeight: 800, color: '#e8e0ff', margin: 0 }}>
+              <h3 style={{ fontFamily: 'var(--faf-font)', fontSize: '1.4rem', fontWeight: 800, color: '#e8e0ff', margin: 0 }}>
                 {entry.word}
               </h3>
               {getPhonetic(entry) && (

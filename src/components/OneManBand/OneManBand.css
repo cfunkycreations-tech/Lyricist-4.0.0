@@ -108,8 +108,7 @@
      ring on a dark blob. The horizon is allowed to be black; it is not allowed
      to black out its own accretion disc. */
   box-shadow:
-    0 0 0 2px hsla(158 85% 62% / .95),
-    0 0 18px 3px hsla(158 80% 58% / .55);
+    0 0 0 2px hsla(158 85% 62% / .95), 0 0 0 1px hsla(158 80% 58% / .55);
   z-index: 3;
 }
 .omb-hole-glow {
@@ -131,7 +130,7 @@
      first, and this is the app's display face everywhere else. Haettenschweiler
      was a condensed Impact-alike that read as a sports poster; this reads as the
      control panel the tab actually is. */
-  font-family: 'Audiowide', 'Orbitron', system-ui, sans-serif;
+  font-family: var(--faf-font);
   font-weight: 400; margin: 2px 0 0;
   /* Audiowide is far wider per character than the condensed face it replaces,
      and "Black Hole Studios" is eighteen characters — at the old 78px ceiling it
@@ -176,10 +175,10 @@
 .omb-eng[aria-pressed="true"] {
   border-color: var(--omb-emerald); color: #fff;
   background: linear-gradient(180deg, hsla(158 84% 40% / .28), hsla(158 84% 40% / .05));
-  box-shadow: 0 0 18px hsla(158 84% 40% / .28);
+  box-shadow: 0 0 0 1px hsla(158 84% 40% / .28);
 }
 .omb-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--omb-faint); }
-.omb-eng[aria-pressed="true"] .omb-dot { background: var(--omb-emerald-lit); box-shadow: 0 0 9px var(--omb-emerald-lit); }
+.omb-eng[aria-pressed="true"] .omb-dot { background: var(--omb-emerald-lit); box-shadow: 0 0 0 1px var(--omb-emerald-lit); }
 .omb-cost { font-family: var(--omb-mono); font-size: 10.5px; color: var(--omb-faint); }
 .omb-cost.free { color: var(--omb-emerald-lit); }
 
@@ -400,7 +399,7 @@
   background: linear-gradient(180deg, rgba(160, 200, 255, .12), rgba(5, 7, 12, .55));
   font-size: 17px; line-height: 1.2;
 }
-.omb-dice:hover { border-color: var(--omb-emerald); box-shadow: 0 0 14px hsla(158 84% 45% / .3); }
+.omb-dice:hover { border-color: var(--omb-emerald); box-shadow: 0 0 0 1px hsla(158 84% 45% / .3); }
 .omb-dice.rolling { animation: omb-tumble .72s cubic-bezier(.28, .9, .3, 1) infinite; }
 @keyframes omb-tumble {
   0% { transform: rotate(0) scale(1); }
@@ -421,10 +420,10 @@
 }
 .omb-make {
   width: 100%; border: 0; cursor: pointer; border-radius: 9px; padding: 15px; color: #03070A;
-  font-family: "Haettenschweiler", "Arial Narrow Bold", Impact, system-ui, sans-serif;
+  font-family: var(--faf-font);
   font-size: 24px; letter-spacing: .05em; text-transform: uppercase;
   background: linear-gradient(96deg, var(--omb-emerald), var(--omb-green2) 40%, var(--omb-blue) 72%, var(--omb-violet));
-  box-shadow: 0 0 30px hsla(158 84% 40% / .34), 0 1px 0 rgba(255, 255, 255, .5) inset;
+  box-shadow: 0 0 0 1px hsla(158 84% 40% / .34), 0 1px 0 rgba(255, 255, 255, .5) inset;
 }
 .omb-make:hover { filter: brightness(1.1); }
 .omb-make.busy {

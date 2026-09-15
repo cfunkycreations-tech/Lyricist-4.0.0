@@ -345,7 +345,7 @@ export default function LoopStation() {
         border: on ? '1.5px solid rgba(103,232,249,0.55)' : '1.5px solid rgba(139,92,246,0.3)',
         background: on ? 'rgba(30, 20, 60, 0.75)' : 'rgba(10,6,20,0.65)',
         minWidth: 140,
-        boxShadow: on ? '0 0 16px rgba(103,232,249,0.2)' : 'none',
+        boxShadow: on ? '0 0 0 1px rgba(103,232,249,0.2)' : 'none',
       }}
       data-help={help}
     >
@@ -471,7 +471,7 @@ export default function LoopStation() {
           box-shadow: 0 0 14px rgba(239,68,68,0.4);
         }
       `}</style>
-      <h1 style={{ fontFamily: "'Audiowide', sans-serif", fontWeight: 700, fontSize: 'clamp(1.6rem, 3vw, 2.4rem)', margin: '0 0 6px', background: 'linear-gradient(90deg,#38bdf8,#a855f7,#f5f3ff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+      <h1 style={{ fontFamily: 'var(--faf-font)', fontWeight: 700, fontSize: 'clamp(1.6rem, 3vw, 2.4rem)', margin: '0 0 6px', background: 'linear-gradient(90deg,#38bdf8,#a855f7,#f5f3ff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
         RC-FUNK 5000
       </h1>
       <p style={{ color: '#a5b4fc', letterSpacing: '0.12em', textTransform: 'uppercase', fontSize: '0.75rem', margin: '0 0 16px' }} data-help="Live multi-track looper with master Delay, Reverb, and Dub FX. Record phrases, stack up to 4 tracks, polish with FX.">
@@ -588,12 +588,12 @@ export default function LoopStation() {
               borderRadius: 12,
               border: recordingId === t.id ? '1.5px solid #38bdf8' : '1.5px solid rgba(139,92,246,0.35)',
               background: 'rgba(10,6,20,0.75)',
-              boxShadow: recordingId === t.id ? '0 0 20px rgba(56,189,248,0.35)' : 'none',
+              boxShadow: recordingId === t.id ? '0 0 0 1px rgba(56,189,248,0.35)' : 'none',
             }}
             data-help="Each track holds one loop. Record, then Play All to stack. Mute and volume are per track."
           >
             <div>
-              <div style={{ fontFamily: "'Audiowide', sans-serif", fontSize: '0.85rem', color: '#a5b4fc' }}>{t.name}</div>
+              <div style={{ fontFamily: 'var(--faf-font)', fontSize: '0.85rem', color: '#a5b4fc' }}>{t.name}</div>
               <div style={{ fontSize: '0.65rem', color: 'rgba(180,170,200,0.6)' }}>
                 {t.hasClip ? `${t.lengthSec.toFixed(1)}s loop` : 'empty'}
               </div>
