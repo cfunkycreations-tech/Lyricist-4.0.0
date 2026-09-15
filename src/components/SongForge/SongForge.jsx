@@ -10,6 +10,7 @@ import {
 } from '../../services/GeminiService.js';
 import { Wand2, Download, Send, Copy, RefreshCw, Upload, Shuffle, Sparkles, Image as ImageIcon, X } from 'lucide-react';
 import { registerDemoSnapshot } from '../../services/demoSafety.js';
+import { registerGhostActions, ghostSettle } from '../../services/ghostBus.js';
 
 import TabBackground from '../common/TabBackground.jsx';
 const SURPRISE_TOPICS = [
@@ -307,6 +308,70 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  /**
+   * WHAT THE GHOST CAN DO ON SONG FORGE. Same buttons, same code. See the note
+   * on Ghost Rider's actions for why everything goes through `ghost` after a
+   * settle rather than calling the handlers in this closure.
+   */
+  const ghost = useRef({});
+  ghost.current = {
+    store, mode, result, titleDraft, errorMsg, seedImage,
+    handleForgeSongFirst, handleGenerateSeedImage, handleWriteLyricsFromImage,
+    handleRemixArt, handleSurpriseMe, handleSendToWorkspace,
+  };
+  const forgeFailed = () => { if (ghost.current.errorMsg) throw new Error(ghost.current.errorMsg); };
+  useEffect(() => registerGhostActions({
+    describe_songforge: () => {
+      const g = ghost.current;
+      return `SONG FORGE TAB: mode ${g.mode === 'artFirst' ? 'Art First' : 'Song First'}, topic "${g.store.topic || ''}". `
+        + (g.result ? `Forged "${g.titleDraft || g.result.title}" with ${g.result.art ? 'cover art' : 'no art'}.` : 'Nothing forged yet.');
+    },
+    songforge_forge: async ({ topic } = {}) => {
+      if (topic) ghost.current.store.setTopic(String(topic));
+      setMode('songFirst');
+      await ghostSettle();
+      await ghost.current.handleForgeSongFirst();
+      await ghostSettle();
+      forgeFailed();
+      return `forged "${ghost.current.titleDraft || 'the song'}" with cover art`;
+    },
+    songforge_art_first: async ({ prompt, notes } = {}) => {
+      setMode('artFirst');
+      if (prompt !== undefined) setSeedPrompt(String(prompt));
+      if (notes !== undefined) setImageNotes(String(notes));
+      await ghostSettle();
+      await ghost.current.handleGenerateSeedImage();
+      await ghostSettle();
+      forgeFailed();
+      await ghost.current.handleWriteLyricsFromImage();
+      await ghostSettle();
+      forgeFailed();
+      return `painted the image and wrote "${ghost.current.titleDraft || 'the song'}" from it`;
+    },
+    songforge_remix_art: async ({ style } = {}) => {
+      if (!ghost.current.result?.song) throw new Error('Forge a song first, then the art can be remixed.');
+      if (style !== undefined) setArtStyleOverride(String(style));
+      await ghostSettle();
+      await ghost.current.handleRemixArt();
+      await ghostSettle();
+      forgeFailed();
+      return 'painted new cover art';
+    },
+    songforge_set_title: ({ title } = {}) => {
+      setTitleDraft(String(title || ''));
+      return `titled it "${title}"`;
+    },
+    songforge_surprise: () => {
+      ghost.current.handleSurpriseMe();
+      return 'rolled a surprise genre blend, mood and topic';
+    },
+    songforge_send_to_songwriter: () => {
+      if (!ghost.current.result?.song?.sections?.length) throw new Error('Nothing forged yet to send.');
+      ghost.current.handleSendToWorkspace();
+      return 'sent the forged song to Songwriter';
+    },
+  }), []);
 
   const busy = loading || seedLoading || remixLoading;
 

@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import TabBackground from '../common/TabBackground.jsx';
+import { registerGhostActions, ghostSettle } from '../../services/ghostBus.js';
 import MultiPick from '../common/MultiPick.jsx';
 import { useLyricStore, genres, subgenres, moods, rhymeSchemes, rapFlowPatterns } from '../../context/LyricStore.jsx';
 import SectionEditor from './SectionEditor.jsx';
@@ -237,6 +238,96 @@ export default function SongwriterHub({ ghostRiderData }) {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  /**
+   * WHAT THE GHOST CAN DO ON SONGWRITER.
+   *
+   * The buttons' own handlers, reached through `ghost` after a settle so they
+   * read the picks the Ghost just made rather than the ones from before (see
+   * ghostSettle). Anything that replaces words already on the page hands back
+   * the store's own undo, so it lands as a button next to what it did.
+   */
+  const ghost = useRef({});
+  ghost.current = { store, errorMsg, handleGenerate, handleFillBlanks, loadOwnLyrics };
+  const writeFailed = () => { if (ghost.current.errorMsg) throw new Error(ghost.current.errorMsg); };
+  const hadWords = () => Boolean(ghost.current.store.getFullText().replace(/\[[^\]]*\]/g, '').trim());
+  const undoWords = { action: 'songwriter_undo', label: 'Put my lyrics back' };
+  useEffect(() => registerGhostActions({
+    describe_songwriter: () => {
+      const s = ghost.current.store;
+      return `SONGWRITER TAB: genres ${(s.genreList || []).join(' + ') || 'none'}; subgenres ${(s.subgenreList || []).join(' + ') || 'none'}; `
+        + `moods ${(s.moodList || []).join(' + ') || 'none'}; topic "${s.topic || ''}"; artist reference "${s.artistRef || ''}"; `
+        + `structure "${s.structureTemplate || ''}"; rhyme scheme "${s.rhymeScheme || ''}"; ${s.lyrics.length} section(s) on the page.`;
+    },
+    songwriter_set_style: async ({ genres: g, subgenres: sg, moods: m } = {}) => {
+      const match = (pool, wanted) => {
+        const out = [];
+        const missed = [];
+        for (const w of [].concat(wanted || [])) {
+          const n = String(w).trim().toLowerCase();
+          const hit = pool.find((p) => p.toLowerCase() === n)
+            || pool.find((p) => p.toLowerCase().includes(n) || n.includes(p.toLowerCase().split(' (')[0]));
+          if (hit) { if (!out.includes(hit)) out.push(hit); } else missed.push(w);
+        }
+        return { out, missed };
+      };
+      const said = [];
+      const missed = [];
+      if (g) {
+        const r = match(genres, g);
+        ghost.current.store.setGenreList(r.out);
+        said.push(`genres ${r.out.join(' + ') || 'cleared'}`);
+        missed.push(...r.missed);
+        await ghostSettle();
+      }
+      if (sg) {
+        const pool = ghost.current.store.subgenrePool || Object.values(subgenres).flat();
+        const r = match(pool, sg);
+        ghost.current.store.setSubgenreList(r.out);
+        said.push(`subgenres ${r.out.join(' + ') || 'cleared'}`);
+        missed.push(...r.missed);
+      }
+      if (m) {
+        const r = match(moods, m);
+        ghost.current.store.setMoodList(r.out);
+        said.push(`moods ${r.out.join(' + ') || 'cleared'}`);
+        missed.push(...r.missed);
+      }
+      return {
+        said: `set ${said.join(', ') || 'nothing'}`,
+        warn: missed.length ? `Not in the pickers, so left out: ${missed.join(', ')}` : null,
+      };
+    },
+    songwriter_set_topic: ({ topic } = {}) => { ghost.current.store.setTopic(String(topic || '')); return 'set the topic'; },
+    songwriter_set_artist: ({ artist } = {}) => { ghost.current.store.setArtistRef(String(artist || '')); return 'set the artist reference'; },
+    songwriter_set_notes: ({ notes } = {}) => { ghost.current.store.setNotes(String(notes || '')); return 'set the notes'; },
+    songwriter_write_song: async () => {
+      const had = hadWords();
+      await ghostSettle();
+      await ghost.current.handleGenerate();
+      await ghostSettle();
+      writeFailed();
+      return { said: 'wrote the whole song on Songwriter', undo: had ? undoWords : null };
+    },
+    songwriter_set_lyrics: async ({ text } = {}) => {
+      if (!String(text || '').trim()) throw new Error('There were no words to put in.');
+      const had = hadWords();
+      ghost.current.loadOwnLyrics(String(text), 'the Ghost');
+      await ghostSettle();
+      writeFailed();
+      return { said: 'put the lyrics on Songwriter', undo: had ? undoWords : null };
+    },
+    songwriter_fill_blanks: async () => {
+      if (!ghost.current.store.getFullText().includes('[blank]')) {
+        throw new Error("There are no [blank] spots in the lyrics to fill.");
+      }
+      await ghost.current.handleFillBlanks();
+      await ghostSettle();
+      writeFailed();
+      return { said: 'filled the blanks', undo: undoWords };
+    },
+    songwriter_undo: () => { ghost.current.store.undo(); return 'put the lyrics back'; },
+  }), []);
 
   // Keyword check
   const getMissingKeywords = () => {

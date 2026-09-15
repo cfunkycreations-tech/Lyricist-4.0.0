@@ -17,6 +17,7 @@ import {
   QUANTUM_SECTIONS,
 } from './quantumFeatures.js';
 import { registerDemoSnapshot } from '../../services/demoSafety.js';
+import { registerGhostActions, ghostSettle } from '../../services/ghostBus.js';
 import { useMobile } from '../../mobile/useMobile.js';
 import './QuantumLab.css';
 
@@ -747,6 +748,68 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       setStatus({ lead: 'Sent to Song Forge.', rest: ' Grid structure is seeding Song Forge — finish a full song + cover there.' });
     }
   };
+
+  /**
+   * WHAT THE GHOST CAN DO IN THE MATRIX. The Quick Path buttons, called the
+   * same way they are pressed. Everything reads through `ghost` after a settle
+   * for the same stale-closure reason Auto-Craft threads its section by hand.
+   */
+  const ghost = useRef({});
+  ghost.current = {
+    keywordDraft, neuralA, neuralB, neuralPick, status, gen, crystallized, activeNeural,
+    loadKeywords, autoCraftVerse, sendToSongwriter, sendToForge, resetDemo,
+  };
+  const MATRIX_FAILED = /^(could not generate|need an api key|contracts block|spread and locked — but|type something first)/i;
+  const loadForGhost = async (keywords) => {
+    const words = Array.isArray(keywords) ? keywords.join(', ') : String(keywords || '');
+    if (!words.trim()) return;
+    setKeywordDraft(words);
+    await ghostSettle();
+    ghost.current.loadKeywords();
+    await ghostSettle();
+  };
+  useEffect(() => registerGhostActions({
+    describe_matrix: () => {
+      const g = ghost.current;
+      return [
+        `THE MATRIX TAB: keywords "${g.keywordDraft}", ${g.gen} generations run, ${g.crystallized ? 'locked' : 'not locked'}. Status: ${g.status.lead}`,
+        g.neuralA ? `State A:\n${g.neuralA}` : 'No verses written yet.',
+        g.neuralB ? `State B:\n${g.neuralB}\nPicked: ${g.neuralPick}` : '',
+      ].filter(Boolean).join('\n');
+    },
+    matrix_load_keywords: async ({ keywords } = {}) => {
+      await loadForGhost(keywords);
+      if (MATRIX_FAILED.test(ghost.current.status.lead)) throw new Error(ghost.current.status.lead + ghost.current.status.rest);
+      return 'loaded the keywords into the grid';
+    },
+    matrix_autocraft: async ({ keywords } = {}) => {
+      await loadForGhost(keywords);
+      await ghost.current.autoCraftVerse();
+      await ghostSettle();
+      const s = ghost.current.status;
+      if (MATRIX_FAILED.test(s.lead)) throw new Error(s.lead + s.rest);
+      return 'spread, locked and wrote verses A and B';
+    },
+    matrix_pick: ({ state } = {}) => {
+      const pick = String(state).toUpperCase() === 'B' ? 'B' : 'A';
+      setNeuralPick(pick);
+      return `picked state ${pick}`;
+    },
+    matrix_send_to_songwriter: async ({ state } = {}) => {
+      if (state) { setNeuralPick(String(state).toUpperCase() === 'B' ? 'B' : 'A'); await ghostSettle(); }
+      if (!ghost.current.activeNeural) throw new Error('No Matrix verse yet. Auto-Craft one first.');
+      ghost.current.sendToSongwriter();
+      return 'sent the verse to Songwriter';
+    },
+    matrix_send_to_forge: () => {
+      ghost.current.sendToForge();
+      return 'sent the grid to Song Forge';
+    },
+    matrix_reset: () => {
+      ghost.current.resetDemo();
+      return 'put the demo grid back';
+    },
+  }), []);
 
   /** Help button — opens the step guide and names every button in order. */
   const doHelp = () => {

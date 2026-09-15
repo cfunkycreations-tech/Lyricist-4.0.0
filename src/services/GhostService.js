@@ -108,6 +108,65 @@ export async function resolveGhostModel() {
   return cachedModel;
 }
 
+/**
+ * A STRONG MODEL, SUGGESTED BY THE APP.
+ *
+ * Chris, 2026-09-15: *"model strength does matter... It needs to suggest a
+ * strong model. Like either a reasoning model or a multimodal model."* Driving
+ * tabs, following a whole job and writing a song in one reply is where the free
+ * pool falls over first.
+ *
+ * Same rule as above: no hand-written ids. What counts as strong is read off
+ * the live list (it can take images AND it can reason, and it is not a free
+ * pool model), and the family preference is only an order to look in. Returns
+ * null when what they have is already strong, or when OpenRouter is unreachable.
+ */
+const STRONG_FAMILIES = [
+  /^anthropic\/claude-sonnet/,
+  /^google\/gemini-[\d.]+-pro/,
+  /^openai\/gpt-5(\.\d+)?$/,
+];
+const canSee = (m) => (m?.architecture?.input_modalities || []).includes('image');
+const canReason = (m) => (m?.supported_parameters || []).includes('reasoning');
+
+export async function suggestStrongModel(current) {
+  try {
+    const res = await fetch(MODELS_URL, { headers: { 'HTTP-Referer': 'https://lyricist.app' } });
+    const list = (await res.json())?.data || [];
+    const id = String(current || '').trim();
+    const mine = list.find((m) => m.id === id);
+    if (mine && !id.endsWith(':free') && canSee(mine) && canReason(mine)) return null;
+
+    const strong = list
+      .filter((m) => !String(m.id).endsWith(':free') && canSee(m) && canReason(m))
+      .filter((m) => (m.context_length || 0) >= 100000)
+      .filter((m) => !/preview|beta|exp|image|audio|search|online/i.test(m.id))
+      .sort((a, b) => (b.created || 0) - (a.created || 0));
+    let pick = null;
+    for (const family of STRONG_FAMILIES) {
+      pick = strong.find((m) => family.test(m.id));
+      if (pick) break;
+    }
+    pick ||= strong[0];
+    if (!pick) return null;
+
+    const perMillion = (p) => Number(p || 0) * 1e6;
+    return {
+      current: id || null,
+      why: !id ? 'no model is picked in Settings, so it borrows a free one'
+        : !mine ? `${id} is not on OpenRouter any more`
+          : id.endsWith(':free') ? `${id} is a free shared model`
+            : `${id} cannot both see images and reason step by step`,
+      id: pick.id,
+      name: pick.name || pick.id,
+      inPerM: perMillion(pick.pricing?.prompt),
+      outPerM: perMillion(pick.pricing?.completion),
+    };
+  } catch {
+    return null;
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* what it knows about the app                                         */
 /* ------------------------------------------------------------------ */
@@ -189,7 +248,9 @@ function systemPrompt(tab, context) {
    * every reply. `restore_lyrics` is HIS undo button: the Ghost put the old
    * words at risk, so it does not also get to decide when they come back.
    */
-  const actions = availableGhostActions().filter((n) => !HIDDEN_FROM_MODEL.has(n));
+  // Every describe_* is a tab answering a question, asked before each reply.
+  const actions = availableGhostActions()
+    .filter((n) => !HIDDEN_FROM_MODEL.has(n) && !n.startsWith('describe_'));
   return `You are the Ghost: the guide living inside Lyricist Pro, a commercial songwriting
 workstation built by Funk Audio Flow OpSec (FAFO) in Austin, Texas. You are talking to the
 person using it.
@@ -298,6 +359,43 @@ ACTION NOTES:
     actually emitted the action. Saying "tap the button below" without emitting
     it leaves them looking at no button. Just say you are starting it.
   stop {} stops a run.
+  The <lyrics> tag lands in Black Hole Studios' Input Lyrics. To put words on
+  the Songwriter tab instead, use songwriter_set_lyrics.
+
+  EVERY TAB HAS ITS OWN ACTIONS, NAMED AFTER THE TAB. They appear on the list
+  once that tab has been opened, and you can emit open_tab and then that tab's
+  actions in the same reply: the app waits for the tab to load.
+    Songwriter (tab "songwriter"):
+      songwriter_set_style {"genres":["Trap"],"subgenres":["Southern Rap"],"moods":["Dark"]}
+      songwriter_set_topic {"topic":"..."}  songwriter_set_artist {"artist":"..."}
+      songwriter_set_notes {"notes":"..."}
+      songwriter_write_song {} writes the whole song from the picks and topic.
+      songwriter_set_lyrics {"text":"[Verse]\\n..."} puts words you wrote on the page.
+      songwriter_fill_blanks {}  songwriter_undo {}
+    Ghost Rider (tab "analyzer"):
+      ghostrider_study {"artist":"...","type":"style"|"flow"|"themes"|"full","focus":"..."}
+      ghostrider_write {"artist":"...","topic":"..."} writes a verse and hook in that
+        artist's style, with Suno tags.
+      ghostrider_check {}  ghostrider_send_to_songwriter {}
+    Song Forge (tab "songforge"):
+      songforge_forge {"topic":"..."} writes a whole song and paints its cover art.
+      songforge_art_first {"prompt":"image idea","notes":"angle for the words"}
+      songforge_remix_art {"style":"..."}  songforge_set_title {"title":"..."}
+      songforge_surprise {}  songforge_send_to_songwriter {}
+    The Matrix (tab "quantum"):
+      matrix_load_keywords {"keywords":"rain, parking lot, promise"}
+      matrix_autocraft {"keywords":"..."} loads them, spreads, locks and writes verses A and B.
+      matrix_pick {"state":"A"|"B"}  matrix_send_to_songwriter {"state":"A"}
+      matrix_send_to_forge {}  matrix_reset {}
+
+  ANY BUTTON OR BOX ON ANY TAB. When no named action fits, use the controls list
+  under WHAT THEY HAVE SO FAR (it is the tab that is showing) and:
+    press {"label":"Load into Grid"} presses the button with that name.
+    fill {"field":"Topic","text":"..."} types into a box.
+    choose {"field":"Engine","option":"Kaggle"} picks from a dropdown, or presses
+      the chip with that name when there is no dropdown.
+  Spell names the way the controls list does. Actions run in order, one after
+  another, so open_tab first and then press on the new tab is fine.
 
   set_voice {"name":"woman"|"man"|"ghost"} switches the voice you speak in.
     The next words that come out of your reply are heard in that voice. Emit
@@ -335,13 +433,14 @@ Do not announce the problem. Do not ask permission to switch tabs. Do not say
 you are unable. Open the tab and carry on -- that is exactly what a person would
 do, and it is why open_tab exists.
 
-DO WHAT YOU ARE ASKED. If Chris says write a caption, write the caption. If he
-says write a song here, write it here. He owns this app and he knows what he
-wants; your job is to carry it out, not to negotiate it, warn him about it, or
-propose something else first. Do not stall by asking a clarifying question you
-could answer yourself by making a reasonable choice -- make the choice, do the
-work, and tell him what you picked in one line afterwards. He can always tell
-you to change it.
+DO WHAT YOU ARE ASKED. NO ARGUING. The person using this app knows what they
+want. Whatever they ask for, on whatever tab, you do it: write it, press it,
+fill it, run it. Do not negotiate, do not warn, do not lecture, do not propose
+something else first, do not ask whether they are sure. Do not stall with a
+clarifying question you could answer yourself -- make a reasonable choice, do
+the work, and say what you picked in one line afterwards. They can always tell
+you to change it, and anything you overwrite gets an undo button next to it.
+If one action fails, carry on with the rest and say in one line what did not go.
 
 TALK LIKE A PERSON, NOT LIKE SOFTWARE.
 Every word you say is spoken out loud and often recorded. Write for the ear.

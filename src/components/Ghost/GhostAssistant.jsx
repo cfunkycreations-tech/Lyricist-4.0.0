@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './GhostAssistant.css';
-import { askGhost, splitActions } from '../../services/GhostService.js';
-import { registerGhostAction, runGhostAction, watchGhostActions, availableGhostActions } from '../../services/ghostBus.js';
+import { askGhost, splitActions, suggestStrongModel } from '../../services/GhostService.js';
+import { registerGhostAction, registerGhostActions, runGhostAction, watchGhostActions, availableGhostActions } from '../../services/ghostBus.js';
+import { pressControl, fillControl, chooseControl, describeControls } from '../../services/ghostHands.js';
+import { useLyricStore } from '../../context/LyricStore.jsx';
 import { speak, hush, loadVoice, voiceState, playSample, VOICES, getVoiceName, setVoiceName } from '../../services/GhostVoice.js';
 
 /**
@@ -141,6 +143,51 @@ export default function GhostAssistant({ tab, config, getContext }) {
     return `voice set to ${VOICES[key].label}`;
   }), [voiceOn]);
 
+  /**
+   * ANY BUTTON, ANY BOX, ANY TAB.
+   *
+   * Chris: *"It needs to be able to push all buttons, write songs and lyrics on
+   * any tab or page."* Named actions cover the tabs that have them; these cover
+   * everything else by the name printed on the control. See ghostHands.js.
+   * describe_controls hands the Ghost that list of names before every reply.
+   */
+  useEffect(() => registerGhostActions({
+    press: pressControl,
+    fill: fillControl,
+    choose: chooseControl,
+    describe_controls: describeControls,
+  }), []);
+
+  /**
+   * SUGGEST A STRONG MODEL.
+   *
+   * Running whole jobs needs a model that can reason and see, and most people
+   * start on a free one. When that is the case the panel says so once and
+   * offers a one-tap switch, with the price on it, because this one costs
+   * money and the free pool does not. Dismissing it is remembered per model.
+   */
+  const store = useLyricStore();
+  const [suggestion, setSuggestion] = useState(null);
+  const nudgeKey = (s) => `lyricist.ghost.modelNudge.${s?.current || 'none'}`;
+  useEffect(() => {
+    if (!open) return undefined;
+    let live = true;
+    suggestStrongModel(config?.model).then((s) => {
+      if (!live) return;
+      try { if (s && localStorage.getItem(nudgeKey(s)) === s.id) s = null; } catch { /* storage blocked */ }
+      setSuggestion(s);
+    });
+    return () => { live = false; };
+  }, [open, config?.model]);
+  const useSuggested = () => {
+    store.setConfig({ ...store.config, model: suggestion.id });
+    setSuggestion(null);
+  };
+  const skipSuggested = () => {
+    try { localStorage.setItem(nudgeKey(suggestion), suggestion.id); } catch { /* storage blocked */ }
+    setSuggestion(null);
+  };
+
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [msgs, busy]);
@@ -238,11 +285,16 @@ export default function GhostAssistant({ tab, config, getContext }) {
        * `describe_song` now gets asked before every question, so the answer is
        * written against the actual song on screen rather than in the abstract.
        */
-      let context = getContext?.() || '';
-      const fromTab = await runGhostAction('describe_song');
-      if (fromTab.ok && fromTab.said) {
-        context = [context, fromTab.said].filter(Boolean).join('\n\n');
+      // Every open tab describes itself now, not only Black Hole Studios, and
+      // the controls on the tab that is showing come last.
+      const parts = [getContext?.() || ''];
+      const describers = availableGhostActions()
+        .filter((n) => n.startsWith('describe_') && n !== 'describe_controls');
+      for (const n of [...describers, 'describe_controls']) {
+        const r = await runGhostAction(n);
+        if (r.ok && r.said) parts.push(r.said);
       }
+      const context = parts.filter(Boolean).join('\n\n');
 
       const { text, actions } = await askGhost({
         history,
@@ -366,8 +418,8 @@ export default function GhostAssistant({ tab, config, getContext }) {
     })));
   };
 
-  // describe_song is how the tab answers a question, not something to press.
-  const canDo = availableGhostActions().filter((n) => n !== 'describe_song').length;
+  // describe_* is how a tab answers a question, not something to press.
+  const canDo = availableGhostActions().filter((n) => !n.startsWith('describe_')).length;
 
   return (
     <>
@@ -444,6 +496,22 @@ export default function GhostAssistant({ tab, config, getContext }) {
           )}
 
           {voiceNote && <p className="gha-note">{voiceNote}</p>}
+
+          {suggestion && (
+            <div className="gha-tap">
+              <span>
+                The Ghost drives tabs and runs whole jobs better on a model that can reason
+                and see. Right now {suggestion.why}. Suggested: {suggestion.name}
+                {suggestion.inPerM || suggestion.outPerM
+                  ? ` ($${suggestion.inPerM.toFixed(2)} in / $${suggestion.outPerM.toFixed(2)} out per million tokens, billed to your OpenRouter key).`
+                  : '.'}
+              </span>
+              <span className="gha-tapbtns">
+                <button type="button" className="go" onClick={useSuggested}>Use {suggestion.name}</button>
+                <button type="button" onClick={skipSuggested}>Not now</button>
+              </span>
+            </div>
+          )}
 
           <div className="gha-log" ref={logRef}>
             {!msgs.length && (

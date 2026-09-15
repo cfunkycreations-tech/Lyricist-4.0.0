@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import TabBackground from '../common/TabBackground.jsx';
+import { registerGhostActions, ghostSettle } from '../../services/ghostBus.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { callAI, refineLyrics, analyzeClichés, checkSimilarity, checkThemeConsistency } from '../../services/AIService.js';
 import { Search, Sparkles, BookOpen, AlertTriangle, ShieldCheck, Check, Copy, Save, Heart, Send } from 'lucide-react';
@@ -251,6 +252,66 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
     setCopied(key);
     setTimeout(() => setCopied(''), 2000);
   };
+
+  /**
+   * WHAT THE GHOST CAN DO ON GHOST RIDER.
+   *
+   * The same handlers the buttons call, so a study or a write from the Ghost is
+   * exactly the one a person would get, Suno tags and all. Each action sets the
+   * boxes it was given, lets React render them (ghostSettle), then calls the
+   * handler from that fresh render through `ghost`, because the handler in this
+   * closure would still see the old artist.
+   */
+  const ghost = useRef({});
+  ghost.current = {
+    artist, tab, analysis, ghostTopic, ghostLyrics, sunoTags, errorMsg,
+    handleAnalyze, handleGhostWrite, handleRunChecks, handleSendToSongwriter,
+  };
+  useEffect(() => registerGhostActions({
+    describe_ghostrider: () => {
+      const g = ghost.current;
+      return [
+        `GHOST RIDER TAB: artist "${g.artist}", analysis type "${g.tab}", topic "${g.ghostTopic}".`,
+        g.analysis ? `Its style report starts: ${g.analysis.slice(0, 500)}` : 'No style report yet.',
+        g.ghostLyrics
+          ? `Lyrics it wrote in that style:\n${g.ghostLyrics.slice(0, 1000)}\nSuno tags: ${g.sunoTags}`
+          : 'No lyrics written in the style yet.',
+      ].join('\n');
+    },
+    ghostrider_study: async ({ artist: who, type, focus: about } = {}) => {
+      if (who) setArtist(String(who));
+      if (type && promptBuilders[type]) setTab(type);
+      if (about !== undefined) setFocus(String(about));
+      await ghostSettle();
+      if (!ghost.current.artist.trim()) throw new Error('Name the artist to study.');
+      await ghost.current.handleAnalyze();
+      await ghostSettle();
+      if (ghost.current.errorMsg) throw new Error(ghost.current.errorMsg);
+      return `studied ${ghost.current.artist}, the report is on Ghost Rider`;
+    },
+    ghostrider_write: async ({ artist: who, topic } = {}) => {
+      if (who) setArtist(String(who));
+      if (topic !== undefined) setGhostTopic(String(topic));
+      await ghostSettle();
+      if (!ghost.current.artist.trim()) throw new Error('Name the artist whose style to write in.');
+      await ghost.current.handleGhostWrite();
+      await ghostSettle();
+      const g = ghost.current;
+      if (g.errorMsg) throw new Error(g.errorMsg);
+      if (!g.ghostLyrics) throw new Error('The write came back empty. Try it again.');
+      return `wrote a verse and hook in the style of ${g.artist}${g.sunoTags ? `. Suno tags: ${g.sunoTags}` : ''}`;
+    },
+    ghostrider_check: async () => {
+      if (!ghost.current.ghostLyrics) throw new Error('Nothing written on Ghost Rider yet to check.');
+      await ghost.current.handleRunChecks();
+      return 'ran the cliché, similarity and theme checks';
+    },
+    ghostrider_send_to_songwriter: () => {
+      if (!ghost.current.ghostLyrics) throw new Error('Nothing written on Ghost Rider yet to send.');
+      ghost.current.handleSendToSongwriter();
+      return 'sent the lyrics to Songwriter';
+    },
+  }), []);
 
   return (
     <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden', position: 'relative', background: '#000000' }}>

@@ -167,7 +167,7 @@ function TabPane({ id, active, opened, children }) {
 
   if (!opened.has(id)) return null;
   return (
-    <div ref={ref} style={{ display: isActive ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+    <div ref={ref} data-tab-pane={id} style={{ display: isActive ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
       {children}
     </div>
   );

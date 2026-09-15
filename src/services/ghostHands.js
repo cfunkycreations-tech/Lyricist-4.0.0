@@ -1,0 +1,193 @@
+/**
+ * THE GHOST'S HANDS: PRESS, FILL AND CHOOSE ANYTHING ON SCREEN, BY ITS NAME.
+ *
+ * Chris, 2026-09-15: *"It needs to be able to push all buttons, write songs and
+ * lyrics on any tab or page."*
+ *
+ * Named actions (ghostBus) are the dependable way to drive a tab, because they
+ * call the same code the button does and report what came back. But eighteen
+ * tabs have hundreds of controls between them, and a control nobody wrote an
+ * action for would otherwise be a thing the Ghost simply cannot touch. So this
+ * is the fallback: find the control on the tab that is showing, by the words a
+ * person would use for it, and operate it the way a person would.
+ *
+ * It only ever looks inside the visible tab pane (App.jsx tags each one with
+ * data-tab-pane), so it cannot press a button on a hidden tab that happens to
+ * share a name, and it never touches the Ghost's own panel.
+ */
+
+const BUTTONS = [
+  'button', '[role="button"]', '[role="tab"]', '[role="option"]', '[role="checkbox"]',
+  '[role="switch"]', '[role="menuitem"]', 'a[href]', 'summary',
+  'input[type="checkbox"]', 'input[type="radio"]', 'input[type="button"]', 'input[type="submit"]',
+].join(',');
+const FIELDS = 'input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="file"]):not([type="hidden"]), textarea, select, [contenteditable="true"]';
+
+const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim().toLowerCase();
+const clip = (s, n = 48) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** The tab pane that is on screen right now. */
+export function activePane() {
+  const panes = [...document.querySelectorAll('[data-tab-pane]')];
+  return panes.find((p) => p.style.display !== 'none') || document.body;
+}
+
+function visible(el) {
+  if (!el || el.closest('.gha, .gha-launch')) return false;
+  if (!(el.offsetWidth || el.offsetHeight || el.getClientRects().length)) {
+    // A styled checkbox is often hidden behind its label. Still operable.
+    return el.matches('input[type="checkbox"], input[type="radio"]') && !!el.closest('label');
+  }
+  return getComputedStyle(el).visibility !== 'hidden';
+}
+
+function buttonName(el) {
+  if (el.matches('input[type="checkbox"], input[type="radio"]')) return fieldName(el);
+  return norm(el.getAttribute('aria-label') || el.innerText || el.value || el.title || '');
+}
+
+function fieldName(el) {
+  const direct = el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.name || '';
+  if (direct) return norm(direct);
+  if (el.id) {
+    const lab = document.querySelector(`label[for="${CSS.escape(el.id)}"]`);
+    if (lab) return norm(lab.innerText);
+  }
+  const wrap = el.closest('label');
+  if (wrap) return norm(wrap.innerText);
+  // The common layout here: a small label element sitting just above the box.
+  let prev = el.previousElementSibling || el.parentElement?.previousElementSibling;
+  for (let i = 0; prev && i < 3; i++, prev = prev.previousElementSibling) {
+    const t = norm(prev.innerText);
+    if (t && t.length < 60) return t;
+  }
+  return norm(el.id || '');
+}
+
+function score(name, want) {
+  if (!name || !want) return 0;
+  if (name === want) return 4;
+  if (name.startsWith(want)) return 3;
+  if (name.includes(want)) return 2;
+  if (want.includes(name) && name.length > 2) return 1;
+  return 0;
+}
+
+/**
+ * Best match for a name, retried for a moment: a tab the Ghost just opened may
+ * still be mounting, and a panel it just expanded may still be drawing.
+ */
+async function find(selector, nameOf, label, index = 0) {
+  const want = norm(label);
+  if (!want) throw new Error('Say which control, by the name on it.');
+  for (let waited = 0; waited <= 1500; waited += 150) {
+    const hits = [...activePane().querySelectorAll(selector)]
+      .filter(visible)
+      .map((el) => ({ el, s: score(nameOf(el), want) }))
+      .filter((h) => h.s > 0);
+    if (hits.length) {
+      const best = Math.max(...hits.map((h) => h.s));
+      const top = hits.filter((h) => h.s === best);
+      return top[Math.min(Number(index) || 0, top.length - 1)].el;
+    }
+    await wait(150);
+  }
+  return null;
+}
+
+/** Scroll it into view and light it up, so a person watching sees what was touched. */
+async function show(el) {
+  try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch { /* old engines */ }
+  const { outline, outlineOffset } = el.style;
+  el.style.outline = '2px solid #b388ff';
+  el.style.outlineOffset = '2px';
+  setTimeout(() => { el.style.outline = outline; el.style.outlineOffset = outlineOffset; }, 900);
+  await wait(250);
+}
+
+/** React keeps its own copy of an input's value; set it the way React will notice. */
+function setNativeValue(el, value) {
+  const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype
+    : el instanceof HTMLSelectElement ? HTMLSelectElement.prototype
+      : HTMLInputElement.prototype;
+  Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, value);
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+export async function pressControl({ label, index } = {}) {
+  const el = await find(BUTTONS, buttonName, label, index);
+  if (!el) throw new Error(`There is no "${label}" button on this tab.`);
+  await show(el);
+  if (el.disabled || el.getAttribute('aria-disabled') === 'true') {
+    throw new Error(`"${clip(buttonName(el))}" is greyed out right now, so it cannot be pressed yet.`);
+  }
+  el.click();
+  return `pressed "${clip(buttonName(el) || label)}"`;
+}
+
+export async function fillControl({ field, text = '' } = {}) {
+  const el = await find(FIELDS, fieldName, field);
+  if (!el) throw new Error(`There is no "${field}" box on this tab.`);
+  await show(el);
+  el.focus();
+  if (el.isContentEditable) {
+    el.textContent = String(text);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  } else if (el instanceof HTMLSelectElement) {
+    return chooseControl({ field, option: text });
+  } else {
+    setNativeValue(el, String(text));
+  }
+  return `filled "${clip(fieldName(el) || field)}"`;
+}
+
+export async function chooseControl({ field, option } = {}) {
+  const want = norm(option);
+  if (!want) throw new Error('Say which option to pick.');
+  if (field) {
+    const sel = await find('select', fieldName, field);
+    if (sel) {
+      const opts = [...sel.options];
+      const hit = opts.find((o) => norm(o.text) === want || norm(o.value) === want)
+        || opts.find((o) => norm(o.text).includes(want) || norm(o.value).includes(want));
+      if (!hit) throw new Error(`"${option}" is not one of the choices in "${field}".`);
+      await show(sel);
+      setNativeValue(sel, hit.value);
+      return `picked "${clip(hit.text)}" in "${clip(fieldName(sel) || field)}"`;
+    }
+  }
+  // Most pickers in this app are rows of chips, not dropdowns.
+  return pressControl({ label: option });
+}
+
+/** What can be pressed and filled on the tab that is showing, for the Ghost to read. */
+export function describeControls() {
+  const pane = activePane();
+  if (pane === document.body) return '';
+  const buttons = [];
+  for (const el of pane.querySelectorAll(BUTTONS)) {
+    if (!visible(el)) continue;
+    const n = buttonName(el);
+    if (!n || n.length > 60) continue;
+    const label = el.disabled ? `${n} (greyed out)` : n;
+    if (!buttons.includes(label)) buttons.push(label);
+    if (buttons.length >= 80) break;
+  }
+  const fields = [];
+  for (const el of pane.querySelectorAll(FIELDS)) {
+    if (!visible(el)) continue;
+    const n = fieldName(el);
+    if (!n) continue;
+    const v = el instanceof HTMLSelectElement ? el.options[el.selectedIndex]?.text || ''
+      : el.isContentEditable ? el.textContent : el.value;
+    fields.push(`"${clip(n, 40)}" = "${clip(norm(v), 40)}"`);
+    if (fields.length >= 30) break;
+  }
+  return [
+    `CONTROLS ON THE TAB THAT IS SHOWING (use press / fill / choose with these names):`,
+    buttons.length ? `Buttons: ${buttons.join(' | ')}` : 'Buttons: none',
+    fields.length ? `Boxes: ${fields.join('; ')}` : 'Boxes: none',
+  ].join('\n');
+}

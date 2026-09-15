@@ -53,6 +53,16 @@ export function registerGhostActions(map) {
   return () => offs.forEach((off) => off());
 }
 
+/**
+ * Let React catch up.
+ *
+ * A tab's handlers read state from the render they were made in, so an action
+ * that sets the artist and then presses Write in the same tick writes for the
+ * OLD artist. Actions set what they need, wait for this, and then call the
+ * handler from the fresh render (every tab keeps its latest handlers in a ref).
+ */
+export const ghostSettle = (ms = 120) => new Promise((r) => setTimeout(r, ms));
+
 /** What can be done right now, given what is on screen. */
 export function availableGhostActions() {
   return [...handlers.keys()].sort();
@@ -84,7 +94,15 @@ export function watchGhostActions(fn) {
  * it just did. A plain string still works and still means "no undo needed".
  */
 export async function runGhostAction(name, args = {}) {
-  const fn = handlers.get(name);
+  // A tab mounts on its first open, and its actions register in an effect a
+  // frame or two after that. "open_tab" then "songwriter_write_song" in the
+  // same breath used to fail on the second one for no reason a person would
+  // see, so give a freshly opened tab a moment to hand its controls over.
+  let fn = handlers.get(name);
+  for (let waited = 0; !fn && waited < 2000; waited += 100) {
+    await new Promise((r) => setTimeout(r, 100));
+    fn = handlers.get(name);
+  }
   if (!fn) {
     return { ok: false, said: `I cannot do "${name}" from here. Open the tab it belongs to first.` };
   }
