@@ -3,6 +3,10 @@ import './GhostAssistant.css';
 import { askGhost, splitActions, suggestStrongModel } from '../../services/GhostService.js';
 import { registerGhostAction, registerGhostActions, runGhostAction, watchGhostActions, availableGhostActions } from '../../services/ghostBus.js';
 import { pressControl, fillControl, chooseControl, describeControls } from '../../services/ghostHands.js';
+import {
+  captionHand, clearCaption, stopHand, resetHandStop, handStopped, getHandSpeed, setHandSpeed, HAND_SPEED_NAMES,
+} from '../../services/ghostCursor.js';
+import GhostHand from './GhostHand.jsx';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { speak, hush, loadVoice, voiceState, playSample, VOICES, getVoiceName, setVoiceName } from '../../services/GhostVoice.js';
 
@@ -159,6 +163,40 @@ export default function GhostAssistant({ tab, config, getContext }) {
   }), []);
 
   /**
+   * NARRATION, ONE LINE PER STEP.
+   *
+   * A demo is someone talking while they click. `say` shows the line by the
+   * Ghost's hand and speaks it when the voice is on, and it holds the next
+   * action until the line is finished, so the words and the hand stay together
+   * instead of the reply being read out over a screen that already changed.
+   * With the voice off the caption stays up for about as long as it would take
+   * to say, so a silent viewer can still read along.
+   */
+  const voiceOnRef = useRef(voiceOn);
+  voiceOnRef.current = voiceOn;
+  useEffect(() => registerGhostAction('say', async ({ text } = {}) => {
+    const line = String(text || '').trim();
+    if (!line) return null;
+    if (handStopped()) throw new Error('Stopped.');
+    const readingTime = () => new Promise((r) => setTimeout(r, Math.min(4500, 900 + line.split(/\s+/).length * 260)));
+    captionHand(line);
+    try {
+      const spoken = voiceOnRef.current ? await speak(line) : null;
+      if (!spoken?.ok) await readingTime();
+    } finally {
+      clearCaption();
+    }
+    return `said "${line.length > 60 ? `${line.slice(0, 57)}…` : line}"`;
+  }), []);
+
+  // How the hand moves: normal, fast, or off for runs nobody is watching.
+  const [handSpeed, setHandSpeedState] = useState(() => getHandSpeed());
+  const cycleHandSpeed = () => {
+    const next = HAND_SPEED_NAMES[(HAND_SPEED_NAMES.indexOf(handSpeed) + 1) % HAND_SPEED_NAMES.length];
+    setHandSpeedState(setHandSpeed(next));
+  };
+
+  /**
    * SUGGEST A STRONG MODEL.
    *
    * Running whole jobs needs a model that can reason and see, and most people
@@ -222,6 +260,8 @@ export default function GhostAssistant({ tab, config, getContext }) {
     hush();
     setMsgs((m) => [...m, { who: 'you', text: q }]);
     setBusy(true);
+    // A new job is a fresh start: a Stop from the last one does not carry over.
+    resetHandStop();
 
     // OBS pass. Stow the aside so the recording captures the app the Ghost is
     // driving, not the panel that told the Ghost to drive it. The actions the
@@ -327,7 +367,9 @@ export default function GhostAssistant({ tab, config, getContext }) {
       // different audio pipes and neither one hush()es the other. So when a
       // narrating action is present, the ghost box stays quiet; its `text` is
       // still written into the conversation for the log.
-      const NARRATING_ACTIONS = new Set(['run_matrix_walkthrough', 'pilot_run']);
+      // `say` narrates step by step on its own too, so the reply is not read
+      // out over the top of it.
+      const NARRATING_ACTIONS = new Set(['run_matrix_walkthrough', 'pilot_run', 'say']);
 
       const done = [];
       const waiting = [];
@@ -353,7 +395,11 @@ export default function GhostAssistant({ tab, config, getContext }) {
       // Wave 3: the actual driving. Runs in parallel with the voice above (or,
       // when a walkthrough is in the mix, provides its own voice as it goes).
       for (const a of driving) {
+        // Stop pressed mid-run: leave everything after this point undone.
+        if (handStopped()) { done.push({ name: a.name, ok: false, said: 'stopped before this step' }); break; }
         const r = await runGhostAction(a.name, a.args);
+        // A line of narration that played is not something it DID to the song.
+        if (a.name === 'say' && r.ok) continue;
         done.push({ name: a.name, ...r });
       }
 
@@ -423,6 +469,10 @@ export default function GhostAssistant({ tab, config, getContext }) {
 
   return (
     <>
+      {/* The hand is drawn whether the panel is open or not: with Stow on the
+          panel closes and the hand is the only sign of the Ghost at work. */}
+      <GhostHand />
+
       <button
         type="button"
         className={`gha-launch${open ? ' is-open' : ''}`}
@@ -458,6 +508,16 @@ export default function GhostAssistant({ tab, config, getContext }) {
                   : 'Turn on to close this panel automatically when you press Enter — for OBS recording. Voice stays under its own toggle.'}
               >
                 {stow ? '🎬 Stow on' : '📂 Stow off'}
+              </button>
+              {/* The Ghost's hand on screen. Normal for watching and recording,
+                  fast for getting on with it, off for runs nobody is watching. */}
+              <button
+                type="button"
+                className={`gha-voice${handSpeed !== 'off' ? ' on' : ''}`}
+                onClick={cycleHandSpeed}
+                title="How the Ghost's hand moves on screen while it works. Tap to switch between normal, fast and off."
+              >
+                {handSpeed === 'off' ? '✋ Hands off' : handSpeed === 'fast' ? '✋ Hands fast' : '✋ Hands on'}
               </button>
               <button
                 type="button"
@@ -595,7 +655,19 @@ export default function GhostAssistant({ tab, config, getContext }) {
                 question is already typed and the button sends it, so it says
                 what pressing it does, and it matches the key that does the
                 same thing. */}
-            <button type="submit" disabled={busy || !input.trim()}>Enter</button>
+            {/* STOP, WHILE IT WORKS. The hand halts mid-word, the voice cuts,
+                the question to the model is cancelled, and nothing after the
+                current step runs. What already happened stays in the log. */}
+            {busy ? (
+              <button
+                type="button"
+                onClick={() => { stopHand(); hush(); abortRef.current?.abort(); }}
+              >
+                Stop
+              </button>
+            ) : (
+              <button type="submit" disabled={!input.trim()}>Enter</button>
+            )}
           </form>
 
           {/* "on this tab" was wrong: a tab stays mounted once you have opened

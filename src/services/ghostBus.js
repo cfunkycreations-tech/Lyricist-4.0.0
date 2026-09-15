@@ -26,6 +26,9 @@
  * It is a registry with one owner per action.
  */
 
+import { ghostBefore } from './ghostHands.js';
+import { handStopped } from './ghostCursor.js';
+
 const handlers = new Map();
 const watchers = new Set();
 
@@ -107,6 +110,10 @@ export async function runGhostAction(name, args = {}) {
     return { ok: false, said: `I cannot do "${name}" from here. Open the tab it belongs to first.` };
   }
   try {
+    // Show it the way a person would do it, then do it. See BEFORE in ghostHands.js.
+    if (handStopped()) return { ok: false, said: 'stopped' };
+    await ghostBefore(name, args);
+    if (handStopped()) return { ok: false, said: 'stopped' };
     const out = await fn(args);
     if (out && typeof out === 'object') {
       return { ok: true, said: out.said || null, undo: out.undo || null, warn: out.warn || null };

@@ -14,7 +14,15 @@
  * It only ever looks inside the visible tab pane (App.jsx tags each one with
  * data-tab-pane), so it cannot press a button on a hidden tab that happens to
  * share a name, and it never touches the Ghost's own panel.
+ *
+ * VISIBLE, LIKE A PERSON (Phase 2). Everything here moves the drawn hand from
+ * ghostCursor.js first: it glides to the control, a ring shows the press, and
+ * words appear in a box letter by letter. With the hand switched off the same
+ * calls run instantly.
  */
+import {
+  pressHand, typeWithHand, handStopped, getHandSpeed,
+} from './ghostCursor.js';
 
 const BUTTONS = [
   'button', '[role="button"]', '[role="tab"]', '[role="option"]', '[role="checkbox"]',
@@ -92,10 +100,10 @@ function score(name, want) {
  * Best match for a name, retried for a moment: a tab the Ghost just opened may
  * still be mounting, and a panel it just expanded may still be drawing.
  */
-async function find(selector, namesOf, label, index = 0) {
+async function find(selector, namesOf, label, index = 0, patience = 1500) {
   const want = norm(label);
   if (!want) throw new Error('Say which control, by the name on it.');
-  for (let waited = 0; waited <= 1500; waited += 150) {
+  for (let waited = 0; waited <= patience; waited += 150) {
     const hits = [...activePane().querySelectorAll(selector)]
       .filter(visible)
       .map((el) => ({ el, s: Math.max(0, ...[].concat(namesOf(el)).map((n) => score(n, want))) }))
@@ -105,23 +113,26 @@ async function find(selector, namesOf, label, index = 0) {
       const top = hits.filter((h) => h.s === best);
       return top[Math.min(Number(index) || 0, top.length - 1)].el;
     }
-    await wait(150);
+    if (patience) await wait(150);
   }
   return null;
 }
 
-/** Scroll it into view and light it up, so a person watching sees what was touched. */
-async function show(el) {
-  try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch { /* old engines */ }
+/** A glow on the control as it is used. Kept with the hand off too, so a fast run still leaves a trail. */
+function glow(el) {
   const { outline, outlineOffset } = el.style;
   el.style.outline = '2px solid #b388ff';
   el.style.outlineOffset = '2px';
   setTimeout(() => { el.style.outline = outline; el.style.outlineOffset = outlineOffset; }, 900);
-  await wait(250);
 }
 
 /** React keeps its own copy of an input's value; set it the way React will notice. */
 function setNativeValue(el, value) {
+  if (el.isContentEditable) {
+    el.textContent = value;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    return;
+  }
   const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype
     : el instanceof HTMLSelectElement ? HTMLSelectElement.prototype
       : HTMLInputElement.prototype;
@@ -130,10 +141,17 @@ function setNativeValue(el, value) {
   el.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
+function notStopped() {
+  if (handStopped()) throw new Error('Stopped.');
+}
+
 export async function pressControl({ label, index } = {}) {
+  notStopped();
   const el = await find(BUTTONS, buttonName, label, index);
   if (!el) throw new Error(`There is no "${label}" button on this tab.`);
-  await show(el);
+  glow(el);
+  await pressHand(el);
+  notStopped();
   if (el.disabled || el.getAttribute('aria-disabled') === 'true') {
     throw new Error(`"${clip(buttonName(el))}" is greyed out right now, so it cannot be pressed yet.`);
   }
@@ -142,21 +160,17 @@ export async function pressControl({ label, index } = {}) {
 }
 
 export async function fillControl({ field, text = '' } = {}) {
+  notStopped();
   const el = await find(FIELDS, fieldNames, field);
   if (!el) throw new Error(`There is no "${field}" box on this tab.`);
   if (el instanceof HTMLSelectElement) return chooseControl({ field, option: text });
-  await show(el);
-  el.focus();
-  if (el.isContentEditable) {
-    el.textContent = String(text);
-    el.dispatchEvent(new Event('input', { bubbles: true }));
-  } else {
-    setNativeValue(el, String(text));
-  }
+  glow(el);
+  await typeWithHand(el, String(text), (v) => setNativeValue(el, v));
   return `filled "${clip(fieldName(el) || field)}"`;
 }
 
 export async function chooseControl({ field, option } = {}) {
+  notStopped();
   const want = norm(option);
   if (!want) throw new Error('Say which option to pick.');
   if (field) {
@@ -166,13 +180,96 @@ export async function chooseControl({ field, option } = {}) {
       const hit = opts.find((o) => norm(o.text) === want || norm(o.value) === want)
         || opts.find((o) => norm(o.text).includes(want) || norm(o.value).includes(want));
       if (!hit) throw new Error(`"${option}" is not one of the choices in "${field}".`);
-      await show(sel);
+      glow(sel);
+      await pressHand(sel);
       setNativeValue(sel, hit.value);
       return `picked "${clip(hit.text)}" in "${clip(fieldName(sel) || field)}"`;
     }
   }
   // Most pickers in this app are rows of chips, not dropdowns.
   return pressControl({ label: option });
+}
+
+/* ------------------------------------------------------------------ */
+/* the hand, for named actions                                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * WHAT A NAMED ACTION LOOKS LIKE WHEN A PERSON DOES IT.
+ *
+ * songwriter_write_song calls the tab's own handler directly, which is the
+ * right way to do the work and shows nothing on screen at all. So before a
+ * named action runs, the hand does what a person would visibly do for it:
+ * types the topic into the topic box, glides to Generate Full Song and
+ * presses. The handler then does the real work.
+ *
+ * Kept as one table here rather than inside each tab, so the look of every
+ * action is in one place, and a step that cannot find its control is simply
+ * skipped. The show is never allowed to get in the way of the work: a named
+ * action can run on a tab that is not showing, and then there is nothing to
+ * point at and it just runs.
+ */
+const BEFORE = {
+  songwriter_set_topic: [{ type: '[placeholder^="e.g. city lights"]', arg: 'topic' }],
+  songwriter_set_artist: [{ type: '[placeholder^="e.g. Kendrick Lamar, Bob"]', arg: 'artist' }],
+  songwriter_set_notes: [{ type: '[placeholder^="e.g. keep it clean"]', arg: 'notes' }],
+  songwriter_write_song: [{ point: '[data-demo="sw-generate"]' }],
+  songwriter_fill_blanks: [{ label: 'fill [blank]' }],
+
+  ghostrider_study: [{ type: '[data-demo="gr-artist"]', arg: 'artist' }, { point: '[data-demo="gr-analyze"]' }],
+  ghostrider_write: [
+    { type: '[data-demo="gr-artist"]', arg: 'artist' },
+    { type: '[placeholder^="Optional Topic"]', arg: 'topic' },
+    { point: '[data-demo="gr-write"]' },
+  ],
+  ghostrider_send_to_songwriter: [{ point: '[data-demo="gr-send"]' }],
+
+  songforge_forge: [{ point: '[data-demo="sf-forge"]' }],
+  songforge_surprise: [{ label: 'surprise me' }],
+  songforge_remix_art: [{ label: 'remix art' }],
+  songforge_send_to_songwriter: [{ point: '[data-demo="sf-send"]' }],
+
+  matrix_load_keywords: [{ type: '#ql-kw-input', arg: 'keywords' }, { point: '[data-demo="ql-load"]' }],
+  matrix_autocraft: [
+    { type: '#ql-kw-input', arg: 'keywords' },
+    { point: '[data-demo="ql-load"]', onlyWith: 'keywords' },
+    { point: '[data-demo="matrix-autocraft"]' },
+  ],
+  matrix_send_to_songwriter: [{ point: '[data-demo="ql-send-songwriter"]' }],
+  matrix_send_to_forge: [{ point: '[data-demo="ql-send-forge"]' }],
+};
+
+const asText = (v) => (Array.isArray(v) ? v.join(', ') : v == null ? '' : String(v));
+
+export async function ghostBefore(name, args = {}) {
+  const steps = BEFORE[name];
+  if (!steps || getHandSpeed() === 'off') return;
+  const pane = activePane();
+  if (pane === document.body) return;
+  for (const step of steps) {
+    if (handStopped()) return;
+    try {
+      if (step.onlyWith && !asText(args[step.onlyWith]).trim()) continue;
+      if (step.type) {
+        const value = asText(args[step.arg]);
+        if (!value.trim()) continue;
+        const box = pane.querySelector(step.type);
+        const field = box && (box.matches(FIELDS) ? box : box.querySelector(FIELDS));
+        if (!field || !visible(field)) continue;
+        glow(field);
+        await typeWithHand(field, value, (v) => setNativeValue(field, v));
+      } else {
+        const el = step.point
+          ? pane.querySelector(step.point)
+          : await find(BUTTONS, buttonName, step.label, 0, 0);
+        if (!el || !visible(el)) continue;
+        glow(el);
+        await pressHand(el);
+      }
+    } catch {
+      return;   // stopped, or the control moved: the action itself still decides
+    }
+  }
 }
 
 /** What can be pressed and filled on the tab that is showing, for the Ghost to read. */
