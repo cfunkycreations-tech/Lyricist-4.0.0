@@ -116,7 +116,12 @@ function checkPackagedMainModules() {
  * is loaded with loadFile() rather than imported, so no module scan can see it.
  */
 function checkPackagedRuntimeAssets() {
-  const assets = ['splash/splash.html', 'splash/splash.mp4'];
+  // Only what main.js still actually loads. The splash window was removed from
+  // main.js in 66e20f2 along with its files, and checking for them anyway
+  // blocked every release after it.
+  const mainSrc = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8');
+  const assets = ['splash/splash.html', 'splash/splash.mp4']
+    .filter((rel) => mainSrc.includes(path.posix.basename(rel)));
   const pkgJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
   const patterns = pkgJson.build?.files || [];
   for (const rel of assets) {
