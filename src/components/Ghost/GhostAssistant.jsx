@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './GhostAssistant.css';
-import { askGhost, suggestStrongModel, planJob, looksLikeWorkflow } from '../../services/GhostService.js';
+import { askGhost, planJob, looksLikeWorkflow } from '../../services/GhostService.js';
 import { registerGhostAction, registerGhostActions, runGhostAction, watchGhostActions, availableGhostActions } from '../../services/ghostBus.js';
 import { pressControl, fillControl, chooseControl, describeControls } from '../../services/ghostHands.js';
 import {
@@ -225,35 +225,11 @@ export default function GhostAssistant({ tab, config, getContext }) {
     if (preview) previewVoice();
   };
 
-  /**
-   * SUGGEST A STRONG MODEL.
-   *
-   * Running whole jobs needs a model that can reason and see, and most people
-   * start on a free one. When that is the case the panel says so once and
-   * offers a one-tap switch, with the price on it, because this one costs
-   * money and the free pool does not. Dismissing it is remembered per model.
+  /*
+   * NO MODEL SUGGESTIONS. Chris picks the model in Settings (DeepSeek), and on
+   * 2026-09-15 turned down both the Anthropic and the Google suggestion. The
+   * banner that nudged toward a "strong" model is gone.
    */
-  const store = useLyricStore();
-  const [suggestion, setSuggestion] = useState(null);
-  const nudgeKey = (s) => `lyricist.ghost.modelNudge.${s?.current || 'none'}`;
-  useEffect(() => {
-    if (!open) return undefined;
-    let live = true;
-    suggestStrongModel(config?.model).then((s) => {
-      if (!live) return;
-      try { if (s && localStorage.getItem(nudgeKey(s)) === s.id) s = null; } catch { /* storage blocked */ }
-      setSuggestion(s);
-    });
-    return () => { live = false; };
-  }, [open, config?.model]);
-  const useSuggested = () => {
-    store.setConfig({ ...store.config, model: suggestion.id });
-    setSuggestion(null);
-  };
-  const skipSuggested = () => {
-    try { localStorage.setItem(nudgeKey(suggestion), suggestion.id); } catch { /* storage blocked */ }
-    setSuggestion(null);
-  };
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
@@ -663,21 +639,6 @@ spoken line of talk.${attempt ? `\n\nThe last try at this step did not work (${s
             </button>
           </div>
 
-          {suggestion && (
-            <div className="gha-tap">
-              <span>
-                The Ghost drives tabs and runs whole jobs better on a model that can reason
-                and see. Right now {suggestion.why}. Suggested: {suggestion.name}
-                {suggestion.inPerM || suggestion.outPerM
-                  ? ` ($${suggestion.inPerM.toFixed(2)} in / $${suggestion.outPerM.toFixed(2)} out per million tokens, billed to your OpenRouter key).`
-                  : '.'}
-              </span>
-              <span className="gha-tapbtns">
-                <button type="button" className="go" onClick={useSuggested}>Use {suggestion.name}</button>
-                <button type="button" onClick={skipSuggested}>Not now</button>
-              </span>
-            </div>
-          )}
 
           {view === 'jobs' ? <GhostJobs /> : (<>
           <div className="gha-log" ref={logRef}>

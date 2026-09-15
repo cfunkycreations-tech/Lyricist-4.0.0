@@ -304,6 +304,22 @@ export function loadVoice() {
     let tts = null;
     let skipGpu = false;
     try { skipGpu = localStorage.getItem(NO_WEBGPU_KEY) === '1'; } catch { /* private mode */ }
+    /**
+     * ONLY A GPU THAT CAN RUN f16. The WebGPU weights are q4f16. On Chris's
+     * machine the adapter has no "shader-f16", so the model LOADED fine and
+     * then every line threw "'f16' type used without 'f16' extension enabled".
+     * Once that happens the runtime on that page is poisoned for wasm too,
+     * which is why the voice was silent with no message. Check first, and a
+     * GPU without f16 goes straight to wasm on a clean page.
+     */
+    if (!skipGpu && typeof navigator !== 'undefined' && navigator.gpu) {
+      try {
+        const adapter = await navigator.gpu.requestAdapter();
+        if (!adapter?.features?.has('shader-f16')) skipGpu = true;
+      } catch {
+        skipGpu = true;
+      }
+    }
     if (!skipGpu && typeof navigator !== 'undefined' && navigator.gpu) {
       try {
         tts = await KokoroTTS.from_pretrained(MODEL_ID, { dtype: 'q4f16', device: 'webgpu' });
@@ -565,7 +581,10 @@ export async function speak(text) {
   try {
     buffer = await synthesize(line, name);
   } catch (e) {
-    return { ok: false, error: voiceState.failed || e?.message || 'The voice did not work.' };
+    // ONNX Runtime throws bare numbers (an error pointer), which used to come
+    // out as "The voice did not work." with nothing to go on.
+    const detail = e?.message || (typeof e === 'number' ? `speech engine error ${e}` : String(e || ''));
+    return { ok: false, error: voiceState.failed || detail || 'The voice did not work.' };
   }
 
   hush();
