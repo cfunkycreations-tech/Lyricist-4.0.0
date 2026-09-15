@@ -156,6 +156,12 @@ export function resumeJob(id) {
 
 const waitFor = (id) => new Promise((resolve) => waiters.set(id, resolve));
 
+/** Resolve to { ok:false } instead of hanging the job. */
+const limit = (p, ms, why) => Promise.race([
+  Promise.resolve(p).catch((e) => ({ ok: false, said: e?.message || why, did: [] })),
+  new Promise((r) => setTimeout(() => r({ ok: false, said: why, did: [] }), ms)),
+]);
+
 async function runOne(id) {
   const ac = new AbortController();
   current = { id, abort: ac };
@@ -163,9 +169,9 @@ async function runOne(id) {
   const batch = job.mode === 'batch';
   const stopped = () => ac.signal.aborted || get(id)?.status === 'stopped';
 
-  deps.onJobStart?.(get(id));
   let recording = false;
   try {
+    deps.onJobStart?.(get(id));
     // PLAN, once. A resumed job keeps the plan it already had.
     if (!job.steps.length) {
       patch(id, { status: 'planning', note: 'Working out the steps…' });
@@ -189,7 +195,8 @@ async function runOne(id) {
     // RECORD, before the first step, not after the last one.
     if (get(id).record) {
       patch(id, { status: 'running', note: 'Starting OBS…' });
-      const r = await deps.record(true);
+      // Capped: OBS is never allowed to hold the job. No recording beats no job.
+      const r = await limit(deps.record(true), 45000, 'OBS did not answer in 45 seconds');
       logTo(id, r.ok ? 'OBS recording started' : `OBS did not start: ${r.said}`);
       recording = r.ok;
       if (!r.ok && !batch) {
@@ -209,7 +216,7 @@ async function runOne(id) {
         patchStep(id, i, { status: 'running' });
         logTo(id, `step ${i + 1}${attempt ? ' (again)' : ''}: ${step.text}`);
         try {
-          result = await deps.runStep(get(id), i, ac.signal, attempt);
+          result = await limit(deps.runStep(get(id), i, ac.signal, attempt), 6 * 60000, 'the step was still going after 6 minutes');
         } catch (e) {
           result = { ok: false, said: e?.message || 'That step did not work.', did: [] };
         }
@@ -243,7 +250,7 @@ async function runOne(id) {
     }
   } finally {
     if (recording) {
-      const r = await deps.record(false);
+      const r = await limit(deps.record(false), 20000, 'OBS did not answer');
       logTo(id, r.ok ? 'OBS recording stopped' : `OBS did not stop: ${r.said}`);
     }
     current = null;

@@ -32,9 +32,24 @@ function explain(error) {
   return 'OBS is not answering on port 4455. In OBS: Tools → WebSocket Server Settings → Enable WebSocket server, port 4455.';
 }
 
+/**
+ * NOTHING HERE MAY WAIT FOREVER. Chris's job sat on "Starting OBS…" and never
+ * reached step 1: a websocket connect to an OBS that is starting, or has its
+ * server off, can simply never settle. Every call is capped.
+ */
+const capped = (p, ms, what) => Promise.race([
+  p,
+  new Promise((_, reject) => setTimeout(() => reject(new Error(`${what} took longer than ${Math.round(ms / 1000)}s`)), ms)),
+]);
+
 async function tryConnect() {
   const password = localStorage.getItem(PASSWORD_KEY) || undefined;
-  await obs.connect(URL, password);
+  try {
+    await capped(obs.connect(URL, password), 4000, 'connecting to OBS');
+  } catch (e) {
+    try { await obs.disconnect(); } catch { /* not connected */ }
+    throw e;
+  }
   obsState.connected = true;
   obsState.error = null;
   announce();
@@ -55,9 +70,9 @@ export async function connectObs({ launch = false } = {}) {
   } catch (first) {
     const launcher = typeof window !== 'undefined' ? window.lyricistAPI?.obsLaunch : null;
     if (launch && launcher) {
-      const opened = await launcher().catch((e) => ({ ok: false, error: e?.message }));
+      const opened = await capped(launcher(), 8000, 'opening OBS').catch((e) => ({ ok: false, error: e?.message }));
       if (opened?.ok) {
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < 6; i++) {
           await sleep(1000);
           try { return await tryConnect(); } catch { /* still starting */ }
         }
@@ -77,16 +92,16 @@ export async function obsRequest(requestType, requestData = {}) {
 
 export async function startRecord() {
   const client = await connectObs({ launch: true });
-  const status = await client.call('GetRecordStatus').catch(() => null);
+  const status = await capped(client.call('GetRecordStatus'), 4000, 'asking OBS').catch(() => null);
   if (status?.outputActive) return;
-  await client.call('StartRecord');
+  await capped(client.call('StartRecord'), 6000, 'starting the OBS recording');
 }
 
 export async function stopRecord() {
   const client = await connectObs();
-  const status = await client.call('GetRecordStatus').catch(() => null);
+  const status = await capped(client.call('GetRecordStatus'), 4000, 'asking OBS').catch(() => null);
   if (status && !status.outputActive) return;
-  await client.call('StopRecord');
+  await capped(client.call('StopRecord'), 6000, 'stopping the OBS recording');
 }
 
 export function disconnectObs() {
