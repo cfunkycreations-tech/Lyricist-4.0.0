@@ -1,14 +1,39 @@
 /* The Push header. Vivid colour lives BEHIND each square; the square itself is
    an opaque dark face, so the colour glows round its edges and through it. */
 
+/* inherits: true, or the glow behind each face (a ::before) never sees the
+   animated hue and every pad sits on the same orange. */
 @property --hue {
   syntax: '<number>';
-  inherits: false;
+  inherits: true;
   initial-value: 0;
 }
 
-.push-hd { flex: 1 1 auto; min-width: 0; height: 100%; display: flex; align-items: center; padding: 0 12px; }
+.push-hd { flex: 1 1 auto; min-width: 0; height: 100%; display: flex; align-items: center; padding: 0 12px; position: relative; z-index: 1; }
 .push-row { display: flex; gap: 6px; align-items: center; width: 100%; overflow: hidden; }
+
+/* ══ VISUALS UNDER THE PADS ══
+   Chris: "bring back the visualizer and build in an option to have it run
+   beneath the push/ableton clone square opaque pads... You would still see the
+   pad buttons, but the visuals would play below." One Milkdrop picture spans
+   the header, and carries on under the Push when it is open. */
+.push-viz-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; display: block; }
+.header-cosmic.viz-on { background: transparent !important; }
+.header-cosmic .push-side { position: relative; z-index: 1; }
+.viz-on .push-face {
+  background: linear-gradient(180deg, rgba(14, 15, 20, .5), rgba(4, 5, 8, .58));
+  backdrop-filter: blur(1.5px) saturate(1.1);
+  border-color: rgba(255, 255, 255, .16);
+}
+.viz-on .push-pad::before { opacity: .35; }
+.viz-on .push-side > button, .viz-on .push-side > div { background-color: rgba(8, 9, 12, .55) !important; backdrop-filter: blur(1.5px); }
+.push-viz.is-on .push-face { border-color: rgba(255, 255, 255, .6); }
+.push-viz .push-gname { font-size: 9px; }
+.push-viz-name {
+  position: absolute; right: 8px; bottom: 3px; z-index: 1; pointer-events: none;
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: 9px; color: rgba(255, 255, 255, .7);
+  text-shadow: 0 1px 3px #000; max-width: 40%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 
 .push-pad {
   --hue: 0;
@@ -172,3 +197,22 @@ body.lyricist-mobile .push-hd, body.lyricist-mobile .pp { display: none !importa
 }
 .push-side > button > span:first-child, .push-side > div > span:first-child { font-size: 17px; line-height: 1; }
 .push-side > button:active { transform: scale(.96); }
+
+/* Visuals under the open Push. The panel goes see-through, its pads become
+   frosted squares, and lit pads keep their colour on top of the picture. */
+.pp .push-viz-canvas { z-index: 0; }
+.pp > :not(.push-viz-canvas) { position: relative; z-index: 1; }
+.pp.viz-on { background: rgba(4, 5, 7, .28); }
+.pp.viz-on .pp-screen { background: rgba(2, 3, 4, .72); }
+.pp.viz-on .pp-grid { background: rgba(0, 0, 0, .22); }
+.pp.viz-on .pp-pad { background: rgba(16, 17, 22, .46); backdrop-filter: blur(1.5px); border-color: rgba(255, 255, 255, .14); }
+.pp.viz-on .pp-pad.lv-dim { background: rgba(60, 64, 72, .5); }
+.pp.viz-on .pp-pad.lv-on { background: hsl(var(--h) 85% 38% / .75); }
+.pp.viz-on .pp-pad.lv-hot { background: hsl(var(--h) 100% 55% / .92); }
+.pp.viz-on .pp-btn { background: rgba(18, 19, 24, .62); backdrop-filter: blur(2px); }
+.pp.viz-on .pp-help, .pp.viz-on .pp-knob-wrap { text-shadow: 0 1px 3px #000; color: #C3CBD8; }
+.pp-vizname {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: 10px; color: #9FB0C8;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 2px 2px 0; text-shadow: 0 1px 3px #000;
+}
+.push-pad:disabled { opacity: .5; cursor: default; }

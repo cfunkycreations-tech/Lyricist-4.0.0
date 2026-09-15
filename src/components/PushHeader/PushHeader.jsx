@@ -6,6 +6,86 @@ import { KIT, triggerVoice, triggerSample } from '../../services/drumEngine.js';
 import { INSTRUMENT_GROUPS, DEFAULT_INSTRUMENT, loadInstrument, playNote, midiToNoteName } from '../../services/soundfontEngine.js';
 import { listSamples, getSampleBuffer } from '../../services/sampleLibrary.js';
 import { createPushLink, hueToPushColor, PUSH_CC } from '../../services/pushMidi.js';
+import { loadButterchurn } from '../../services/butterchurnLoader.js';
+
+const VIZ_KEY = 'lyricist.push.visuals';
+const VIZ_CYCLE_MS = 28000;
+
+/**
+ * THE VISUALS UNDER THE PADS.
+ *
+ * One Butterchurn instance draws offscreen at the size of the header plus the
+ * open Push, and each frame is painted into the canvases that sit under the
+ * pads: the top slice under the header, the rest under the Push. So it reads as
+ * one picture running behind everything, from one WebGL renderer, not two.
+ */
+function usePushVisuals(on, targets) {
+  const [info, setInfo] = useState({ name: '', count: 0, error: '' });
+  const api = useRef({ next: () => {}, prev: () => {} });
+
+  useEffect(() => {
+    if (!on) return undefined;
+    let dead = false;
+    let raf = 0;
+    let cycle = 0;
+    let viz = null;
+    const off = document.createElement('canvas');
+    off.width = 1200; off.height = 96;
+
+    loadButterchurn().then(({ butterchurn, map, names }) => {
+      if (dead) return;
+      const ctx = getAudioContext();
+      viz = butterchurn.createVisualizer(ctx, off, { width: off.width, height: off.height, pixelRatio: 1 });
+      viz.connectAudio(getMasterBus());
+      let idx = Math.floor(Math.random() * names.length);
+      const load = (i, blend = 2) => {
+        idx = (i + names.length) % names.length;
+        viz.loadPreset(map[names[idx]], blend);
+        setInfo({ name: names[idx], count: names.length, error: '' });
+      };
+      api.current = { next: () => load(Math.floor(Math.random() * names.length), 1.6), prev: () => load(idx - 1, 1.2), step: (d) => load(idx + d, 1.2) };
+      load(idx, 0);
+      cycle = setInterval(() => load(Math.floor(Math.random() * names.length), 2.4), VIZ_CYCLE_MS);
+
+      const draw = () => {
+        const header = targets.current.header;
+        const panel = targets.current.panel;
+        const hw = header?.clientWidth || 0;
+        const hh = header?.clientHeight || 0;
+        const ph = panel?.clientHeight || 0;
+        const w = Math.max(320, Math.round(hw));
+        const h = Math.max(60, Math.round(hh + ph));
+        if (off.width !== w || off.height !== h) {
+          off.width = w; off.height = h;
+          viz.setRendererSize(w, h);
+        }
+        viz.render();
+        const paint = (el, top, height) => {
+          if (!el || !height) return;
+          const cw = el.clientWidth; const ch = el.clientHeight;
+          if (el.width !== cw || el.height !== ch) { el.width = cw; el.height = ch; }
+          const g = el.getContext('2d');
+          g.drawImage(off, 0, top, w, height, 0, 0, cw, ch);
+        };
+        paint(header, 0, hh);
+        paint(panel, hh, ph);
+        raf = requestAnimationFrame(draw);
+      };
+      raf = requestAnimationFrame(draw);
+    }).catch((e) => { if (!dead) setInfo((s) => ({ ...s, error: e.message })); });
+
+    return () => {
+      dead = true;
+      cancelAnimationFrame(raf);
+      clearInterval(cycle);
+      try { viz?.disconnectAudio?.(getMasterBus()); } catch { /* already gone */ }
+      viz = null;
+      api.current = { next: () => {}, prev: () => {} };
+    };
+  }, [on, targets]);
+
+  return { info, api };
+}
 
 /**
  * THE PUSH HEADER.
@@ -40,13 +120,40 @@ export default function PushHeader({ tabs, activeTab, onSelect }) {
   const byId = useMemo(() => new Map(tabs.map((t) => [t.id, t])), [tabs]);
   const activeGroup = TAB_GROUPS.find((g) => g.tabs.includes(activeTab));
 
-  // As many sweeping pads as fit after the group squares and the arrow.
+  const [vizOn, setVizOn] = useState(() => { try { return localStorage.getItem(VIZ_KEY) === '1'; } catch { return false; } });
+  const vizTargets = useRef({ header: null, panel: null });
+  const { info: vizInfo, api: vizApi } = usePushVisuals(vizOn, vizTargets);
+  const toggleViz = () => {
+    const next = !vizOn;
+    setVizOn(next);
+    try { localStorage.setItem(VIZ_KEY, next ? '1' : '0'); } catch { /* storage blocked */ }
+  };
+  // The picture spans the WHOLE header, pills included, so the canvas sits on
+  // the header itself and the header goes see-through while visuals are on.
+  const hdRef = useRef(null);
+  useLayoutEffect(() => {
+    const header = hdRef.current?.closest('.header-cosmic');
+    if (!header) return undefined;
+    header.classList.toggle('viz-on', vizOn);
+    if (!vizOn) return () => header.classList.remove('viz-on');
+    const canvas = document.createElement('canvas');
+    canvas.className = 'push-viz-canvas';
+    header.prepend(canvas);
+    vizTargets.current.header = canvas;
+    return () => {
+      header.classList.remove('viz-on');
+      vizTargets.current.header = null;
+      canvas.remove();
+    };
+  }, [vizOn]);
+
+  // As many sweeping pads as fit after the group squares, the two visual pads and the arrow.
   useLayoutEffect(() => {
     const el = rowRef.current;
     if (!el) return undefined;
     const fit = () => {
       const cells = Math.floor((el.clientWidth + GAP) / (PAD + GAP));
-      setSweepCount(Math.max(0, cells - TAB_GROUPS.length - 1));
+      setSweepCount(Math.max(0, cells - TAB_GROUPS.length - 3));
     };
     fit();
     const ro = new ResizeObserver(fit);
@@ -90,7 +197,8 @@ export default function PushHeader({ tabs, activeTab, onSelect }) {
   const group = TAB_GROUPS.find((g) => g.id === openGroup);
 
   return (
-    <div className={`push-hd${live ? ' is-live' : ''}`} onPointerMove={live ? undefined : wake}>
+    <div ref={hdRef} className={`push-hd${live ? ' is-live' : ''}${vizOn ? ' viz-on' : ''}`} onPointerMove={live ? undefined : wake}>
+      {vizOn && vizInfo.name && <span className="push-viz-name">{vizInfo.error || `${vizInfo.name}`}</span>}
       <div className="push-row" ref={rowRef} role="tablist" aria-label="Tabs">
         {TAB_GROUPS.map((g) => {
           const on = activeGroup?.id === g.id;
@@ -121,6 +229,33 @@ export default function PushHeader({ tabs, activeTab, onSelect }) {
             <span className="push-face" />
           </span>
         ))}
+
+        <button
+          type="button"
+          className={`push-pad push-arrow push-viz${vizOn ? ' is-on' : ''}`}
+          style={{ '--i': sweepCount }}
+          aria-pressed={vizOn}
+          onClick={() => { wake(); toggleViz(); }}
+          data-help={`Runs the Milkdrop visualizer underneath the pads, all ${vizInfo.count || '300+'} visuals, reacting to whatever the app is playing. The pads stay on top.`}
+        >
+          <span className="push-face">
+            <span className="push-gname">Visuals</span>
+            <span className="push-gtab">{vizOn ? 'On' : 'Off'}</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          className="push-pad push-arrow push-viz"
+          style={{ '--i': sweepCount + 1 }}
+          disabled={!vizOn}
+          onClick={() => { wake(); vizApi.current.next(); }}
+          data-help="Jump to another visual. It also changes by itself every half minute."
+        >
+          <span className="push-face">
+            <span className="push-gname">Next</span>
+            <span className="push-gtab">{vizOn && vizInfo.count ? `${vizInfo.count} vis` : '▸'}</span>
+          </span>
+        </button>
 
         <button
           type="button"
@@ -160,7 +295,14 @@ export default function PushHeader({ tabs, activeTab, onSelect }) {
         document.body,
       )}
 
-      {expanded && <PushPanel anchorRef={rowRef} onClose={() => setExpanded(false)} onTouch={wake} />}
+      {expanded && (
+        <PushPanel
+          anchorRef={rowRef}
+          onClose={() => setExpanded(false)}
+          onTouch={wake}
+          viz={{ on: vizOn, toggle: toggleViz, info: vizInfo, api: vizApi, targets: vizTargets }}
+        />
+      )}
     </div>
   );
 }
@@ -191,8 +333,14 @@ const hexHue = (hex) => {
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
-function PushPanel({ anchorRef, onClose, onTouch }) {
+function PushPanel({ anchorRef, onClose, onTouch, viz }) {
   const [top, setTop] = useState(0);
+  const panelCanvas = useRef(null);
+  useLayoutEffect(() => {
+    const t = viz.targets.current;
+    t.panel = viz.on ? panelCanvas.current : null;
+    return () => { t.panel = null; };
+  }, [viz.on, viz.targets]);
   const [mode, setMode] = useState('drum');
   const [octave, setOctave] = useState(1);
   const [root, setRoot] = useState(0);
@@ -440,7 +588,8 @@ function PushPanel({ anchorRef, onClose, onTouch }) {
   }
 
   return createPortal(
-    <section className="pp" style={{ top }} aria-label="Push">
+    <section className={`pp${viz.on ? ' viz-on' : ''}`} style={{ top }} aria-label="Push">
+      {viz.on && <canvas ref={panelCanvas} className="push-viz-canvas" aria-hidden="true" />}
       <div className="pp-left">
         <div className="pp-screen">
           <div className="pp-screen-top">
@@ -486,6 +635,17 @@ function PushPanel({ anchorRef, onClose, onTouch }) {
         <button type="button" className="pp-btn" onClick={() => setOctave((o) => clamp(o + 1, 0, 6))}>Octave ▲</button>
         <button type="button" className="pp-btn" onClick={() => setOctave((o) => clamp(o - 1, 0, 6))}>Octave ▼</button>
         <button type="button" className="pp-btn" onClick={() => setPattern(Object.fromEntries(KIT.map((k) => [k.id, Array(16).fill(false)])))}>Clear all</button>
+        <button type="button" className={`pp-btn${viz.on ? ' on' : ''}`} onClick={viz.toggle}>
+          Visuals {viz.on ? 'On' : 'Off'}
+        </button>
+        {viz.on && (
+          <>
+            <button type="button" className="pp-btn" onClick={() => viz.api.current.step?.(-1)}>◂ Prev visual</button>
+            <button type="button" className="pp-btn" onClick={() => viz.api.current.step?.(1)}>Next visual ▸</button>
+            <button type="button" className="pp-btn" onClick={() => viz.api.current.next()}>Shuffle</button>
+            <span className="pp-vizname" title={viz.info.name}>{viz.info.error || viz.info.name}</span>
+          </>
+        )}
         <button type="button" className="pp-btn pp-close" onClick={onClose}>▴ Hide</button>
       </div>
     </section>,
