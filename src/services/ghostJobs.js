@@ -170,6 +170,14 @@ async function runOne(id) {
   const stopped = () => ac.signal.aborted || get(id)?.status === 'stopped';
 
   let recording = false;
+  // OBS stops BEFORE the job says Done or Failed, so "Finished" on screen means
+  // the recording is already closed, not still running behind it.
+  const stopRec = async () => {
+    if (!recording) return;
+    recording = false;
+    const r = await limit(deps.record(false), 20000, 'OBS did not answer');
+    logTo(id, r.ok ? 'OBS recording stopped' : `OBS did not stop: ${r.said}`);
+  };
   try {
     deps.onJobStart?.(get(id));
     // PLAN, once. A resumed job keeps the plan it already had.
@@ -237,22 +245,22 @@ async function runOne(id) {
         if (result.ok) break;
         if (attempt < 1) { attempt += 1; continue; }
         logTo(id, `step ${i + 1} failed: ${result.said}`);
+        await stopRec();
         patch(id, { status: 'failed', note: `Step ${i + 1} did not work: ${result.said}` });
         return;
       }
     }
+    await stopRec();
     patch(id, { status: 'done', awaiting: null, note: 'Finished.' });
     logTo(id, 'finished');
   } catch (e) {
+    await stopRec();
     if (!stopped()) {
       patch(id, { status: 'failed', note: e?.message || 'The job did not work.' });
       logTo(id, `failed: ${e?.message}`);
     }
   } finally {
-    if (recording) {
-      const r = await limit(deps.record(false), 20000, 'OBS did not answer');
-      logTo(id, r.ok ? 'OBS recording stopped' : `OBS did not stop: ${r.said}`);
-    }
+    await stopRec();   // Stop pressed, or an early return: nothing left recording
     current = null;
     deps.onJobEnd?.(get(id));
   }
