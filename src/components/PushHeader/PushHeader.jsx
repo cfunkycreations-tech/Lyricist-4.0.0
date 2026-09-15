@@ -93,11 +93,21 @@ function usePushVisuals(on, headerRef) {
           const hr = header.getBoundingClientRect();
           const sx = rw / W;
           const sy = rh / H;
+          const boxes = new Map();
           for (const el of header.querySelectorAll(CELLS)) {
-            const r = el.getBoundingClientRect();
-            if (!r.width || !r.height) continue;
-            const x = r.left - hr.left;
-            const y = r.top - hr.top;
+            const cell = el.getBoundingClientRect();
+            // A grid hides cells that don't fit; paint only the part its grid actually shows.
+            const box = el.parentElement;
+            if (!boxes.has(box)) boxes.set(box, box.getBoundingClientRect());
+            const b = boxes.get(box);
+            const left = Math.max(cell.left, b.left);
+            const top = Math.max(cell.top, b.top);
+            const right = Math.min(cell.right, b.right);
+            const bottom = Math.min(cell.bottom, b.bottom);
+            if (right - left < 1 || bottom - top < 1) continue;
+            const r = { width: right - left, height: bottom - top };
+            const x = left - hr.left;
+            const y = top - hr.top;
             // Thick glass magnifies: sample a smaller patch centred on the block and stretch it to fill.
             const sw = r.width * LENS;
             const sh = r.height * LENS;
