@@ -15,8 +15,25 @@ import HelpLayer from './components/common/HelpLayer.jsx';
 import OnboardingWizard from './components/Onboarding/OnboardingWizard.jsx';
 import RotatePrompt from './web/RotatePrompt.jsx';
 import GhostDemo from './components/Onboarding/GhostDemo.jsx';
-import GhostAssistant from './components/Ghost/GhostAssistant.jsx';
 import { registerGhostAction } from './services/ghostBus.js';
+
+/**
+ * ASK THE GHOST IS FOR CHRIS, NOT CUSTOMERS.
+ *
+ * Chris, 2026-09-15: *"the ghost function is only for me the creator not the
+ * customer."* So it sits behind the same build flag as the Ghost Pilot, and the
+ * same way: a dynamic import inside a ternary, so a customer build has no
+ * reachable import of the panel, its hand, or its job runner, and Rollup emits
+ * no chunk for any of them. A static import here would ship all of it hidden.
+ * See components/Ghost/GhostPilotLayer.jsx for why that distinction matters.
+ *
+ * Creator exe:  npm run release:creator
+ * Creator dev:  npm run dev:creator
+ */
+const CREATOR_BUILD = import.meta.env.VITE_FAFO_INTERNAL_BUILD === 'true';
+const GhostAssistant = CREATOR_BUILD
+  ? React.lazy(() => import('./components/Ghost/GhostAssistant.jsx'))
+  : null;
 import MidiStudio from './components/MidiStudio/MidiStudio.jsx';
 import ToolsHub from './components/ToolsHub/ToolsHub.jsx';
 import SunoPlayer from './components/AudioPlayer/SunoPlayer.jsx';
@@ -330,18 +347,23 @@ function MainLayout() {
         <OnboardingWizard onClose={closeWizard} onNavigate={setActiveTab} />
       )}
 
-      {/* Always there, on every tab. See components/Ghost/GhostAssistant.jsx. */}
+      {/* Creator builds only, on every tab. See CREATOR_BUILD at the top and
+          components/Ghost/GhostAssistant.jsx. */}
       {/* The key lives on store.config, not on the store itself. Passing the
           whole store made assertApiKey read undefined and say "no API key
           configured" while the key sat right there in Settings. */}
-      <GhostAssistant
-        tab={activeTab}
-        config={store.config}
-        getContext={() => {
-          const words = (store.getFullText?.() || '').trim();
-          return words ? `Their lyrics so far:\n${words.slice(0, 1800)}` : '';
-        }}
-      />
+      {GhostAssistant && (
+        <React.Suspense fallback={null}>
+          <GhostAssistant
+            tab={activeTab}
+            config={store.config}
+            getContext={() => {
+              const words = (store.getFullText?.() || '').trim();
+              return words ? `Their lyrics so far:\n${words.slice(0, 1800)}` : '';
+            }}
+          />
+        </React.Suspense>
+      )}
 
       {showGhostDemo && store.ghostDemoEnabled && (
         <GhostDemo

@@ -28,6 +28,11 @@ const PKG_PATH = path.join(ROOT, 'package.json');
 
 const args = process.argv.slice(2);
 const noBump = args.includes('--no-bump');
+// --creator: Chris's own build, with Ask the Ghost and the Ghost Pilot in it.
+// Without it the flag is forced OFF below, even if a .env file sets it, so a
+// customer installer can never pick the Ghost up by accident.
+const creator = args.includes('--creator');
+const edition = creator ? ' Creator' : '';
 const dirOnly = args.includes('--dir');
 const setIdx = args.indexOf('--set');
 const forceSet = setIdx >= 0 ? parseInt(args[setIdx + 1], 10) : null;
@@ -108,6 +113,9 @@ function run(cmd, cmdArgs, opts = {}) {
       ...process.env,
       LYRICIST_FULL_VERSION: fullVersion,
       LYRICIST_BUILD: buildPad,
+      // Vite never overrides a variable already in the process, so this wins
+      // over any .env file: on for --creator, off for every customer build.
+      VITE_FAFO_INTERNAL_BUILD: creator ? 'true' : 'false',
     },
     ...opts,
   });
@@ -121,7 +129,7 @@ function run(cmd, cmdArgs, opts = {}) {
 run('npm', ['run', 'build']);
 
 // 2) electron-builder with named artifacts
-const artifactName = `Lyricist ${fullVersion} Setup.\${ext}`;
+const artifactName = `Lyricist ${fullVersion}${edition} Setup.\${ext}`;
 const builderArgs = [
   'electron-builder',
   dirOnly ? '--win' : '--win',
@@ -143,7 +151,7 @@ run('npx', builderArgs);
 
 // 3) Also rename/copy win-unpacked folder for clarity
 const unpacked = path.join(desktopOut, 'win-unpacked');
-const namedUnpacked = path.join(desktopOut, `Lyricist ${fullVersion}`);
+const namedUnpacked = path.join(desktopOut, `Lyricist ${fullVersion}${edition}`);
 if (fs.existsSync(unpacked)) {
   try {
     if (fs.existsSync(namedUnpacked)) {
@@ -171,9 +179,9 @@ if (!noBump && forceSet == null) {
 
 console.log(`
 ╔══════════════════════════════════════════════╗
-║  SHIPPED: Lyricist ${fullVersion}
+║  SHIPPED: Lyricist ${fullVersion}${edition}${creator ? '  (Ghost ON: not for customers)' : ''}
 ║  Folder:  ${desktopOut}
-║  Setup:   Lyricist ${fullVersion} Setup.exe
-║  Run:     Lyricist ${fullVersion}\\Lyricist.exe
+║  Setup:   Lyricist ${fullVersion}${edition} Setup.exe
+║  Run:     Lyricist ${fullVersion}${edition}\\Lyricist.exe
 ╚══════════════════════════════════════════════╝
 `);

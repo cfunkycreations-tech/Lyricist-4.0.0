@@ -26,8 +26,16 @@
  * It is a registry with one owner per action.
  */
 
-import { ghostBefore } from './ghostHands.js';
-import { handStopped } from './ghostCursor.js';
+/**
+ * The Ghost is the creator's tool only (Chris, 2026-09-15), so the hand that
+ * shows each action is loaded only in a creator build. In a customer build this
+ * folds to null and ghostHands.js / ghostCursor.js never enter the bundle.
+ */
+export const PILOT_ENABLED = import.meta.env.VITE_FAFO_INTERNAL_BUILD === 'true';
+const loadHands = PILOT_ENABLED
+  ? () => Promise.all([import('./ghostHands.js'), import('./ghostCursor.js')])
+  : null;
+let hands = null;
 
 const handlers = new Map();
 const watchers = new Set();
@@ -111,9 +119,14 @@ export async function runGhostAction(name, args = {}) {
   }
   try {
     // Show it the way a person would do it, then do it. See BEFORE in ghostHands.js.
-    if (handStopped()) return { ok: false, said: 'stopped' };
-    await ghostBefore(name, args);
-    if (handStopped()) return { ok: false, said: 'stopped' };
+    // Creator builds only; a customer build runs the action with no hand.
+    if (loadHands) {
+      hands ||= await loadHands();
+      const [{ ghostBefore }, { handStopped }] = hands;
+      if (handStopped()) return { ok: false, said: 'stopped' };
+      await ghostBefore(name, args);
+      if (handStopped()) return { ok: false, said: 'stopped' };
+    }
     const out = await fn(args);
     if (out && typeof out === 'object') {
       return { ok: true, said: out.said || null, undo: out.undo || null, warn: out.warn || null };
@@ -145,8 +158,7 @@ export async function runGhostAction(name, args = {}) {
    compile away to a stub that immediately reports the layer is not present.
    ══════════════════════════════════════════════════════════════════════════ */
 
-export const PILOT_ENABLED = import.meta.env.VITE_FAFO_INTERNAL_BUILD === 'true';
-
+// PILOT_ENABLED is defined at the top of this file, beside the hand loader.
 const loadPilotModule = PILOT_ENABLED ? () => import('./ghostPilot.js') : null;
 let pilotModule = null;
 
