@@ -34,7 +34,8 @@ const LENS = 0.8;      // each glass block shows 80% of what's behind it, magnif
 const IDLE_MS = 5000;
 const VIZ_KEY = 'lyricist.push.visuals';
 const VIZ_CYCLE_MS = 28000;
-const CELLS = '.pc, .push-side > *';
+// Chris: visuals ONLY on the pad square of the instrument, nowhere else.
+const CELLS = '.pc-pad';
 
 /**
  * VISUALS, ONLY INSIDE THE SQUARES.
@@ -82,7 +83,10 @@ function usePushVisuals(on, headerRef) {
       const draw = () => {
         const W = header.clientWidth;
         const H = header.clientHeight;
-        if (W && H) {
+        if (W && H && !header.querySelector(CELLS)) {
+          // Pads hidden: nothing to show the picture in, so don't render it.
+          if (canvas.width) { canvas.width = 0; canvas.height = 0; }
+        } else if (W && H) {
           // Render at most 1280 wide and scale up; plenty for the inside of squares.
           const rw = Math.min(W, 1280);
           const rh = Math.max(40, Math.round((H * rw) / W));
