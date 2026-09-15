@@ -100,6 +100,10 @@ export default function GhostAssistant({ tab, config, getContext }) {
   const logRef = useRef(null);
   const abortRef = useRef(null);
 
+  // Creator build only (this whole component is): a handle for testing the
+  // voice in the packaged app without clicking through it.
+  useEffect(() => { window.__ghostVoice = { speak, loadVoice, voiceState }; }, []);
+
   // The list of what it can press changes as tabs mount and unmount.
   useEffect(() => watchGhostActions(() => bumpActions((n) => n + 1)), []);
 
@@ -208,7 +212,12 @@ export default function GhostAssistant({ tab, config, getContext }) {
   useEffect(() => () => clearTimeout(previewTimer.current), []);
   const previewVoice = () => {
     clearTimeout(previewTimer.current);
-    previewTimer.current = setTimeout(() => { speak('This is how I sound now.'); }, 450);
+    previewTimer.current = setTimeout(() => {
+      speak('This is how I sound now.').then((r) => {
+        if (r && !r.ok) setVoiceNote(`The voice did not play: ${r.error}`);
+        else setVoiceNote('');
+      });
+    }, 450);
   };
   const tuneVoice = (what, value, preview = true) => {
     if (what === 'speed') setVoiceSpeedState(setVoiceSpeed(value));
@@ -446,7 +455,7 @@ spoken line of talk.${attempt ? `\n\nThe last try at this step did not work (${s
       // A whole workflow in one message runs as a job, one step at a time, so
       // nothing is skipped and OBS starts before the first step. ghostJobs.js.
       if (looksLikeWorkflow(q)) {
-        const record = /b(obs|record(ed|ing)?)b/i.test(q);
+        const record = /\b(obs|record(ed|ing)?)\b/i.test(q);
         addJob({ prompt: q, mode: 'full', record });
         setMsgs((m) => [...m, {
           who: 'ghost',

@@ -302,7 +302,9 @@ export function loadVoice() {
     // refuses, a missing q4f16 file: all land back on exactly the q8/wasm path
     // that shipped before, so this can only ever be faster or identical.
     let tts = null;
-    if (typeof navigator !== 'undefined' && navigator.gpu) {
+    let skipGpu = false;
+    try { skipGpu = localStorage.getItem(NO_WEBGPU_KEY) === '1'; } catch { /* private mode */ }
+    if (!skipGpu && typeof navigator !== 'undefined' && navigator.gpu) {
       try {
         tts = await KokoroTTS.from_pretrained(MODEL_ID, { dtype: 'q4f16', device: 'webgpu' });
         voiceState.backend = 'webgpu';
@@ -368,6 +370,34 @@ export function hush() {
   current = null;
 }
 
+const NO_WEBGPU_KEY = 'lyricist.ghost.voiceNoWebgpu';
+
+const withTimeout = (p, ms) => Promise.race([
+  p,
+  new Promise((_, reject) => setTimeout(() => reject(new Error(`no audio after ${Math.round(ms / 1000)}s`)), ms)),
+]);
+
+function isSilent(raw) {
+  const d = raw?.audio ?? raw?.data ?? raw;
+  if (!d?.length) return true;
+  let peak = 0;
+  for (let i = 0; i < d.length; i += 11) {
+    const v = Math.abs(d[i]);
+    if (Number.isNaN(v)) return true;
+    if (v > peak) peak = v;
+  }
+  return peak < 1e-4;
+}
+
+async function reloadOnWasm() {
+  const { KokoroTTS } = await import('kokoro-js');
+  const tts = await KokoroTTS.from_pretrained(MODEL_ID, { dtype: 'q8', device: 'wasm' });
+  voiceState.backend = 'wasm';
+  ttsPromise = Promise.resolve(tts);
+  try { localStorage.setItem(NO_WEBGPU_KEY, '1'); } catch { /* private mode */ }
+  return tts;
+}
+
 /**
  * Say it, in the ghost's voice. Resolves when it finishes, or immediately if it
  * cannot speak. Never throws.
@@ -395,7 +425,24 @@ export async function synthesize(line, name = chosen) {
     id = 'am_adam';
   }
 
-  const raw = await tts.generate(line, { voice: id, speed: speed / voice.pitch });
+  const opts = { voice: id, speed: speed / voice.pitch };
+  let raw;
+  try {
+    raw = await withTimeout(tts.generate(line, opts), 25000);
+    if (voiceState.backend === 'webgpu' && isSilent(raw)) throw new Error('WebGPU returned silence');
+  } catch (e) {
+    /**
+     * LOADING IS NOT SPEAKING. Chris, 2026-09-15: "i didn't hear any voice".
+     * On his build the WebGPU copy loaded fine and then failed (or hung, or
+     * came back silent) the moment it had to say something, and the wasm
+     * fallback only covered a failed LOAD. So a failed generate on WebGPU
+     * reloads on wasm, says it again, and remembers not to try WebGPU again.
+     */
+    if (voiceState.backend !== 'webgpu') throw e;
+    console.warn('[ghost-voice] WebGPU could not speak, switching to wasm:', e?.message);
+    const wasm = await reloadOnWasm();
+    raw = await wasm.generate(line, opts);
+  }
   buffer = toBuffer(raw);
   if (cache.size > 40) cache.delete(cache.keys().next().value);
   cache.set(key, buffer);
