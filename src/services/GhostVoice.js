@@ -471,8 +471,13 @@ function warm(context, input, w) {
   comp.attack.value = 0.006;
   comp.release.value = 0.25;
 
+  // LEVEL-MATCHED, so the slider changes tone and not volume. Chrome's
+  // compressor adds its own automatic makeup gain, and with the low shelf the
+  // chain came out 3.6 dB louder at full warmth than at none (measured on a
+  // speech-like signal: 120 Hz buzz with harmonics to 10 kHz). A person hears
+  // louder as better, which would make the knob lie. This trims it back.
   const makeup = context.createGain();
-  makeup.gain.value = 1 + 0.15 * w;
+  makeup.gain.value = Math.pow(10, (-2.4 * w) / 20);
 
   return input.connect(body).connect(edge).connect(air).connect(comp).connect(makeup);
 }
