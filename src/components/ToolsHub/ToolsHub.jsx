@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowBigUp, Plus, ExternalLink, Search, X } from 'lucide-react';
+import { ArrowBigUp, Plus, ExternalLink, Search, X, Blocks } from 'lucide-react';
 
 import TabBackground from '../common/TabBackground.jsx';
+import { Icon } from '../common/Glyph.jsx';
 // Community AI Tools Hub — Lyricist 4.1.3
 // A browsable tab where users share, upvote, and access free developer AI
 // tools. Ships seeded with CFunky's own free tools plus well-known free
@@ -108,7 +109,7 @@ export default function ToolsHub() {
       <div className="toolshub-main">
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
           <div style={{ marginRight: 'auto' }}>
-            <h3 style={{ fontSize: '1.05rem', margin: 0 }}>🧰 Community AI Tools Hub</h3>
+            <h3 style={{ fontSize: '1.05rem', margin: 0 }}><Icon i={Blocks} />Community AI Tools Hub</h3>
             <p style={{ fontSize: '0.72rem', color: 'rgba(196,181,253,0.7)', margin: '4px 0 0' }}>
               A shared shelf of AI tools — add the ones you rely on, upvote the ones that earn it.
             </p>

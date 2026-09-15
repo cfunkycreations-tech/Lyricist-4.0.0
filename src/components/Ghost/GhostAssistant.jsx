@@ -15,6 +15,7 @@ import {
   speak, hush, loadVoice, voiceState, playSample, VOICES, getVoiceName, setVoiceName, prewarm,
   getVoiceSpeed, setVoiceSpeed, getVoiceWarmth, setVoiceWarmth, SPEED_MIN, SPEED_MAX,
 } from '../../services/GhostVoice.js';
+import { Ghost } from 'lucide-react';
 
 /**
  * THE GHOST, ALWAYS THERE.
@@ -542,7 +543,7 @@ spoken line of talk.${attempt ? `\n\nThe last try at this step did not work (${s
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
-        <span className="gha-face" aria-hidden="true">👻</span>
+        <span className="gha-face" aria-hidden="true"><Ghost size={22} strokeWidth={1.5} /></span>
         <span>{open ? 'Close the Ghost' : 'Ask the Ghost'}</span>
       </button>
 
@@ -570,7 +571,7 @@ spoken line of talk.${attempt ? `\n\nThe last try at this step did not work (${s
                   ? 'Panel closes on Enter so the recording captures the app, not this box. Voice is a separate toggle.'
                   : 'Turn on to close this panel automatically when you press Enter — for OBS recording. Voice stays under its own toggle.'}
               >
-                {stow ? '🎬 Stow on' : '📂 Stow off'}
+                {stow ? 'Stow on' : 'Stow off'}
               </button>
               {/* The Ghost's hand on screen. Normal for watching and recording,
                   fast for getting on with it, off for runs nobody is watching. */}
@@ -580,7 +581,7 @@ spoken line of talk.${attempt ? `\n\nThe last try at this step did not work (${s
                 onClick={cycleHandSpeed}
                 title="How the Ghost's hand moves on screen while it works. Tap to switch between normal, fast and off."
               >
-                {handSpeed === 'off' ? '✋ Hands off' : handSpeed === 'fast' ? '✋ Hands fast' : '✋ Hands on'}
+                {handSpeed === 'off' ? 'Hands off' : handSpeed === 'fast' ? 'Hands fast' : 'Hands on'}
               </button>
               <button
                 type="button"
@@ -588,7 +589,7 @@ spoken line of talk.${attempt ? `\n\nThe last try at this step did not work (${s
                 aria-pressed={voiceOn}
                 onClick={toggleVoice}
               >
-                {voiceOn ? '🔊 Voice on' : '🔇 Voice off'}
+                {voiceOn ? 'Voice on' : 'Voice off'}
               </button>
             </div>
           </header>

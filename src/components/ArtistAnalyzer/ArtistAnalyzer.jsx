@@ -5,7 +5,8 @@ import { randomArtist, saveSunoTags } from '../../services/ghostMemory.js';
 import { writeStylePressure } from '../QuantumLab/quantumFeatures.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { callAI, refineLyrics, analyzeClichés, checkSimilarity, checkThemeConsistency } from '../../services/AIService.js';
-import { Search, Sparkles, BookOpen, AlertTriangle, ShieldCheck, Check, Copy, Save, Heart, Send } from 'lucide-react';
+import { Search, Sparkles, BookOpen, AlertTriangle, ShieldCheck, Check, Copy, Save, Heart, Send, TrendingUp, Dna, Grid3x3, Ghost, Tags } from 'lucide-react';
+import { Icon } from '../common/Glyph.jsx';
 
 const analysisTabs = [
   { id: 'style', label: 'Lyrical Style' },
@@ -85,7 +86,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
       if (window.lyricistAPI?.saveReport) {
         const res = await window.lyricistAPI.saveReport(filename, content);
         setSaveNote(res?.ok
-          ? '✓ Saved to your Documents\\Lyricist Style Reports folder'
+          ? 'Saved to your Documents\\Lyricist Style Reports folder'
           : `Could not save: ${res?.error || 'unknown error'}`);
       } else {
         // Browser / dev fallback — download the file.
@@ -96,7 +97,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
         a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
-        setSaveNote(`✓ Downloaded "${filename}"`);
+        setSaveNote(`Downloaded "${filename}"`);
       }
     } catch (e) {
       setSaveNote(`Could not save: ${e.message}`);
@@ -458,7 +459,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
           }}
           data-demo="gr-analyze"
         >
-          {loadingAnalysis ? '🔍 Analyzing style...' : '🔍 Analyze Artist'}
+          <Icon i={Search} />{loadingAnalysis ? 'Analyzing style...' : 'Analyze Artist'}
         </button>
 
         {/* Auto-save setting (replaces the old in-app saved-reports list) */}
@@ -554,7 +555,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                   style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(167,139,250,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: 10 }}
                   data-help="A quick picture of how the ENERGY of a song typically rises and falls across its parts — lower at the intro, peaking at the chorus, easing out at the end. A guide for shaping your song's emotional ride."
                 >
-                  📈 Stylistic Intensity Arc (Section-by-Section)
+                  <Icon i={TrendingUp} />Stylistic Intensity Arc (Section-by-Section)
                 </span>
                 <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '60px', padding: '0 10px', gap: 6 }}>
                   {[40, 75, 55, 90, 85, 30].map((val, idx) => {
@@ -590,7 +591,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
               data-help="Style DNA is a compact fingerprint pulled from the report: how they ride the beat (rhythm), how hard they rhyme (rhyme density), and recurring image clusters (metaphors/scenes). Used as a cheat sheet when you ghostwrite."
             >
               <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#00e5ff', marginBottom: 10 }}>
-                🧬 Style DNA {loadingDNA ? '(building…)' : ''}
+                <Icon i={Dna} />Style DNA {loadingDNA ? '(building…)' : ''}
               </h4>
               {styleDNA && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, fontSize: '0.82rem' }}>
@@ -645,7 +646,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                         cursor: 'pointer',
                       }}
                     >
-                      ⚛️ Send Style DNA to Quantum
+                      <Icon i={Grid3x3} />Send Style DNA to Quantum
                     </button>
                   </div>
                 </div>
@@ -657,7 +658,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
           {artist.trim() && (
             <div style={{ background: 'rgba(13,8,28,0.85)', border: '1px solid rgba(34,211,238,0.22)', borderRadius: 12, padding: 18 }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#67e8f9', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>👻</span>
+                <span><Ghost size={18} strokeWidth={1.6} /></span>
                 Ghost Rider — Write in the style of {artist}
               </h4>
               <p style={{ fontSize: '0.74rem', color: 'rgba(167,139,250,0.5)', marginBottom: 14 }}>
@@ -698,7 +699,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                     whiteSpace: 'nowrap'
                   }}
                 >
-                  {loadingGhost ? 'Writing...' : '✍️ Write Lyrics'}
+                  {loadingGhost ? 'Writing...' : 'Write Lyrics'}
                 </button>
               </div>
 
@@ -722,7 +723,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                           cursor: 'pointer'
                         }}
                       >
-                        {copied === 'ghost' ? '✓ Copied' : 'Copy'}
+                        {copied === 'ghost' ? 'Copied' : 'Copy'}
                       </button>
                     </div>
 
@@ -739,7 +740,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                           style={{ fontSize: '0.62rem', fontWeight: 700, color: '#e879f9', textTransform: 'uppercase', letterSpacing: '0.12em' }}
                           data-help="Suno is a popular app that turns lyrics into actual music. These are safe style keywords (genre, mood, instruments — no artist names) you can paste into Suno to get a beat that matches this song."
                         >
-                          🎵 Safe Suno AI Style Keywords (Ready to Paste)
+                          <Icon i={Tags} />Safe Suno AI Style Keywords (Ready to Paste)
                         </span>
                         <button
                           onClick={() => handleCopy(sunoTags, 'suno')}
@@ -753,7 +754,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                             cursor: 'pointer'
                           }}
                         >
-                          {copied === 'suno' ? '✓ Copied' : 'Copy'}
+                          {copied === 'suno' ? 'Copied' : 'Copy'}
                         </button>
                       </div>
                       
@@ -801,7 +802,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                       }}
                     >
                       <Send size={14} />
-                      {ghostSent ? '✓ Sent to Workspace!' : '🎵 Send to Songwriter Workspace'}
+                      {ghostSent ? 'Sent to Workspace' : 'Send to Songwriter Workspace'}
                     </button>
 
                     <button
@@ -819,7 +820,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                         cursor: loadingChecks ? 'not-allowed' : 'pointer'
                       }}
                     >
-                      {loadingChecks ? 'Running Checks...' : '🛡️ Run Checks'}
+                      {loadingChecks ? 'Running Checks...' : 'Run Checks'}
                     </button>
                   </div>
 
@@ -853,7 +854,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                           </div>
                           {plagiarismRisk.matches.map((m, idx) => (
                             <div key={idx} style={{ fontSize: '0.65rem', color: '#f87171', marginTop: 4 }}>
-                              ⚠️ match in famous song: "{m.phrase}" (similar to {m.originalSong})
+                              <Icon i={AlertTriangle} />match in famous song: "{m.phrase}" (similar to {m.originalSong})
                             </div>
                           ))}
                         </div>
@@ -886,8 +887,8 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                         <div>
                           <span style={{ fontSize: '0.7rem', color: themeCheck.length > 0 ? '#a855f7' : '#34d399' }}>
                             {themeCheck.length > 0
-                              ? `⚠️ Found ${themeCheck.length} off-topic lines: "${themeCheck.join(', ')}"`
-                              : '✓ Theme consistency check passed.'}
+                              ? `Found ${themeCheck.length} off-topic lines: "${themeCheck.join(', ')}"`
+                              : 'Theme consistency check passed.'}
                           </span>
                         </div>
                       )}
@@ -900,7 +901,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
 
           {!analysis && !loadingAnalysis && !loadingGhost && (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, paddingBottom: 60, userSelect: 'none' }}>
-              <div style={{ fontSize: '3.5rem', filter: 'drop-shadow(0 0 24px rgba(99,102,241,0.6))' }}>🔍</div>
+              <div className="empty-glyph"><Search size={44} strokeWidth={1.25} /></div>
               <p style={{ color: 'rgba(196,181,253,0.7)', fontWeight: 500, fontSize: '0.88rem', textAlign: 'center' }}>
                 Enter an artist name and click Analyze to produce a Style Report.
               </p>

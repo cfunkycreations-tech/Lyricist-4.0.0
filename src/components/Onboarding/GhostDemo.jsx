@@ -668,14 +668,14 @@ export default function GhostDemo({ tabId, onClose }) {
           onClick={() => setVoiceOn((v) => !v)}
           title={voiceOn ? 'Turn the ghost’s voice off' : 'Turn the ghost’s voice on'}
         >
-          {voiceOn ? '🔊 Voice On' : '🔇 Voice Off'}
+          {voiceOn ? 'Voice On' : 'Voice Off'}
         </button>
 
         <button type="button" className="ghost-demo-bar-btn" onClick={() => setPaused((p) => !p)}>
-          {paused ? '▶ Resume' : '⏸ Pause'}
+          {paused ? 'Resume' : 'Pause'}
         </button>
         <button type="button" className="ghost-demo-bar-btn ghost-demo-bar-skip" onClick={skip}>
-          Stop ✕
+          Stop
         </button>
       </div>
     </div>

@@ -20,6 +20,8 @@ import { registerDemoSnapshot } from '../../services/demoSafety.js';
 import { registerGhostActions, ghostSettle } from '../../services/ghostBus.js';
 import { useMobile } from '../../mobile/useMobile.js';
 import './QuantumLab.css';
+import { ListChecks, SlidersHorizontal, ScanSearch, ArrowDownToLine, Zap, Crosshair, Snowflake, Cpu, Lock, Unlock, Syringe } from 'lucide-react';
+import { Icon } from '../common/Glyph.jsx';
 
 // ============================================================
 // Quantum Lab — "Lyricist Goes Quantum" (Lyricist 4.2.0)
@@ -875,7 +877,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             onClick={() => setDrawer((d) => (d === 'controls' ? null : 'controls'))}
             data-help="Your keywords and all six step buttons. Slides over the grid, then closes again."
           >
-            ☰ Words &amp; steps {drawer === 'controls' ? '✕' : '▾'}
+            <Icon i={ListChecks} />Words &amp; steps {drawer === 'controls' ? '✕' : '▾'}
           </button>
           <button
             type="button"
@@ -883,7 +885,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             onClick={() => setDrawer((d) => (d === 'adv' ? null : 'adv'))}
             data-help="The advanced set: DNA, contracts, measure, multi-section, truth meter, stress, loop, style pressure and the collapse journal."
           >
-            ⚙ Advanced
+            <Icon i={SlidersHorizontal} />Advanced
           </button>
           <button
             type="button"
@@ -891,7 +893,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             onClick={() => setDrawer((d) => (d === 'panels' ? null : 'panels'))}
             data-help="Word Inspector, Section DNA and the scores for the grid as it stands."
           >
-            {drawer === 'panels' ? '✕' : '▾'} Inspector ⚛
+            {drawer === 'panels' ? '✕' : '▾'} <Icon i={ScanSearch} />Inspector
           </button>
         </div>
       )}
@@ -932,7 +934,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             data-demo="ql-load"
             data-help="Fills the grid with the words you typed. Multi-word phrases are fine. If you give fewer than 20, they cycle to fill the grid. Your words stay yours — Crystallize will not replace them with demo dictionary picks."
           >
-            <span className="ql-step-tag">Step 2</span> ⬇ Load into Grid
+            <span className="ql-step-tag">Step 2</span> <Icon i={ArrowDownToLine} />Load into Grid
           </button>
           <button
             type="button"
@@ -983,7 +985,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         {howtoOpen && (
           <p className="ql-howto-note">
             Every button sits in the <b>Matrix Engine Controls</b> bar right under the grid — nothing to type, no commands.
-            Turn <b>Tips ON</b> (💡 in the app header) and hover any control for plain English.
+            Turn <b>Tips ON</b> (in the app header) and hover any control for plain English.
             The sample grid is only an example. Optional: <b>Freeze cell</b> pins one tile. <b>Measure</b> is for demo “open” tiles only — your typed words stay put.
           </p>
         )}
@@ -1152,7 +1154,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           transition: 'all 0.15s',
         }}
       >
-        <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>⚡</span>
+        <span style={{ lineHeight: 1, display: 'flex' }}><Zap size={22} strokeWidth={1.5} /></span>
         <span style={{ textAlign: 'left' }}>
           <span style={{
             display: 'block',
@@ -1213,7 +1215,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           letterSpacing: '0.08em',
         }}
       >
-        <span>⚙ ADVANCED STUDIO CONTROLS &amp; SECTIONAL PHYSICS</span>
+        <span><Icon i={SlidersHorizontal} />ADVANCED STUDIO CONTROLS &amp; SECTIONAL PHYSICS</span>
         <span style={{ opacity: 0.7 }}>{advOpen ? '▲' : '▼'}</span>
       </button>
 
@@ -1250,7 +1252,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             data-demo="ql-spotlight"
             data-help="STEP 3. Turn ON = the button stays ORANGE. Then click any grid tile to pour heat into it. Click Spotlight again to turn it off."
           >
-            <span className="ql-step-tag">Step 3</span> 💡 Spotlight
+            <span className="ql-step-tag">Step 3</span> <Icon i={Crosshair} />Spotlight
           </button>
           <button
             type="button"
@@ -1269,7 +1271,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             data-demo="ql-crystallize"
             data-help="STEP 5. Locks the grid energy state. Your keywords stay. Turns GREEN once it is locked."
           >
-            <span className="ql-step-tag">Step 5</span> ❄ Crystallize
+            <span className="ql-step-tag">Step 5</span> <Icon i={Snowflake} />Crystallize
           </button>
           {/* Steps 4+5 in one press. Sits right after them so the relationship
               is obvious, and it does not replace either one. */}
@@ -1281,7 +1283,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             data-demo="ql-runlock"
             data-help="Does STEP 4 and STEP 5 together in one press — spreads the energy for 12 steps, then locks the field. Same result as clicking Run then Crystallize. Use the two buttons separately if you want to watch what each one does."
           >
-            <span className="ql-step-tag">Steps 4+5</span> ⚡ Spread &amp; Lock
+            <span className="ql-step-tag">Steps 4+5</span> <Icon i={Zap} />Spread &amp; Lock
           </button>
           <button
             type="button"
@@ -1291,7 +1293,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             data-demo="ql-generate"
             data-help="STEP 6. Writes a 4-line verse from your grid — two versions, A and B (needs a free OpenRouter key in Settings)."
           >
-            <span className="ql-step-tag">Step 6</span> ✳ {busy ? 'Generating…' : 'Generate Neural Lyrics'}
+            <span className="ql-step-tag">Step 6</span> <Icon i={Cpu} />{busy ? 'Generating…' : 'Generate Neural Lyrics'}
           </button>
         </div>
 
@@ -1302,7 +1304,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             onClick={doFreeze}
             data-help="Optional. Select a grid tile first, then Freeze to pin it (turns green). Click again to unpin."
           >
-            🔒 Freeze cell
+            <Icon i={Lock} />Freeze cell
           </button>
           <button
             type="button"
@@ -1516,7 +1518,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
               onClick={doLock}
               data-help="Pins every word so nothing can change. Click again to unlock. Green and reading DNA Locked means every word is pinned. Use when the grid looks good and you only want to Generate Neural Lyrics."
             >
-              {section.frozen ? '🔒 DNA Locked' : '🔓 DNA Unlocked'}
+              {section.frozen ? <><Icon i={Lock} />DNA Locked</> : <><Icon i={Unlock} />DNA Unlocked</>}
             </button>
             <button
               className="ql-mini grn"
@@ -1530,7 +1532,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
               onClick={doInject}
               data-help="Optional. Swaps some tiles for related word options from a small bank. Same structure, fresher words. Then Run / Crystallize again if you like."
             >
-              💉 Inject
+              <Icon i={Syringe} />Inject
             </button>
           </div>
           <div className="ql-kv" data-help="Beat map for the whole section. 1 = strong beat, 0 = weak. Dashes separate lines. Mutate flips a few of these on purpose.">

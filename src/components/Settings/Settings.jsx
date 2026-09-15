@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import TabBackground from '../common/TabBackground.jsx';
 import { useLyricStore, DEFAULT_CONFIG } from '../../context/LyricStore.jsx';
-import { Save, RefreshCw, Key, Shield, HelpCircle } from 'lucide-react';
+import { Save, RefreshCw, Key, Shield, HelpCircle, Hammer, FolderOpen } from 'lucide-react';
 import { normalizeApiKey } from '../../services/AIService.js';
 import { IMAGE_MODELS, DEFAULT_IMAGE_MODEL } from '../../services/GeminiService.js';
 import { PRISM_NAMES, ACCENT_PRESETS, accentHex } from '../../services/prismTheme.js';
 import { isEnabled as analyticsEnabled, optIn, optOut } from '../../services/analytics.js';
+import { Icon } from '../common/Glyph.jsx';
 
 /* The names, the presets and the swatch colour all come from prismTheme.js
    now. There were two copies of PRISM_NAMES — one here and one there — and
@@ -701,7 +702,7 @@ export default function Settings() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <div>
             <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,150,200,0.8)' }}>
-              Multi-Model Fusion ✨ NEW
+              Multi-Model Fusion · NEW
             </div>
             <div style={{ fontSize: '0.68rem', color: 'rgba(230,195,215,0.9)', marginTop: 3, lineHeight: 1.4, maxWidth: 360 }}>
               Pick 2 or 3 AI models. Lyricist asks all of them, then blends the best lines from each into one song.
@@ -770,7 +771,7 @@ export default function Settings() {
       {/* Song Forge — OpenRouter only (same key as everything else) */}
       <div style={{ marginBottom: 22, background: 'rgba(34,211,238,0.06)', border: '1px solid rgba(34,211,238,0.22)', borderRadius: 10, padding: 14 }}>
         <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(103,232,249,0.85)', marginBottom: 3 }}>
-          🪄 Song Forge — OpenRouter (Song + Cover Art)
+          <Icon i={Hammer} />Song Forge — OpenRouter (Song + Cover Art)
         </div>
         <p style={{ fontSize: '0.68rem', color: 'rgba(210,195,255,0.75)', marginBottom: 12, lineHeight: 1.4 }}>
           Song Forge uses <strong>the same OpenRouter key</strong> as the rest of Lyricist — one key for lyrics
@@ -966,7 +967,7 @@ export default function Settings() {
             fontFamily: "'Space Grotesk', sans-serif",
           }}
         >
-          🎙 Open my voice folder
+          <Icon i={FolderOpen} />Open my voice folder
         </button>
       </div>
 
@@ -987,7 +988,7 @@ export default function Settings() {
             cursor: 'pointer'
           }}
         >
-          {saved ? '✓ Saved' : 'Save Settings'}
+          {saved ? 'Saved' : 'Save Settings'}
         </button>
 
         <button
@@ -1016,11 +1017,11 @@ export default function Settings() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[
-            ['API Key Status', store.config.openRouterApiKey ? '🔑 Configured' : '❌ Not Configured', store.config.openRouterApiKey ? '#34d399' : '#f87171'],
+            ['API Key Status', store.config.openRouterApiKey ? 'Configured' : 'Not configured', store.config.openRouterApiKey ? '#34d399' : '#f87171'],
             ['Active Model', store.config.model, '#e8e0ff'],
             ['Assistant Temperature', store.config.temperature, '#c4b5fd'],
             ['Token Cap', store.config.maxTokens, '#c4b5fd'],
-            ['Song Forge (OpenRouter)', store.config.openRouterApiKey ? '🔑 Same key as studio' : '❌ OpenRouter key needed', store.config.openRouterApiKey ? '#34d399' : '#f87171'],
+            ['Song Forge (OpenRouter)', store.config.openRouterApiKey ? 'Same key as studio' : 'OpenRouter key needed', store.config.openRouterApiKey ? '#34d399' : '#f87171'],
             ['Song Forge Text Model', store.config.geminiTextModel, '#67e8f9'],
             ['Song Forge Art Model', store.config.geminiImageModel, '#67e8f9']
           ].map(([k, v, c]) => (

@@ -7,7 +7,8 @@ import SectionEditor from './SectionEditor.jsx';
 import StructureBuilder from './StructureBuilder.jsx';
 import { generateFullSong, fillBlank, generateBridgeVariations, lastGeneration, parseSectionsFromText } from '../../services/AIService.js';
 import { normalizeLineEndings, hasLineStructure, splitProseIntoLines, groupIntoSections } from '../../utils/importLyrics.js';
-import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, AlertCircle, Upload } from 'lucide-react';
+import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, AlertCircle, Upload, PenLine, GitBranch } from 'lucide-react';
+import { Icon } from '../common/Glyph.jsx';
 // The logo and the founder photo were imported here but never rendered — a
 // leftover from the old in-tab header. Vite emits an imported asset whether or
 // not it is used, so both were being copied into every build for nothing.
@@ -958,7 +959,7 @@ export default function SongwriterHub({ ghostRiderData }) {
             ))
           ) : (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyCenter: 'center', gap: 12, paddingBottom: 60, userSelect: 'none', justifyContent: 'center' }}>
-              <div style={{ fontSize: '4rem', filter: 'drop-shadow(0 0 30px rgba(168,85,247,0.6))' }}>🎵</div>
+              <div className="empty-glyph"><PenLine size={44} strokeWidth={1.25} /></div>
               <p style={{ color: 'rgba(196,181,253,0.7)', fontWeight: 500, fontSize: '0.9rem', textAlign: 'center' }}>
                 {isGenerating ? 'Coaxing the words from the ether...' : 'Configure your options and click Generate Full Song.'}
               </p>
@@ -1004,7 +1005,7 @@ export default function SongwriterHub({ ghostRiderData }) {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h3 style={{ fontSize: '1.2rem', fontFamily: "'Syne', sans-serif", fontWeight: 800 }}>
-                🌉 Alternate Bridge Variations
+                <Icon i={GitBranch} />Alternate Bridge Variations
               </h3>
               <button
                 onClick={() => setShowBridgeModal(false)}

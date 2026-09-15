@@ -4,6 +4,7 @@ import { useLyricStore } from '../../context/LyricStore.jsx';
 import { Sparkles, Search, Clipboard, Check, BookOpen, Layers } from 'lucide-react';
 import { assertApiKey } from '../../services/AIService.js';
 import { stripReasoning } from '../../utils/stripReasoning.js';
+import { Icon } from '../common/Glyph.jsx';
 
 export default function RhymeHelper() {
   const store = useLyricStore();
@@ -289,7 +290,7 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
                               fontFamily: "'JetBrains Mono', monospace"
                             }}
                           >
-                            {copiedWord === w ? '✓ Copied' : w}
+                            {copiedWord === w ? 'Copied' : w}
                           </button>
                         ))}
                       </div>
@@ -325,7 +326,7 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
                       fontFamily: "'JetBrains Mono', monospace"
                     }}
                   >
-                    {copiedWord === item.word ? '✓ Copied' : item.word}
+                    {copiedWord === item.word ? 'Copied' : item.word}
                   </button>
                 ))}
               </div>
@@ -336,7 +337,7 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
           {aiSuggestions && (
             <div>
               <span style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#c084fc', marginBottom: 10, display: 'block' }}>
-                ✨ AI Rhyming Suggestions & Phrases
+                <Icon i={Sparkles} />AI Rhyming Suggestions & Phrases
               </span>
               <div
                 style={{
@@ -358,7 +359,7 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
 
           {!perfectRhymes && !aiSuggestions && !loadingLocal && !loadingAI && (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, paddingBottom: 60, userSelect: 'none' }}>
-              <div style={{ fontSize: '3.5rem', filter: 'drop-shadow(0 0 24px rgba(168,85,247,0.6))' }}>📖</div>
+              <div className="empty-glyph"><BookOpen size={44} strokeWidth={1.25} /></div>
               <p style={{ color: 'rgba(196,181,253,0.7)', fontWeight: 500, fontSize: '0.88rem', textAlign: 'center' }}>
                 Type a word and click Find Rhymes or AI Suggest to start searching.
               </p>

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './mobile.css';
+import { Glyph } from '../components/common/Glyph.jsx';
 
 /**
  * THE PHONE NAVIGATION, built from the approved landscape mockups.
@@ -34,7 +35,7 @@ import './mobile.css';
 
 function TileIcon({ tab }) {
   if (tab.img) return <img className="mob-tile-ico" src={tab.img} alt="" aria-hidden="true" />;
-  return <span className="mob-tile-ico mob-tile-emoji" aria-hidden="true">{tab.icon}</span>;
+  return <span className="mob-tile-ico mob-tile-emoji" aria-hidden="true"><Glyph name={tab.icon} size={22} strokeWidth={1.5} /></span>;
 }
 
 export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
@@ -162,7 +163,7 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
               opened the app for the first time and needs telling. */}
           {onWizard && (
             <button className="mob-pill mob-pill-tour" onClick={onWizard}>
-              ✨ Take the tour
+              Take the tour
             </button>
           )}
           {/* The three payment links that used to sit here are gone with the

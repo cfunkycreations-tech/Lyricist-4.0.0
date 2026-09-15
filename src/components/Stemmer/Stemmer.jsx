@@ -15,6 +15,8 @@ import { track } from '../../services/analytics.js';
 import './Stemmer.css';
 
 import TabBackground from '../common/TabBackground.jsx';
+import { Cloud, AudioLines } from 'lucide-react';
+import { Glyph } from '../common/Glyph.jsx';
 /**
  * Stemmer tab — Offline (default, light CPU, no key) OR Cloud Demucs (optional API key).
  */
@@ -446,7 +448,7 @@ export default function Stemmer() {
           high-fidelity separation is offloaded rather than made to crawl or
           fail locally. */}
       <div className="stemmer-transparency" data-help="Lyricist Pro tells you which engines run off this machine. Local and Offline never send your audio anywhere. Cloud sends the file you choose to Replicate under your own API key — nothing is uploaded until you pick Cloud and drop a file.">
-        <span className="stemmer-transparency-mark" aria-hidden="true">☁</span>
+        <span className="stemmer-transparency-mark" aria-hidden="true"><Cloud size={16} strokeWidth={1.6} /></span>
         <div>
           <b>Cloud Stem Extraction · BYO Replicate Key</b>
           <span>
@@ -614,7 +616,7 @@ export default function Stemmer() {
           </div>
         ) : (
           <>
-            <span className="stemmer-drop-icon">🎛️</span>
+            <span className="stemmer-drop-icon"><AudioLines size={40} strokeWidth={1.25} /></span>
             <span className="stemmer-drop-text">
               {fileName ? (
                 <>
@@ -651,7 +653,7 @@ export default function Stemmer() {
             >
               <div className="stemmer-card-top">
                 <span className="stemmer-card-icon" aria-hidden>
-                  {s.icon}
+                  <Glyph name={s.icon} size={16} strokeWidth={1.6} />
                 </span>
                 <span className="stemmer-card-label chrome-text">{s.label}</span>
                 <span className="stemmer-card-swatch" style={{ background: s.color }} />

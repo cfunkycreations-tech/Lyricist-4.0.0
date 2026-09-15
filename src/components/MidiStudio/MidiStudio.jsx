@@ -11,6 +11,8 @@ import { getAudioContext, getMasterBus } from '../../services/audioEngine.js';
 import { createFxChain, DEFAULT_FX } from '../../services/fxRack.js';
 
 import TabBackground from '../common/TabBackground.jsx';
+import { Piano } from 'lucide-react';
+import { Icon } from '../common/Glyph.jsx';
 // MIDI Studio tab — Lyricist 4.1.3
 // Audio → MIDI (basic-pitch, fully offline) feeding an offline piano-roll
 // sequencer, with a Butterchurn/Milkdrop visualizer wired to the same audio
@@ -128,7 +130,7 @@ export default function MidiStudio() {
       <div className="midi-shell">
         <div className="midi-sidebar">
           <div>
-            <h3 style={{ fontSize: '1rem', marginBottom: 4 }}>🎹 MIDI Studio</h3>
+            <h3 style={{ fontSize: '1rem', marginBottom: 4 }}><Icon i={Piano} />MIDI Studio</h3>
             <p style={{ fontSize: '0.72rem', color: 'rgba(196,181,253,0.7)', lineHeight: 1.5 }}>
               Turn any audio — a Suno track, a guitar riff, or a hummed voice memo — into
               editable MIDI, tweak it in the sequencer, and watch Milkdrop dance to it.
@@ -144,7 +146,7 @@ export default function MidiStudio() {
 
           {sourceName && (
             <div className="pill-green" style={{ padding: '7px 10px', borderRadius: 8, fontSize: '0.68rem' }}>
-              ✓ Converted “{sourceName}” — {midi.notes.length} notes in the sequencer
+              Converted “{sourceName}” — {midi.notes.length} notes in the sequencer
             </div>
           )}
         </div>

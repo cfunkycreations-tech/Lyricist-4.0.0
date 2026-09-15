@@ -78,6 +78,7 @@ import {
 import { blendLabel } from '../../utils/blend.js';
 import { saveRecording, listRecordings } from '../../services/RecordingsStore.js';
 import './OneManBand.css';
+import { Dices } from 'lucide-react';
 
 /**
  * BLACK HOLE STUDIOS — your words, sung by a full band.
@@ -1349,7 +1350,7 @@ export default function OneManBand() {
                     <span className="val">{seed.toLocaleString('en-US')}</span>
                     <button type="button" className={`omb-dice ${rolling ? 'rolling' : ''}`}
                             onClick={roll}
-                            aria-label={seeds.length > 1 ? 'Roll new take numbers' : 'Roll a new take number'}>🎲</button>
+                            aria-label={seeds.length > 1 ? 'Roll new take numbers' : 'Roll a new take number'}><Dices size={15} strokeWidth={1.75} /></button>
                   </div>
                   {seeds.length > 1 && (
                     <ol className="omb-seedlist">

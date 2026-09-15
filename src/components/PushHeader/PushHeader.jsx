@@ -6,6 +6,8 @@ import { INSTRUMENT_GROUPS, DEFAULT_INSTRUMENT, loadInstrument, playNote, midiTo
 import { listSamples, getSampleBuffer } from '../../services/sampleLibrary.js';
 import { createPushLink, hueToPushColor, PUSH_CC } from '../../services/pushMidi.js';
 import { loadButterchurn } from '../../services/butterchurnLoader.js';
+import { ChevronUp, ChevronDown } from 'lucide-react';
+import { Glyph } from '../common/Glyph.jsx';
 
 /**
  * THE PAD HEADER.
@@ -250,7 +252,7 @@ export default function PushHeader({ tabs, activeTab, onSelect }) {
               onClick={() => { wake(); onSelect(id); }}
               data-help={t.help}
             >
-              <span className="pc-icon" aria-hidden="true">{t.icon}</span>
+              <span className="pc-icon" aria-hidden="true"><Glyph name={t.icon} size={20} strokeWidth={1.5} /></span>
               <span className="pc-sub">{t.label}</span>
             </button>
           );
@@ -279,7 +281,7 @@ export default function PushHeader({ tabs, activeTab, onSelect }) {
           data-help="Another visual. It also changes by itself every half minute."
         >
           <span className="pc-name">Next</span>
-          <span className="pc-sub">{vizOn && vizInfo.count ? `${vizInfo.count}` : '▸'}</span>
+          <span className="pc-sub">{vizOn && vizInfo.count ? `${vizInfo.count}` : 'Off'}</span>
         </button>
         <button
           type="button"
@@ -288,7 +290,7 @@ export default function PushHeader({ tabs, activeTab, onSelect }) {
           onClick={() => { wake(); setExpanded((v) => !v); }}
           data-help="Opens the instrument inside the header: 8 by 8 pads for the 808 kit, your samples and any instrument in key, a step sequencer and eight knobs. A real Ableton Push plugged in plays along."
         >
-          <span className="pc-chev" aria-hidden="true">{expanded ? '▴' : '▾'}</span>
+          <span className="pc-chev" aria-hidden="true">{expanded ? <ChevronUp size={18} strokeWidth={1.75} /> : <ChevronDown size={18} strokeWidth={1.75} />}</span>
           <span className="pc-sub">Pads</span>
         </button>
       </div>
@@ -552,13 +554,13 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
     { label: playing ? 'Stop' : 'Play', on: playing, act: () => setPlaying((p) => !p) },
     { label: 'Drum', on: mode === 'drum', act: () => setMode('drum') },
     { label: 'Note', on: mode === 'note', act: () => setMode('note') },
-    { label: 'Oct ▲', act: () => setOctave((o) => clamp(o + 1, 0, 6)) },
-    { label: 'Oct ▼', act: () => setOctave((o) => clamp(o - 1, 0, 6)) },
+    { label: 'Oct +', act: () => setOctave((o) => clamp(o + 1, 0, 6)) },
+    { label: 'Oct −', act: () => setOctave((o) => clamp(o - 1, 0, 6)) },
     { label: 'Clear', act: () => setPattern((p) => ({ ...p, [voice]: Array(16).fill(false) })) },
     { label: 'Clear all', act: () => setPattern(Object.fromEntries(KIT.map((k) => [k.id, Array(16).fill(false)]))) },
     { label: `Vis ${viz.on ? 'on' : 'off'}`, on: viz.on, act: viz.toggle },
-    { label: '◂ Vis', act: () => viz.api.current.step(-1), off: !viz.on },
-    { label: 'Vis ▸', act: () => viz.api.current.step(1), off: !viz.on },
+    { label: 'Prev vis', act: () => viz.api.current.step(-1), off: !viz.on },
+    { label: 'Next vis', act: () => viz.api.current.step(1), off: !viz.on },
     { label: 'Shuffle', act: () => viz.api.current.next(), off: !viz.on },
     { label: 'Hide', act: onClose },
   ];

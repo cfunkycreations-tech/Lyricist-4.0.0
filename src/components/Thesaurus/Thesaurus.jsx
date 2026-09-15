@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import TabBackground from '../common/TabBackground.jsx';
+import { Library } from 'lucide-react';
 
 /**
  * Thesaurus tab (new in 4.0.3).
@@ -72,7 +73,7 @@ export default function Thesaurus() {
             fontFamily: "'JetBrains Mono', monospace"
           }}
         >
-          {copiedWord === item.word ? '✓ Copied' : item.word}
+          {copiedWord === item.word ? 'Copied' : item.word}
         </button>
       ))}
     </div>
@@ -178,7 +179,7 @@ export default function Thesaurus() {
 
         {synonyms === null && !loading && (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, paddingBottom: 60, userSelect: 'none' }}>
-            <div style={{ fontSize: '3.5rem', filter: 'drop-shadow(0 0 24px rgba(168,85,247,0.6))' }}>📚</div>
+            <div className="empty-glyph"><Library size={44} strokeWidth={1.25} /></div>
             <p style={{ color: 'rgba(196,181,253,0.7)', fontWeight: 500, fontSize: '0.88rem', textAlign: 'center' }}>
               Type a word and click Look Up to find other words for it,<br />its opposites, and related ideas.
             </p>

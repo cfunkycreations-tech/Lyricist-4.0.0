@@ -1,8 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import {
-  Mic, Square, Upload, Play, Pause, Trash2, Download, Save,
-  Music, ListMusic, Pencil, Check, Piano
-} from 'lucide-react';
+import { Mic, Square, Upload, Play, Pause, Trash2, Download, Save, Music, ListMusic, Pencil, Check, Piano } from 'lucide-react';
 import {
   saveRecording, listRecordings, renameRecording, deleteRecording,
   sendToPlayer, sendToMidiStudio
@@ -14,6 +11,7 @@ import TabBackground from '../common/TabBackground.jsx';
 // Recording Booth — Lyricist 4.1.3
 // Record harmonica, guitar, singing — anything — straight into the app with a
 // live input meter, or upload existing takes. Everything is saved to a
+import { Icon } from '../common/Glyph.jsx';
 // persistent local library (IndexedDB) and can be:
 //   • played in the persistent Suno player while you write on any tab
 //   • converted to editable MIDI in MIDI Studio
@@ -112,7 +110,7 @@ export default function RecordingBooth({ onNavigate }) {
           });
           setTakeName('');
           await refresh();
-          flashNote(`✓ Saved "${saved.name}" to your library`);
+          flashNote(`Saved "${saved.name}" to your library`);
         } catch (e) {
           setError(`Could not save the recording: ${e.message}`);
         }
@@ -144,7 +142,7 @@ export default function RecordingBooth({ onNavigate }) {
       }
     }
     await refresh();
-    if (files.length) flashNote(`✓ Added ${files.length} file${files.length > 1 ? 's' : ''} to your library`);
+    if (files.length) flashNote(`Added ${files.length} file${files.length > 1 ? 's' : ''} to your library`);
   };
 
   // ── Library actions ──
@@ -194,7 +192,7 @@ export default function RecordingBooth({ onNavigate }) {
       const wav = audioBufferToWav(buf);
       const bytes = new Uint8Array(await wav.arrayBuffer());
       const res = await window.lyricistAPI.saveRecording(`${rec.name}.wav`, bytes);
-      flashNote(res?.ok ? `✓ Saved: ${res.path}` : `Could not save: ${res?.error}`);
+      flashNote(res?.ok ? `Saved: ${res.path}` : `Could not save: ${res?.error}`);
     } catch (e) {
       setError(`Save failed: ${e.message}`);
     }
@@ -202,7 +200,7 @@ export default function RecordingBooth({ onNavigate }) {
 
   const toPlayer = (rec) => {
     sendToPlayer(rec);
-    flashNote(`✓ "${rec.name}" queued in the player — it follows you to every tab`);
+    flashNote(`"${rec.name}" queued in the player — it follows you to every tab`);
   };
 
   const toMidi = (rec) => {
@@ -220,7 +218,7 @@ export default function RecordingBooth({ onNavigate }) {
         {/* Capture panel */}
         <div className="booth-sidebar">
           <div>
-            <h3 style={{ fontSize: '1rem', marginBottom: 4 }}>🎤 Recording Booth</h3>
+            <h3 style={{ fontSize: '1rem', marginBottom: 4 }}><Icon i={Mic} />Recording Booth</h3>
             <p style={{ fontSize: '0.72rem', color: 'rgba(196,181,253,0.7)', lineHeight: 1.5 }}>
               Record harmonica, guitar, or vocals straight into Lyricist — or upload takes you already have.
               Everything lands in your library below, saved on this machine, ready to play while you write

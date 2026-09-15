@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Play, Square, Trash2, Shuffle, Save, FolderDown, Sliders, Volume2, VolumeX, Headphones } from 'lucide-react';
+import { Play, Square, Trash2, Shuffle, Save, FolderDown, Sliders, Volume2, VolumeX, Headphones, Drum } from 'lucide-react';
 import { getAudioContext, getMasterBus, resumeAudio } from '../../services/audioEngine.js';
 import {
   KIT, STEPS, DEFAULT_VOICE, DEFAULT_FX,
@@ -9,6 +9,7 @@ import {
 import { listPacks, listSamples, getSampleBuffer } from '../../services/sampleLibrary.js';
 import { registerDemoSnapshot } from '../../services/demoSafety.js';
 import { Knob, FxKnobGrid, FxToggles } from './FxRackPanel.jsx';
+import { Icon } from '../common/Glyph.jsx';
 
 // 808 Drum Machine — Lyricist 4.2.0
 // Synthesized 808 kit, 16 steps, per-track effects rack, master rack, and
@@ -272,7 +273,7 @@ export default function DrumMachine() {
     <div className="card-cosmic" style={{ borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Transport */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <h3 style={{ margin: 0, fontSize: '0.9rem' }}>🥁 808 Drum Machine</h3>
+        <h3 style={{ margin: 0, fontSize: '0.9rem' }}><Icon i={Drum} />808 Drum Machine</h3>
 
         <button
           onClick={playing ? stop : play}

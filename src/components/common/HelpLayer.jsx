@@ -7,7 +7,7 @@ import { useLyricStore } from '../../context/LyricStore.jsx';
  * Mount once near the top of the app. On ANY element, add:
  *   data-help="Plain English explanation for a first-time user."
  *
- * The header 💡 Tips switch (tipsEnabled) turns this on/off.
+ * The header Tips switch (tipsEnabled) turns this on/off.
  * When Tips are ON, hover any control with data-help and a bubble appears.
  *
  * Designed so Quantum Lab, Songwriter, and every other tab can teach

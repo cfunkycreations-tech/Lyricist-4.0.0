@@ -1,8 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import {
-  Disc3, Play, Pause, Upload, Trash2, GripVertical, Wand2, RefreshCw,
-  Image as ImageIcon, Download, Library, Sparkles, CheckCircle2, X
-} from 'lucide-react';
+import { Disc3, Play, Pause, Upload, Trash2, GripVertical, Wand2, RefreshCw, Image as ImageIcon, Download, Library, Sparkles, CheckCircle2, X, Gauge } from 'lucide-react';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { listRecordings, saveRecording } from '../../services/RecordingsStore.js';
 import { masterTrack, MASTERING_PRESETS, DEFAULT_MASTERING } from '../../services/MasteringService.js';
@@ -14,6 +11,7 @@ import TabBackground from '../common/TabBackground.jsx';
 // Mastering Studio — Lyricist 4.1.3
 // The last mile: pull the songs you've made (Recording Booth takes, Suno
 // downloads, any audio) into an album, run each track through a real
+import { Icon } from '../common/Glyph.jsx';
 // mastering chain (EQ → compression → limiter → loudness normalize, all
 // offline via Web Audio), attach or AI-generate the cover, and export the
 // finished album — numbered WAVs + cover + tracklist — in one shot.
@@ -232,7 +230,7 @@ export default function MasteringStudio() {
         files.push({ filename: 'tracklist.txt', bytes: new TextEncoder().encode(tracklist) });
         const res = await window.lyricistAPI.saveAlbum(meta.title || 'Untitled Album', files);
         if (res?.ok) {
-          flash(`✓ Album exported: ${res.path}`);
+          flash(`Album exported: ${res.path}`);
           // Track count and preset only. NOT res.path — that is the user's
           // Documents folder and carries their Windows account name.
           track('song_exported', { destination: 'disk', track_count: tracks.length, preset, has_cover: Boolean(cover) });
@@ -248,7 +246,7 @@ export default function MasteringStudio() {
         tracks.forEach((t, i) => dl(t.mastered.wavBlob, `${String(i + 1).padStart(2, '0')} - ${t.title}.wav`));
         if (cover) dl(await (await fetch(cover.dataUrl)).blob(), 'cover.png');
         dl(new Blob([tracklist], { type: 'text/plain' }), 'tracklist.txt');
-        flash('✓ Album files downloading');
+        flash('Album files downloading');
         track('song_exported', { destination: 'download', track_count: tracks.length, preset, has_cover: Boolean(cover) });
       }
     } catch (e) {
@@ -273,7 +271,7 @@ export default function MasteringStudio() {
         {/* Sidebar: metadata, cover, mastering chain */}
         <div className="album-sidebar">
           <div>
-            <h3 style={{ fontSize: '1rem', marginBottom: 4 }}>💽 Mastering Studio</h3>
+            <h3 style={{ fontSize: '1rem', marginBottom: 4 }}><Icon i={Gauge} />Mastering Studio</h3>
             <p style={{ fontSize: '0.72rem', color: 'rgba(196,181,253,0.7)', lineHeight: 1.5 }}>
               The finish line: gather the songs you've made, master them with a real
               EQ → compression → limiter chain (all offline), add the cover, and export

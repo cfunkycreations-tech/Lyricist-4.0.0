@@ -55,6 +55,7 @@ import MobileShell from './mobile/MobileShell.jsx';
 import GhostPilotLayer from './components/Ghost/GhostPilotLayer.jsx';
 import PushHeader from './components/PushHeader/PushHeader.jsx';
 import { track, isEnabled as analyticsEnabled } from './services/analytics.js';
+import { Compass, Ghost, Play, Lightbulb, KeyRound, Lock } from 'lucide-react';
 // The still header art (profile.jpg, logo.jpg, header-medallion / -signature /
 // -chris / -wordmark .png) is no longer imported here. The header became the
 // whole uncropped video clip, and its <img> elements went with it, but the six
@@ -109,26 +110,26 @@ const WIZARD_ENABLED = false;
 
 const tabs = [
   // Write / story tools first, then The Matrix
-  { id: 'songwriter', icon: '🎵', label: 'Songwriter', blurb: 'write and rewrite lyrics', help: 'The main workspace. Set up the kind of song you want (style, mood, topic), then write and polish the lyrics line by line.' },
+  { id: 'songwriter', icon: 'pen-line', label: 'Songwriter', blurb: 'write and rewrite lyrics', help: 'The main workspace. Set up the kind of song you want (style, mood, topic), then write and polish the lyrics line by line.' },
   // Straight after Songwriter on purpose: write the words, then hear them.
-  { id: 'onemanband', icon: '🎸', label: 'Black Hole Studios', blurb: 'lyrics into a real song', help: 'Turns your lyrics into a real song with vocals and a full band. Pick a genre, a mood and a voice, and it writes the Input Caption for you. Free on the cloud engine, no key needed. Longer songs take longer, and it tells you how long before you start.' },
-  { id: 'analyzer', icon: '👻', label: 'Ghost Rider', blurb: 'analyse any artist\'s style', help: 'Studies any artist you name and breaks down how they write, then helps you write a NEW song in that same style. (It does not copy their actual lyrics.)' },
-  { id: 'songforge', icon: '🪄', label: 'Song Forge', blurb: 'a full song from one idea', help: 'Auto-generate a full song and cover art using your single OpenRouter key (lyrics + Nano Banana image models on OpenRouter). Song First or Art First. No Google AI Studio key.' },
-  { id: 'quantum', icon: '⚛️', label: 'The Matrix', blurb: 'engineer verse structure', help: 'Build a verse from a 20-tile semantic grid. Load your keywords, then hit Auto-Craft Verse for the one-click path — it spreads the energy, locks the field and writes both neural states for you. Everything granular (manual steps, the 9-suite feature hub, the analytical inspectors) lives in the Advanced Studio drawer underneath. Needs your BYOK routing key for generation.' },
-  { id: 'collab', icon: '🤝', label: 'Collaboration', blurb: 'write with someone live', help: 'Write a song with someone else at the same time, wherever they are. Start a session, send them the code, and you are both typing on the same page. Peer to peer — the words go straight between your two computers. No account, no server holding your song, free forever.' },
-  { id: 'loopstation', icon: '🔁', label: 'RC-Funk 5000', blurb: 'drum machine and looper', help: 'Live multi-track loop station (Boss RC-style). Record loops on up to 4 tracks, stack layers, control volume, undo a track. Fully offline. Great for riffs and vocal hooks while you write.' },
-  { id: 'stemmer', icon: '🎛️', label: 'Cloud Stem Extraction', blurb: 'BYO Replicate key', help: 'Splits a full mix into Vocals, Drums, Bass, Guitar, Keys, and Other. Local mode runs on your own CPU with no key and no GPU. High-fidelity Demucs separation offloads to the Replicate API using your own key, so a 4 GB VRAM machine is never asked to hold the model.' },
-  { id: 'booth', icon: '🎤', label: 'Recording Booth', blurb: 'record your own takes', help: 'Record harmonica, guitar, or vocals straight into the app (or upload takes) and keep them in a saved library. Play them in the persistent player while you write, convert them to MIDI, or export them as WAV.' },
-  { id: 'midistudio', icon: '🎹', label: 'MIDI Studio', blurb: 'audio to MIDI, piano roll', help: 'Turn any audio into editable MIDI, tweak it on a piano-roll with a stronger multi-voice synth, and pick from dozens of Milkdrop-class visualizer presets. Runs fully offline.' },
-  { id: 'mastering', icon: '💽', label: 'Mastering Studio', blurb: 'master and export', help: 'The finish line: pull your songs together into an album, master each track with a real EQ/compression/limiter chain (all offline), add cover art (upload or AI-generated), and export the finished album — WAVs, cover, and tracklist.' },
+  { id: 'onemanband', icon: 'orbit', label: 'Black Hole Studios', blurb: 'lyrics into a real song', help: 'Turns your lyrics into a real song with vocals and a full band. Pick a genre, a mood and a voice, and it writes the Input Caption for you. Free on the cloud engine, no key needed. Longer songs take longer, and it tells you how long before you start.' },
+  { id: 'analyzer', icon: 'radar', label: 'Ghost Rider', blurb: 'analyse any artist\'s style', help: 'Studies any artist you name and breaks down how they write, then helps you write a NEW song in that same style. (It does not copy their actual lyrics.)' },
+  { id: 'songforge', icon: 'hammer', label: 'Song Forge', blurb: 'a full song from one idea', help: 'Auto-generate a full song and cover art using your single OpenRouter key (lyrics + Nano Banana image models on OpenRouter). Song First or Art First. No Google AI Studio key.' },
+  { id: 'quantum', icon: 'grid', label: 'The Matrix', blurb: 'engineer verse structure', help: 'Build a verse from a 20-tile semantic grid. Load your keywords, then hit Auto-Craft Verse for the one-click path — it spreads the energy, locks the field and writes both neural states for you. Everything granular (manual steps, the 9-suite feature hub, the analytical inspectors) lives in the Advanced Studio drawer underneath. Needs your BYOK routing key for generation.' },
+  { id: 'collab', icon: 'users', label: 'Collaboration', blurb: 'write with someone live', help: 'Write a song with someone else at the same time, wherever they are. Start a session, send them the code, and you are both typing on the same page. Peer to peer — the words go straight between your two computers. No account, no server holding your song, free forever.' },
+  { id: 'loopstation', icon: 'repeat', label: 'RC-Funk 5000', blurb: 'drum machine and looper', help: 'Live multi-track loop station (Boss RC-style). Record loops on up to 4 tracks, stack layers, control volume, undo a track. Fully offline. Great for riffs and vocal hooks while you write.' },
+  { id: 'stemmer', icon: 'audio-lines', label: 'Cloud Stem Extraction', blurb: 'BYO Replicate key', help: 'Splits a full mix into Vocals, Drums, Bass, Guitar, Keys, and Other. Local mode runs on your own CPU with no key and no GPU. High-fidelity Demucs separation offloads to the Replicate API using your own key, so a 4 GB VRAM machine is never asked to hold the model.' },
+  { id: 'booth', icon: 'mic', label: 'Recording Booth', blurb: 'record your own takes', help: 'Record harmonica, guitar, or vocals straight into the app (or upload takes) and keep them in a saved library. Play them in the persistent player while you write, convert them to MIDI, or export them as WAV.' },
+  { id: 'midistudio', icon: 'piano', label: 'MIDI Studio', blurb: 'audio to MIDI, piano roll', help: 'Turn any audio into editable MIDI, tweak it on a piano-roll with a stronger multi-voice synth, and pick from dozens of Milkdrop-class visualizer presets. Runs fully offline.' },
+  { id: 'mastering', icon: 'gauge', label: 'Mastering Studio', blurb: 'master and export', help: 'The finish line: pull your songs together into an album, master each track with a real EQ/compression/limiter chain (all offline), add cover art (upload or AI-generated), and export the finished album — WAVs, cover, and tracklist.' },
   // Sits after Mastering because it is something you do TO a finished track.
-  { id: 'screw', icon: '🍇', label: 'Chopped & Screwed', blurb: 'slow it and chop it', help: 'Slow a song down until the voice sinks with it, then chop it back up on the beat. The sound DJ Screw invented in Houston. Works on any audio file or any of your own recordings, runs entirely on your computer, and saves straight back to Recordings.' },
-  { id: 'rhyme', icon: '📖', label: 'Rhyme Helper', blurb: 'find rhymes that fit', help: 'A rhyming dictionary and rhyme finder. Look up words that rhyme, and check the rhymes inside lines you have already written.' },
-  { id: 'thesaurus', icon: '📚', label: 'Thesaurus', blurb: 'better words', help: 'A word finder: type a word to get other words that mean the same, words that mean the opposite, and related ideas. Free, no AI key needed.' },
-  { id: 'dictionary', icon: '📕', label: 'Dictionary', blurb: 'what it means', help: 'Look up what a word means, how to say it, and example sentences — in English or Spanish. Free, no AI key needed.' },
-  { id: 'toolshub', icon: '🧰', label: 'AI Tools Hub', blurb: 'every AI tool in one place', help: 'A shared shelf of AI tools — browse them, upvote the ones that earn it, and add the ones you rely on.' },
-  { id: 'scratchpad', icon: '📝', label: 'Scratchpad', blurb: 'dump your ideas', help: 'A free, blank notepad for jotting ideas, hooks, or lines. It saves automatically on your computer so nothing gets lost.' },
-  { id: 'settings', icon: '⚙️', label: 'Settings', blurb: 'your key and your setup', help: 'Where you connect your AI key and choose which AI model writes your lyrics. Set this up first so the rest of the app works.' }
+  { id: 'screw', icon: 'scissors', label: 'Chopped & Screwed', blurb: 'slow it and chop it', help: 'Slow a song down until the voice sinks with it, then chop it back up on the beat. The sound DJ Screw invented in Houston. Works on any audio file or any of your own recordings, runs entirely on your computer, and saves straight back to Recordings.' },
+  { id: 'rhyme', icon: 'book-open', label: 'Rhyme Helper', blurb: 'find rhymes that fit', help: 'A rhyming dictionary and rhyme finder. Look up words that rhyme, and check the rhymes inside lines you have already written.' },
+  { id: 'thesaurus', icon: 'library', label: 'Thesaurus', blurb: 'better words', help: 'A word finder: type a word to get other words that mean the same, words that mean the opposite, and related ideas. Free, no AI key needed.' },
+  { id: 'dictionary', icon: 'book-a', label: 'Dictionary', blurb: 'what it means', help: 'Look up what a word means, how to say it, and example sentences — in English or Spanish. Free, no AI key needed.' },
+  { id: 'toolshub', icon: 'blocks', label: 'AI Tools Hub', blurb: 'every AI tool in one place', help: 'A shared shelf of AI tools — browse them, upvote the ones that earn it, and add the ones you rely on.' },
+  { id: 'scratchpad', icon: 'sticky-note', label: 'Scratchpad', blurb: 'dump your ideas', help: 'A free, blank notepad for jotting ideas, hooks, or lines. It saves automatically on your computer so nothing gets lost.' },
+  { id: 'settings', icon: 'settings', label: 'Settings', blurb: 'your key and your setup', help: 'Where you connect your AI key and choose which AI model writes your lyrics. Set this up first so the rest of the app works.' }
 ];
 
 /**
@@ -459,7 +460,7 @@ function MainLayout() {
                 transition: 'all 0.15s'
               }}
             >
-              <span>🧭</span>
+              <span><Compass size={18} strokeWidth={1.6} /></span>
               Take the Tour
             </button>}
 
@@ -486,7 +487,7 @@ function MainLayout() {
                 transition: 'all 0.15s'
               }}
             >
-              <span>👻</span>
+              <span><Ghost size={18} strokeWidth={1.6} /></span>
               Ghost Demo: {store.ghostDemoEnabled ? 'On' : 'Off'}
             </button>
 
@@ -510,7 +511,7 @@ function MainLayout() {
                   transition: 'all 0.15s'
                 }}
               >
-                <span>▶</span>
+                <span><Play size={18} strokeWidth={1.6} /></span>
                 Play Demo
               </button>
             )}
@@ -542,7 +543,7 @@ function MainLayout() {
                 transition: 'all 0.15s'
               }}
             >
-              <span>💡</span>
+              <span><Lightbulb size={18} strokeWidth={1.6} /></span>
               Tips: {store.tipsEnabled ? 'On' : 'Off'}
             </button>
 
@@ -559,7 +560,7 @@ function MainLayout() {
               }}
               data-help="Shows whether your AI key is connected. Lyricist uses your own key (add it on the Settings tab) to write lyrics. Green padlock = ready to go. Red = add a key first or nothing will generate."
             >
-              <span>{store.config.openRouterApiKey ? '🔓' : '🔒'}</span>
+              <span>{store.config.openRouterApiKey ? <KeyRound size={18} strokeWidth={1.6} /> : <Lock size={18} strokeWidth={1.6} />}</span>
               {store.config.openRouterApiKey ? 'API Key Loaded' : 'API Key Required'}
             </div>
           </div>

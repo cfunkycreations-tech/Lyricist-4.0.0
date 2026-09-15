@@ -8,11 +8,12 @@ import {
   generateImage,
   generateSongFromImage
 } from '../../services/GeminiService.js';
-import { Wand2, Download, Send, Copy, RefreshCw, Upload, Shuffle, Sparkles, Image as ImageIcon, X } from 'lucide-react';
+import { Wand2, Download, Send, Copy, RefreshCw, Upload, Shuffle, Sparkles, Image as ImageIcon, X, Hammer, Grid3x3 } from 'lucide-react';
 import { registerDemoSnapshot } from '../../services/demoSafety.js';
 import { registerGhostActions, ghostSettle } from '../../services/ghostBus.js';
 
 import TabBackground from '../common/TabBackground.jsx';
+import { Icon } from '../common/Glyph.jsx';
 const SURPRISE_TOPICS = [
   'a rainy drive at 2am with the radio off',
   'burning the recipe your mom left you',
@@ -133,7 +134,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
         imageBase64: art?.base64 || null
       });
       setSaveNote(res?.ok
-        ? '✓ Saved to Documents\\Lyricist Song Forge'
+        ? 'Saved to Documents\\Lyricist Song Forge'
         : `Could not save: ${res?.error || 'unknown error'}`);
     } catch (e) {
       setSaveNote(`Could not save: ${e.message}`);
@@ -384,7 +385,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
         {/* Controls sidebar */}
         <div className="songforge-sidebar" style={{ background: 'rgba(0,0,0,0.34)', borderRight: '1px solid rgba(34,211,238,0.2)' }}>
           <div>
-            <h3 style={{ fontSize: '1rem', marginBottom: 4 }}>🪄 Song Forge</h3>
+            <h3 style={{ fontSize: '1rem', marginBottom: 4 }}><Icon i={Hammer} />Song Forge</h3>
             <p style={{ fontSize: '0.72rem', color: 'rgba(196,181,253,0.7)', lineHeight: 1.5 }}>
               Chain Gemini text + Nano Banana image calls to auto-generate a song and its cover art — either direction.
             </p>
@@ -398,14 +399,14 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
 
           {quantumBanner && (
             <div className="pill-green" style={{ padding: '8px 10px', borderRadius: 8, fontSize: '0.72rem', lineHeight: 1.45 }} data-help="Structure arrived from The Matrix — notes and topic were pre-filled.">
-              ⚛️ {quantumBanner}
+              <Icon i={Grid3x3} />{quantumBanner}
               <button type="button" onClick={() => setQuantumBanner(null)} style={{ display: 'block', marginTop: 6, background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '0.65rem' }}>Dismiss</button>
             </div>
           )}
 
           {/* Mode toggle */}
           <div style={{ display: 'flex', gap: 6 }} data-demo="sf-mode" data-help="Song First writes the lyrics, then paints matching cover art. Art First flips it: create or upload an image, then Gemini writes a song inspired by it.">
-            {[['songFirst', '🎵 Song First'], ['artFirst', '🎨 Art First']].map(([id, label]) => (
+            {[['songFirst', 'Song First'], ['artFirst', 'Art First']].map(([id, label]) => (
               <button
                 key={id}
                 onClick={() => { setMode(id); setErrorMsg(''); }}
@@ -620,7 +621,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
 
           {!result && !busy && !errorMsg && (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 300 }}>
-              <div style={{ fontSize: '3rem' }}>🪄</div>
+              <div className="empty-glyph"><Hammer size={44} strokeWidth={1.25} /></div>
               <p style={{ color: 'rgba(196,181,253,0.7)', fontSize: '0.88rem', textAlign: 'center', maxWidth: 360 }}>
                 {mode === 'songFirst'
                   ? 'Set up your song on the Songwriter tab, then click "Forge Song + Cover Art" to have Gemini write it and paint the cover.'

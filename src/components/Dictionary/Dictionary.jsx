@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import TabBackground from '../common/TabBackground.jsx';
+import { BookA } from 'lucide-react';
 
 /**
  * Dictionary tab (new in 4.0.5) — English & Spanish word definitions.
@@ -181,7 +182,7 @@ export default function Dictionary() {
 
         {!entries && !notFound && !loading && (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, paddingBottom: 60, userSelect: 'none' }}>
-            <div style={{ fontSize: '3.5rem', filter: 'drop-shadow(0 0 24px rgba(168,85,247,0.6))' }}>📕</div>
+            <div className="empty-glyph"><BookA size={44} strokeWidth={1.25} /></div>
             <p style={{ color: 'rgba(196,181,253,0.7)', fontWeight: 500, fontSize: '0.88rem', textAlign: 'center' }}>
               Type a word and click Look Up to see what it means —<br />in English or Spanish.
             </p>

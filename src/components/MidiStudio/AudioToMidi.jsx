@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Mic, Square, RefreshCw, Wand2 } from 'lucide-react';
 import { convertAudioToMidi } from '../../services/MidiService.js';
 import { resumeAudio } from '../../services/audioEngine.js';
+import { Icon } from '../common/Glyph.jsx';
 
 // Audio → MIDI input panel — Lyricist 4.1.3
 // Upload any audio file, or record a voice memo (hum a melody!) with the
@@ -97,7 +98,7 @@ export default function AudioToMidi({ onNotes }) {
 
   return (
     <div className="card-cosmic" style={{ borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <h4 style={{ margin: 0, fontSize: '0.85rem' }}>🎙️ Audio → MIDI</h4>
+      <h4 style={{ margin: 0, fontSize: '0.85rem' }}><Icon i={Mic} />Audio → MIDI</h4>
       <p style={{ margin: 0, fontSize: '0.68rem', color: 'rgba(196,181,253,0.7)', lineHeight: 1.5 }}>
         Upload a track or hum a melody — Spotify's open-source <em>basic-pitch</em> model
         extracts the notes on your machine and drops them into the sequencer below. Nothing is uploaded anywhere.

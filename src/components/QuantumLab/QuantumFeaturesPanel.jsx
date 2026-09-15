@@ -24,6 +24,8 @@ import {
   QUANTUM_SECTIONS,
 } from './quantumFeatures.js';
 import { measureCell, collapseCell } from './quantumEngine.js';
+import { Save } from 'lucide-react';
+import { Icon } from '../common/Glyph.jsx';
 
 /**
  * Advanced Quantum features UI — DNA, contracts, measure, multi-section,
@@ -425,7 +427,7 @@ export default function QuantumFeaturesPanel({
               onChange={(e) => setDnaName(e.target.value)}
             />
             <button type="button" className="ql-btn accent-ylw" onClick={doSaveDNA}>
-              💾 Save DNA
+              <Icon i={Save} />Save DNA
             </button>
           </div>
           <div className="ql-adv-list">

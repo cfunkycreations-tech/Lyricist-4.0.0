@@ -11,12 +11,12 @@
 import { audioBufferToWav } from '../utils/wavEncoder.js';
 
 export const STEM_DEFS = [
-  { id: 'vocals',  label: 'Vocals',  color: '#a855f7', icon: '🎤' },
-  { id: 'drums',   label: 'Drums',   color: '#00e5ff', icon: '🥁' },
-  { id: 'bass',    label: 'Bass',    color: '#10f0a0', icon: '🎸' },
-  { id: 'guitar',  label: 'Guitar',  color: '#ff6f00', icon: '🪕' },
-  { id: 'keys',    label: 'Keys',    color: '#c0c8d8', icon: '🎹' },
-  { id: 'other',   label: 'Other',   color: '#94a3b8', icon: '✨' },
+  { id: 'vocals',  label: 'Vocals',  color: '#a855f7', icon: 'mic' },
+  { id: 'drums',   label: 'Drums',   color: '#00e5ff', icon: 'drum' },
+  { id: 'bass',    label: 'Bass',    color: '#10f0a0', icon: 'activity' },
+  { id: 'guitar',  label: 'Guitar',  color: '#ff6f00', icon: 'guitar' },
+  { id: 'keys',    label: 'Keys',    color: '#c0c8d8', icon: 'piano' },
+  { id: 'other',   label: 'Other',   color: '#94a3b8', icon: 'layers' },
 ];
 
 // ─── FFT (Cooley-Tukey in-place radix-2 DIT) ──────────────────────────────

@@ -4,6 +4,7 @@ import { audioBufferToWav } from '../../utils/wavEncoder.js';
 import { registerDemoSnapshot } from '../../services/demoSafety.js';
 
 import TabBackground from '../common/TabBackground.jsx';
+import { Grid3x3, Save } from 'lucide-react';
 // ============================================================
 // RC-Funk 5000 — Live Loop Station (Lyricist 4.2.0)
 // 4-track looper + master FX: Delay, Reverb, Dub FX (toggleable)
@@ -522,7 +523,7 @@ export default function LoopStation() {
           className="rc-round-btn rc-round-red"
           data-help="Sends this BPM as a groove target to The Matrix (syllable budget + stress bias). No audio upload — just the pocket."
         >
-          <span className="rc-round-icon">⚛</span>
+          <span className="rc-round-icon"><Grid3x3 size={16} strokeWidth={1.6} /></span>
           <span className="rc-round-label">Quantum</span>
         </button>
         <button
@@ -532,7 +533,7 @@ export default function LoopStation() {
           data-help="Save your loops to Documents\Lyricist Recordings as WAVs — a bounced mix of everything plus each track on its own. Loops otherwise only live in memory and vanish when you leave the tab."
           style={{ opacity: tracks.some((t) => t.buffer) ? 1 : 0.4, cursor: tracks.some((t) => t.buffer) ? 'pointer' : 'not-allowed' }}
         >
-          <span className="rc-round-icon">💾</span>
+          <span className="rc-round-icon"><Save size={16} strokeWidth={1.6} /></span>
           <span className="rc-round-label">{saving ? 'Saving…' : 'Save'}</span>
         </button>
         <label style={{ fontSize: '0.8rem', color: 'rgba(200,190,220,0.75)', marginLeft: 8 }} data-help="Reference BPM for you — loops are free-time recordings. Also used for the Matrix groove handshake.">

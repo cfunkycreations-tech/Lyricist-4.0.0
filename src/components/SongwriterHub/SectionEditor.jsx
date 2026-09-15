@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { countLineSyllables, calculateReadability, calculateVocabRichness, getLastWord } from '../../utils/textAnalysis.js';
 import { refineLyrics, generateLineVariation, generateAdLibs, generateSection } from '../../services/AIService.js';
-import { Lock, Unlock, Sparkles, Trash2, RefreshCw, Volume2, Type, ArrowUp, ArrowDown, HelpCircle, Check, Copy } from 'lucide-react';
+import { Lock, Unlock, Sparkles, Trash2, RefreshCw, Volume2, Type, ArrowUp, ArrowDown, HelpCircle, Check, Copy, Megaphone } from 'lucide-react';
+import { Icon } from '../common/Glyph.jsx';
 
 const sectionStyles = {
   intro: { border: '1px solid rgba(99, 102, 241, 0.45)', bg: 'rgba(99, 102, 241, 0.04)', glow: 'rgba(99, 102, 241, 0.2)', pill: 'pill-purple' },
@@ -291,10 +292,10 @@ export default function SectionEditor({ section, index }) {
             }}
           >
             <option value="">Refine Section...</option>
-            <option value="punch-up">⚡ Punch Up (bolder, catchier)</option>
-            <option value="simplify">📉 Make it Simpler</option>
-            <option value="elevate">📈 Fancier Words</option>
-            <option value="ad-lib">🗣️ Add Ad-Libs (background shouts)</option>
+            <option value="punch-up">Punch Up (bolder, catchier)</option>
+            <option value="simplify">Make it Simpler</option>
+            <option value="elevate">Fancier Words</option>
+            <option value="ad-lib">Add Ad-Libs (background shouts)</option>
           </select>
 
           <button
@@ -487,9 +488,9 @@ export default function SectionEditor({ section, index }) {
                   }}
                 >
                   <option value="">{lineGeneratingIndex === lIdx ? 'Working…' : 'Refine…'}</option>
-                  <option value="punch-up">⚡ Harder</option>
-                  <option value="simplify">📉 Simpler</option>
-                  <option value="elevate">📈 Elevate</option>
+                  <option value="punch-up">Harder</option>
+                  <option value="simplify">Simpler</option>
+                  <option value="elevate">Elevate</option>
                 </select>
 
                 {/* Regenerate single line — also replaces in place */}
@@ -534,7 +535,7 @@ export default function SectionEditor({ section, index }) {
               style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(232, 121, 249, 0.7)' }}
               data-help="Ad-libs are the little background vocals between or under the main lines — shouts and reactions like 'yeah!', 'uh!', or 'come on!' that add energy. These are AI suggestions you can use or ignore."
             >
-              🗣️ Vocal Ad-Lib layer
+              <Icon i={Megaphone} />Vocal Ad-Lib layer
             </span>
             <button
               onClick={() => store.updateSectionMeta(section.id, { showAdLibs: false })}

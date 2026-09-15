@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { WIZARD_CARDS } from './wizardCards.js';
+import { Pause, Play, RotateCcw, VolumeX, Volume2 } from 'lucide-react';
+import { Glyph } from '../common/Glyph.jsx';
 
 /**
  * OnboardingWizard (Lyricist 4.2.0).
@@ -12,7 +14,7 @@ import { WIZARD_CARDS } from './wizardCards.js';
  * Narration: each card points at a baked MP3 in public/wizard-audio/
  * (card-01.mp3 … card-16.mp3). If a file isn't there yet the tour still
  * reads on screen and the audio controls simply hide — no errors, no gaps.
- * The 💡 Tips hover-help system picks up where the tour leaves off.
+ * The Tips hover-help system picks up where the tour leaves off.
  */
 
 const AUDIO_BASE = `${import.meta.env.BASE_URL || './'}wizard-audio/`;
@@ -127,13 +129,13 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
             {current.maker ? 'A note from the AI' : `Tour · ${step + 1} of ${cards.length}`}
           </span>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'rgba(167,139,250,0.55)', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 600 }}>
-            {isLast ? 'Close ✕' : 'Skip tour ✕'}
+            {isLast ? 'Close' : 'Skip tour'}
           </button>
         </div>
 
         {/* Icon */}
         <div style={{ fontSize: '2.6rem', textAlign: 'center', marginBottom: 10, filter: 'drop-shadow(0 0 22px rgba(168,85,247,0.6))' }}>
-          {current.icon}
+          <Glyph name={current.icon} size={40} strokeWidth={1.25} />
         </div>
 
         {/* Title */}
@@ -148,9 +150,9 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
             narration yet crashed the whole wizard on exactly that one frame. */}
         {hasAudio && current.audio && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, margin: '0 0 14px' }}>
-            <button onClick={togglePlay} title={playing ? 'Pause' : 'Play'} style={narrBtn}>{playing ? '⏸' : '▶'}</button>
-            <button onClick={replay} title="Replay" style={narrBtn}>🔁</button>
-            <button onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'} style={narrBtn}>{muted ? '🔇' : '🔊'}</button>
+            <button onClick={togglePlay} title={playing ? 'Pause' : 'Play'} style={narrBtn}>{playing ? <Pause size={14} /> : <Play size={14} />}</button>
+            <button onClick={replay} title="Replay" style={narrBtn}><RotateCcw size={14} /></button>
+            <button onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'} style={narrBtn}>{muted ? <VolumeX size={14} /> : <Volume2 size={14} />}</button>
             <span style={{ fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: ownVoice[current.audio.replace(/\.[^.]+$/, '')] ? 'rgba(52,211,153,0.7)' : 'rgba(167,139,250,0.45)' }}>
               {ownVoice[current.audio.replace(/\.[^.]+$/, '')]
                 ? (playing ? 'Your voice…' : 'Your voice')
@@ -184,7 +186,7 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
           </button>
 
           {isLast ? (
-            <button onClick={onClose} className="btn-neon-purple pulse-glow" style={navBtn}>Let's write something 🎵</button>
+            <button onClick={onClose} className="btn-neon-purple pulse-glow" style={navBtn}>Let's write something</button>
           ) : (
             <button onClick={() => go(step + 1)} className="btn-neon-purple" style={navBtn}>Next →</button>
           )}

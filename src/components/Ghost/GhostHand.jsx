@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { subscribeHand, readHand } from '../../services/ghostCursor.js';
 import './GhostHand.css';
+import { Ghost } from 'lucide-react';
 
 /**
  * THE GHOST'S HAND, DRAWN. Customer build, always mounted with the Ghost.
@@ -40,7 +41,7 @@ export default function GhostHand() {
             strokeLinejoin="round"
           />
         </svg>
-        <span className="ghost-hand-badge">👻</span>
+        <span className="ghost-hand-badge"><Ghost size={14} strokeWidth={1.75} /></span>
       </div>
 
       {s.ring > 0 && (

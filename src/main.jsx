@@ -3,6 +3,7 @@ import { startPrism } from './services/prismTheme.js';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
+import './styles/opsec.css';
 import { registerPWA } from './web/registerPWA.js';
 import LandscapeSplash from './web/LandscapeSplash.jsx';
 import { initAnalytics } from './services/analytics.js';

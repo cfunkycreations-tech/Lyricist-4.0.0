@@ -1,0 +1,267 @@
+/* ══ FUNK AUDIO FLOW · OPSEC ════════════════════════════════════════════════
+   The professional skin. Imported LAST (main.jsx, after index.css), so it sits
+   over every component stylesheet without touching the layout.
+
+   Chris, 2026-09-15: "it looks too kid/childish to me with the emoji style
+   icons. I want top tier gui with professional icons and texture. I love the
+   layout, so lets keep it like that." Funk Audio Flow OpSec is his company's
+   standard: top tier professional software.
+
+   The rules of the skin:
+     - Graphite, not black-and-neon. Five steps of ink, from the floor to a
+       raised control, and a very fine grain on the surfaces so they read as
+       material instead of flat fill.
+     - Edges, not glows. A hairline and a 1px top highlight make a panel or a
+       button read as machined. No coloured bloom anywhere.
+     - One typeface for the interface (Inter), one for numbers (JetBrains Mono).
+       The display faces are gone from the chrome.
+     - Line icons (lucide), one stroke weight. No emoji.
+     - The accent colour is a signal: focus, selection, the active thing. It is
+       never a wash.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --faf-ink-0: #08090B;
+  --faf-ink-1: #0D0F12;
+  --faf-ink-2: #131519;
+  --faf-ink-3: #1A1D22;
+  --faf-ink-4: #24272D;
+  --faf-line: #22252B;
+  --faf-line-2: #2D3138;
+  --faf-hi: rgba(255, 255, 255, 0.055);
+  --faf-text: #E6E8EB;
+  --faf-text-2: #9BA1AA;
+  --faf-text-3: #626872;
+  --faf-font: 'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  --faf-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  --faf-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .045 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  /* The old tokens, pointed at the new ink so every component follows. */
+  --bg-obsidian: var(--faf-ink-0);
+  --bg-slate: var(--faf-ink-3);
+  --bg-panel: var(--faf-ink-2);
+  --border-subtle: var(--faf-line);
+  --border-hairline: 1px solid var(--faf-line);
+  --text-primary: var(--faf-text);
+  --text-secondary: var(--faf-text-2);
+  --text-dim: var(--faf-text-3);
+  --glow-tight: 0 0 0 1px rgba(var(--accent-rgb), 0.3);
+  --gm-font-ui: var(--faf-font);
+}
+
+/* ── floor & type ── */
+html, body { background-color: var(--faf-ink-0); }
+body {
+  background-image: var(--faf-grain), radial-gradient(140% 70% at 50% 0%, #111317 0%, var(--faf-ink-0) 65%);
+  background-attachment: fixed;
+  font-family: var(--faf-font);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv11', 'ss01';
+}
+#root { background: transparent !important; }
+body, button, input, select, label, textarea,
+.lyric-line, .lyric-output, .lyric-text, [contenteditable] { font-family: var(--faf-font); }
+body .lyric-line-row input, body input.lyric-line-input { font-family: var(--faf-font) !important; }
+[style*="Audiowide"], [style*="Orbitron"], [style*="Metamorphous"], [style*="Space Grotesk"] { font-family: var(--faf-font) !important; }
+[style*="JetBrains"] { font-family: var(--faf-mono) !important; }
+
+h1:not(.gradient-title):not(.chrome-title), h2, h3, h4,
+.section-mark, .emerald-edge, .audiowide-chrome, .ql-tagline-text,
+.deck-title, .suno-track-name, .booth-row-name, .gm-panel-title {
+  font-family: var(--faf-font) !important;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  -webkit-text-stroke: 0 !important;
+}
+.section-mark, .emerald-edge { color: var(--faf-text-2); font-size: 0.68rem; letter-spacing: 0.14em; }
+.gm-panel-title { color: var(--faf-text) !important; font-size: 12px; letter-spacing: 0.12em; }
+.gradient-title, .chrome-title, h1.gradient-title {
+  font-family: var(--faf-font) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em;
+  background-image: linear-gradient(180deg, #FFFFFF 0%, #B9BEC6 100%);
+  filter: none;
+}
+.chrome-text, .chrome-silver, .tagline-gold, .gold-chrome, .chrome-gold { filter: none; }
+.ql-mono, .metric, .mono, code, kbd, samp, pre { font-family: var(--faf-mono); }
+
+/* Icons in front of labels sit on the text baseline. */
+.ico { display: inline-block; vertical-align: -0.18em; margin-right: 0.45em; flex-shrink: 0; }
+
+/* ── no neon ──
+   Coloured text glows and 0-offset bloom shadows are what made the old look
+   read as a toy. Real shadows (with an offset) stay. The pad header keeps its
+   label shadows because its labels sit on moving visuals. */
+body *:not(.pc):not(.pc *):not(.push-side *) { text-shadow: none !important; }
+[style*="box-shadow: 0 0 "]:not(.pc) { box-shadow: none !important; }
+[style*="drop-shadow(0 0"] { filter: none !important; }
+.pulse-glow { animation: none !important; }
+
+/* ── surfaces ── */
+.glass-panel, .card-cosmic, .output-cosmic, .ql-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0) 120px),
+    var(--faf-grain),
+    var(--faf-ink-2) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid var(--faf-line) !important;
+  border-radius: 6px;
+  box-shadow: inset 0 1px 0 var(--faf-hi), 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+.sidebar-cosmic {
+  background: var(--faf-grain), var(--faf-ink-1) !important;
+  backdrop-filter: none !important;
+  border: 0 !important;
+  border-right: 1px solid var(--faf-line) !important;
+}
+.card-cosmic:hover { border-color: var(--faf-line-2) !important; box-shadow: inset 0 1px 0 var(--faf-hi), 0 1px 3px rgba(0, 0, 0, 0.45); }
+.header-cosmic {
+  background: var(--faf-grain), linear-gradient(180deg, #0F1114, #0A0B0D) !important;
+  border-bottom: 1px solid var(--faf-line) !important;
+}
+.midi-sidebar, .booth-sidebar, .album-sidebar {
+  background: var(--faf-grain), var(--faf-ink-1) !important;
+  border-right-color: var(--faf-line) !important;
+}
+
+/* ── buttons: machined keys ── */
+.btn-neon-purple, .btn-neon-cyan {
+  background: linear-gradient(180deg, #1F2227 0%, #17191D 100%) !important;
+  border: 1px solid var(--faf-line-2) !important;
+  border-radius: 4px;
+  color: var(--faf-text) !important;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 1px rgba(0, 0, 0, 0.55) !important;
+  transition: background .12s, border-color .12s, box-shadow .12s;
+}
+.btn-neon-purple:hover:not(:disabled), .btn-neon-cyan:hover:not(:disabled) {
+  transform: none;
+  background: linear-gradient(180deg, #262A30 0%, #1C1F24 100%) !important;
+  border-color: rgba(var(--accent-rgb), 0.55) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 1px rgba(0, 0, 0, 0.55) !important;
+}
+.btn-neon-purple:active:not(:disabled), .btn-neon-cyan:active:not(:disabled) {
+  background: #15171A !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7) !important;
+}
+.btn-neon-purple:disabled, .btn-neon-cyan:disabled { opacity: 0.45; }
+button:focus-visible, [role="slider"]:focus-visible { outline: 2px solid rgba(var(--accent-rgb), 0.8); outline-offset: 1px; }
+
+/* ── inputs: recessed wells ── */
+.input-cosmic {
+  background: var(--faf-ink-1) !important;
+  border: 1px solid var(--faf-line) !important;
+  border-radius: 4px;
+  color: var(--faf-text) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+}
+.input-cosmic:hover { border-color: var(--faf-line-2) !important; }
+.input-cosmic:focus {
+  border-color: rgba(var(--accent-rgb), 0.7) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(var(--accent-rgb), 0.12) !important;
+}
+select option { background: var(--faf-ink-2); color: var(--faf-text); }
+label { color: var(--faf-text-2) !important; font-weight: 500; }
+
+/* ── status pills: stencilled tags ── */
+.pill-purple, .pill-cyan, .pill-green, .pill-red, .pill-gold {
+  background: var(--faf-ink-1);
+  border: 1px solid var(--faf-line-2);
+  border-radius: 3px;
+  font-family: var(--faf-mono);
+  letter-spacing: 0.04em;
+}
+
+/* ── scrollbars & selection ── */
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2A2D33; border-radius: 9px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: #3A3E46; background-clip: padding-box; border: 2px solid transparent; }
+::selection { background: rgba(var(--accent-rgb), 0.35); color: #fff; }
+
+/* ── help ── */
+.help-tip-mark { background: var(--faf-ink-3); color: var(--faf-text-2); border-color: var(--faf-line-2); }
+.help-tip:hover .help-tip-mark, .help-tip:focus .help-tip-mark { background: var(--faf-ink-4); color: #fff; box-shadow: none; }
+.help-tip-bubble, .help-layer-bubble {
+  background: #15171B;
+  color: var(--faf-text);
+  border: 1px solid var(--faf-line-2);
+  border-radius: 6px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6), inset 0 1px 0 var(--faf-hi);
+  font-family: var(--faf-font);
+}
+.help-tip-bubble::after, .help-layer-arrow.down { border-top-color: var(--faf-line-2); }
+.help-layer-arrow.up { border-bottom-color: var(--faf-line-2); }
+
+/* ── player ── */
+.suno-player { background: var(--faf-grain), var(--faf-ink-1); border-top: 1px solid var(--faf-line); box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.6); }
+.suno-track-name { color: var(--faf-text); font-size: 0.74rem; }
+.suno-btn, .suno-collapse, .suno-chip, .booth-icon-btn, .toolshub-vote {
+  background: linear-gradient(180deg, #1F2227, #17191D);
+  color: var(--faf-text-2);
+  border: 1px solid var(--faf-line-2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.suno-btn:hover:not(:disabled), .suno-chip:hover, .toolshub-vote:hover { color: #fff; background: linear-gradient(180deg, #262A30, #1C1F24); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+.suno-btn--play, .suno-chip--go, .toolshub-vote--voted {
+  background: linear-gradient(180deg, #F2F3F5, #C8CCD2) !important;
+  color: #0A0B0D !important;
+  border: 1px solid #0A0B0D !important;
+  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, 0.6) !important;
+}
+.suno-time { color: var(--faf-text-3); }
+.suno-range, .booth-meter { background: var(--faf-ink-1); border: 1px solid var(--faf-line); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5); }
+.suno-range::-webkit-slider-thumb { background: linear-gradient(180deg, #F2F3F5, #B9BEC6); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.7); }
+.suno-eq-bar { background: var(--faf-text-2); }
+.suno-eq-bar.on { box-shadow: none; }
+.suno-popover { background: #15171B; border-color: var(--faf-line-2); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6); }
+
+/* ── meters: LED ladder, not a glow ── */
+.booth-meter-fill { background: linear-gradient(90deg, #3FB950 0%, #3FB950 65%, #D29922 82%, #F85149 100%); box-shadow: none; border-radius: 0; }
+
+/* ── MIDI / sequencer ── */
+.seq-roll-wrap, .seq-vel-wrap, .viz-canvas-wrap {
+  background: var(--faf-ink-1);
+  border: 1px solid var(--faf-line);
+  border-radius: 6px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.seq-note { background: rgb(var(--accent-rgb)); border: 1px solid rgba(0, 0, 0, 0.45); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3); border-radius: 2px; }
+.seq-note--selected { outline: 2px solid #fff; box-shadow: none; }
+.seq-vel-bar { background: rgba(var(--accent-rgb), 0.85); box-shadow: none; }
+.seq-vel-gutter { background: var(--faf-ink-2); color: var(--faf-text-3); border-right-color: var(--faf-line); }
+.seq-playhead { background: #fff; box-shadow: none; }
+.seq-tools { background: var(--faf-ink-1); border-color: var(--faf-line); }
+.seq-tool--on { background: var(--faf-ink-4); border-color: var(--faf-line-2); box-shadow: inset 0 1px 0 var(--faf-hi); }
+
+/* ── album ── */
+.album-track-num { background: var(--faf-ink-3); color: var(--faf-text); border: 1px solid var(--faf-line-2); box-shadow: none; font-family: var(--faf-mono); }
+.album-track--dragover { box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.6) !important; }
+.songforge-medallion { box-shadow: 0 0 0 1px var(--faf-line-2), 0 12px 32px rgba(0, 0, 0, 0.6); }
+
+/* ── footer deck ── */
+.app-footer { background: var(--faf-grain), var(--faf-ink-1); border-top-color: var(--faf-line); }
+.deck-mark { color: var(--faf-text-2); border-color: var(--faf-line-2); }
+.deck-right { background: var(--faf-ink-3); border-color: var(--faf-line-2); }
+.deck-right:hover { box-shadow: none; border-color: rgba(var(--accent-rgb), 0.5); }
+
+/* Big empty-state marks: a quiet line icon, not a glowing emoji. */
+.empty-glyph { color: var(--faf-text-3); display: flex; justify-content: center; }
+
+/* ── the pad header, in the same material ── */
+.pc { font-family: var(--faf-font); background: #0E1013; }
+.pc::after {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.015) 40%, rgba(255, 255, 255, 0) 60%),
+    var(--faf-grain),
+    linear-gradient(180deg, rgba(18, 20, 24, 0.86), rgba(9, 10, 12, 0.92));
+}
+.pc-name { font-weight: 600; font-size: 9px; letter-spacing: 0.08em; }
+.pc-sub { font-family: var(--faf-font); font-weight: 500; font-size: 8.5px; letter-spacing: 0.01em; }
+.pc-icon { color: #E9ECEF; display: flex; }
+.pc-chev { display: flex; }
+.pc-screen { font-family: var(--faf-mono); }
+.push-side > button, .push-side > div { font-family: var(--faf-font) !important; font-weight: 500 !important; }
+.push-side > button > span:first-child, .push-side > div > span:first-child { display: flex; }
