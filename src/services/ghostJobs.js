@@ -196,7 +196,7 @@ async function runOne(id) {
     if (get(id).record) {
       patch(id, { status: 'running', note: 'Starting OBS…' });
       // Capped: OBS is never allowed to hold the job. No recording beats no job.
-      const r = await limit(deps.record(true), 45000, 'OBS did not answer in 45 seconds');
+      const r = await limit(deps.record(true), 90000, 'OBS did not answer in 90 seconds');
       logTo(id, r.ok ? 'OBS recording started' : `OBS did not start: ${r.said}`);
       recording = r.ok;
       if (!r.ok && !batch) {

@@ -88,7 +88,7 @@ ipcMain.handle('pilot-type', async (event, { text }) => {
 /* GHOST JOBS. Open OBS when a recorded job starts and it is not running, and
    hold the PC awake while an overnight batch works. Neither touches anything
    but OBS and the sleep timer, so neither is gated like the pilot above. */
-ipcMain.handle('obs-launch', async () => {
+ipcMain.handle('obs-launch', async (_event, { record = false } = {}) => {
   const { execFile, spawn } = require('child_process');
   const running = await new Promise((resolve) => {
     execFile('tasklist', ['/FI', 'IMAGENAME eq obs64.exe', '/NH'], (err, out) => resolve(!err && /obs64\.exe/i.test(out)));
@@ -101,9 +101,14 @@ ipcMain.handle('obs-launch', async () => {
   const exe = candidates.find((p) => fs.existsSync(p));
   if (!exe) return { ok: false, error: 'OBS Studio is not installed in Program Files.' };
   // OBS finds its own data relative to the working folder, so start it from bin.
-  const child = spawn(exe, ['--disable-shutdown-check'], { cwd: path.dirname(exe), detached: true, stdio: 'ignore' });
+  // --startrecording: Chris watched OBS open and "just sit there doing nothing"
+  // until he clicked Record himself. OBS starts recording by itself now, so it
+  // never depends on the websocket being ready in time.
+  const args = ['--disable-shutdown-check'];
+  if (record) args.push('--startrecording');
+  const child = spawn(exe, args, { cwd: path.dirname(exe), detached: true, stdio: 'ignore' });
   child.unref();
-  return { ok: true };
+  return { ok: true, recording: Boolean(record) };
 });
 
 let ghostAwakeId = null;
