@@ -271,6 +271,50 @@ button[style*="border-radius: 9999px"]:not(.pc), button[style*="border-radius: 9
 .stemmer-progress-bar { background: var(--faf-ink-1); border: 1px solid var(--faf-line); border-radius: 2px; }
 .stemmer-progress-fill { background: rgb(var(--accent-rgb)) !important; border-radius: 0; }
 
+/* The accent rail shows the colours the accent generator actually makes now. */
+.prism-range {
+  height: 6px; border-radius: 3px; border: 1px solid var(--faf-line);
+  background: linear-gradient(90deg,
+    hsl(184 78% 58%) 0%, hsl(235 78% 58%) 14%, hsl(286 78% 58%) 28%, hsl(337 78% 58%) 42%,
+    hsl(28 78% 58%) 57%, hsl(79 78% 58%) 71%, hsl(130 78% 58%) 85%, hsl(184 78% 58%) 100%);
+}
+.prism-range::-webkit-slider-thumb { background: linear-gradient(180deg, #F2F3F5, #B9BEC6); border: 1px solid #0A0B0D; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.7); }
+
+/* ── headings read as type, not as colour ── */
+h1:not(.gradient-title):not(.chrome-title), h2, h3 { color: var(--faf-text) !important; }
+
+/* ── Black Hole Studios: segmented controls, not candy pills ── */
+.omb-eng, .omb-seg, .omb-seg > *, .omb-mode, .omb-mode > * { border-radius: 4px !important; }
+
+/* ── The Matrix: the tile ──
+   The temperature (--tc, --heat) is information, so it stays, but it is shown
+   the way a console shows a channel colour: a lit bar across the top of a
+   graphite key and a faint tint, instead of a glowing neon outline. */
+.ql-tile {
+  border-radius: 6px !important;
+  border: 1px solid rgba(var(--tc, 40 60 120), 0.45) !important;
+  background:
+    linear-gradient(180deg, rgba(var(--tc, 40 60 120), calc(0.05 + var(--heat, 0) * 0.16)) 0%, rgba(var(--tc, 40 60 120), 0) 70%),
+    var(--faf-grain),
+    linear-gradient(180deg, #1B1E23, #131519) !important;
+  box-shadow:
+    inset 0 3px 0 rgba(var(--tc, 40 60 120), calc(0.55 + var(--heat, 0) * 0.45)),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.5) !important;
+  font-family: var(--faf-font) !important;
+  font-weight: 500;
+}
+.ql-tile:hover { transform: none !important; border-color: rgba(var(--tc, 40 60 120), 0.8) !important; }
+.ql-tile.sel {
+  border-color: #fff !important;
+  box-shadow: inset 0 3px 0 rgb(var(--tc, 40 60 120)), 0 0 0 1px #fff, 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+}
+.ql-tile.frozen { border-style: solid !important; }
+.ql-tile.super { border-style: solid !important; }
+.ql-tile.super::after { animation: none !important; border-radius: 6px !important; }
+.ql-tile-dots i.on { box-shadow: none !important; }
+.ql-tile.ql-tile-flash { animation: none; }
+
 /* Big empty-state marks: a quiet line icon, not a glowing emoji. */
 .empty-glyph { color: var(--faf-text-3); display: flex; justify-content: center; }
 

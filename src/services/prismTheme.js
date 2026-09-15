@@ -49,22 +49,25 @@ const ANCHORS = {
  * a reset.
  */
 const ACCENT_H0 = 183.5;
-const ACCENT_S = 100;
-const ACCENT_L = 50;
+// FAF OpSec, 2026-09-15: the accent is a signal colour, not a neon. Full
+// saturation at 50% lightness is what made every border and ring read as a
+// toy; 78% / 58% keeps the hue, clean and readable on graphite.
+const ACCENT_S = 78;
+const ACCENT_L = 58;
 
-/** The five named accents from the design system, as slider positions. */
+/** The five named accents, as slider positions. */
 export const ACCENT_PRESETS = [
-  { name: 'Electric Cyan', hex: '#00F0FF', t: 0 },
-  { name: 'Razor Emerald', hex: '#10F0A0', t: ((160 - ACCENT_H0 + 360) % 360) / 360 },
-  { name: 'Signal Amber', hex: '#FF9900', t: ((36 - ACCENT_H0 + 360) % 360) / 360 },
-  { name: 'Crimson', hex: '#FF1A1A', t: ((0 - ACCENT_H0 + 360) % 360) / 360 },
-  { name: 'Violet', hex: '#A855F7', t: ((271 - ACCENT_H0 + 360) % 360) / 360 },
+  { name: 'Signal Cyan', hex: '#40E3E7', t: 0 },
+  { name: 'Emerald', hex: '#40E7AF', t: ((160 - ACCENT_H0 + 360) % 360) / 360 },
+  { name: 'Amber', hex: '#E7A440', t: ((36 - ACCENT_H0 + 360) % 360) / 360 },
+  { name: 'Red', hex: '#E74040', t: ((0 - ACCENT_H0 + 360) % 360) / 360 },
+  { name: 'Violet', hex: '#9640E7', t: ((271 - ACCENT_H0 + 360) % 360) / 360 },
 ];
 
 /** Named pairs, checked against the hues they actually produce. */
 export const PRISM_NAMES = [
-  'Electric Cyan', 'Razor Emerald', 'Acid Lime', 'Signal Amber',
-  'Crimson', 'Magenta', 'Violet', 'Electric Cyan',
+  'Signal Cyan', 'Emerald', 'Lime', 'Amber',
+  'Red', 'Magenta', 'Violet', 'Signal Cyan',
 ];
 
 /**

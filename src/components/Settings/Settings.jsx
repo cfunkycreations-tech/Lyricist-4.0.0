@@ -486,8 +486,8 @@ export default function Settings() {
           on every tab, so handleUpdate mirrors it to localStorage and fires an
           event rather than threading it through the React tree. */}
       <div style={{ marginBottom: 18 }} data-help="One control for the whole colour of Lyricist Pro. It rotates the razor-neon accent — every border, focus ring, glow, scrollbar and active tab — and the moving prism behind each tab, together, right around the spectrum. Remembered between sessions.">
-        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--accent-neon)', marginBottom: 5, display: 'block' }}>
-          Razor Neon — the accent for the whole app
+        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--faf-text-2)', marginBottom: 5, display: 'block' }}>
+          Accent colour
         </label>
 
         {/* THE FULL-SPECTRUM TRACK.
