@@ -47,23 +47,37 @@ function buttonName(el) {
   return norm(el.getAttribute('aria-label') || el.innerText || el.value || el.title || '');
 }
 
-function fieldName(el) {
-  const direct = el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.name || '';
-  if (direct) return norm(direct);
+/**
+ * Every name a box goes by, the one a person would say first.
+ *
+ * Placeholder-first was wrong: most boxes here carry an example as their
+ * placeholder ("e.g. city lights - midnight") and their real name in the label
+ * above, so asking to fill "keywords" or "topic" found nothing. The label wins
+ * now, and the placeholder, aria-label, name and id still match as well.
+ */
+function fieldNames(el) {
+  const names = [];
   if (el.id) {
     const lab = document.querySelector(`label[for="${CSS.escape(el.id)}"]`);
-    if (lab) return norm(lab.innerText);
+    if (lab) names.push(lab.innerText);
   }
   const wrap = el.closest('label');
-  if (wrap) return norm(wrap.innerText);
+  if (wrap) names.push(wrap.innerText);
   // The common layout here: a small label element sitting just above the box.
   let prev = el.previousElementSibling || el.parentElement?.previousElementSibling;
   for (let i = 0; prev && i < 3; i++, prev = prev.previousElementSibling) {
     const t = norm(prev.innerText);
-    if (t && t.length < 60) return t;
+    if (t && t.length < 60) { names.push(t); break; }
   }
-  return norm(el.id || '');
+  names.push(
+    el.getAttribute('aria-label'),
+    el.getAttribute('placeholder'),
+    el.name,
+    el.id && el.id.replace(/[-_]+/g, ' '),
+  );
+  return [...new Set(names.map(norm).filter(Boolean))];
 }
+const fieldName = (el) => fieldNames(el)[0] || '';
 
 function score(name, want) {
   if (!name || !want) return 0;
@@ -78,13 +92,13 @@ function score(name, want) {
  * Best match for a name, retried for a moment: a tab the Ghost just opened may
  * still be mounting, and a panel it just expanded may still be drawing.
  */
-async function find(selector, nameOf, label, index = 0) {
+async function find(selector, namesOf, label, index = 0) {
   const want = norm(label);
   if (!want) throw new Error('Say which control, by the name on it.');
   for (let waited = 0; waited <= 1500; waited += 150) {
     const hits = [...activePane().querySelectorAll(selector)]
       .filter(visible)
-      .map((el) => ({ el, s: score(nameOf(el), want) }))
+      .map((el) => ({ el, s: Math.max(0, ...[].concat(namesOf(el)).map((n) => score(n, want))) }))
       .filter((h) => h.s > 0);
     if (hits.length) {
       const best = Math.max(...hits.map((h) => h.s));
@@ -128,15 +142,14 @@ export async function pressControl({ label, index } = {}) {
 }
 
 export async function fillControl({ field, text = '' } = {}) {
-  const el = await find(FIELDS, fieldName, field);
+  const el = await find(FIELDS, fieldNames, field);
   if (!el) throw new Error(`There is no "${field}" box on this tab.`);
+  if (el instanceof HTMLSelectElement) return chooseControl({ field, option: text });
   await show(el);
   el.focus();
   if (el.isContentEditable) {
     el.textContent = String(text);
     el.dispatchEvent(new Event('input', { bubbles: true }));
-  } else if (el instanceof HTMLSelectElement) {
-    return chooseControl({ field, option: text });
   } else {
     setNativeValue(el, String(text));
   }
@@ -147,7 +160,7 @@ export async function chooseControl({ field, option } = {}) {
   const want = norm(option);
   if (!want) throw new Error('Say which option to pick.');
   if (field) {
-    const sel = await find('select', fieldName, field);
+    const sel = await find('select', fieldNames, field);
     if (sel) {
       const opts = [...sel.options];
       const hit = opts.find((o) => norm(o.text) === want || norm(o.value) === want)

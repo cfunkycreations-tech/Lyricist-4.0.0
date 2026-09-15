@@ -260,13 +260,20 @@ export default function SongwriterHub({ ghostRiderData }) {
         + `structure "${s.structureTemplate || ''}"; rhyme scheme "${s.rhymeScheme || ''}"; ${s.lyrics.length} section(s) on the page.`;
     },
     songwriter_set_style: async ({ genres: g, subgenres: sg, moods: m } = {}) => {
+      // Loose on purpose: "rnb soul", "r&b" and "R&B / Soul" are the same pick
+      // to anyone saying it out loud. Exact first, then containment, then the
+      // letters alone, then any real word the two names share.
+      const bare = (s) => s.toLowerCase().replace(/&/g, 'n').replace(/[^a-z0-9]/g, '');
+      const words = (s) => s.toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length > 3);
       const match = (pool, wanted) => {
         const out = [];
         const missed = [];
         for (const w of [].concat(wanted || [])) {
           const n = String(w).trim().toLowerCase();
           const hit = pool.find((p) => p.toLowerCase() === n)
-            || pool.find((p) => p.toLowerCase().includes(n) || n.includes(p.toLowerCase().split(' (')[0]));
+            || pool.find((p) => p.toLowerCase().includes(n) || n.includes(p.toLowerCase().split(' (')[0]))
+            || pool.find((p) => bare(p).includes(bare(n)) || bare(n).includes(bare(p.split(' (')[0])))
+            || pool.find((p) => words(p).some((t) => words(n).includes(t)));
           if (hit) { if (!out.includes(hit)) out.push(hit); } else missed.push(w);
         }
         return { out, missed };
