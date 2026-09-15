@@ -253,11 +253,20 @@ function MainLayout() {
    * nothing, so the Ghost genuinely cannot touch it, and the only way through
    * that door is the same one a person uses.
    */
-  useEffect(() => registerGhostAction('open_tab', ({ tab }) => {
+  useEffect(() => registerGhostAction('open_tab', async ({ tab }) => {
     const id = String(tab || '').trim();
     const known = tabs.some((t) => t.id === id);
     if (!known) throw new Error(`There is no "${id}" tab.`);
     setActiveTab(id);
+    // Do not report the tab open until it is ON SCREEN. Returning straight
+    // away let the next action run against the tab being left: "open The
+    // Matrix, fill keywords" typed the keywords into Songwriter's topic box,
+    // because that was still the visible pane when fill went looking.
+    for (let waited = 0; waited < 3000; waited += 50) {
+      const pane = document.querySelector(`[data-tab-pane="${id}"]`);
+      if (pane && pane.style.display !== 'none') break;
+      await new Promise((r) => setTimeout(r, 50));
+    }
     return `opened ${id}`;
   }), []);
 
