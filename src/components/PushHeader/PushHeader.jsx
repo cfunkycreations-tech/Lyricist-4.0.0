@@ -29,7 +29,8 @@ export const TAB_GROUPS = [
 ];
 
 const S = 54;          // one cell
-const G = 2;           // the gap: nearly touching
+const G = 1;           // the gap: blocks laid tight
+const LENS = 0.8;      // each glass block shows 80% of what's behind it, magnified, like thick glass
 const IDLE_MS = 5000;
 const VIZ_KEY = 'lyricist.push.visuals';
 const VIZ_CYCLE_MS = 28000;
@@ -97,7 +98,12 @@ function usePushVisuals(on, headerRef) {
             if (!r.width || !r.height) continue;
             const x = r.left - hr.left;
             const y = r.top - hr.top;
-            g.drawImage(off, x * sx, y * sy, r.width * sx, r.height * sy, x, y, r.width, r.height);
+            // Thick glass magnifies: sample a smaller patch centred on the block and stretch it to fill.
+            const sw = r.width * LENS;
+            const sh = r.height * LENS;
+            const cx = x + (r.width - sw) / 2;
+            const cy = y + (r.height - sh) / 2;
+            g.drawImage(off, cx * sx, cy * sy, sw * sx, sh * sy, x, y, r.width, r.height);
           }
         }
         raf = requestAnimationFrame(draw);
