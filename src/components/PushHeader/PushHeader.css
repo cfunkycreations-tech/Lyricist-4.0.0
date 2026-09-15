@@ -1,0 +1,174 @@
+/* The Push header. Vivid colour lives BEHIND each square; the square itself is
+   an opaque dark face, so the colour glows round its edges and through it. */
+
+@property --hue {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+.push-hd { flex: 1 1 auto; min-width: 0; height: 100%; display: flex; align-items: center; padding: 0 12px; }
+.push-row { display: flex; gap: 6px; align-items: center; width: 100%; overflow: hidden; }
+
+.push-pad {
+  --hue: 0;
+  position: relative; flex: 0 0 58px; width: 58px; height: 58px;
+  border-radius: 9px; border: 0; padding: 0; background: transparent;
+  isolation: isolate;
+}
+/* The light: vivid, blurred, behind the face. */
+.push-pad::before {
+  content: ''; position: absolute; inset: 2px; border-radius: 9px; z-index: -1;
+  background:
+    radial-gradient(120% 120% at 30% 25%, hsl(calc(var(--hue) + 40) 100% 62%), transparent 70%),
+    linear-gradient(135deg, hsl(var(--hue) 100% 55%), hsl(calc(var(--hue) + 70) 100% 50%));
+  filter: blur(5px) saturate(1.3);
+  opacity: .9;
+  transition: opacity .4s;
+}
+/* The face: an opaque square over the light. */
+.push-face {
+  position: absolute; inset: 3px; border-radius: 7px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  background: linear-gradient(180deg, rgba(22, 24, 30, .86), rgba(8, 9, 12, .9));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), inset 0 -2px 6px rgba(0, 0, 0, .6);
+  border: 1px solid rgba(255, 255, 255, .08);
+}
+
+/* LAUNCHPAD SWEEP. Each pad runs the wheel, offset along the row, so colour
+   rolls across the header while nobody is touching it. */
+.push-sweep, .push-arrow { animation: push-sweep 7s linear infinite; animation-delay: calc(var(--i, 0) * -0.22s); }
+.push-group { animation: push-sweep 7s linear infinite; animation-delay: calc(var(--g) * -0.019s); }
+@keyframes push-sweep { from { --hue: 0; } to { --hue: 360; } }
+
+/* In use: the sweep freezes and softens, group pads show their own colour. */
+.push-hd.is-live .push-sweep, .push-hd.is-live .push-arrow { animation-play-state: paused; }
+.push-hd.is-live .push-sweep::before { opacity: .25; }
+.push-hd.is-live .push-group { animation: none; --hue: var(--g); }
+.push-hd.is-live .push-group::before { opacity: .45; }
+.push-hd.is-live .push-group.is-on::before { opacity: 1; }
+
+.push-group, .push-arrow { cursor: pointer; }
+.push-group:hover .push-face, .push-arrow:hover .push-face { background: linear-gradient(180deg, rgba(34, 36, 44, .8), rgba(12, 13, 18, .86)); }
+.push-group:active .push-face, .push-arrow:active .push-face { transform: scale(.96); }
+.push-group.is-on .push-face { border-color: hsl(var(--g) 100% 70% / .8); box-shadow: inset 0 0 12px hsl(var(--g) 100% 60% / .35), inset 0 1px 0 rgba(255, 255, 255, .15); }
+.push-group:focus-visible, .push-arrow:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+.push-gname {
+  font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 10px; font-weight: 700; line-height: 1.1;
+  letter-spacing: .06em; text-transform: uppercase; text-align: center; color: #F4F6FB; padding: 0 3px;
+}
+.push-gtab {
+  font-size: 8.5px; line-height: 1.1; color: hsl(var(--g) 100% 78%); text-align: center; padding: 0 3px;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.push-chev { font-size: 20px; color: #F4F6FB; transition: transform .2s; }
+.push-arrow.is-open .push-chev { transform: rotate(180deg); }
+
+/* The pop-out stack of tabs in a group. */
+.push-pop {
+  position: fixed; z-index: 200; min-width: 250px; padding: 6px;
+  display: flex; flex-direction: column; gap: 4px;
+  background: rgba(8, 9, 13, .96); border-radius: 12px;
+  border: 1px solid hsl(var(--g) 100% 60% / .45);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .7), 0 0 26px hsl(var(--g) 100% 55% / .25);
+  backdrop-filter: blur(14px);
+  animation: push-pop-in .14s ease-out;
+}
+@keyframes push-pop-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.push-pop-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer;
+  background: rgba(255, 255, 255, .03); border: 1px solid transparent; text-align: left; color: #DDE3EE;
+}
+.push-pop-item:hover { background: hsl(var(--g) 100% 55% / .14); border-color: hsl(var(--g) 100% 60% / .35); }
+.push-pop-item.is-on { background: hsl(var(--g) 100% 55% / .22); border-color: hsl(var(--g) 100% 65% / .7); }
+.push-pop-icon {
+  flex: 0 0 34px; height: 34px; border-radius: 7px; display: grid; place-items: center; font-size: 17px;
+  background: rgba(0, 0, 0, .55); box-shadow: 0 0 10px hsl(var(--g) 100% 55% / .35);
+}
+.push-pop-text { display: flex; flex-direction: column; min-width: 0; }
+.push-pop-label { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 13px; font-weight: 600; }
+.push-pop-blurb { font-size: 11px; color: #7F8BA3; }
+
+/* ══ THE PUSH ══ */
+.pp {
+  position: fixed; left: 0; right: 0; z-index: 150;
+  display: grid; grid-template-columns: minmax(280px, 1fr) auto minmax(120px, 170px); gap: 18px; align-items: start;
+  padding: 16px 20px 18px;
+  background: linear-gradient(180deg, #121317, #07080a);
+  border-bottom: 1px solid rgba(255, 255, 255, .1);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, .7);
+  animation: push-pop-in .18s ease-out;
+}
+.pp-left { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.pp-screen {
+  border-radius: 8px; padding: 10px 12px; background: #030405; border: 1px solid rgba(255, 255, 255, .08);
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; color: #CFE8FF;
+  box-shadow: inset 0 0 22px rgba(0, 160, 255, .08);
+}
+.pp-screen-top { display: flex; gap: 14px; font-size: 11px; letter-spacing: .08em; color: #7FB6E0; flex-wrap: wrap; }
+.pp-hw { margin-left: auto; color: #62708A; }
+.pp-hw.on { color: #6BF0B0; }
+.pp-screen-main { font-size: 17px; margin: 10px 0 10px; min-height: 22px; color: #F2F8FF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pp-screen-knobs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px 10px; font-size: 10.5px; color: #A8C4DE; }
+.pp-screen-knobs b { display: block; font-weight: 400; color: #5F7894; font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; }
+.pp-knobs { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+.pp-knob-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9.5px; color: #8793A8; text-align: center; }
+.pp-knob {
+  width: 38px; height: 38px; border-radius: 50%; cursor: ns-resize; touch-action: none;
+  background: radial-gradient(circle at 35% 30%, #4A4E58, #17181C 70%);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .18);
+  position: relative;
+}
+.pp-knob::after { content: ''; position: absolute; left: 50%; top: 5px; width: 2px; height: 10px; margin-left: -1px; border-radius: 2px; background: #E8ECF3; }
+.pp-knob:focus-visible { outline: 2px solid #6BF0B0; outline-offset: 2px; }
+.pp-help { margin: 0; font-size: 11.5px; line-height: 1.5; color: #7C879B; }
+
+.pp-grid {
+  display: grid; grid-template-columns: repeat(8, clamp(34px, 4.6vh, 52px)); gap: 6px;
+  padding: 10px; border-radius: 10px; background: #050506; border: 1px solid rgba(255, 255, 255, .06);
+  touch-action: none; user-select: none;
+}
+.pp-pad {
+  --h: 0;
+  aspect-ratio: 1; border-radius: 6px; border: 1px solid rgba(255, 255, 255, .06); cursor: pointer; padding: 0;
+  background: #17181b; box-shadow: inset 0 -2px 4px rgba(0, 0, 0, .6);
+  transition: background .06s, box-shadow .06s;
+}
+.pp-pad.lv-dim { background: #2a2c31; }
+.pp-pad.lv-on { background: hsl(var(--h) 85% 34%); box-shadow: 0 0 8px hsl(var(--h) 100% 50% / .35), inset 0 -2px 4px rgba(0, 0, 0, .4); }
+.pp-pad.lv-hot { background: hsl(var(--h) 100% 55%); box-shadow: 0 0 16px hsl(var(--h) 100% 55% / .7), inset 0 1px 0 rgba(255, 255, 255, .35); }
+.pp-pad.lv-white { background: #F2F4F8; box-shadow: 0 0 14px rgba(255, 255, 255, .6); }
+.pp-pad:active { transform: scale(.95); }
+
+.pp-right { display: flex; flex-direction: column; gap: 6px; }
+.pp-btn {
+  padding: 9px 10px; border-radius: 7px; cursor: pointer; text-align: left;
+  font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 12px; font-weight: 600; letter-spacing: .04em;
+  color: #C9D1DE; background: linear-gradient(180deg, #24262c, #16171b); border: 1px solid rgba(255, 255, 255, .08);
+}
+.pp-btn:hover { color: #fff; }
+.pp-btn.on { color: #06140D; background: linear-gradient(180deg, #7CF6BF, #3FD592); border-color: #7CF6BF; }
+.pp-close { margin-top: 8px; }
+
+@media (max-width: 1100px) {
+  .pp { grid-template-columns: 1fr auto; }
+  .pp-right { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
+}
+body.lyricist-mobile .push-hd, body.lyricist-mobile .pp { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .push-sweep, .push-arrow, .push-group { animation: none; --hue: var(--g, 200); }
+}
+
+/* THE OLD PILLS AS PADS, on the right. The buttons keep their own handlers and
+   inline colours; this only reshapes them into squares that match the row. */
+.push-side { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; padding-right: 14px; }
+.push-side > button, .push-side > div {
+  width: 58px !important; height: 58px !important; padding: 4px !important;
+  border-radius: 9px !important; flex-direction: column !important; justify-content: center !important;
+  gap: 3px !important; font-size: 8.5px !important; line-height: 1.1 !important; text-align: center;
+  letter-spacing: .03em; white-space: normal !important; overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), inset 0 -2px 6px rgba(0, 0, 0, .55) !important;
+}
+.push-side > button > span:first-child, .push-side > div > span:first-child { font-size: 17px; line-height: 1; }
+.push-side > button:active { transform: scale(.96); }

@@ -53,6 +53,7 @@ import Stemmer from './components/Stemmer/Stemmer.jsx';
 import { useMobile } from './mobile/useMobile.js';
 import MobileShell from './mobile/MobileShell.jsx';
 import GhostPilotLayer from './components/Ghost/GhostPilotLayer.jsx';
+import PushHeader from './components/PushHeader/PushHeader.jsx';
 import { track, isEnabled as analyticsEnabled } from './services/analytics.js';
 // The still header art (profile.jpg, logo.jpg, header-medallion / -signature /
 // -chris / -wordmark .png) is no longer imported here. The header became the
@@ -413,6 +414,19 @@ function MainLayout() {
             still separates the header from the tab strip below it. */}
         <div className="header-cosmic" style={{ flexShrink: 0, position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center', background: '#000', height: 96, overflow: 'hidden', width: '100%' }}>
 
+          {/* THE PUSH HEADER. Chris, 2026-09-15: the tabs are four square group
+              pads in a Push-style row that sweeps colour when idle, each popping
+              out its tabs, and the full Push lives behind the arrow. It replaced
+              the sliding tab strip. See components/PushHeader. */}
+          <PushHeader
+            tabs={tabs}
+            activeTab={activeTab}
+            onSelect={(id) => {
+              setActiveTab(id);
+              if (id !== 'songwriter') setGhostRiderData(null);
+            }}
+          />
+
           {/* Controls — laid out in one row across the header, right-aligned.
               They used to be a column, but with the header at a flat 96px the
               column ran taller than the band and the top pill was cut in half
@@ -420,7 +434,10 @@ function MainLayout() {
               2026-08-27: red-circle screenshot, "move up!". A row of four pills
               fits comfortably in a 1440-wide header and leaves the vertical
               band unclipped. */}
-          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8, position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)', zIndex: 2 }}>
+          {/* Chris: "turn the old play demo, api key pills into squares for the
+              push clone... keep them on the right hand side". Same buttons, same
+              handlers; .push-side in PushHeader.css makes them pads. */}
+          <div className="push-side">
             {/* Re-launch the guided tour any time. Parked with the tour itself
                 — see WIZARD_ENABLED at the top of this file. */}
             {WIZARD_ENABLED && <button
@@ -548,27 +565,6 @@ function MainLayout() {
           </div>
         </div>
 
-        {/* Browser-style curved tabs (4.2.0) — no dashed outlines */}
-        <div className="tab-nav-scroll">
-          {tabs.map((t) => {
-            const isActive = activeTab === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                className={`tab-browser ${isActive ? 'is-active' : ''}`}
-                onClick={() => {
-                  setActiveTab(t.id);
-                  if (t.id !== 'songwriter') setGhostRiderData(null);
-                }}
-                data-help={t.help}
-              >
-                <span style={{ marginRight: 6 }}>{t.icon}</span>
-                {t.label}
-              </button>
-            );
-          })}
-        </div>
 
         {/* WHAT YOU NEED, BEFORE YOU NEED IT.
             The setup card comes FIRST now, above every tab, from the first
