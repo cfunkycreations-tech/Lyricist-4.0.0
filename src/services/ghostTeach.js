@@ -1,4 +1,5 @@
 import { runGhostAction } from './ghostBus.js';
+import { prewarm } from './GhostVoice.js';
 
 /**
  * TEACH THE GHOST BY DOING IT.
@@ -45,7 +46,11 @@ export function teachState() {
     starting,
     since: rec ? rec.wall : 0,
     playing,
-    pending: pending ? { duration: pending.duration, clicks: pending.events.filter((e) => e.type === 'down').length } : null,
+    pending: pending ? {
+      duration: pending.duration,
+      clicks: pending.events.filter((e) => e.type === 'down').length,
+      lines: pending.events.filter((e) => e.line).length,
+    } : null,
     note,
   };
 }
@@ -210,6 +215,33 @@ export async function endTeach() {
   return pending;
 }
 
+/**
+ * WHAT IT SAYS, AND WHERE.
+ *
+ * Chris: *"walk me through training the ghost WITH VOICE."* The hands are
+ * taught by doing; the words are typed afterwards. Every press in the take can
+ * carry one line, and at that point in the replay the Ghost says it — in its
+ * own voice, with its bubble up — and only then presses the button.
+ */
+export function pendingClicks() {
+  if (!pending) return [];
+  return pending.events
+    .map((e, i) => ({ e, i }))
+    .filter(({ e }) => e.type === 'down')
+    .map(({ e, i }) => ({
+      index: i,
+      at: e.t,
+      what: e.target?.label || e.target?.sel || e.target?.tag || 'a control',
+      line: e.line || '',
+    }));
+}
+
+export function setPendingLine(index, text) {
+  if (!pending?.events[index]) return;
+  pending.events[index].line = String(text || '');
+  emit();
+}
+
 export async function savePending(name) {
   if (!pending) return null;
   const a = api();
@@ -283,6 +315,10 @@ export async function playLesson(name, { obs = false } = {}) {
     }
 
     const ev = lesson.events || [];
+    // Make every line before the first one is needed, so each one plays the
+    // moment its press comes up instead of after a wait for the voice.
+    const lines = ev.map((e) => e.line).filter(Boolean);
+    if (lines.length) prewarm(lines);
     let i = 0;
     let prev = { dx: 0, dy: 0 };
     let prevEnd = ev.length ? ev[0].t : 0;
@@ -328,6 +364,13 @@ export async function playLesson(name, { obs = false } = {}) {
       // Keep the pause he left before this stretch, minus the time spent finding the button.
       const gap = seg[0].t - prevEnd - (performance.now() - began);
       if (gap > 0) await sleep(gap);
+
+      // SAY IT, THEN DO IT. The line finishes before the hand moves, the way a
+      // person talks a viewer through what they are about to press.
+      if (down?.line) {
+        await runGhostAction('say', { text: down.line });
+        if (stopAsked) break;
+      }
 
       const t0 = seg[0].t;
       const span = Math.max(1, (down ? down.t : seg[seg.length - 1].t) - t0);

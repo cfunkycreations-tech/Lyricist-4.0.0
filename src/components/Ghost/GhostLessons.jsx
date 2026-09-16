@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   subscribeTeach, beginTeach, endTeach, savePending, discardPending, listLessons,
   playLesson, stopLesson, deleteLesson, revealLessons, getTeachObs, setTeachObs,
+  pendingClicks, setPendingLine,
 } from '../../services/ghostTeach.js';
 
 /**
@@ -84,7 +85,10 @@ export default function GhostLessons({ tab, onTeachStart }) {
           </>
         ) : s.pending ? (
           <>
-            <p className="ghj-hint">Take finished: {clock(s.pending.duration)}, {s.pending.clicks} clicks. Name it to keep it.</p>
+            <p className="ghj-hint">
+              Take finished: {clock(s.pending.duration)}, {s.pending.clicks} clicks.
+              Type what the Ghost should say at any of them — it says the line out loud, then presses.
+            </p>
             <input
               type="text"
               value={name}
@@ -94,6 +98,20 @@ export default function GhostLessons({ tab, onTeachStart }) {
               aria-label="Lesson name"
               autoFocus
             />
+            <div className="ghl-lines">
+              {pendingClicks().map((c, n) => (
+                <label key={c.index} className="ghl-line">
+                  <span className="ghl-when">{n + 1}. {clock(c.at)} · {c.what}</span>
+                  <input
+                    type="text"
+                    defaultValue={c.line}
+                    onChange={(e) => setPendingLine(c.index, e.target.value)}
+                    placeholder="say nothing here"
+                    aria-label={`What the Ghost says before click ${n + 1}`}
+                  />
+                </label>
+              ))}
+            </div>
             <div className="ghj-go">
               <button type="button" className="go" onClick={save}>Save lesson</button>
               <button type="button" onClick={discardPending}>Throw it away</button>
