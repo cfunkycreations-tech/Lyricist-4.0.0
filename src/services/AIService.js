@@ -78,8 +78,33 @@ let freeModelCache = null;
  */
 function isUnusableForLyrics(id) {
   return /content-safety|guard|moderation|safety|reasoning|embed|rerank|image|vision|audio/i
-    .test(id || '');
+      .test(id || '')
+    // CODING AGENTS. Chris, 2026-09-15, on the Ghost Rider tab: "Provider
+    // returned invalid content from cohere/north-mini-code:free." The free tier
+    // carries code models, and asked for a verse they answer with something the
+    // garbage detector rightly refuses. The filter above never mentioned them,
+    // so they stayed in the pool and got picked. poolside/laguna is the same
+    // thing without the word "code" anywhere in its slug.
+    || /(?:^|[-/])code|coder|codestral|poolside|laguna/i.test(id || '')
+    // Models tuned for one trade (finance, medicine) rather than for writing.
+    || /-(?:fin|sante|med|math|sql)(?::|-|$)/i.test(id || '')
+    // Vision builds name themselves "-vl", which the word "vision" above misses.
+    || /-vl(?::|-|$)/i.test(id || '')
+    // Music, speech and video generators. Lyria writes SONGS, not words, and it
+    // sits in the catalogue at zero cost like any free chat model.
+    || /lyria|music|tts|speech|voice|veo|video|diffusion/i.test(id || '');
 }
+
+/**
+ * A ROUTER IS NOT A MODEL.
+ *
+ * `openrouter/free` picks whatever free model is up at that second, and the
+ * free pool includes coding agents and a safety classifier. For creative work
+ * that is a coin flip, and it is how Chris ended up reading an error about a
+ * code model he never chose. Anything under the openrouter/ namespace is a
+ * router, so the chain starts at a real instruction-tuned model instead.
+ */
+const isRouterSlug = (id) => /^openrouter\//i.test(String(id || ''));
 
 /**
  * Rank free models by how well they write verse. Lower is better.
@@ -117,8 +142,13 @@ async function discoverFreeModels() {
                   && String(m?.pricing?.completion) === '0')
       // Verse needs room to breathe.
       .filter((m) => (m?.context_length || 0) >= 4000)
-      // Classifiers and reasoning heads are free too, and neither writes lyrics.
+      // Classifiers, coding agents and reasoning heads are free too, and none
+      // of them writes lyrics.
       .filter((m) => !isUnusableForLyrics(m?.id))
+      // A router in the fallback chain is the original bug all over again: it
+      // would hand the retry to whatever free model it liked, coding agents
+      // included. Only real models belong here.
+      .filter((m) => !isRouterSlug(m?.id))
       .map((m) => m.id)
       .sort((a, b) => rankFreeModel(a) - rankFreeModel(b));
     return freeModelCache;
@@ -228,7 +258,13 @@ async function singleCall(messages, config, modelId, customTemp, customMax) {
 }
 
 async function guardedCall(messages, config, modelId, customTemp, customMax) {
-  const chosen = modelId || config?.model || DEFAULT_AI_MODEL;
+  const wanted = modelId || config?.model || DEFAULT_AI_MODEL;
+  // See isRouterSlug: a router hands a lyric prompt to a coding agent as
+  // happily as to a writer, so it never gets to be the first choice.
+  const chosen = isRouterSlug(wanted) ? DEFAULT_AI_MODEL : wanted;
+  if (chosen !== wanted) {
+    console.warn(`[Lyricist] "${wanted}" is a router, not a model. Writing with ${chosen} instead. Pick a model in Settings.`);
+  }
   let attemptResult;
 
   /**
@@ -324,23 +360,36 @@ async function guardedCall(messages, config, modelId, customTemp, customMax) {
   if (stillGood && cut.text.split('\n').filter((l) => l.trim()).length >= 4) return cut.text;
 
   /**
-   * The content came back unusable rather than the call failing. One retry on a
-   * DIFFERENT free model, chosen live — this used to retry FALLBACK_MODEL
-   * unconditionally, so once that slug was retired the retry threw a "not free
-   * any more" error that buried the real complaint about the content.
+   * The content came back unusable rather than the call failing, so walk up to
+   * three OTHER free models, chosen live.
+   *
+   * This used to retry FALLBACK_MODEL unconditionally — once that slug was
+   * retired the retry threw a "not free any more" error that buried the real
+   * complaint about the content. Then it retried exactly one live model, which
+   * on 2026-09-15 was one throw of the same dice: Chris's run took the bad
+   * answer, took one more, and gave up naming a code model he never picked.
    */
-  const retryOn = (await discoverFreeModels()).find((m) => m !== model) || FALLBACK_MODEL;
-  if (retryOn !== model) {
+  const alternatives = [...(await discoverFreeModels()), FALLBACK_MODEL, DEFAULT_AI_MODEL]
+    .filter((m) => m && m !== model && m !== chosen)
+    .slice(0, 3);
+  for (const retryOn of alternatives) {
     try {
       const retry = await singleCall(messages, config, retryOn, customTemp, customMax);
       const rv = inspectGenerated(retry.text);
-      if (rv.ok && retry.text.trim()) return retry.text;
+      if (rv.ok && retry.text.trim() && !isMostlyReasoning(retry.text)) {
+        Object.assign(lastGeneration, { model: retry.model, provider: retry.provider, ok: true, reasons: [], at: Date.now() });
+        return retry.text;
+      }
     } catch (e) {
       console.warn(`Content retry on ${retryOn} failed:`, e.message);
     }
   }
 
-  throw new Error(`Provider returned invalid content from ${model}. Try selecting another model in Settings.`);
+  throw new Error(
+    `${model} sent back something that is not lyrics${verdict.reasons.length ? ` (${verdict.reasons.join(', ')})` : ''}`
+    + `, and ${alternatives.length} other free model${alternatives.length === 1 ? '' : 's'} did the same. `
+    + 'Pick a different model in Settings.'
+  );
 }
 
 export function assertApiKey(config) {

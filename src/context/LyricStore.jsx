@@ -293,6 +293,19 @@ export const LyricStoreProvider = ({ children }) => {
           );
           parsed.geminiImageModel = DEFAULT_CONFIG.geminiImageModel;
         }
+        // A ROUTER SAVED AS THE WRITING MODEL IS A BROKEN VALUE, not a choice.
+        // `openrouter/free` routes each request to whatever free model is up,
+        // and that pool carries coding agents — which is how Chris's Ghost
+        // Rider run died on "invalid content from cohere/north-mini-code:free",
+        // naming a model he never picked. Same rule as the cover-art repair
+        // above: only ids that cannot work for this job are touched.
+        if (typeof parsed.model === 'string' && /^openrouter\//i.test(parsed.model.trim())) {
+          console.warn(
+            `[Lyricist] The writing model was saved as "${parsed.model}", a router that picks any free `
+            + `model including coding agents. Set to "${DEFAULT_CONFIG.model}". Change it in Settings.`
+          );
+          parsed.model = DEFAULT_CONFIG.model;
+        }
         return { ...DEFAULT_CONFIG, ...parsed };
       } catch (e) {
         console.warn('[Lyricist] Saved settings were unreadable and have been reset to defaults.', e);
