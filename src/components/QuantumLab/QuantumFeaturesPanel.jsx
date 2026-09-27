@@ -24,7 +24,7 @@ import {
   QUANTUM_SECTIONS,
 } from './quantumFeatures.js';
 import { measureCell, collapseCell } from './quantumEngine.js';
-import { Save } from 'lucide-react';
+import { Save, X } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
 
 /**
@@ -456,7 +456,7 @@ export default function QuantumFeaturesPanel({
                       setDnaLib(lib);
                     }}
                   >
-                    ✕
+                    <X size={12} />
                   </button>
                 </div>
               </div>

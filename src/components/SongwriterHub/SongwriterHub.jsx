@@ -9,7 +9,7 @@ import { generateFullSong, fillBlank, generateBridgeVariations, lastGeneration, 
 import { normalizeLineEndings, hasLineStructure, splitProseIntoLines, groupIntoSections } from '../../utils/importLyrics.js';
 import { applySongTags } from '../../services/songTags.js';
 import { notify } from '../../services/dialog.js';
-import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, AlertCircle, Upload, PenLine, GitBranch } from 'lucide-react';
+import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, AlertCircle, Upload, PenLine, GitBranch, X } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
 // The logo and the founder photo were imported here but never rendered — a
 // leftover from the old in-tab header. Vite emits an imported asset whether or
@@ -951,7 +951,7 @@ export default function SongwriterHub({ ghostRiderData }) {
             color: /garbled|dropped/.test(modelNote) ? 'rgba(253,224,71,0.95)' : 'rgba(110,231,183,0.9)',
           }}>
             <span style={{ flex: 1 }}>{modelNote}</span>
-            <button onClick={() => setModelNote('')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}>✕</button>
+            <button onClick={() => setModelNote('')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', display: 'inline-flex' }} aria-label="Dismiss"><X size={14} /></button>
           </div>
         )}
 
@@ -1036,7 +1036,7 @@ export default function SongwriterHub({ ghostRiderData }) {
                   cursor: 'pointer'
                 }}
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
 

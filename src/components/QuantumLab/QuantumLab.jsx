@@ -20,7 +20,7 @@ import { registerDemoSnapshot } from '../../services/demoSafety.js';
 import { registerGhostActions, ghostSettle } from '../../services/ghostBus.js';
 import { useMobile } from '../../mobile/useMobile.js';
 import './QuantumLab.css';
-import { ListChecks, SlidersHorizontal, ScanSearch, ArrowDownToLine, Zap, Crosshair, Snowflake, Cpu, Lock, Unlock, Syringe } from 'lucide-react';
+import { ListChecks, SlidersHorizontal, ScanSearch, ArrowDownToLine, Zap, Crosshair, Snowflake, Cpu, Lock, Unlock, Syringe, X, ChevronDown } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
 
 // ============================================================
@@ -883,7 +883,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             onClick={() => setDrawer((d) => (d === 'controls' ? null : 'controls'))}
             data-help="Your keywords and all six step buttons. Slides over the grid, then closes again."
           >
-            <Icon i={ListChecks} />Words &amp; steps {drawer === 'controls' ? '✕' : '▾'}
+            <Icon i={ListChecks} />Words &amp; steps <Icon i={drawer === 'controls' ? X : ChevronDown} />
           </button>
           <button
             type="button"
@@ -899,7 +899,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             onClick={() => setDrawer((d) => (d === 'panels' ? null : 'panels'))}
             data-help="Word Inspector, Section DNA and the scores for the grid as it stands."
           >
-            {drawer === 'panels' ? '✕' : '▾'} <Icon i={ScanSearch} />Inspector
+            <Icon i={drawer === 'panels' ? X : ChevronDown} /><Icon i={ScanSearch} />Inspector
           </button>
         </div>
       )}

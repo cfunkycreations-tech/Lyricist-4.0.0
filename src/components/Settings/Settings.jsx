@@ -96,7 +96,7 @@ function ModelSelector({ value, onChange }) {
   });
 
   const selectedModel = models.find(m => m.id === value);
-  const label = selectedModel ? `${selectedModel.id.endsWith(':free') ? '🆓 ' : ''}${selectedModel.name || selectedModel.id}` : value || 'Select a model...';
+  const label = selectedModel ? `${selectedModel.name || selectedModel.id}${selectedModel.id.endsWith(':free') ? '  · FREE' : ''}` : value || 'Select a model...';
   const freeCount = models.filter(m => m.id.endsWith(':free')).length;
 
   return (
@@ -186,7 +186,7 @@ function ModelSelector({ value, onChange }) {
               </button>
             </div>
             <div style={{ display: 'flex', gap: 4 }}>
-              {[['all', `All (${models.length})`], ['free', `🆓 Free (${freeCount})`], ['paid', `Paid (${models.length - freeCount})`]].map(([type, txt]) => (
+              {[['all', `All (${models.length})`], ['free', `Free (${freeCount})`], ['paid', `Paid (${models.length - freeCount})`]].map(([type, txt]) => (
                 <button
                   key={type}
                   type="button"
@@ -268,7 +268,7 @@ function ModelSelector({ value, onChange }) {
                 >
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', color: isSelected ? '#9ba1aa' : '#e6e8eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {isFree ? '🆓 ' : ''}{m.id}
+                      {m.id}
                     </div>
                     {m.name && m.name !== m.id && (
                       <div style={{ fontSize: '0.65rem', color: 'rgba(155,161,170,0.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
