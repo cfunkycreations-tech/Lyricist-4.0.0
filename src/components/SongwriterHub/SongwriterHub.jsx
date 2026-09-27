@@ -368,7 +368,7 @@ export default function SongwriterHub({ ghostRiderData }) {
   const missingKeywords = getMissingKeywords();
 
   return (
-    <div style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'radial-gradient(70% 50% at 20% 0%, rgba(231,165,64,0.08) 0%, transparent 55%), radial-gradient(60% 45% at 85% 100%, rgba(155,161,170,0.08) 0%, transparent 50%), #04060f' }}>
+    <div style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'radial-gradient(70% 50% at 20% 0%, rgba(231,165,64,0.08) 0%, transparent 55%), radial-gradient(60% 45% at 85% 100%, rgba(155,161,170,0.08) 0%, transparent 50%), #08090b' }}>
       <TabBackground name="songwriter" />
       <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 

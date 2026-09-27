@@ -175,7 +175,7 @@
 .omb-eng:disabled { opacity: .45; cursor: not-allowed; }
 .omb-eng[aria-pressed="true"] {
   border-color: var(--omb-emerald); color: #fff;
-  background: linear-gradient(180deg, #1F2227, #17191D);
+  background: linear-gradient(180deg, #232426, #17191D);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07);
 }
 .omb-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--omb-faint); }

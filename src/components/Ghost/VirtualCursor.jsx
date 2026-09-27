@@ -42,7 +42,7 @@ export default function VirtualCursor() {
           <path
             d="M4 2 L4 19.5 L8.6 15.2 L11.4 21.6 L14.3 20.3 L11.6 14.2 L18 13.8 Z"
             fill="var(--accent-neon, #E7A540)"
-            stroke="#04070C"
+            stroke="#08090b"
             strokeWidth="1.4"
             strokeLinejoin="round"
           />

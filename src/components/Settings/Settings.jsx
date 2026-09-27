@@ -138,7 +138,7 @@ function ModelSelector({ value, onChange }) {
             background: '#0e1013',
             border: '1px solid rgba(155,161,170,0.35)',
             borderRadius: 10,
-            boxShadow: '0 0 0 1px rgba(26,29,34,0.4)',
+            boxShadow: '0 0 0 1px rgba(30,31,33,0.4)',
             display: 'flex',
             flexDirection: 'column',
             maxHeight: 360,
@@ -262,7 +262,7 @@ function ModelSelector({ value, onChange }) {
                     gap: 8,
                     transition: 'background 0.1s'
                   }}
-                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(26,29,34,0.2)'; }}
+                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(30,31,33,0.2)'; }}
                   onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
                 >
                   <div style={{ minWidth: 0 }}>

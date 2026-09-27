@@ -24,10 +24,10 @@
   --faf-ink-0: #08090B;
   --faf-ink-1: #0D0F12;
   --faf-ink-2: #131519;
-  --faf-ink-3: #1A1D22;
-  --faf-ink-4: #24272D;
-  --faf-line: #22252B;
-  --faf-line-2: #2D3138;
+  --faf-ink-3: #1e1f21;
+  --faf-ink-4: #28292b;
+  --faf-line: #262729;
+  --faf-line-2: #323335;
   --faf-hi: rgba(255, 255, 255, 0.055);
   --faf-text: #E6E8EB;
   --faf-text-2: #9BA1AA;
@@ -127,7 +127,7 @@ body *:not(.pc):not(.pc *):not(.push-side *):not(.wheel-readout) { text-shadow: 
 
 /* ── buttons: machined keys ── */
 .btn-neon-purple, .btn-neon-cyan {
-  background: linear-gradient(180deg, #1F2227 0%, #17191D 100%) !important;
+  background: linear-gradient(180deg, #232426 0%, #17191D 100%) !important;
   border: 1px solid var(--faf-line-2) !important;
   border-radius: 4px;
   color: var(--faf-text) !important;
@@ -138,7 +138,7 @@ body *:not(.pc):not(.pc *):not(.push-side *):not(.wheel-readout) { text-shadow: 
 }
 .btn-neon-purple:hover:not(:disabled), .btn-neon-cyan:hover:not(:disabled) {
   transform: none;
-  background: linear-gradient(180deg, #262A30 0%, #1C1F24 100%) !important;
+  background: linear-gradient(180deg, #2b2c2e 0%, #202123 100%) !important;
   border-color: rgba(var(--accent-rgb), 0.55) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 1px rgba(0, 0, 0, 0.55) !important;
 }
@@ -177,7 +177,7 @@ label { color: var(--faf-text-2) !important; font-weight: 500; }
 /* ── scrollbars & selection ── */
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #2A2D33; border-radius: 9px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb { background: #2e2f31; border-radius: 9px; border: 2px solid transparent; background-clip: padding-box; }
 ::-webkit-scrollbar-thumb:hover { background: #3A3E46; background-clip: padding-box; border: 2px solid transparent; }
 ::selection { background: rgba(var(--accent-rgb), 0.35); color: #fff; }
 
@@ -199,12 +199,12 @@ label { color: var(--faf-text-2) !important; font-weight: 500; }
 .suno-player { background: var(--faf-grain), var(--faf-ink-1); border-top: 1px solid var(--faf-line); box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.6); }
 .suno-track-name { color: var(--faf-text); font-size: 0.74rem; }
 .suno-btn, .suno-collapse, .suno-chip, .booth-icon-btn, .toolshub-vote {
-  background: linear-gradient(180deg, #1F2227, #17191D);
+  background: linear-gradient(180deg, #232426, #17191D);
   color: var(--faf-text-2);
   border: 1px solid var(--faf-line-2);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
-.suno-btn:hover:not(:disabled), .suno-chip:hover, .toolshub-vote:hover { color: #fff; background: linear-gradient(180deg, #262A30, #1C1F24); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+.suno-btn:hover:not(:disabled), .suno-chip:hover, .toolshub-vote:hover { color: #fff; background: linear-gradient(180deg, #2b2c2e, #202123); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); }
 .suno-btn--play, .suno-chip--go, .toolshub-vote--voted {
   background: linear-gradient(180deg, #F2F3F5, #C8CCD2) !important;
   color: #0A0B0D !important;
@@ -253,7 +253,7 @@ label { color: var(--faf-text-2) !important; font-weight: 500; }
    "Save All Stems" is the one light key on its page. */
 button[style*="linear-gradient"]:not(.pc),
 .stemmer-btn, .stemmer-btn-emerald {
-  background: linear-gradient(180deg, #1F2227 0%, #17191D 100%) !important;
+  background: linear-gradient(180deg, #232426 0%, #17191D 100%) !important;
   border: 1px solid var(--faf-line-2) !important;
   color: var(--faf-text) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 1px rgba(0, 0, 0, 0.55) !important;
@@ -297,7 +297,7 @@ h1:not(.gradient-title):not(.chrome-title), h2, h3 { color: var(--faf-text) !imp
   background:
     linear-gradient(180deg, rgba(var(--tc, 40 60 120), calc(0.05 + var(--heat, 0) * 0.16)) 0%, rgba(var(--tc, 40 60 120), 0) 70%),
     var(--faf-grain),
-    linear-gradient(180deg, #1B1E23, #131519) !important;
+    linear-gradient(180deg, #1f2022, #131519) !important;
   box-shadow:
     inset 0 3px 0 rgba(var(--tc, 40 60 120), calc(0.55 + var(--heat, 0) * 0.45)),
     inset 0 -1px 0 rgba(0, 0, 0, 0.5),

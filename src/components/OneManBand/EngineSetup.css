@@ -17,7 +17,7 @@
 @media (max-width: 900px) { .es-cards { grid-template-columns: 1fr; } }
 
 .es-card {
-  background: rgba(12, 17, 26, .44);
+  background: rgba(18,19,21,.44);
   border: 1px solid var(--omb-line, rgba(var(--accent-rgb), .16));
   border-radius: 12px; padding: 14px;
   backdrop-filter: blur(16px) saturate(1.15);
@@ -129,6 +129,6 @@
 .es-note {
   margin: 0; padding: 12px 14px; border-radius: 10px;
   font-size: 12.5px; color: var(--omb-dim, #9FB2D4);
-  background: rgba(12, 17, 26, .44);
+  background: rgba(18,19,21,.44);
   border: 1px solid var(--omb-line, rgba(var(--accent-rgb), .16));
 }

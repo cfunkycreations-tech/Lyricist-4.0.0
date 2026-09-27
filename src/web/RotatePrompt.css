@@ -17,7 +17,7 @@
   background:
     radial-gradient(80% 60% at 20% 0%, rgba(231, 165, 64, 0.14) 0%, transparent 60%),
     radial-gradient(70% 55% at 90% 100%, rgba(155, 161, 170, 0.16) 0%, transparent 58%),
-    #04060f;
+    #08090b;
   /* Paint under the notch and the home indicator. */
   padding: max(22px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-right))
            max(22px, env(safe-area-inset-bottom)) max(22px, env(safe-area-inset-left));
@@ -86,7 +86,7 @@
   padding: 10px 22px;
   border-radius: 999px;
   border: 1px solid rgba(231, 165, 64, 0.5);
-  background: rgba(10, 16, 32, 0.9);
+  background: rgba(19,20,22,0.9);
   color: #cfe9ff;
   font-family: var(--faf-font);
   font-size: 0.86rem;

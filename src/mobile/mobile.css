@@ -50,7 +50,7 @@ body.lyricist-mobile .app-footer  { display: none !important; }
   background:
     radial-gradient(70% 60% at 8% -10%, rgba(231, 165, 64, 0.16) 0%, transparent 60%),
     radial-gradient(60% 55% at 95% 110%, rgba(155, 161, 170, 0.16) 0%, transparent 58%),
-    #04060f;
+    #08090b;
   color: #f2f5fa;
   overflow: hidden;
   z-index: 800;
@@ -77,7 +77,7 @@ body.lyricist-mobile .app-footer  { display: none !important; }
   align-items: center;
   gap: 8px;
   padding: 0 8px;
-  background: rgba(4, 6, 15, 0.72);
+  background: rgba(8,9,11,0.72);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(231, 165, 64, 0.22);
 }
@@ -162,7 +162,7 @@ body.lyricist-mobile .app-footer  { display: none !important; }
   gap: 6px;
   padding: 5px 7px;
   text-align: left;
-  background: linear-gradient(180deg, rgba(10, 16, 32, 0.94), rgba(4, 6, 15, 0.94));
+  background: linear-gradient(180deg, rgba(19,20,22,0.94), rgba(8,9,11,0.94));
   border: 1px solid rgba(231, 165, 64, 0.30);
   border-radius: 11px;
   box-shadow: 0 0 0 1px rgba(231, 165, 64, 0.09);
@@ -231,7 +231,7 @@ body.lyricist-mobile .app-footer  { display: none !important; }
   color: #cfe9ff;
   text-decoration: none;
   border: 1px solid rgba(231, 165, 64, 0.4);
-  background: rgba(10, 16, 32, 0.8);
+  background: rgba(19,20,22,0.8);
 }
 
 /* ── the open tool ───────────────────────────────────────────────────── */
@@ -259,7 +259,7 @@ body.lyricist-mobile .app-footer  { display: none !important; }
   z-index: 901;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, rgba(10, 16, 32, 0.99), rgba(4, 6, 15, 0.99));
+  background: linear-gradient(180deg, rgba(19,20,22,0.99), rgba(8,9,11,0.99));
   border-top: 1px solid rgba(231, 165, 64, 0.45);
   border-radius: 16px 16px 0 0;
   box-shadow: 0 -10px 40px rgba(231, 165, 64, 0.14);
@@ -292,7 +292,7 @@ body.lyricist-mobile .app-footer  { display: none !important; }
   padding: 7px 8px;
   min-height: 44px;
   text-align: left;
-  background: rgba(10, 16, 32, 0.9);
+  background: rgba(19,20,22,0.9);
   border: 1px solid rgba(231, 165, 64, 0.24);
   border-radius: 9px;
   color: inherit;

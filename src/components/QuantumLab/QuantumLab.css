@@ -10,7 +10,7 @@
   --ql-blu: #e7a540;
   --ql-vio: #9ba1aa;
   --ql-vio2: #9ba1aa;
-  --ql-deep: #1a1d22;
+  --ql-deep: #1e1f21;
   --ql-ink: #080a0d;
   --ql-panel: rgba(15, 17, 20, 0.62);
   position: relative;
@@ -390,7 +390,7 @@
 .ql-status b { color: var(--ql-grn); text-shadow: 0 0 10px rgba(57,255,20,0.5); }
 .ql-status.ql-status-pop {
   border-color: rgba(155, 161, 170, 0.65);
-  background: rgba(26, 29, 34, 0.28);
+  background: rgba(30,31,33,0.28);
   box-shadow: 0 0 0 1px rgba(155, 161, 170, 0.35);
   color: #e6e8eb;
   animation: ql-status-thump 0.7s ease-out;
@@ -495,7 +495,7 @@
   padding: 1px 6px;
   border-radius: 999px;
   font-size: 0.66rem;
-  color: #04121a;
+  color: #101113;
   background: var(--ql-blu);
   box-shadow: 0 0 0 1px rgba(231, 165, 64, 0.6);
 }
@@ -607,7 +607,7 @@
   margin: 14px 0 18px;
   border: 1px solid rgba(231, 165, 64, 0.28);
   border-radius: 14px;
-  background: rgba(6, 10, 24, 0.82);
+  background: rgba(13,14,16,0.82);
   overflow: hidden;
   box-shadow: 0 0 0 1px rgba(155, 161, 170, 0.12);
 }
@@ -621,7 +621,7 @@
 }
 .ql-adv-tab {
   border: 1px solid transparent;
-  background: rgba(20, 24, 48, 0.6);
+  background: rgba(31,32,34,0.6);
   color: rgba(200, 210, 230, 0.7);
   font-size: 0.68rem;
   font-weight: 700;
@@ -662,7 +662,7 @@
   padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid rgba(231, 165, 64, 0.25);
-  background: rgba(8, 12, 28, 0.85);
+  background: rgba(16,17,19,0.85);
   color: #e8eef8;
   font-size: 0.82rem;
 }
@@ -683,7 +683,7 @@
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid rgba(231, 165, 64, 0.15);
-  background: rgba(10, 14, 32, 0.7);
+  background: rgba(19,20,22,0.7);
 }
 .ql-adv-card-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .ql-adv-meta { font-size: 0.68rem; color: rgba(160, 175, 200, 0.65); margin-top: 2px; }
@@ -725,7 +725,7 @@
   padding: 8px 14px;
   border-radius: 10px;
   border: 1px solid rgba(148, 163, 184, 0.3);
-  background: rgba(12, 16, 36, 0.7);
+  background: rgba(21,22,24,0.7);
   color: #cbd5e1;
   font-weight: 700;
   font-size: 0.75rem;
@@ -766,7 +766,7 @@
   padding: 6px 8px;
   border-radius: 8px;
   border: 1px solid rgba(231, 165, 64, 0.2);
-  background: rgba(8, 12, 28, 0.7);
+  background: rgba(16,17,19,0.7);
   color: #e8eef8;
   font-size: 0.72rem;
   cursor: pointer;
@@ -779,7 +779,7 @@
   padding: 12px;
   border-radius: 10px;
   border: 1px solid rgba(155, 161, 170, 0.35);
-  background: rgba(26, 29, 34, 0.25);
+  background: rgba(30,31,33,0.25);
   font-size: 0.82rem;
   color: #e8eef8;
 }
@@ -1168,7 +1168,7 @@
   white-space: nowrap;
 }
 .ql-mobtab.is-open {
-  color: #04121a;
+  color: #101113;
   background: var(--ql-blu);
   border-color: var(--ql-blu);
   box-shadow: 0 0 0 1px rgba(231, 165, 64, 0.55);

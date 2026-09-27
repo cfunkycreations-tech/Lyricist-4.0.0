@@ -80,8 +80,8 @@ body, button, input, select, label, textarea {
      as broken. Pure black is the whole floor. The neon pinstripe under the
      active tab still reads --accent-neon, so the accent slider is untouched. */
   --bg-obsidian: #000;
-  --bg-slate: #0D111A;
-  --bg-panel: rgba(13, 17, 26, 0.85);
+  --bg-slate: #131416;
+  --bg-panel: rgba(19,20,22,0.85);
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-hairline: 1px solid rgba(255, 255, 255, 0.12);
 
@@ -116,8 +116,8 @@ body, button, input, select, label, textarea {
   --emerald-edge: var(--accent-neon);
   --gold-hi: #E6E8EB;
   --gold-mid: var(--accent-neon);
-  --gold-deep: #1E2836;
-  --gold-lo: #141B26;
+  --gold-deep: #292a2c;
+  --gold-lo: #1c1d1f;
   --silver: #F2F5FA;
   --silver-mid: #B8C0CE;
   --chrome-hi: #FFFFFF;
@@ -355,7 +355,7 @@ h1.gradient-title {
 }
 
 .output-cosmic {
-  background: rgba(13, 17, 26, 0.6);
+  background: rgba(19,20,22,0.6);
 }
 
 .card-cosmic {
@@ -1155,7 +1155,7 @@ input.lyric-line-input {
   display: flex; align-items: center; justify-content: center;
   font-size: 8px; letter-spacing: 0.14em; font-family: 'JetBrains Mono', monospace;
   color: rgba(var(--accent-rgb), 0.8);
-  background: linear-gradient(90deg, #0f1114, #1a1d22);
+  background: linear-gradient(90deg, #0f1114, #1e1f21);
   border-right: 1px solid rgba(var(--accent-rgb), 0.18);
 }
 .seq-vel-bar {
@@ -1314,7 +1314,7 @@ input.lyric-line-input {
    the next full-bleed thing that lands has an obvious place to go. */
 
 /* ── SURFACES ─────────────────────────────────────────────────────────────
-   One recipe for every panel in the app: #0D111A at 85%, a 14px backdrop blur,
+   One recipe for every panel in the app: #131416 at 85%, a 14px backdrop blur,
    and a 1px hairline. Panels stay slightly translucent so the black floor
    still reads through them without the surface flattening onto it, and the
    accent hairline still separates one panel from another. */

@@ -133,7 +133,7 @@
 @media (max-width: 720px) { .screw-cols { grid-template-columns: 1fr; } }
 
 .screw-card {
-  background: rgba(12, 17, 26, .42); border: 1px solid var(--sc-line); border-radius: 12px;
+  background: rgba(18,19,21,.42); border: 1px solid var(--sc-line); border-radius: 12px;
   overflow: hidden; backdrop-filter: blur(18px) saturate(1.2);
   box-shadow: 0 1px 0 rgba(255, 255, 255, .05) inset, 0 16px 40px rgba(0, 0, 0, .45);
 }
@@ -224,7 +224,7 @@
 
 .screw-out {
   margin-top: 18px; padding: 14px; border-radius: 12px;
-  border: 1px solid hsla(158 84% 45% / .45); background: rgba(12, 17, 26, .44);
+  border: 1px solid hsla(158 84% 45% / .45); background: rgba(18,19,21,.44);
   backdrop-filter: blur(18px) saturate(1.2);
 }
 .screw-out .hd { margin-bottom: 10px; }

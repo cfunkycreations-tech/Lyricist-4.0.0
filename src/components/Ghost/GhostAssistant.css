@@ -21,7 +21,7 @@
   max-height: min(620px, calc(100vh - 200px));
   display: flex; flex-direction: column;
   border-radius: 14px; overflow: hidden;
-  background: rgba(6, 9, 16, .93);
+  background: rgba(10,11,13,.93);
   border: 1px solid hsla(158 80% 58% / .34);
   box-shadow: 0 24px 70px rgba(0, 0, 0, .66), 0 0 0 1px hsla(158 80% 58% / .12);
   backdrop-filter: blur(20px) saturate(1.2);

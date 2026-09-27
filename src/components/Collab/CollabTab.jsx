@@ -163,7 +163,7 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
 
             {/* Join */}
             <div style={{ flex: '1 1 320px', minWidth: 300, padding: 18, borderRadius: 14,
-              border: '1px solid rgba(231,165,64,0.3)', background: 'rgba(6,12,26,0.6)' }}>
+              border: '1px solid rgba(231,165,64,0.3)', background: 'rgba(15,16,18,0.6)' }}>
               <h3 style={{ margin: '0 0 8px', fontSize: '1rem', color: '#e7a540' }}>Join a session</h3>
               <p style={{ fontSize: '0.74rem', color: 'rgba(230,232,235,0.7)', lineHeight: 1.6, margin: '0 0 14px' }}>
                 Got a code from someone? Type it here. Upper or lower case, dashes or not — it sorts itself out.

@@ -655,7 +655,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                         padding: '8px 14px',
                         borderRadius: 8,
                         border: '1px solid rgba(231,165,64,0.5)',
-                        background: 'rgba(0,40,60,0.5)',
+                        background: 'rgba(33,34,36,0.5)',
                         color: '#e6e8eb',
                         fontWeight: 700,
                         fontSize: '0.78rem',

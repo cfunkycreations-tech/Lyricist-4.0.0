@@ -608,7 +608,7 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
                   title={`${midiToName(m)} — click to hear it`}
                   style={{
                     position: 'absolute', left: 0, top: 0, height: ROW_H, width: KEYBED_W,
-                    background: black ? 'linear-gradient(90deg,#0f1114,#1a1d22)' : 'linear-gradient(90deg,#303235,#444649)',
+                    background: black ? 'linear-gradient(90deg,#0f1114,#1e1f21)' : 'linear-gradient(90deg,#303235,#444649)',
                     borderBottom: '1px solid rgba(0,0,0,0.55)',
                     borderRight: '1px solid rgba(231,165,64,0.18)',
                     cursor: 'pointer', zIndex: 3,
