@@ -265,6 +265,11 @@ button.pc:not(.pc-pad):not(.pc-sweep):not(.pc-empty):active:not(:disabled)::afte
   transition: transform 0.08s ease;
 }
 .push-side > button:hover { background: var(--mat-key-hover) !important; }
+/* The API key cell is a status light, so it keeps its meaning: red until there's a key, green after. */
+.push-side > .pill-red { color: #ff7a6b !important; }
+.push-side > .pill-red svg.lucide { color: #ff5a48; filter: drop-shadow(0 -1px 0 rgba(0,0,0,.85)) drop-shadow(0 0 2px #ff5a48) drop-shadow(0 0 6px rgba(255,90,72,.6)); }
+.push-side > .pill-green { color: #8ee6a8 !important; }
+.push-side > .pill-green svg.lucide { color: #5fd97f; filter: drop-shadow(0 -1px 0 rgba(0,0,0,.85)) drop-shadow(0 0 2px #5fd97f) drop-shadow(0 0 6px rgba(95,217,127,.55)); }
 .push-side > button:active { transform: translateY(1px); box-shadow: var(--mat-key-pressed) !important; }
 
 /* the instrument's little screen: an amber LCD behind smoked glass */
