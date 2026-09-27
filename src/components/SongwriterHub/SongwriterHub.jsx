@@ -7,6 +7,7 @@ import SectionEditor from './SectionEditor.jsx';
 import StructureBuilder from './StructureBuilder.jsx';
 import { generateFullSong, fillBlank, generateBridgeVariations, lastGeneration, parseSectionsFromText } from '../../services/AIService.js';
 import { normalizeLineEndings, hasLineStructure, splitProseIntoLines, groupIntoSections } from '../../utils/importLyrics.js';
+import { applySongTags } from '../../services/songTags.js';
 import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, AlertCircle, Upload, PenLine, GitBranch } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
 // The logo and the founder photo were imported here but never rendered — a
@@ -117,6 +118,23 @@ export default function SongwriterHub({ ghostRiderData }) {
     }
     if (ghostRiderData.artist && ghostRiderData.source !== 'quantum') {
       store.setArtistRef(ghostRiderData.artist);
+    }
+    /**
+     * THE ATTRIBUTES COME WITH THE WORDS.
+     *
+     * Chris, 2026-09-15: *"if you write a song in one tab, then the attributes
+     * need to go with it. So the mood, the genre, the subgenre."*
+     *
+     * Ghost Rider has always sent its Suno tags along with the lyrics, and
+     * App.jsx has always carried them through, and this effect read the lyrics,
+     * the artist and the notes and threw the tags away. So a verse written in
+     * an artist's style landed here untagged, and stayed untagged all the way
+     * into Black Hole Studios. They are picks now, which also fills in the
+     * Black Hole side through styleBridge. Anything already picked is his and
+     * is left alone.
+     */
+    if (ghostRiderData.sunoTags) {
+      applySongTags(store, { text: ghostRiderData.sunoTags });
     }
     if (ghostRiderData.source === 'quantum' && ghostRiderData.notes && store.setNotes) {
       store.setNotes(ghostRiderData.notes);

@@ -427,6 +427,33 @@ export const LyricStoreProvider = ({ children }) => {
     setMoodListRaw(toSongwriterMoods(list));
   };
 
+  /**
+   * ALL THREE PICKS AT ONCE, so a tag never lands half-translated.
+   *
+   * Each setter above reads the other two lists out of the render it was made
+   * in. That is right when a person clicks one picker at a time, and wrong the
+   * moment something sets genre AND subgenre in the same tick: the second call
+   * translates against the genre list as it was BEFORE the first call, and
+   * Black Hole Studios ends up describing half the choice. The pickers are
+   * unaffected — a click is one pick — but anything tagging a song
+   * automatically sets all three together, so it goes through here, where the
+   * translation happens once against the values actually being set.
+   *
+   * See services/songTags.js, which is the only caller and the reason this
+   * exists: Chris, 2026-09-15, on the Ghost writing songs without ever
+   * checking the boxes.
+   */
+  const setStylePicks = ({ genres: g, subgenres: s, moods: m } = {}) => {
+    const nextG = g === undefined ? genreList : (g || []);
+    const nextS = s === undefined ? subgenreList : (s || []);
+    const nextM = m === undefined ? moodList : (m || []);
+    setGenreListRaw(nextG);
+    setSubgenreListRaw(nextS);
+    setMoodListRaw(nextM);
+    setBhGenreListRaw(toBlackHoleGenres(nextG, nextS));
+    setBhMoodListRaw(toBlackHoleMoods(nextM));
+  };
+
   const genre = genreList[0] || '';
   const subgenre = subgenreList[0] || '';
   const mood = moodList[0] || '';
@@ -694,6 +721,9 @@ export const LyricStoreProvider = ({ children }) => {
       // styleBridge. Setting either side updates the other.
       bhGenreList, setBhGenreList,
       bhMoodList, setBhMoodList,
+      // All three at once, translated in one pass. services/songTags.js uses
+      // this so an automatic tag never lands half in one vocabulary.
+      setStylePicks,
       voiceList, setVoiceList,
       structureTemplate, setStructureTemplate,
       customStructure, setCustomStructure,

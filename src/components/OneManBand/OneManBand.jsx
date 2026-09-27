@@ -7,6 +7,7 @@ import { EXAMPLES } from '../../services/minimaxExamples.js';
 import { validateCaption, captionBrief } from '../../services/minimaxCaption.js';
 import { runCaptionSkill } from '../../services/captionSkillRunner.js';
 import { readSunoTags } from '../../services/ghostMemory.js';
+import { applySongTags } from '../../services/songTags.js';
 
 /**
  * THE SHAPE OF A SONG, IN ONE PRESS.
@@ -1002,6 +1003,22 @@ export default function OneManBand() {
       // the box is empty, seed it from what the pipeline already knows: the
       // saved Suno tags, the picks, the instruction. Never stop to ask.
       const saved = readSunoTags();
+      /**
+       * THE SONG ARRIVES HERE WITH ITS TAXONOMY ON IT.
+       *
+       * Chris, 2026-09-15: *"when it's back into Black Hole Studios it's going
+       * to go with the taxonomy."* The saved Suno tags were already seeding the
+       * caption below, which is why captions came out roughly right while the
+       * genre and mood pickers on this tab sat empty. That is the song being
+       * described in the caption and untagged everywhere else: the recipe saved
+       * with the take, the instrumental check, and Songwriter all read the
+       * picks, not the caption.
+       *
+       * So the tags become picks first. It fills blanks only, so a sound he
+       * chose here by hand still wins, and styleBridge turns them into this
+       * tab's own vocabulary with the instruments that go with it.
+       */
+      if (saved?.tags) applySongTags(store, { text: saved.tags });
       const seed = before.trim() || [
         saved?.tags,
         [...genres, ...moods, ...voices].join(', '),
@@ -1063,7 +1080,20 @@ export default function OneManBand() {
     make_the_song: () => {
       if (busy) throw new Error('it is already making one');
       make();
-      return 'started it. The Stop button is in the tab if you change your mind';
+      const said = 'started it. The Stop button is in the tab if you change your mind';
+      // LAST CHANCE TO NOTICE AN UNTAGGED SONG. It still runs — stopping a song
+      // at the engine over a missing pick would be worse than the pick being
+      // missing — but nothing after this point can tell him the sound was never
+      // chosen, so this is where it gets said out loud.
+      if (!genres.length && !moods.length) {
+        return {
+          said,
+          warn: 'This song went out with no genre and no mood picked, so the sound '
+            + 'was left to the model. Pick them on Songwriter or here and make it again '
+            + 'if it comes back sounding like nothing in particular.',
+        };
+      }
+      return said;
     },
     stop: () => { stop(); return 'stopped it'; },
   }), [busy, kaggle, comfy, lyrics, caption, seconds, store.config, genres.join('|'), moods.join('|'), voices.join('|')]);   // eslint-disable-line react-hooks/exhaustive-deps

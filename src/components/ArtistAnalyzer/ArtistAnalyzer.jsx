@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import TabBackground from '../common/TabBackground.jsx';
 import { registerGhostActions, ghostSettle } from '../../services/ghostBus.js';
 import { randomArtist, saveSunoTags } from '../../services/ghostMemory.js';
+import { applySongTags } from '../../services/songTags.js';
 import { writeStylePressure } from '../QuantumLab/quantumFeatures.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { callAI, refineLyrics, analyzeClichés, checkSimilarity, checkThemeConsistency } from '../../services/AIService.js';
@@ -209,6 +210,17 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
 
       setGhostLyrics(lyrics);
       setSunoTags(tags);
+
+      /**
+       * AND CHECK THE BOXES, which is what this whole tab exists to feed.
+       *
+       * The tags it just wrote name the genre, the subgenre and the mood. They
+       * used to go in the box on screen and stop there, so a song written in
+       * an artist's style arrived in Songwriter and Black Hole Studios with no
+       * taxonomy on it at all. Tagging here is the same work a person does by
+       * hand with the pickers, and it fills only what is still empty.
+       */
+      applySongTags(store, { text: tags });
     } catch (e) {
       setErrorMsg(e.message);
     } finally {
@@ -267,7 +279,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
    */
   const ghost = useRef({});
   ghost.current = {
-    artist, tab, analysis, ghostTopic, ghostLyrics, sunoTags, errorMsg, styleDNA, loadingDNA,
+    artist, tab, analysis, ghostTopic, ghostLyrics, sunoTags, errorMsg, styleDNA, loadingDNA, store,
     handleAnalyze, handleGhostWrite, handleRunChecks, handleSendToSongwriter, extractStyleDNA,
   };
   useEffect(() => registerGhostActions({
@@ -324,7 +336,11 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
       const tags = ghost.current.sunoTags.trim();
       if (!tags) throw new Error('No Suno tags yet. Write in the style first.');
       saveSunoTags(tags, ghost.current.artist.trim());
-      return `saved the Suno tags: ${tags}`;
+      // Saving the tags also TAGS THE SONG. Writing them to storage for the
+      // caption skill to read later, while the pickers sat empty, is exactly
+      // the half-finished step Chris caught: "it's bypassing that process".
+      const tagged = applySongTags(ghost.current.store, { text: tags });
+      return `saved the Suno tags: ${tags}${tagged.said ? `, and ${tagged.said}` : ''}`;
     },
     /**
      * SEND THE STYLE DNA TO THE MATRIX. The DNA is built in the background
