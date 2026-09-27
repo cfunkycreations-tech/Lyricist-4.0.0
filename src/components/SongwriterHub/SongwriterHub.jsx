@@ -8,6 +8,7 @@ import StructureBuilder from './StructureBuilder.jsx';
 import { generateFullSong, fillBlank, generateBridgeVariations, lastGeneration, parseSectionsFromText } from '../../services/AIService.js';
 import { normalizeLineEndings, hasLineStructure, splitProseIntoLines, groupIntoSections } from '../../utils/importLyrics.js';
 import { applySongTags } from '../../services/songTags.js';
+import { notify } from '../../services/dialog.js';
 import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, AlertCircle, Upload, PenLine, GitBranch } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
 // The logo and the founder photo were imported here but never rendered — a
@@ -175,7 +176,7 @@ export default function SongwriterHub({ ghostRiderData }) {
     }
     const fullText = store.getFullText();
     if (!fullText.includes('[blank]')) {
-      alert("No '[blank]' tokens found in the lyrics. Type '[blank]' somewhere and try again.");
+      notify("There's no [blank] in the lyrics yet. Type [blank] where you want a word filled in, then try again.");
       return;
     }
     setIsFillingBlanks(true);

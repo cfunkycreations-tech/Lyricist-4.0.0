@@ -7,6 +7,7 @@ import { writeStylePressure } from '../QuantumLab/quantumFeatures.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { callAI, refineLyrics, analyzeClichés, checkSimilarity, checkThemeConsistency } from '../../services/AIService.js';
 import { Search, Sparkles, BookOpen, AlertTriangle, ShieldCheck, Check, Copy, Save, Heart, Send, TrendingUp, Dna, Grid3x3, Ghost, Tags } from 'lucide-react';
+import { notify } from '../../services/dialog.js';
 import { Icon } from '../common/Glyph.jsx';
 
 const analysisTabs = [
@@ -645,9 +646,9 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                             'lyricistStyleDNAPressure',
                             JSON.stringify({ ...styleDNA, artist: artist.trim(), savedAt: Date.now() })
                           );
-                          alert('Style DNA sent to the Matrix pressure chamber.\nOpen The Matrix → Advanced Studio → 8 Style → Load Style DNA pressure.');
+                          notify('Style DNA sent to The Matrix.\nOpen The Matrix → Advanced Studio → 8 Style → Load Style DNA pressure.', { tone: 'ok' });
                         } catch (e) {
-                          alert('Could not save Style DNA: ' + (e?.message || e));
+                          notify('Could not save Style DNA: ' + (e?.message || e), { tone: 'error' });
                         }
                       }}
                       data-help="Sends this Style DNA into The Matrix as a pressure field (rhythm, density, emotional temp, image motifs) — new lyrics under that physics, never plagiarized bars."

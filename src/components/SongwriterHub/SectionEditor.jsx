@@ -4,11 +4,12 @@ import { countLineSyllables, calculateReadability, calculateVocabRichness, getLa
 import { refineLyrics, generateLineVariation, generateAdLibs, generateSection } from '../../services/AIService.js';
 import { Lock, Unlock, Sparkles, Trash2, RefreshCw, Volume2, Type, ArrowUp, ArrowDown, HelpCircle, Check, Copy, Megaphone } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
+import { notify } from '../../services/dialog.js';
 
 const sectionStyles = {
-  intro: { border: '1px solid rgba(99, 102, 241, 0.45)', bg: 'rgba(99, 102, 241, 0.04)', glow: 'rgba(99, 102, 241, 0.2)', pill: 'pill-purple' },
+  intro: { border: '1px solid rgba(155, 161, 170, 0.45)', bg: 'rgba(155, 161, 170, 0.04)', glow: 'rgba(155, 161, 170, 0.2)', pill: 'pill-purple' },
   verse: { border: '1px solid rgba(155, 161, 170, 0.45)', bg: 'rgba(155, 161, 170, 0.04)', glow: 'rgba(155, 161, 170, 0.2)', pill: 'pill-purple' },
-  'pre-chorus': { border: '1px solid rgba(236, 72, 153, 0.45)', bg: 'rgba(236, 72, 153, 0.04)', glow: 'rgba(236, 72, 153, 0.2)', pill: 'pill-red' },
+  'pre-chorus': { border: '1px solid rgba(196, 64, 72, 0.45)', bg: 'rgba(196, 64, 72, 0.04)', glow: 'rgba(196, 64, 72, 0.2)', pill: 'pill-red' },
   chorus: { border: '1px solid rgba(231, 165, 64, 0.45)', bg: 'rgba(231, 165, 64, 0.04)', glow: 'rgba(231, 165, 64, 0.2)', pill: 'pill-cyan' },
   bridge: { border: '1px solid rgba(155, 161, 170, 0.45)', bg: 'rgba(155, 161, 170, 0.04)', glow: 'rgba(155, 161, 170, 0.2)', pill: 'pill-purple' },
   outro: { border: '1px solid rgba(100, 116, 139, 0.45)', bg: 'rgba(100, 116, 139, 0.04)', glow: 'rgba(100, 116, 139, 0.2)', pill: 'pill-green' },
@@ -85,7 +86,7 @@ export default function SectionEditor({ section, index }) {
 
   const handleRegenerateLine = async (lineIndex) => {
     if (!store.config.openRouterApiKey) {
-      alert('Set your API key in Settings.');
+      notify('Add your OpenRouter key in Settings first.', { tone: 'error' });
       return;
     }
     setLineGeneratingIndex(lineIndex);
@@ -103,7 +104,7 @@ export default function SectionEditor({ section, index }) {
       const val = await generateLineVariation(current, surroundingContext, store);
       replaceLine(lineIndex, val);
     } catch (e) {
-      alert(`Regeneration failed: ${e.message}`);
+      notify(`Regeneration failed: ${e.message}`, { tone: 'error' });
     } finally {
       setLineGeneratingIndex(null);
     }
@@ -111,7 +112,7 @@ export default function SectionEditor({ section, index }) {
 
   const handleRefineLine = async (lineIndex, mode) => {
     if (!store.config.openRouterApiKey) {
-      alert('Set your API key in Settings.');
+      notify('Add your OpenRouter key in Settings first.', { tone: 'error' });
       return;
     }
     setLineGeneratingIndex(lineIndex);
@@ -121,7 +122,7 @@ export default function SectionEditor({ section, index }) {
       const val = await refineLyrics(currentText, mode, store);
       replaceLine(lineIndex, val);
     } catch (e) {
-      alert(e.message);
+      notify(e.message, { tone: 'error' });
     } finally {
       setLineGeneratingIndex(null);
     }
@@ -129,7 +130,7 @@ export default function SectionEditor({ section, index }) {
 
   const handleRegenerateSection = async () => {
     if (!store.config.openRouterApiKey) {
-      alert('Set your API key in Settings.');
+      notify('Add your OpenRouter key in Settings first.', { tone: 'error' });
       return;
     }
     setIsGenerating(true);
@@ -141,7 +142,7 @@ export default function SectionEditor({ section, index }) {
       const newText = await generateSection(section.type, store, priorSections);
       store.updateSectionLyrics(section.id, newText);
     } catch (e) {
-      alert(e.message);
+      notify(e.message, { tone: 'error' });
     } finally {
       setIsGenerating(false);
     }
@@ -149,7 +150,7 @@ export default function SectionEditor({ section, index }) {
 
   const handleRefineSection = async (mode) => {
     if (!store.config.openRouterApiKey) {
-      alert('Set your API key in Settings.');
+      notify('Add your OpenRouter key in Settings first.', { tone: 'error' });
       return;
     }
     setIsGenerating(true);
@@ -179,7 +180,7 @@ export default function SectionEditor({ section, index }) {
       );
       store.setFullLyrics(updated);
     } catch (e) {
-      alert(e.message);
+      notify(e.message, { tone: 'error' });
     } finally {
       setIsGenerating(false);
     }
@@ -187,7 +188,7 @@ export default function SectionEditor({ section, index }) {
 
   const handleGenerateAdLibs = async () => {
     if (!store.config.openRouterApiKey) {
-      alert('Set your API key in Settings.');
+      notify('Add your OpenRouter key in Settings first.', { tone: 'error' });
       return;
     }
     setIsGenerating(true);
@@ -198,7 +199,7 @@ export default function SectionEditor({ section, index }) {
         showAdLibs: true
       });
     } catch (e) {
-      alert(e.message);
+      notify(e.message, { tone: 'error' });
     } finally {
       setIsGenerating(false);
     }

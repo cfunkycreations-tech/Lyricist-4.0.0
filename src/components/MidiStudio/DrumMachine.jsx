@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Play, Square, Trash2, Shuffle, Save, FolderDown, Sliders, Volume2, VolumeX, Headphones, Drum } from 'lucide-react';
+import { askText } from '../../services/dialog.js';
 import { getAudioContext, getMasterBus, resumeAudio } from '../../services/audioEngine.js';
 import {
   KIT, STEPS, DEFAULT_VOICE, DEFAULT_FX,
@@ -237,8 +238,8 @@ export default function DrumMachine() {
     }
   };
 
-  const savePreset = () => {
-    const name = window.prompt('Name this pattern', `Beat ${presets.length + 1}`);
+  const savePreset = async () => {
+    const name = await askText('Name this pattern', `Beat ${presets.length + 1}`, { ok: 'Save' });
     if (name === null) return;
     const next = [...presets, { name: name.trim() || `Beat ${presets.length + 1}`, at: Date.now(), state: snapshotState() }];
     setPresets(next);

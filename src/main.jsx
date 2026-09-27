@@ -8,6 +8,7 @@ import './styles/materials.css';
 import { startWheelControls } from './services/wheelControls.js';
 import { registerPWA } from './web/registerPWA.js';
 import LandscapeSplash from './web/LandscapeSplash.jsx';
+import DialogHost from './components/common/DialogHost.jsx';
 import { initAnalytics } from './services/analytics.js';
 
 // Installable on a phone. No-op inside Electron - see the file.
@@ -66,6 +67,8 @@ try {
             the way. Renders nothing inside the desktop app. */}
         <LandscapeSplash />
         <App />
+        {/* In-app alert / confirm / prompt (services/dialog.js). */}
+        <DialogHost />
       </BootErrorBoundary>
     </React.StrictMode>
   );

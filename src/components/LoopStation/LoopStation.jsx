@@ -5,6 +5,7 @@ import { registerDemoSnapshot } from '../../services/demoSafety.js';
 
 import TabBackground from '../common/TabBackground.jsx';
 import { Grid3x3, Save, Play, Square } from 'lucide-react';
+import { notify } from '../../services/dialog.js';
 // ============================================================
 // RC-Funk 5000 — Live Loop Station (Lyricist 4.2.0)
 // 4-track looper + master FX: Delay, Reverb, Dub FX (toggleable)
@@ -481,7 +482,7 @@ export default function LoopStation() {
                 })
               );
             } catch { /* */ }
-            alert(`Groove sent to The Matrix.\nBPM ${bpm} → ~${targetSyllables} syllables/line.\nOpen The Matrix → Advanced Studio → 7 Loop → Pull groove.`);
+            notify(`Groove sent to The Matrix.\nBPM ${bpm} → ~${targetSyllables} syllables/line.\nOpen The Matrix → Advanced Studio → 7 Loop → Pull groove.`, { tone: 'ok' });
           }}
           className="rc-round-btn rc-round-red"
           data-help="Sends this BPM as a groove target to The Matrix (syllable budget + stress bias). No audio upload — just the pocket."

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FolderPlus, Upload, Trash2, Play, Square, Repeat, Package, Music2, X, Search, Save, FolderDown } from 'lucide-react';
+import { ask, askText } from '../../services/dialog.js';
 import { getAudioContext, getMasterBus, resumeAudio } from '../../services/audioEngine.js';
 import { midiToName } from '../../services/MidiService.js';
 import {
@@ -260,7 +261,7 @@ export default function SampleLibrary({ onUseSample, fxInput }) {
           <button
             className="suno-chip"
             onClick={async () => {
-              const name = window.prompt('Name this pack', `Pack ${packs.length + 1}`);
+              const name = await askText('Name this pack', `Pack ${packs.length + 1}`, { ok: 'Create' });
               if (name === null) return;
               const p = await createPack(name.trim() || 'Untitled Pack');
               await refreshPacks();
@@ -283,11 +284,12 @@ export default function SampleLibrary({ onUseSample, fxInput }) {
             className="suno-chip"
             style={{ color: '#f87171', borderColor: 'rgba(248,113,113,0.4)', background: 'rgba(248,113,113,0.08)' }}
             onClick={async () => {
-              const ok = window.confirm(
+              const ok = await ask(
                 `Remove every sample and pack from the library?\n\n`
                 + `${formatBytes(size)} will be freed. Your original files on disk are untouched, `
                 + `and your recordings are kept in a separate place and are not affected.\n\n`
-                + `This cannot be undone from inside the app.`);
+                + `This cannot be undone from inside the app.`,
+                { ok: 'Remove all', danger: true });
               if (!ok) return;
               const freed = size;                 // the total before we empty it
               const removed = await clearLibrary();
@@ -457,7 +459,7 @@ export default function SampleLibrary({ onUseSample, fxInput }) {
             <span>{samples.length} sample{samples.length === 1 ? '' : 's'} in “{activePack.name}”</span>
             <button
               onClick={async () => {
-                if (!window.confirm(`Delete the pack “${activePack.name}” and all ${samples.length} samples in it?`)) return;
+                if (!(await ask(`Delete the pack “${activePack.name}” and all ${samples.length} samples in it?`, { ok: 'Delete', danger: true }))) return;
                 await deletePack(activePack.id);
                 await refreshPacks();
               }}

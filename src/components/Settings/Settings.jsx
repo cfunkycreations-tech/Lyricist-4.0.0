@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import TabBackground from '../common/TabBackground.jsx';
 import { useLyricStore, DEFAULT_CONFIG } from '../../context/LyricStore.jsx';
 import { Save, RefreshCw, Key, Shield, HelpCircle, Hammer, FolderOpen } from 'lucide-react';
+import { notify, ask } from '../../services/dialog.js';
 import { normalizeApiKey } from '../../services/AIService.js';
 import { IMAGE_MODELS, DEFAULT_IMAGE_MODEL } from '../../services/GeminiService.js';
 import { PRISM_NAMES, ACCENT_PRESETS, accentHex, getPrism } from '../../services/prismTheme.js';
@@ -325,7 +326,7 @@ export default function Settings() {
   }, []);
   const openVoiceFolder = () => {
     window.lyricistAPI?.openVoiceFolder?.().then((r) => {
-      if (r && !r.ok) window.alert(`Could not open the voice folder: ${r.error}`);
+      if (r && !r.ok) notify(`Could not open the voice folder: ${r.error}`, { tone: 'error' });
     }).catch(() => {});
   };
 
@@ -360,8 +361,8 @@ export default function Settings() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleReset = () => {
-    if (window.confirm('Reset settings to default?')) {
+  const handleReset = async () => {
+    if (await ask('Reset every setting to its default? This clears your API key too, so have it handy to paste back in.', { ok: 'Reset', danger: true })) {
       // Reset to the ONE set of defaults the app actually ships with. This used
       // to be a hand-copied second copy of DEFAULT_CONFIG, and it had drifted:
       // it put the writing model back to 'openrouter/free' — a router whose

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Copy, Trash2, Check } from 'lucide-react';
+import { ask } from '../../services/dialog.js';
 
 /* ── Legal pad geometry ──────────────────────────────────────────────
    RULE_H is the single source of truth: the ruled lines are drawn every
@@ -35,9 +36,9 @@ export default function Scratchpad() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleClear = () => {
+  const handleClear = async () => {
     if (!text) return;
-    if (window.confirm('Are you sure you want to clear your scratchpad?')) {
+    if (await ask('Clear everything on the scratchpad?', { ok: 'Clear', danger: true })) {
       setText('');
       setCleared(true);
       setTimeout(() => setCleared(false), 2000);
