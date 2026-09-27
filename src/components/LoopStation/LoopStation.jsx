@@ -4,7 +4,7 @@ import { audioBufferToWav } from '../../utils/wavEncoder.js';
 import { registerDemoSnapshot } from '../../services/demoSafety.js';
 
 import TabBackground from '../common/TabBackground.jsx';
-import { Grid3x3, Save } from 'lucide-react';
+import { Grid3x3, Save, Play, Square } from 'lucide-react';
 // ============================================================
 // RC-Funk 5000 — Live Loop Station (Lyricist 4.2.0)
 // 4-track looper + master FX: Delay, Reverb, Dub FX (toggleable)
@@ -335,34 +335,9 @@ export default function LoopStation() {
   }, [stopAllSources]);
 
   const FxToggle = ({ on, setOn, label, help, amt, setAmt }) => (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 6,
-        padding: '10px 12px',
-        borderRadius: 12,
-        border: on ? '1px solid rgba(231,165,64,0.55)' : '1px solid rgba(155,161,170,0.3)',
-        background: on ? 'rgba(26, 29, 34, 0.75)' : 'rgba(11,13,16,0.65)',
-        minWidth: 140,
-        boxShadow: on ? '0 0 0 1px rgba(231,165,64,0.2)' : 'none',
-      }}
-      data-help={help}
-    >
-      <button
-        type="button"
-        onClick={() => setOn((v) => !v)}
-        style={{
-          border: 'none',
-          background: on ? 'linear-gradient(135deg,#e7a540,#9ba1aa)' : 'rgba(26,29,34,0.8)',
-          color: '#fff',
-          fontWeight: 700,
-          fontSize: '0.78rem',
-          padding: '8px 10px',
-          borderRadius: 8,
-          cursor: 'pointer',
-        }}
-      >
+    <div className="rc-plate rc-fx" data-help={help}>
+      <button type="button" onClick={() => setOn((v) => !v)} className={`rc-key${on ? ' on' : ''}`} aria-pressed={on}>
+        <span className="rc-led" />
         {label}: {on ? 'ON' : 'OFF'}
       </button>
       <label style={{ fontSize: '0.65rem', color: 'rgba(230,232,235,0.7)', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -385,7 +360,7 @@ export default function LoopStation() {
     <div className="tab-video-shell">
       <TabBackground name="loopstation" />
       <div className="tab-video-content">
-    <div className="rc-funk-root" style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', overflow: 'auto', background: 'rgba(3,5,8,0.5)', padding: '20px 24px', color: '#e6e8eb' }}>
+    <div className="rc-funk-root" style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', overflow: 'auto', padding: '20px 24px', color: '#e6e8eb' }}>
       {/* No backdrop sheet here. The root above is already opaque (#030508), so
           the app-wide street scene never shows through at any scroll position.
           There used to be a position:fixed sheet doing this job, and fixed means
@@ -393,95 +368,83 @@ export default function LoopStation() {
           medallion and the signature the whole time this tab was open. */}
       <div style={{ position: 'relative', zIndex: 1 }}>
       <style>{`
+        /* RC-Funk 5000 in Lyricist Pro's materials (styles/materials.css): black
+           anodized keys on brushed black nickel. The old candy colours live on as
+           each key's LED ring, so green still means go and red still means gone. */
         .rc-round-btn {
-          width: 88px;
-          height: 88px;
-          border-radius: 50%;
-          border: 3px solid transparent;
-          display: inline-flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 4px;
-          cursor: pointer;
-          font-weight: 800;
-          transition: transform 0.12s, box-shadow 0.15s, filter 0.15s;
-          flex-shrink: 0;
-          padding: 0;
+          --led: 150 70% 50%;
+          width: 84px; height: 84px; border-radius: 50%; padding: 0; flex-shrink: 0;
+          display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+          cursor: pointer; color: #E6E8EB; font-family: var(--faf-font);
+          background: var(--mat-key); background-color: #202226;
+          border: 1px solid #000;
+          box-shadow:
+            0 0 0 3px #0b0c0d,
+            0 0 0 4px hsl(var(--led) / 0.55),
+            0 0 14px 1px hsl(var(--led) / 0.35),
+            inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -3px 6px rgba(0,0,0,0.45),
+            0 6px 12px rgba(0,0,0,0.6);
+          transition: transform 0.08s ease, box-shadow 0.15s ease, filter 0.15s ease;
         }
-        .rc-round-btn:hover { transform: scale(1.06); }
-        .rc-round-btn:active { transform: scale(0.96); }
-        .rc-round-icon { font-size: 1.45rem; line-height: 1; }
-        .rc-round-label { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
-        /* 1 — GREEN (Play) — not red */
-        .rc-round-green {
-          background: radial-gradient(circle at 35% 30%, #86efac 0%, #22c55e 45%, #15803d 100%);
-          border-color: #4ade80;
-          color: #052e16;
-          box-shadow: 0 0 0 2px rgba(34,197,94,0.35), 0 0 28px rgba(34,197,94,0.55), inset 0 2px 0 rgba(255,255,255,0.35);
-          text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+        .rc-round-btn:hover:not(:disabled) { filter: brightness(1.12); box-shadow: 0 0 0 3px #0b0c0d, 0 0 0 4px hsl(var(--led) / 0.9), 0 0 20px 2px hsl(var(--led) / 0.55), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -3px 6px rgba(0,0,0,0.45), 0 6px 12px rgba(0,0,0,0.6); }
+        .rc-round-btn:active:not(:disabled) { transform: translateY(1px); }
+        .rc-round-btn:disabled { cursor: not-allowed; }
+        .rc-round-icon { line-height: 1; display: flex; }
+        .rc-round-btn svg.lucide { color: hsl(var(--led) / 1); filter: drop-shadow(0 -1px 0 rgba(0,0,0,.85)) drop-shadow(0 0 2px hsl(var(--led))) drop-shadow(0 0 7px hsl(var(--led) / .6)); }
+        .rc-round-label { font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; }
+        .rc-round-green { --led: 142 65% 52%; }
+        .rc-round-yellow { --led: 36 78% 58%; }
+        .rc-round-red { --led: 0 78% 60%; }
+        .rc-round-cyan { --led: 0 60% 58%; }
+
+        .rc-key, .rc-track-btn {
+          --led: 36 78% 58%;
+          display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+          min-width: 76px; height: 34px; padding: 0 14px; border-radius: 4px;
+          font-family: var(--faf-font); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
+          color: #E6E8EB; cursor: pointer;
+          background: var(--mat-key); background-color: #202226;
+          border: 1px solid #000;
+          box-shadow: var(--mat-key-shadow);
+          transition: transform 0.08s ease, box-shadow 0.12s ease;
         }
-        /* 2 — ELECTRIC BLUE (Stop) — no yellow */
-        .rc-round-yellow {
-          background: radial-gradient(circle at 35% 30%, #e6e8eb 0%, #e7a540 45%, #e7a540 100%);
-          border-color: #e7a540;
-          color: #042f2e;
-          box-shadow: 0 0 0 2px rgba(231,165,64,0.45), 0 0 28px rgba(231,165,64,0.55), inset 0 2px 0 rgba(255,255,255,0.4);
-          text-shadow: 0 1px 0 rgba(255,255,255,0.35);
-        }
-        /* 3 — RED (Quantum / third) */
-        .rc-round-red {
-          background: radial-gradient(circle at 35% 30%, #fca5a5 0%, #ef4444 45%, #b91c1c 100%);
-        }
-        .rc-round-cyan {
-          background: radial-gradient(circle at 35% 30%, #e6e8eb 0%, #e7a540 45%, #1a1d22 100%);
-          border-color: #f87171;
-          color: #fff;
-          box-shadow: 0 0 0 2px rgba(239,68,68,0.4), 0 0 28px rgba(239,68,68,0.5), inset 0 2px 0 rgba(255,255,255,0.25);
-        }
-        .rc-track-btn {
-          min-width: 72px;
-          height: 40px;
-          padding: 0 16px;
-          border-radius: 999px;
-          border: 2px solid transparent;
-          font-weight: 700;
-          font-size: 0.78rem;
-          cursor: pointer;
-          transition: transform 0.1s, box-shadow 0.12s;
-        }
-        .rc-track-btn:hover:not(:disabled) { transform: scale(1.04); }
+        .rc-key:hover:not(:disabled), .rc-track-btn:hover:not(:disabled) { background: var(--mat-key-hover); color: #fff; }
+        .rc-key:active:not(:disabled), .rc-track-btn:active:not(:disabled), .rc-key.on { transform: translateY(1px); box-shadow: var(--mat-key-pressed); }
         .rc-track-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        .rc-track-green {
-          background: linear-gradient(180deg, #4ade80, #16a34a);
-          border-color: #86efac;
-          color: #052e16;
-          box-shadow: 0 0 14px rgba(34,197,94,0.4);
+        .rc-led, .rc-track-btn::before {
+          content: ''; width: 6px; height: 6px; border-radius: 50%; flex: none;
+          background: hsl(var(--led) / 0.25); box-shadow: inset 0 0 1px #000;
         }
-        .rc-track-yellow {
-          background: linear-gradient(180deg, #e7a540, #e7a540);
-          border-color: #e7a540;
-          color: #042f2e;
-          box-shadow: 0 0 14px rgba(231,165,64,0.45);
+        .rc-key.on .rc-led, .rc-track-btn:hover:not(:disabled)::before, .rc-track-btn.lit::before {
+          background: hsl(var(--led)); box-shadow: 0 0 6px hsl(var(--led)), 0 0 12px hsl(var(--led) / 0.5);
         }
-        .rc-track-red {
-          background: linear-gradient(180deg, #f87171, #dc2626);
-          border-color: #fca5a5;
-          color: #fff;
-          box-shadow: 0 0 14px rgba(239,68,68,0.4);
+        .rc-key.on { color: var(--amber-hot); }
+        .rc-track-green { --led: 0 78% 58%; }
+        .rc-track-yellow { --led: 36 78% 58%; }
+        .rc-track-red { --led: 0 0% 70%; }
+
+        .rc-plate {
+          background: var(--mat-panel); background-color: #1d1e21;
+          border: 1px solid #000; border-radius: 6px;
+          box-shadow: var(--mat-bevel), var(--mat-drop);
         }
+        .rc-fx { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; min-width: 150px; }
+        .rc-track.recording { box-shadow: var(--mat-bevel), inset 3px 0 0 hsl(0 78% 58%), 0 0 16px -6px hsl(0 78% 58% / 0.8); }
+        .rc-clip-led { width: 8px; height: 36px; border-radius: 2px; background: #0b0c0d; box-shadow: inset 0 1px 3px #000, 0 1px 0 rgba(255,255,255,0.06); }
+        .rc-clip-led.has { background: linear-gradient(0deg, rgba(var(--accent-rgb),0.5), var(--amber-hot)); box-shadow: 0 0 8px rgba(var(--accent-rgb),0.6); }
+        .rc-clip-led.muted { background: #3a3c40; box-shadow: inset 0 1px 3px #000; }
       `}</style>
-      <h1 style={{ fontFamily: 'var(--faf-font)', fontWeight: 700, fontSize: 'clamp(1.6rem, 3vw, 2.4rem)', margin: '0 0 6px', background: 'linear-gradient(90deg,#e7a540,#9ba1aa,#f5f3ff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+      <h1 style={{ fontFamily: 'var(--faf-font)', fontWeight: 400, fontSize: 'clamp(1.6rem, 3vw, 2.4rem)', margin: '0 0 6px', color: '#fff', letterSpacing: '0.06em' }}>
         RC-FUNK 5000
       </h1>
-      <p style={{ color: '#a5b4fc', letterSpacing: '0.12em', textTransform: 'uppercase', fontSize: '0.75rem', margin: '0 0 16px' }} data-help="Live multi-track looper with master Delay, Reverb, and Dub FX. Record phrases, stack up to 4 tracks, polish with FX.">
+      <p style={{ color: 'var(--amber-hot)', letterSpacing: '0.18em', textTransform: 'uppercase', fontSize: '0.7rem', margin: '0 0 22px' }} data-help="Live multi-track looper with master Delay, Reverb, and Dub FX. Record phrases, stack up to 4 tracks, polish with FX.">
         Live Loop Station · 4 tracks · Delay · Reverb · Dub FX · offline
       </p>
 
       {/* Transport — big round buttons: 1 green · 2 yellow · 3 red */}
       <div
         className="rc-transport"
-        style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 18, alignItems: 'center' }}
+        style={{ display: 'flex', flexWrap: 'wrap', gap: 22, marginBottom: 22, alignItems: 'center', paddingLeft: 4 }}
       >
         <button
           type="button"
@@ -490,7 +453,7 @@ export default function LoopStation() {
           className="rc-round-btn rc-round-green"
           data-help="Start all recorded tracks looping through the FX bus."
         >
-          <span className="rc-round-icon">▶</span>
+          <span className="rc-round-icon"><Play size={20} strokeWidth={1.8} /></span>
           <span className="rc-round-label">Play</span>
         </button>
         <button
@@ -499,7 +462,7 @@ export default function LoopStation() {
           className="rc-round-btn rc-round-yellow"
           data-help="Stop every loop."
         >
-          <span className="rc-round-icon">■</span>
+          <span className="rc-round-icon"><Square size={18} strokeWidth={1.8} /></span>
           <span className="rc-round-label">Stop</span>
         </button>
         <button
@@ -523,7 +486,7 @@ export default function LoopStation() {
           className="rc-round-btn rc-round-red"
           data-help="Sends this BPM as a groove target to The Matrix (syllable budget + stress bias). No audio upload — just the pocket."
         >
-          <span className="rc-round-icon"><Grid3x3 size={16} strokeWidth={1.6} /></span>
+          <span className="rc-round-icon"><Grid3x3 size={18} strokeWidth={1.8} /></span>
           <span className="rc-round-label">Quantum</span>
         </button>
         <button
@@ -533,7 +496,7 @@ export default function LoopStation() {
           data-help="Save your loops to Documents\Lyricist Recordings as WAVs — a bounced mix of everything plus each track on its own. Loops otherwise only live in memory and vanish when you leave the tab."
           style={{ opacity: tracks.some((t) => t.buffer) ? 1 : 0.4, cursor: tracks.some((t) => t.buffer) ? 'pointer' : 'not-allowed' }}
         >
-          <span className="rc-round-icon"><Save size={16} strokeWidth={1.6} /></span>
+          <span className="rc-round-icon"><Save size={18} strokeWidth={1.8} /></span>
           <span className="rc-round-label">{saving ? 'Saving…' : 'Save'}</span>
         </button>
         <label style={{ fontSize: '0.8rem', color: 'rgba(230,232,235,0.75)', marginLeft: 8 }} data-help="Reference BPM for you — loops are free-time recordings. Also used for the Matrix groove handshake.">
@@ -579,36 +542,33 @@ export default function LoopStation() {
         {tracks.map((t) => (
           <div
             key={t.id}
+            className={`rc-plate rc-track${recordingId === t.id ? ' recording' : ''}`}
             style={{
               display: 'grid',
               gridTemplateColumns: '100px 1fr auto',
               gap: 12,
               alignItems: 'center',
               padding: '12px 14px',
-              borderRadius: 12,
-              border: recordingId === t.id ? '1px solid #e7a540' : '1px solid rgba(155,161,170,0.35)',
-              background: 'rgba(11,13,16,0.75)',
-              boxShadow: recordingId === t.id ? '0 0 0 1px rgba(231,165,64,0.35)' : 'none',
             }}
             data-help="Each track holds one loop. Record, then Play All to stack. Mute and volume are per track."
           >
             <div>
-              <div style={{ fontFamily: 'var(--faf-font)', fontSize: '0.85rem', color: '#a5b4fc' }}>{t.name}</div>
+              <div style={{ fontFamily: 'var(--faf-font)', fontSize: '0.85rem', color: '#fff', letterSpacing: '0.04em' }}>{t.name}</div>
               <div style={{ fontSize: '0.65rem', color: 'rgba(155,161,170,0.6)' }}>
                 {t.hasClip ? `${t.lengthSec.toFixed(1)}s loop` : 'empty'}
               </div>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
               {recordingId === t.id ? (
-                <button type="button" onClick={stopRecord} className="rc-track-btn rc-track-green" data-help="Stop recording and lock this loop.">
-                  ■ Stop Rec
+                <button type="button" onClick={stopRecord} className="rc-track-btn rc-track-green lit" data-help="Stop recording and lock this loop.">
+                  Stop Rec
                 </button>
               ) : (
                 <button type="button" onClick={() => startRecord(t.id)} className="rc-track-btn rc-track-green" disabled={recordingId != null} data-demo={t.id === 0 ? 'rc-record' : undefined} data-help="Record from your mic onto this track.">
-                  ● Record
+                  Record
                 </button>
               )}
-              <button type="button" onClick={() => toggleMute(t.id)} className="rc-track-btn rc-track-yellow" data-help="Mute/unmute this track.">
+              <button type="button" onClick={() => toggleMute(t.id)} className={`rc-track-btn rc-track-yellow${t.muted ? ' lit' : ''}`} aria-pressed={t.muted} data-help="Mute/unmute this track.">
                 {t.muted ? 'Unmute' : 'Mute'}
               </button>
               <button type="button" onClick={() => clearTrack(t.id)} className="rc-track-btn rc-track-red" data-help="Delete this track's loop.">
@@ -619,7 +579,7 @@ export default function LoopStation() {
                 <input type="range" min={0} max={1} step={0.01} value={t.gain} onChange={(e) => setGain(t.id, Number(e.target.value))} style={{ width: 100 }} />
               </label>
             </div>
-            <div style={{ width: 12, height: 40, borderRadius: 4, background: t.hasClip ? (t.muted ? '#555' : 'linear-gradient(180deg,#e7a540,#9ba1aa)') : '#1b1d20' }} title={t.hasClip ? 'Has loop' : 'Empty'} />
+            <div className={`rc-clip-led${t.hasClip ? (t.muted ? ' muted' : ' has') : ''}`} title={t.hasClip ? 'Has loop' : 'Empty'} />
           </div>
         ))}
       </div>

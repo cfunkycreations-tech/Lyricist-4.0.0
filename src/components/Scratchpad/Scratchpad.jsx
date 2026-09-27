@@ -46,14 +46,12 @@ export default function Scratchpad() {
 
   const linesCount = text.split('\n').filter(l => l.trim()).length;
 
-  const padBtn = (accent, active) => ({
+  // Anodized keys on the clamp (styles/materials.css .btn-neon-cyan); only the lit state is set here.
+  const padBtn = (active) => ({
     padding: '6px 14px',
-    fontSize: '0.75rem',
-    fontWeight: 600,
-    borderRadius: 7,
-    border: `1px solid ${accent}`,
-    background: 'rgba(0,0,0,0.18)',
-    color: active ? '#7dffb0' : 'rgba(255,238,190,0.82)',
+    fontSize: '0.72rem',
+    borderRadius: 4,
+    color: active ? 'var(--amber-hot)' : undefined,
     cursor: text ? 'pointer' : 'not-allowed',
     opacity: text ? 1 : 0.4,
     fontFamily: 'var(--faf-font)',
@@ -79,7 +77,7 @@ export default function Scratchpad() {
         background: PAPER
       }}
     >
-      {/* ── Glued binding strip across the top of the pad ── */}
+      {/* ── The clipboard clamp across the top of the pad: brushed black nickel ── */}
       <div
         style={{
           flexShrink: 0,
@@ -89,9 +87,9 @@ export default function Scratchpad() {
           gap: 16,
           padding: '0 22px',
           height: 58,
-          background: 'linear-gradient(180deg, #2e2208 0%, #4d3a11 55%, #6b5216 100%)',
-          borderBottom: '2px solid rgba(0,0,0,0.45)',
-          boxShadow: '0 6px 14px rgba(0,0,0,0.38)',
+          background: 'var(--mat-brush), linear-gradient(180deg, #34363b 0%, #202125 60%, #151619 100%)',
+          borderBottom: '1px solid #000',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.6), 0 6px 14px rgba(0,0,0,0.45)',
           position: 'relative',
           zIndex: 2
         }}
@@ -101,10 +99,10 @@ export default function Scratchpad() {
             style={{
               fontFamily: 'var(--faf-font)',
               fontSize: '1.85rem',
-              fontWeight: 700,
+              fontWeight: 400,
               margin: 0,
-              color: '#ffe9a8',
-              letterSpacing: '0.01em',
+              color: '#fff',
+              letterSpacing: '0.04em',
               textShadow: '0 2px 4px rgba(0,0,0,0.5)',
               whiteSpace: 'nowrap'
             }}
@@ -115,7 +113,7 @@ export default function Scratchpad() {
           <p
             style={{
               fontSize: '0.72rem',
-              color: 'rgba(255,226,160,0.5)',
+              color: '#9BA1AA',
               margin: 0,
               letterSpacing: '0.05em',
               fontFamily: 'var(--faf-font)',
@@ -133,7 +131,8 @@ export default function Scratchpad() {
             onClick={handleCopy}
             disabled={!text}
             data-help="Copies everything in the notepad so you can paste it somewhere else."
-            style={padBtn('rgba(255,214,120,0.38)', copied)}
+            className="btn-neon-cyan"
+            style={padBtn(copied)}
           >
             {copied ? <Check size={12} /> : <Copy size={12} />}
             {copied ? 'Copied!' : 'Copy All'}
@@ -143,7 +142,8 @@ export default function Scratchpad() {
             onClick={handleClear}
             disabled={!text}
             data-help="Erases everything in the notepad. It asks you to confirm first so you don't wipe it by accident."
-            style={padBtn('rgba(239,68,68,0.42)', cleared)}
+            className="btn-neon-cyan"
+            style={padBtn(cleared)}
           >
             <Trash2 size={12} />
             {cleared ? 'Cleared' : 'Clear'}
@@ -154,6 +154,7 @@ export default function Scratchpad() {
       {/* ── The page itself: full bleed, edge to edge ── */}
       <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex' }}>
         <textarea
+          className="keep-face"
           value={text}
           onChange={(e) => setText(e.target.value)}
           data-help="Your big blank writing space. Just click in and type — it works like any notes app, and it saves as you go."

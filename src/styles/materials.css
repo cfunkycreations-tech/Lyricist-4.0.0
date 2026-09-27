@@ -134,9 +134,10 @@ button[style*="linear-gradient"]:not(.pc):active:not(:disabled),
   box-shadow: var(--mat-key-shadow), inset 0 0 0 1px rgba(var(--accent-rgb), 0.55), 0 0 12px -3px rgba(var(--accent-rgb), 0.6) !important;
 }
 
-/* ── wells: fields sit recessed into the metal ── */
-.input-cosmic, textarea, select,
-input[type="text"], input[type="search"], input[type="number"], input[type="url"], input[type="email"], input[type="password"], input:not([type]) {
+/* ── wells: fields sit recessed into the metal ──
+   .keep-face opts a field out: the Scratchpad's legal pad is paper on purpose. */
+:is(.input-cosmic, textarea, select,
+input[type="text"], input[type="search"], input[type="number"], input[type="url"], input[type="email"], input[type="password"], input:not([type])):not(.keep-face) {
   background: var(--mat-well) !important;
   background-color: #0b0c0d !important;
   border: 1px solid rgba(0, 0, 0, 0.9) !important;
@@ -144,7 +145,7 @@ input[type="text"], input[type="search"], input[type="number"], input[type="url"
   color: var(--faf-text) !important;
   box-shadow: var(--mat-well-shadow) !important;
 }
-.input-cosmic:focus, textarea:focus, select:focus, input:focus:not([type="range"]):not([type="checkbox"]):not([type="radio"]) {
+:is(.input-cosmic, textarea, select, input:not([type="range"]):not([type="checkbox"]):not([type="radio"])):focus:not(.keep-face) {
   outline: none;
   border-color: rgba(0, 0, 0, 0.9) !important;
   box-shadow: var(--mat-well-shadow), 0 0 0 1px rgba(var(--accent-rgb), 0.75), 0 0 10px -2px rgba(var(--accent-rgb), 0.5) !important;
@@ -223,3 +224,64 @@ button:disabled svg.lucide { filter: drop-shadow(0 -1px 0 rgba(0, 0, 0, 0.85)); 
 @media (prefers-reduced-motion: reduce) {
   .wheel-readout, svg.lucide { transition: none; }
 }
+
+/* ══ THE PAD HEADER ══════════════════════════════════════════════════════════
+   The pads stay coloured glass with the idle sweep (Chris's glass blocks,
+   PushHeader.css). Every other block in the wall (group tabs, the tab cells,
+   Visuals / Next / Pads, the instrument's knobs and buttons, and the four side
+   cells) is a black anodized key. Its colour survives as an LED strip along the
+   bottom edge, dim at rest and lit when the key is on. */
+.pc:not(.pc-pad):not(.pc-screen):not(.pc-sweep):not(.pc-empty),
+.push-side > button, .push-side > div {
+  font-family: var(--faf-font) !important;
+  letter-spacing: 0.06em;
+  color: #E6E8EB;
+}
+.pc:not(.pc-pad):not(.pc-screen):not(.pc-sweep):not(.pc-empty)::after {
+  background: var(--mat-key);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -2px 0 rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.6);
+}
+.pc:not(.pc-pad):not(.pc-screen):not(.pc-sweep):not(.pc-empty)::before {
+  inset: auto 9px 5px 9px; height: 2px; border-radius: 1px; z-index: 1;
+  background: hsl(var(--hue) var(--sat) 60%);
+  opacity: 0.35;
+}
+.pc:not(.pc-pad):not(.pc-screen):not(.pc-sweep):not(.pc-empty).is-on::before,
+.pc:not(.pc-pad):not(.pc-screen):not(.pc-sweep):not(.pc-empty).is-open::before {
+  opacity: 1;
+  box-shadow: 0 0 6px hsl(var(--hue) var(--sat) 60%), 0 0 12px hsl(var(--hue) var(--sat) 55% / 0.6);
+}
+button.pc:not(.pc-pad):not(.pc-sweep):not(.pc-empty):hover:not(:disabled)::after { background: var(--mat-key-hover); }
+button.pc:not(.pc-pad):not(.pc-sweep):not(.pc-empty):active:not(:disabled)::after { box-shadow: var(--mat-key-pressed); }
+.pc.is-on:not(.pc-pad), .pc-group.is-on, .pc-tab.is-on, .pc-ctl.is-on, .pc-btn.is-on { box-shadow: none; }
+.pc.is-on:not(.pc-pad) .pc-name, .pc-group.is-open .pc-name { color: #fff; }
+.pc-group .pc-sub, .pc-tab .pc-sub { color: var(--amber-hot); letter-spacing: 0.02em; }
+
+.push-side > button, .push-side > div {
+  background: var(--mat-key) !important;
+  background-color: #202226 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -2px 0 rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.6) !important;
+  text-shadow: none !important;
+  transition: transform 0.08s ease;
+}
+.push-side > button:hover { background: var(--mat-key-hover) !important; }
+.push-side > button:active { transform: translateY(1px); box-shadow: var(--mat-key-pressed) !important; }
+
+/* the instrument's little screen: an amber LCD behind smoked glass */
+.pc-screen::after { background: linear-gradient(180deg, rgba(8, 6, 2, 0.94), rgba(3, 2, 1, 0.96)); box-shadow: inset 0 2px 6px #000, inset 0 0 0 1px #000; }
+.pc-screen-top { color: rgba(var(--accent-rgb), 0.75); }
+.pc-screen-main { color: var(--amber-hot); text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.6) !important; }
+.pc-screen-sub { color: #8a7a5c; }
+
+/* ── Ask the Ghost: an anodized key with a pilot light, not a green pill ── */
+.gha-launch {
+  background: var(--mat-key) !important; background-color: #202226 !important;
+  border: 1px solid #000 !important; border-radius: 6px !important;
+  color: #E6E8EB !important; font-family: var(--faf-font) !important; letter-spacing: 0.06em;
+  box-shadow: var(--mat-key-shadow), inset 0 0 0 1px rgba(var(--accent-rgb), 0.35), 0 10px 26px -8px rgba(0, 0, 0, 0.9) !important;
+  transition: transform 0.08s ease;
+}
+.gha-launch:hover { background: var(--mat-key-hover) !important; box-shadow: var(--mat-key-shadow), inset 0 0 0 1px rgba(var(--accent-rgb), 0.7), 0 0 16px -4px rgba(var(--accent-rgb), 0.55), 0 10px 26px -8px rgba(0, 0, 0, 0.9) !important; }
+.gha-launch:active { transform: translateY(1px); }
+.gha-launch.is-open { color: var(--amber-hot) !important; }
+.gha-launch .gha-face svg.lucide { color: var(--amber-hot); filter: drop-shadow(0 -1px 0 rgba(0, 0, 0, 0.85)) drop-shadow(0 0 2px rgba(var(--accent-rgb), 1)) drop-shadow(0 0 7px rgba(var(--accent-rgb), 0.55)); }
