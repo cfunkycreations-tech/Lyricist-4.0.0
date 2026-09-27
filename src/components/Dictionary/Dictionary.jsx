@@ -105,6 +105,7 @@ export default function Dictionary() {
         />
         <button
           onClick={() => lookUp()}
+          aria-busy={loading}
           disabled={loading || !word.trim()}
           className="btn-neon-purple"
           data-help="Looks up the meaning of your word in the chosen language. Free — no AI key needed."

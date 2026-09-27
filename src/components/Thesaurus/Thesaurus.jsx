@@ -121,6 +121,7 @@ export default function Thesaurus() {
         />
         <button
           onClick={lookUp}
+          aria-busy={loading}
           disabled={loading || !word.trim()}
           className="btn-neon-purple"
           data-help="Looks up your word in an open word dictionary and shows words that mean the same, the opposite, and related ideas. Runs without an API key."

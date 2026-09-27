@@ -344,3 +344,28 @@ button.pc:not(.pc-pad):not(.pc-sweep):not(.pc-empty):active:not(:disabled)::afte
 .gha-launch:active { transform: translateY(1px); }
 .gha-launch.is-open { color: var(--amber-hot) !important; }
 .gha-launch .gha-face svg.lucide { color: var(--amber-hot); filter: drop-shadow(0 -1px 0 rgba(0, 0, 0, 0.85)) drop-shadow(0 0 2px rgba(var(--accent-rgb), 1)) drop-shadow(0 0 7px rgba(var(--accent-rgb), 0.55)); }
+
+/* ══ BUSY KEYS ═══════════════════════════════════════════════════════════════
+   A button that has started a job (aria-busy) is not a dead key: it stays at
+   full strength, its legend and icon go amber, and a lit bar runs along the
+   bottom edge like an LED scanner until the job lands. */
+button[aria-busy="true"] {
+  position: relative; overflow: hidden;
+  opacity: 1 !important; cursor: progress !important;
+  color: var(--amber-hot) !important;
+}
+button[aria-busy="true"] svg.lucide {
+  opacity: 1; color: var(--amber-hot);
+  filter: drop-shadow(0 -1px 0 rgba(0, 0, 0, 0.85)) drop-shadow(0 0 2px rgba(var(--accent-rgb), 1)) drop-shadow(0 0 7px rgba(var(--accent-rgb), 0.55));
+}
+button[aria-busy="true"]::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; pointer-events: none;
+  background: linear-gradient(90deg, transparent 0%, rgba(var(--accent-rgb), .15) 30%, var(--amber-hot) 50%, rgba(var(--accent-rgb), .15) 70%, transparent 100%) no-repeat;
+  background-size: 40% 100%;
+  box-shadow: 0 0 8px rgba(var(--accent-rgb), .6);
+  animation: busy-scan 1.3s ease-in-out infinite alternate;
+}
+@keyframes busy-scan { from { background-position: 0% 0; } to { background-position: 100% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  button[aria-busy="true"]::after { animation: none; background-size: 100% 100%; }
+}

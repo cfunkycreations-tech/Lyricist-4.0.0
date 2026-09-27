@@ -461,6 +461,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
 
         <button
           onClick={handleAnalyze}
+          aria-busy={loadingAnalysis}
           disabled={loadingAnalysis || !artist.trim()}
           className="btn-neon-purple"
           data-help="Studies the artist you named and writes up a plain-English breakdown of how they write — their style, rhythm, and themes. (Needs your AI key from Settings.)"
@@ -701,6 +702,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                 />
                 <button
                   onClick={handleGhostWrite}
+                  aria-busy={loadingGhost}
                   disabled={loadingGhost}
                   className="btn-neon-cyan"
                   data-demo="gr-write"
@@ -824,6 +826,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
 
                     <button
                       onClick={handleRunChecks}
+                      aria-busy={loadingChecks}
                       disabled={loadingChecks}
                       className="btn-neon-cyan"
                       data-help="Double-checks the lyrics: scans for clichés (tired, overused phrases), flags anything that sounds too close to a famous song, and confirms the lines stay on topic. Helps keep your song fresh and original."

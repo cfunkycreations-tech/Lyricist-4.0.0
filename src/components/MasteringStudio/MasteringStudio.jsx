@@ -314,7 +314,7 @@ export default function MasteringStudio() {
               <button onClick={() => coverFileRef.current?.click()} className="suno-chip" style={{ flex: 1, justifyContent: 'center' }}>
                 <ImageIcon size={12} /> Upload
               </button>
-              <button onClick={generateCover} disabled={coverLoading} className="suno-chip suno-chip--go" style={{ flex: 1, justifyContent: 'center' }}>
+              <button onClick={generateCover} aria-busy={coverLoading} disabled={coverLoading} className="suno-chip suno-chip--go" style={{ flex: 1, justifyContent: 'center' }}>
                 {coverLoading ? <RefreshCw size={12} className="pulse-glow" /> : <Sparkles size={12} />} AI Cover
               </button>
             </div>
@@ -352,6 +352,7 @@ export default function MasteringStudio() {
 
           <button
             onClick={masterAll}
+            aria-busy={busyAny}
             disabled={!tracks.length || busyAny}
             className="btn-neon-purple"
             data-help="Runs every track through the mastering chain. Each track shows before/after loudness when it's done."

@@ -169,6 +169,7 @@ function ModelSelector({ value, onChange }) {
               <button
                 type="button"
                 onClick={() => loadModels(true)}
+                aria-busy={loading}
                 disabled={loading}
                 title="Re-download the latest model list from OpenRouter"
                 style={{

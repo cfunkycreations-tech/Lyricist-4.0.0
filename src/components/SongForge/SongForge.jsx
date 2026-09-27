@@ -523,6 +523,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
 
               <button
                 onClick={handleForgeSongFirst}
+                aria-busy={loading}
                 disabled={busy || !ready}
                 className="btn-neon-cyan"
                 data-demo="sf-forge"
@@ -551,6 +552,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                 />
                 <button
                   onClick={handleGenerateSeedImage}
+                  aria-busy={seedLoading}
                   disabled={busy || !ready || !seedPrompt.trim()}
                   className="btn-neon-purple"
                   style={{ marginTop: 8, width: '100%', padding: '9px', borderRadius: 8, border: 'none', color: '#fff', fontSize: '0.78rem', fontWeight: 700, cursor: busy || !ready ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
@@ -591,6 +593,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                   </div>
                   <button
                     onClick={handleWriteLyricsFromImage}
+                    aria-busy={loading}
                     disabled={busy || !ready}
                     className="btn-neon-cyan"
                     style={{ width: '100%', padding: '11px', borderRadius: 8, border: 'none', color: '#fff', fontSize: '0.84rem', fontWeight: 700, cursor: busy || !ready ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
@@ -672,6 +675,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                   </button>
                   <button
                     onClick={handleRemixArt}
+                    aria-busy={remixLoading}
                     disabled={remixLoading}
                     data-help="Re-rolls just the cover art with a fresh generation, keeping the same lyrics. Uses the current title and style override."
                     style={{ border: '1px solid rgba(155,161,170,0.35)', background: 'rgba(155,161,170,0.1)', color: '#9ba1aa', padding: '8px 16px', borderRadius: 8, fontSize: '0.76rem', fontWeight: 700, cursor: remixLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}

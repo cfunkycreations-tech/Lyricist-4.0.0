@@ -655,6 +655,7 @@ export default function SongwriterHub({ ghostRiderData }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
           <button
             onClick={handleGenerate}
+            aria-busy={isGenerating}
             disabled={isGenerating}
             data-demo="sw-generate"
             className="btn-neon-purple pulse-glow"

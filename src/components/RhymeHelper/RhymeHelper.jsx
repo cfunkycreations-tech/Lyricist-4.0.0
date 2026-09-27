@@ -210,6 +210,7 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
           />
           <button
             onClick={fetchLocalRhymes}
+            aria-busy={loadingLocal}
             disabled={loadingLocal || !word.trim()}
             className="btn-neon-purple"
             data-help="Instantly look up a big list of real rhyming words from a free rhyming dictionary. No AI key needed for this one — it's always free and fast."
@@ -228,6 +229,7 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
           </button>
           <button
             onClick={fetchAISuggestions}
+            aria-busy={loadingAI}
             disabled={loadingAI || !word.trim()}
             className="btn-neon-cyan"
             data-help="Asks the AI for clever, creative rhymes — including multi-word phrases and near-rhymes that a plain dictionary won't show. (Needs your AI key from Settings.)"

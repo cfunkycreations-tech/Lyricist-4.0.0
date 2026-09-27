@@ -1139,6 +1139,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         type="button"
         className="ql-quickpath"
         onClick={autoCraftVerse}
+        aria-busy={autoBusy}
         disabled={autoBusy || busy || running}
         data-demo="matrix-autocraft"
         data-help="ONE CLICK. Spreads energy across the grid for 12 generations, locks the field, then writes two complete verses (State A and State B). Everything the six numbered buttons do, in the right order, without you having to remember it. Needs a free OpenRouter key in Settings."
@@ -1295,6 +1296,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             type="button"
             className={`ql-btn accent-ylw ${busy ? 'ql-btn-busy' : ''}`}
             onClick={() => doNeural()}
+            aria-busy={busy}
             disabled={busy}
             data-demo="ql-generate"
             data-help="STEP 6. Writes a 4-line verse from your grid — two versions, A and B (needs a free OpenRouter key in Settings)."

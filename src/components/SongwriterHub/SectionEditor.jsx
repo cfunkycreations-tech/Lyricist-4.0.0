@@ -301,6 +301,7 @@ export default function SectionEditor({ section, index }) {
 
           <button
             onClick={handleRegenerateSection}
+            aria-busy={isGenerating}
             disabled={isGenerating}
             data-help="Regen = regenerate. Throws out this section's lyrics and has the AI write a brand-new version of just this part. Use it if you don't like what's here. (Undo brings the old one back.)"
             style={{
