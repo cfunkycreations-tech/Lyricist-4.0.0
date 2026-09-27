@@ -273,6 +273,47 @@ button.pc:not(.pc-pad):not(.pc-sweep):not(.pc-empty):active:not(:disabled)::afte
 .pc-screen-main { color: var(--amber-hot); text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.6) !important; }
 .pc-screen-sub { color: #8a7a5c; }
 
+/* ── the pads: glass keys, exactly the swatch mock's .pad ──
+   Chris, 2026-09-27: "make those pad keys glass keys like you had them in the
+   first mock-up and the visuals will show up behind them". Smoked glass with the
+   colour welling up from the bottom edge, a 160° sheen across the top, a 1px
+   black rim and 3px joints (G in PushHeader.jsx). The idle sweep still drives
+   --hue, so the colour keeps moving under the glass. */
+.pc.pc-pad, .pc.pc-sweep, .pc.pc-empty {
+  border: 1px solid rgba(0, 0, 0, 0.9);
+  border-radius: 3px;
+  background: rgba(10, 11, 13, 0.9);
+  transition: filter 0.12s, box-shadow 0.12s;
+}
+.pc.pc-pad::before, .pc.pc-sweep::before, .pc.pc-empty::before {
+  --pad: var(--hue) calc(var(--sat) * 0.6) 55%;
+  background: radial-gradient(120% 90% at 50% 110%, hsl(var(--pad) / 0.55), hsl(var(--pad) / 0.12) 60%, rgba(10, 11, 13, 0.9));
+}
+.pc.pc-sweep::before, .pc.pc-empty::before { opacity: 1; }
+.push-hd.is-live .pc.pc-sweep::before, .push-inst .pc.pc-empty::before { opacity: 0.3; }
+.pc.pc-pad::after, .pc.pc-sweep::after, .pc.pc-empty::after {
+  border-radius: 2px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 40%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 -3px 6px rgba(0, 0, 0, 0.6);
+}
+.pc.pc-pad:hover, .pc.pc-sweep:hover { filter: brightness(1.35); }
+/* struck: the mock's .pad.hit */
+.pc.pc-pad:active, .pc.pc-pad.lv-hot {
+  box-shadow: inset 0 0 12px hsl(var(--h, var(--hue)) 70% 55% / 0.9), 0 0 10px hsl(var(--h, var(--hue)) 70% 55% / 0.5);
+  filter: brightness(1.7);
+}
+.pc.pc-pad.lv-on::before { opacity: 0.85; }
+.pc.pc-pad.lv-dim::before { --sat: 0%; opacity: 0.5; }
+.pc.pc-pad.lv-white::before { background: radial-gradient(120% 90% at 50% 110%, rgba(244, 246, 250, 0.7), rgba(244, 246, 250, 0.16) 60%, rgba(10, 11, 13, 0.9)); }
+
+/* Visuals on: the glass goes clear so the picture plays behind it; the sheen,
+   rim and bevel stay, and lit pads tint the glass instead of covering it. */
+.viz-on .pc.pc-glass { background: transparent; }
+.viz-on .pc.pc-glass::before { mix-blend-mode: screen; }
+.viz-on .pc.pc-glass:not(.pc-pad)::before, .viz-on .pc.pc-pad.lv-off::before { opacity: 0; }
+.viz-on .pc.pc-pad.lv-dim::before { opacity: 0.2; }
+.viz-on .pc.pc-pad.lv-on::before { opacity: 0.5; }
+
 /* ── Ask the Ghost: an anodized key with a pilot light, not a green pill ── */
 .gha-launch {
   background: var(--mat-key) !important; background-color: #202226 !important;

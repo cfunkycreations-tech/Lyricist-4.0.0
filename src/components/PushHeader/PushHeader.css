@@ -21,8 +21,8 @@
 .header-cosmic.viz-on.push-open { background: #000 !important; }
 .header-cosmic { isolation: isolate; }
 
-.push-hd { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; padding: 0 1px 0 10px; position: relative; z-index: 1; }
-.push-row, .push-inst { display: grid; gap: 1px; grid-auto-rows: 54px; overflow: hidden; }
+.push-hd { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 0 1px 0 10px; position: relative; z-index: 1; }
+.push-row, .push-inst { display: grid; gap: 3px; grid-auto-rows: 54px; overflow: hidden; }
 
 /* The canvas the visuals are painted into, pad by pad. */
 .push-viz-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; display: block; filter: brightness(.85) saturate(1.2); }
@@ -127,7 +127,7 @@ button.pc:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
 .viz-on .pc-pad.lv-hot::before, .viz-on .pc-pad.lv-white::before { opacity: .8; mix-blend-mode: screen; }
 
 /* The old header pills, as blocks in the same wall on the right. */
-.push-side { flex: 0 0 auto; display: flex; align-items: center; gap: 1px; padding-right: 10px; align-self: flex-start; }
+.push-side { flex: 0 0 auto; display: flex; align-items: center; gap: 3px; padding-right: 10px; align-self: flex-start; }
 .header-cosmic:not(.push-open) .push-side { align-self: center; }
 .push-side > button, .push-side > div {
   width: 54px !important; height: 54px !important; padding: 3px !important; margin: 0 !important;

@@ -31,13 +31,16 @@ export const TAB_GROUPS = [
 ];
 
 const S = 54;          // one cell
-const G = 1;           // the gap: blocks laid tight
+const G = 3;           // the gap: 3px black joints between glass keys, like the swatch mock
 const LENS = 0.8;      // each glass block shows 80% of what's behind it, magnified, like thick glass
 const IDLE_MS = 5000;
 const VIZ_KEY = 'lyricist.push.visuals';
 const VIZ_CYCLE_MS = 28000;
-// Chris: visuals ONLY on the pad square of the instrument, nowhere else.
+// The instrument's pad square gets the visuals, and (Chris, 2026-09-27: "make
+// those pad keys glass keys ... and the visuals will show up behind them") so do
+// the glass pads along the header row. The anodized keys never do.
 const CELLS = '.pc-pad';
+const ROW_PADS = '.pc-sweep';
 
 /**
  * VISUALS, ONLY INSIDE THE SQUARES.
@@ -86,8 +89,9 @@ function usePushVisuals(on, headerRef) {
         const W = header.clientWidth;
         const H = header.clientHeight;
         const pads = header.querySelectorAll(CELLS);
-        if (W && H && !pads.length) {
-          // Pads hidden: nothing to show the picture in, so don't render it.
+        const rowPads = header.querySelectorAll(ROW_PADS);
+        if (W && H && !pads.length && !rowPads.length) {
+          // No glass showing: nothing to show the picture in, so don't render it.
           if (canvas.width) { canvas.width = 0; canvas.height = 0; }
           header.querySelectorAll('.pc-glass').forEach((el) => el.classList.remove('pc-glass'));
         } else if (W && H) {
@@ -97,14 +101,14 @@ function usePushVisuals(on, headerRef) {
             const q = p.getBoundingClientRect();
             pl = Math.min(pl, q.left); pt = Math.min(pt, q.top); pr = Math.max(pr, q.right); pb = Math.max(pb, q.bottom);
           }
-          pt -= S + G;
-          pr += S + G;
+          if (pads.length) { pt -= S + G; pr += S + G; }
+          const rowSet = new Set(rowPads);
           const glass = [];
           for (const el of header.querySelectorAll('.pc')) {
             const q = el.getBoundingClientRect();
             const mx = (q.left + q.right) / 2;
             const my = (q.top + q.bottom) / 2;
-            const inside = mx > pl && mx < pr && my > pt && my < pb;
+            const inside = rowSet.has(el) || (mx > pl && mx < pr && my > pt && my < pb);
             el.classList.toggle('pc-glass', inside);
             if (inside) glass.push(el);
           }
