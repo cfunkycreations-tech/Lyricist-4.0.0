@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import './PushHeader.css';
 import { getAudioContext, getMasterBus, resumeAudio } from '../../services/audioEngine.js';
 import { KIT, triggerVoice, triggerSample } from '../../services/drumEngine.js';
-import { INSTRUMENT_GROUPS, DEFAULT_INSTRUMENT, loadInstrument, playNote, midiToNoteName } from '../../services/soundfontEngine.js';
+import { INSTRUMENT_GROUPS, DEFAULT_INSTRUMENT, loadInstrument, playNote, warmNote, midiToNoteName } from '../../services/soundfontEngine.js';
 import { listSamples, getSampleBuffer } from '../../services/sampleLibrary.js';
 import { createPushLink, hueToPushColor, PUSH_CC } from '../../services/pushMidi.js';
 import { loadButterchurn } from '../../services/butterchurnLoader.js';
@@ -340,6 +340,77 @@ const hexHue = (hex) => {
 };
 const at = (col, row, w = 1, h = 1) => ({ gridColumn: `${col} / span ${w}`, gridRow: `${row} / span ${h}` });
 
+/* ── Chords ──
+   Chris, 2026-09-27: "When I change the note from an A to a D ... it needs to
+   sound like that. Also, chords." Every pad that plays notes goes through these.
+   Chords are built from the key's own scale, so in C major the IV is F and the
+   ii is Dm without anyone having to know that. Pentatonic, blues and chromatic
+   borrow their chords from the major or minor scale they come from. */
+const PAD_VEL = 100 / 127;   // the velocity a mouse click hits with; warm renders must match it
+const PAD_HOLD = 3;          // seconds a held pad sustains before the instrument's own release
+const CHORD_PARENT = { 'Minor Pent': 'Minor', 'Major Pent': 'Major', Blues: 'Minor', Chromatic: 'Major' };
+const NOTE_CHORDS = [
+  { name: 'Off', stack: [0] },
+  { name: 'Triad', stack: [0, 2, 4] },
+  { name: '7th', stack: [0, 2, 4, 6] },
+  { name: '9th', stack: [0, 2, 4, 6, 8] },
+];
+// Chord mode: across = the scale's chords I to I an octave up; up = the kind of chord.
+const CHORD_ROWS = [
+  { tag: '', stack: [0, 2, 4] },
+  { tag: '7', stack: [0, 2, 4, 6] },
+  { tag: '9', stack: [0, 2, 4, 6, 8] },
+  { tag: 'inv1', stack: [2, 4, 7] },
+  { tag: 'inv2', stack: [4, 7, 9] },
+  { tag: 'sus2', semis: [0, 2, 7] },
+  { tag: 'sus4', semis: [0, 5, 7] },
+  { tag: '5', semis: [0, 7, 12] },
+];
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'I'];
+
+const scaleNote = (scale, base, idx) => {
+  const n = scale.length;
+  return base + scale[((idx % n) + n) % n] + 12 * Math.floor(idx / n);
+};
+/** Stack scale degrees on top of `midi` (a note of the key), e.g. [0,2,4] = its triad. */
+function stackOn(scaleName, base, midi, stack) {
+  const parent = SCALES[CHORD_PARENT[scaleName] || scaleName];
+  const rel = midi - base;
+  const d = parent.indexOf(((rel % 12) + 12) % 12);
+  if (d < 0) return stack.map((_, i) => midi + [0, 4, 7, 10, 14][i]);   // off-key note: a plain major chord
+  const deg = d + parent.length * Math.floor(rel / 12);
+  return stack.map((s) => scaleNote(parent, base, deg + s));
+}
+/** "Dm7", "Bdim", "Fmaj7" from a root-position chord. */
+function chordName(m) {
+  const nm = NOTE_NAMES[((m[0] % 12) + 12) % 12];
+  const third = m[1] - m[0];
+  const fifth = m[2] - m[0];
+  const q = third === 3 ? (fifth === 6 ? 'dim' : 'm') : (fifth === 8 ? 'aug' : '');
+  if (m.length < 4) return nm + q;
+  const sev = m[3] - m[0];
+  let name;
+  if (q === 'dim') name = nm + (sev === 9 ? 'dim7' : 'm7♭5');
+  else if (q === 'm') name = nm + (sev === 11 ? 'm(maj7)' : 'm7');
+  else name = nm + q + (sev === 11 ? 'maj7' : '7');
+  return m.length > 4 ? name.replace(/7/, '9') : name;
+}
+/** Chord mode's pad: degree 0-7 across, CHORD_ROWS[row] up. */
+function chordPad(scaleName, base, degree, row) {
+  const parent = SCALES[CHORD_PARENT[scaleName] || scaleName];
+  const r = CHORD_ROWS[row];
+  const rootMidi = scaleNote(parent, base, degree);
+  if (r.semis) {
+    const nm = NOTE_NAMES[rootMidi % 12];
+    return { midis: r.semis.map((s) => rootMidi + s), label: `${nm}${r.tag}` };
+  }
+  const midis = stackOn(scaleName, base, rootMidi, r.stack);
+  if (r.tag.startsWith('inv')) {
+    return { midis, label: `${chordName(stackOn(scaleName, base, rootMidi, [0, 2, 4]))}/${NOTE_NAMES[midis[0] % 12]}` };
+  }
+  return { midis, label: chordName(midis) };
+}
+
 function PadInstrument({ cols, onTouch, viz, onClose }) {
   const [mode, setMode] = useState('drum');
   const [octave, setOctave] = useState(1);
@@ -356,13 +427,15 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
   const [samples, setSamples] = useState([]);
   const [display, setDisplay] = useState('Hit a pad.');
   const [pushName, setPushName] = useState(null);
+  const [chordType, setChordType] = useState(0);        // Note mode: each pad plays a note or a chord
+  const [instReady, setInstReady] = useState(null);     // id of the loaded sound
 
   const outRef = useRef(null);
   const instRef = useRef(null);
   const stopsRef = useRef(new Map());
   const buffers = useRef(new Map());
   const live = useRef({});
-  live.current = { mode, octave, root, scaleIdx, pattern, voice, tempo, samples };
+  live.current = { mode, octave, root, scaleIdx, pattern, voice, tempo, samples, chordType };
 
   useEffect(() => {
     const g = getAudioContext().createGain();
@@ -382,8 +455,9 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
   useEffect(() => {
     let dead = false;
     instRef.current = null;
+    setInstReady(null);
     loadInstrument(getAudioContext(), inst.id)
-      .then((i) => { if (!dead) instRef.current = i; })
+      .then((i) => { if (!dead) { instRef.current = i; setInstReady(inst.id); } })
       .catch((e) => { if (!dead) setDisplay(`${inst.name} did not load: ${e.message}`); });
     return () => { dead = true; };
   }, [inst.id, inst.name]);
@@ -391,20 +465,48 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
   /** What a pad is. x 0-7 left to right, y 0-7 top to bottom. */
   const padInfo = useCallback((x, y) => {
     const s = live.current;
+    const scaleName = SCALE_NAMES[s.scaleIdx];
+    const scale = SCALES[scaleName];
+    const low = 24 + s.octave * 12 + s.root;    // bass and single notes
+    const mid = low + 12;                        // chords sit an octave up
+    // A chord pad: degree across the key, `row` from CHORD_ROWS.
+    const chord = (degree, row) => {
+      const c = chordPad(scaleName, mid, degree, row);
+      return { kind: 'notes', ...c, label: `${ROMAN[degree]} · ${c.label}`, tonic: degree % 7 === 0, accent: degree === 3 || degree === 4 };
+    };
+
     if (s.mode === 'note') {
-      const scale = SCALES[SCALE_NAMES[s.scaleIdx]];
+      // Rows go up a fourth (three scale steps); the root is always bottom-left.
       const idx = x + 3 * (7 - y);
-      const degree = idx % scale.length;
-      const midi = 24 + s.octave * 12 + s.root + scale[degree] + 12 * Math.floor(idx / scale.length);
-      return { kind: 'note', midi, root: degree === 0 };
+      const midi = scaleNote(scale, low, idx);
+      const ct = NOTE_CHORDS[s.chordType];
+      const midis = ct.stack.length > 1 ? stackOn(scaleName, low, midi, ct.stack) : [midi];
+      return {
+        kind: 'notes', midis, tonic: idx % scale.length === 0,
+        label: midis.length > 1 ? chordName(midis) : midiToNoteName(midi),
+      };
     }
+    if (s.mode === 'chord') return chord(x, 7 - y);
+
+    // Drum mode. Your own samples win their slot; an empty slot is never dead:
+    // the middle rows are the key's chords and the bottom-right is a bass line.
     if (y <= 1) return { kind: 'step', step: y * 8 + x };
-    if (y <= 3) return { kind: 'sample', n: 16 + (y - 2) * 8 + x };
+    if (y <= 3) {
+      const n = 16 + (y - 2) * 8 + x;
+      if (s.samples[n]) return { kind: 'sample', n };
+      return chord(x, y === 3 ? 0 : 1);
+    }
     if (x <= 3) {
       const k = (7 - y) * 4 + x;
-      return KIT[k] ? { kind: 'drum', voice: KIT[k] } : { kind: 'none' };
+      if (KIT[k]) return { kind: 'drum', voice: KIT[k] };
+      // The kit has 14 voices for 16 pads; the last two are layered hits.
+      const layers = [['kick', 'clap'], ['snare', 'hatO']][k - KIT.length] || ['kick', 'snare'];
+      return { kind: 'layer', ids: layers, label: layers.map((id) => KIT.find((v) => v.id === id)?.name).join(' + ') };
     }
-    return { kind: 'sample', n: (7 - y) * 4 + (x - 4) };
+    const n = (7 - y) * 4 + (x - 4);
+    if (s.samples[n]) return { kind: 'sample', n };
+    const midi = scaleNote(scale, low, n);
+    return { kind: 'notes', midis: [midi], label: `Bass · ${midiToNoteName(midi)}`, tonic: n % scale.length === 0 };
   }, []);
 
   const hit = useCallback(async (x, y, velocity = 100) => {
@@ -421,6 +523,9 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
       triggerVoice(ctx, out, info.voice.id, ctx.currentTime, {}, vel);
       setVoice(info.voice.id);
       setDisplay(`${info.voice.name} · ${Math.round(vel * 127)}`);
+    } else if (info.kind === 'layer') {
+      info.ids.forEach((id) => triggerVoice(ctx, out, id, ctx.currentTime, {}, vel));
+      setDisplay(info.label);
     } else if (info.kind === 'step') {
       setPattern((p) => {
         const row = [...p[live.current.voice]];
@@ -439,11 +544,13 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
       } catch (e) {
         setDisplay(`${smp.name}: ${e.message}`);
       }
-    } else if (info.kind === 'note') {
-      if (!instRef.current) { setDisplay(`${inst.name} is loading…`); return; }
+    } else if (info.kind === 'notes') {
+      const instr = instRef.current;
+      if (!instr) { setDisplay(`${inst.name} is loading…`); return; }
       stopsRef.current.get(key)?.();
-      stopsRef.current.set(key, playNote(ctx, out, instRef.current, info.midi, { duration: 6, velocity: vel }));
-      setDisplay(`${inst.name} · ${midiToNoteName(info.midi)}`);
+      const stops = info.midis.map((m) => playNote(ctx, out, instr, m, { duration: PAD_HOLD, velocity: vel, minHold: 0.3 }));
+      stopsRef.current.set(key, () => stops.forEach((stop) => stop()));
+      setDisplay(info.label);
     }
   }, [padInfo, onTouch, inst.name]);
 
@@ -485,9 +592,58 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
       return pattern[voice][info.step] ? { hue: hexHue(KIT.find((k) => k.id === voice).color), level: 'hot' } : { hue: 0, level: 'dim' };
     }
     if (info.kind === 'sample') return samples[info.n] ? { hue: 215, level: 'on' } : { hue: 0, level: 'off' };
-    if (info.kind === 'note') return info.root ? { hue: 36, level: 'hot' } : { hue: 0, level: 'dim' };
+    if (info.kind === 'layer') return { hue: 20, level: 'on' };
+    if (info.kind === 'notes') {
+      if (info.tonic) return { hue: 36, level: 'hot' };
+      return info.accent ? { hue: 0, level: 'on' } : { hue: 0, level: 'dim' };
+    }
     return { hue: 0, level: 'off' };
-  }, [padInfo, held, voice, curStep, pattern, samples]);
+  // mode, root, scale, octave and chordType reach padInfo through live.current;
+  // they're listed so the board repaints when they change.
+  }, [padInfo, held, voice, curStep, pattern, samples, mode, root, scaleIdx, octave, chordType]);
+
+  // Every change you can hear gets played back to you, and the whole board is
+  // rendered ahead so the first hit of every pad is instant. The first time a
+  // note plays it has to be synthesized; before this, a tap on a fresh key
+  // usually came back silent or late.
+  const warmGen = useRef(0);
+  const heardSig = useRef(null);
+  useEffect(() => {
+    const instr = instRef.current;
+    if (!instReady || !instr) return undefined;
+    const gen = ++warmGen.current;
+    const sig = `${instReady}|${root}|${scaleIdx}|${octave}|${chordType}`;
+    const preview = heardSig.current !== null && heardSig.current !== sig;
+    heardSig.current = sig;
+    const t = setTimeout(async () => {
+      const ctx = getAudioContext();
+      if (preview) {
+        await resumeAudio().catch(() => {});
+        if (warmGen.current !== gen) return;
+        // The key's I chord (or its root note, in Note mode with Chords off).
+        const s = live.current;
+        const low = 24 + s.octave * 12 + s.root;
+        const midis = s.mode === 'note' && s.chordType === 0
+          ? [low]
+          : stackOn(SCALE_NAMES[s.scaleIdx], low + 12, low + 12, s.mode === 'note' ? NOTE_CHORDS[s.chordType].stack : [0, 2, 4]);
+        midis.forEach((m) => playNote(ctx, outRef.current, instr, m, { duration: 0.6, velocity: PAD_VEL * 0.8 }));
+        setDisplay(`${NOTE_NAMES[s.root]} ${SCALE_NAMES[s.scaleIdx]} · ${midis.length > 1 ? chordName(midis) : midiToNoteName(midis[0])}`);
+      }
+      const want = new Set();
+      for (let y = 0; y < 8; y++) {
+        for (let x = 0; x < 8; x++) {
+          const info = padInfo(x, y);
+          if (info.kind === 'notes') info.midis.forEach((m) => want.add(m));
+        }
+      }
+      // One note at a time, so a pad you hit never waits behind the whole board.
+      for (const m of want) {
+        if (warmGen.current !== gen) return;
+        await warmNote(ctx, instr, m, PAD_VEL, PAD_HOLD).catch(() => {});
+      }
+    }, 160);
+    return () => { clearTimeout(t); warmGen.current++; };
+  }, [instReady, mode, root, scaleIdx, octave, chordType, samples, padInfo]);
 
   const KNOBS = [
     { label: 'Volume', value: `${Math.round(volume * 100)}%`, nudge: (d) => setVolume((v) => clamp(Math.round((v + d * 0.02) * 100) / 100, 0, 1.5)) },
@@ -510,7 +666,7 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
       if (cc === PUSH_CC.play) setPlaying((p) => !p);
       else if (cc === PUSH_CC.octaveUp) setOctave((o) => clamp(o + 1, 0, 6));
       else if (cc === PUSH_CC.octaveDown) setOctave((o) => clamp(o - 1, 0, 6));
-      else if (cc === PUSH_CC.note) setMode((m) => (m === 'note' ? 'drum' : 'note'));
+      else if (cc === PUSH_CC.note) setMode((m) => (m === 'drum' ? 'note' : m === 'note' ? 'chord' : 'drum'));
       else if (cc === PUSH_CC.session) setMode('drum');
       else if (cc === PUSH_CC.delete) setPattern((p) => ({ ...p, [live.current.voice]: Array(16).fill(false) }));
     },
@@ -536,7 +692,7 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
       }
     }
     link.button(PUSH_CC.play, playing ? 127 : 20);
-    link.button(PUSH_CC.note, mode === 'note' ? 127 : 20);
+    link.button(PUSH_CC.note, mode !== 'drum' ? 127 : 20);
   });
 
   const dragKnob = (k) => (e) => {
@@ -557,8 +713,11 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
     { label: playing ? 'Stop' : 'Play', on: playing, act: () => setPlaying((p) => !p) },
     { label: 'Drum', on: mode === 'drum', act: () => setMode('drum') },
     { label: 'Note', on: mode === 'note', act: () => setMode('note') },
+    { label: 'Chord', on: mode === 'chord', act: () => setMode('chord') },
     { label: 'Oct +', act: () => setOctave((o) => clamp(o + 1, 0, 6)) },
     { label: 'Oct −', act: () => setOctave((o) => clamp(o - 1, 0, 6)) },
+    // Note mode: every pad plays the chord built on its note, in key.
+    { label: `Chords ${NOTE_CHORDS[chordType].name}`, on: chordType > 0, act: () => { setChordType((c) => (c + 1) % NOTE_CHORDS.length); setMode('note'); } },
     { label: 'Clear', act: () => setPattern((p) => ({ ...p, [voice]: Array(16).fill(false) })) },
     { label: 'Clear all', act: () => setPattern(Object.fromEntries(KIT.map((k) => [k.id, Array(16).fill(false)]))) },
     { label: `Vis ${viz.on ? 'on' : 'off'}`, on: viz.on, act: viz.toggle },
@@ -572,11 +731,14 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
   cells.push(
     <div key="screen" className="pc pc-screen" style={at(1, 1, 4, 2)}>
       <div className="pc-screen-top">
-        <span>{mode === 'note' ? `NOTE ${NOTE_NAMES[root]} ${SCALE_NAMES[scaleIdx]}` : `DRUM ${tempo} BPM${playing ? ' ▶' : ''}`}</span>
+        <span>{mode === 'drum' ? `DRUM ${tempo} BPM${playing ? ' ▶' : ''}` : `${mode.toUpperCase()} ${NOTE_NAMES[root]} ${SCALE_NAMES[scaleIdx]}`}</span>
         <span className={pushName ? 'hw on' : 'hw'}>{pushName ? `● ${pushName}` : '○ no Push'}</span>
       </div>
       <div className="pc-screen-main">{display}</div>
-      <div className="pc-screen-sub">{viz.on ? viz.info.error || viz.info.name : mode === 'note' ? inst.name : 'bottom-left: kit · right: samples · top rows: steps'}</div>
+      <div className="pc-screen-sub">{viz.on ? viz.info.error || viz.info.name
+        : mode === 'note' ? `${inst.name}${chordType ? ` · ${NOTE_CHORDS[chordType].name} chords` : ''}`
+        : mode === 'chord' ? `${inst.name} · across: I to I · up: triad, 7, 9, inversions, sus2, sus4, power`
+        : `${NOTE_NAMES[root]} ${SCALE_NAMES[scaleIdx]} · top: steps · middle: chords · bottom: kit and bass`}</div>
     </div>,
   );
   KNOBS.forEach((k, i) => {

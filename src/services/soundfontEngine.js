@@ -340,6 +340,15 @@ export async function loadInstrument(ctx, instrumentId) {
 }
 
 /**
+ * Render a note into the cache ahead of time, so the first hit of it is instant.
+ * Same velocity and duration as the later playNote, or it lands in another slot.
+ */
+export function warmNote(ctx, instrument, midi, velocity = 0.8, duration = 0.5) {
+  if (!instrument || instrument.kind !== 'sf2') return Promise.resolve();
+  return getRenderedNote(ctx, instrument.program, instrument.bank || 0, midi, velocity, duration).then(() => {});
+}
+
+/**
  * Wrap a single user sample as a playable instrument. Every key plays that one
  * clip, pitch-shifted from the root note it was recorded at — which is exactly
  * how a sampler treats a one-shot.
@@ -372,6 +381,11 @@ export function playNote(ctx, destination, instrument, midi, {
   duration = 0.5,
   velocity = 0.8,
   release = 0.35,
+  // Pads: a tap let go before its note has rendered still sounds for this long
+  // instead of being dropped. Left null, an early stop cancels the note (what the
+  // sequencer wants when the transport stops).
+  minHold = null,
+  lateLimit = 0.6,   // ...unless the render took longer than this; a late note is worse than none
 } = {}) {
   if (!instrument) return () => {};
 
@@ -414,10 +428,11 @@ export function playNote(ctx, destination, instrument, midi, {
   let gain = null;
   let cancelled = false;
   let stopAtRequested = null;
+  const askedAt = ctx.currentTime;
 
   getRenderedNote(ctx, instrument.program, instrument.bank || 0, midi, velocity, duration)
     .then((buffer) => {
-      if (cancelled) return;
+      if (cancelled && (minHold == null || ctx.currentTime - askedAt > lateLimit)) return;
       src = ctx.createBufferSource();
       src.buffer = buffer;
       gain = ctx.createGain();
@@ -427,7 +442,7 @@ export function playNote(ctx, destination, instrument, midi, {
       const startAt = Math.max(when, ctx.currentTime);
       src.start(startAt);
 
-      if (stopAtRequested != null) applyStop(Math.max(stopAtRequested, startAt));
+      if (stopAtRequested != null) applyStop(Math.max(stopAtRequested, startAt + (minHold || 0)));
     })
     .catch(() => { /* a note that fails to render is silent, never a buzz */ });
 
