@@ -272,6 +272,19 @@ button.pc:not(.pc-pad):not(.pc-sweep):not(.pc-empty):active:not(:disabled)::afte
 .push-side > .pill-green svg.lucide { color: #5fd97f; filter: drop-shadow(0 -1px 0 rgba(0,0,0,.85)) drop-shadow(0 0 2px #5fd97f) drop-shadow(0 0 6px rgba(95,217,127,.55)); }
 .push-side > button:active { transform: translateY(1px); box-shadow: var(--mat-key-pressed) !important; }
 
+/* ── Settings: every setting on its own nickel plate, like a rack of units ── */
+.settings-col > div:not(.settings-actions), .settings-summary {
+  background: var(--mat-panel) !important; background-color: #1d1e21 !important;
+  border: 1px solid #000 !important; border-radius: 6px !important;
+  box-shadow: var(--mat-bevel), var(--mat-drop) !important;
+  padding: 14px 16px 12px !important; margin-bottom: 12px !important;
+}
+.settings-col label { color: #E6E8EB !important; letter-spacing: 0.16em !important; }
+.settings-col a { color: var(--amber-hot) !important; text-decoration-color: rgba(var(--accent-rgb), 0.5) !important; }
+.settings-col p { color: #9BA1AA !important; }
+.settings-col code { color: var(--amber-hot) !important; }
+.settings-summary > div:first-child { color: var(--amber-hot) !important; }
+
 /* the instrument's little screen: an amber LCD behind smoked glass */
 .pc-screen::after { background: linear-gradient(180deg, rgba(8, 6, 2, 0.94), rgba(3, 2, 1, 0.96)); box-shadow: inset 0 2px 6px #000, inset 0 0 0 1px #000; }
 .pc-screen-top { color: rgba(var(--accent-rgb), 0.75); }

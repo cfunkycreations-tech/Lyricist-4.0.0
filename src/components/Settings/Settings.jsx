@@ -376,20 +376,19 @@ export default function Settings() {
   };
 
   return (
-    <div style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#000' }}>
+    <div className="settings-page" style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <TabBackground name="settings" />
-      <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, overflowY: 'auto', background: 'rgba(0,0,0,0.38)', width: '100%' }}>
-    <div style={{ padding: 28, maxWidth: 680, margin: '0 auto', boxSizing: 'border-box' }}>
+      {/* Every setting sits on its own nickel plate (styles/materials.css, .settings-col). */}
+      <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, overflowY: 'auto', width: '100%' }}>
+    <div className="settings-col" style={{ padding: 28, maxWidth: 720, margin: '0 auto', boxSizing: 'border-box' }}>
       <h2
         style={{
           fontFamily: 'var(--faf-font)',
-          fontSize: '1.3rem',
-          fontWeight: 800,
-          color: '#e6e8eb',
-          marginBottom: 4,
-          background: 'linear-gradient(90deg, #9ba1aa, #9ba1aa, #e7a540)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent'
+          fontSize: '1.9rem',
+          fontWeight: 400,
+          letterSpacing: '0.06em',
+          color: '#fff',
+          marginBottom: 6,
         }}
       >
         Settings
@@ -453,7 +452,7 @@ export default function Settings() {
           Hugging Face token for more quota." A free account is enough, and the
           tab works without it — just fewer songs before it stops. */}
       <div style={{ marginBottom: 18 }} data-help="Optional. A free Hugging Face account gives Black Hole Studios a much bigger daily allowance for making songs. Without it you still get songs, just fewer per day. The token stays on your machine.">
-        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(43,232,160,0.75)', marginBottom: 5, display: 'block' }}>
+        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(231,165,64,0.75)', marginBottom: 5, display: 'block' }}>
           Black Hole Studios — Hugging Face token (optional, free)
         </label>
         <input
@@ -464,7 +463,7 @@ export default function Settings() {
           style={{
             width: '100%',
             background: 'rgba(16,18,21,0.7)',
-            border: '1px solid rgba(43,232,160,0.3)',
+            border: '1px solid rgba(231,165,64,0.3)',
             borderRadius: 8,
             padding: '8px 11px',
             fontSize: '0.84rem',
@@ -475,7 +474,7 @@ export default function Settings() {
         />
         <p style={{ fontSize: '0.65rem', color: 'rgba(155,161,170,0.45)', marginTop: 5, lineHeight: 1.5 }}>
           Making songs is free either way. A free account at{' '}
-          <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" style={{ color: '#2BE8A0', textDecoration: 'underline' }}>
+          <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" style={{ color: '#FFD08A', textDecoration: 'underline' }}>
             huggingface.co/settings/tokens
           </a>{' '}
           raises how many you can make in a day. Nothing to pay, and the token never leaves your computer.
@@ -523,9 +522,9 @@ export default function Settings() {
             style={{
               padding: '6px 14px',
               borderRadius: 999,
-              border: '1px solid rgba(43,232,160,0.5)',
-              background: 'rgba(43,232,160,0.12)',
-              color: '#2BE8A0',
+              border: '1px solid rgba(231,165,64,0.5)',
+              background: 'rgba(231,165,64,0.12)',
+              color: '#FFD08A',
               fontSize: '0.7rem',
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
@@ -702,7 +701,7 @@ export default function Settings() {
       <div style={{ marginBottom: 22, background: 'rgba(231,165,64,0.06)', border: '1px solid rgba(231,165,64,0.22)', borderRadius: 10, padding: 14 }} data-help="Fusion Mode sends your song idea to multiple AI models at the same time, then combines the best parts of each result into one final version. It uses more of your API credits but often produces richer, more creative lyrics because each model thinks differently.">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <div>
-            <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,150,200,0.8)' }}>
+            <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,208,138,0.8)' }}>
               Multi-Model Fusion · NEW
             </div>
             <div style={{ fontSize: '0.68rem', color: 'rgba(230,195,215,0.9)', marginTop: 3, lineHeight: 1.4, maxWidth: 360 }}>
@@ -736,7 +735,7 @@ export default function Settings() {
         {store.config.fusionEnabled && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
-              <div style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,150,200,0.6)', marginBottom: 5 }}>
+              <div style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,208,138,0.6)', marginBottom: 5 }}>
                 Extra Model #1 (combined with your main model above)
               </div>
               <ModelSelector
@@ -749,7 +748,7 @@ export default function Settings() {
               />
             </div>
             <div>
-              <div style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,150,200,0.6)', marginBottom: 5 }}>
+              <div style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,208,138,0.6)', marginBottom: 5 }}>
                 Extra Model #2 (optional — adds a third perspective)
               </div>
               <ModelSelector
@@ -959,9 +958,9 @@ export default function Settings() {
           style={{
             padding: '8px 18px',
             borderRadius: 8,
-            border: '1px solid rgba(52,211,153,0.4)',
+            border: '1px solid rgba(231,165,64,0.45)',
             background: 'rgba(16,18,21,0.7)',
-            color: '#34d399',
+            color: '#FFD08A',
             fontSize: '0.78rem',
             fontWeight: 700,
             cursor: 'pointer',
@@ -973,7 +972,7 @@ export default function Settings() {
       </div>
 
       {/* Action Buttons */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 28 }}>
+      <div className="settings-actions" style={{ display: 'flex', gap: 10, marginBottom: 28 }}>
         <button
           onClick={handleSave}
           className="btn-neon-purple"
@@ -1012,7 +1011,7 @@ export default function Settings() {
       </div>
 
       {/* Config Summary panel */}
-      <div style={{ background: 'rgba(16,18,21,0.8)', border: '1px solid rgba(155,161,170,0.2)', borderRadius: 10, padding: 16 }}>
+      <div className="settings-summary" style={{ padding: 16 }}>
         <div style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.5)', marginBottom: 10 }}>
           Current Configuration Status
         </div>
