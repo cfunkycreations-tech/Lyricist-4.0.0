@@ -16,7 +16,7 @@ import * as TR from './tr808.js';
 /* ── Voices ───────────────────────────────────────────────────────── */
 
 export const KIT = [
-  { id: 'kick',    name: 'Kick',       color: '#ff2d95', key: 'B1' },
+  { id: 'kick',    name: 'Kick',       color: '#e7a540', key: 'B1' },   // amber, Chris 2026-09-27 (was magenta)
   { id: 'snare',   name: 'Snare',      color: '#e7a540', key: 'D2' },
   { id: 'clap',    name: 'Clap',       color: '#9ba1aa', key: 'D#2' },
   { id: 'hatC',    name: 'Closed Hat', color: '#10f0a0', key: 'F#2' },
