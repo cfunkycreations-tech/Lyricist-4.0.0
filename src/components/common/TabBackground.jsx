@@ -17,6 +17,9 @@ import React from 'react';
  * The `name` prop is accepted and ignored on purpose. Sixteen callers pass
  * one, and taking the prop away is a sixteen-file rename for zero effect.
  * If a future skin needs per-tab colour again, this is the file that gets it.
+ *
+ * 2026-09-27: flat black is over. Chris: *"I don't want plain ugly ass flat."*
+ * The floor is the brushed black nickel from styles/materials.css.
  */
 // eslint-disable-next-line no-unused-vars
 export default function TabBackground({ name, art = null, artOpacity = 0.72 }) {
@@ -27,7 +30,8 @@ export default function TabBackground({ name, art = null, artOpacity = 0.72 }) {
         position: 'absolute',
         inset: 0,
         zIndex: 0,
-        background: '#000',
+        background: 'var(--mat-floor)',
+        backgroundColor: '#141517',
         pointerEvents: 'none',
       }}
     />

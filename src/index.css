@@ -2,25 +2,25 @@
 
 /* ── Bundled custom fonts ── */
 @font-face {
-  font-family: var(--faf-font);
+  font-family: 'Kalnia Glaze';
   src: url('./assets/fonts/KalniaGlaze-Variable.ttf') format('truetype');
   font-weight: 100 900;
   font-style: normal;
 }
 @font-face {
-  font-family: var(--faf-font);
+  font-family: 'Metamorphous';
   src: url('./assets/fonts/Metamorphous-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 @font-face {
-  font-family: var(--faf-font);
+  font-family: 'Orbitron';
   src: url('./assets/fonts/Orbitron-Variable.ttf') format('truetype');
   font-weight: 100 900;
   font-style: normal;
 }
 @font-face {
-  font-family: var(--faf-font);
+  font-family: 'Audiowide';
   src: url('./assets/fonts/Audiowide-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;

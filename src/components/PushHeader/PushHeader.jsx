@@ -586,7 +586,8 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
         aria-label={k.label}
         aria-valuetext={k.value}
         onPointerDown={dragKnob(k)}
-        onWheel={(e) => k.nudge(e.deltaY < 0 ? 1 : -1)}
+        // Shift fine-tunes, Ctrl jumps. Stepped knobs (key, scale, sound) round to one click either way.
+        onWheel={(e) => k.nudge((e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? 0.5 : (e.ctrlKey || e.metaKey) ? 5 : 1))}
         onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowRight') k.nudge(1); if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') k.nudge(-1); }}
         title={`${k.label}: ${k.value}. Drag up or down, or scroll.`}
       >

@@ -4,6 +4,8 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
 import './styles/opsec.css';
+import './styles/materials.css';
+import { startWheelControls } from './services/wheelControls.js';
 import { registerPWA } from './web/registerPWA.js';
 import LandscapeSplash from './web/LandscapeSplash.jsx';
 import { initAnalytics } from './services/analytics.js';
@@ -38,7 +40,7 @@ class BootErrorBoundary extends React.Component {
           minHeight: '100vh', background: '#0b0d10', color: '#e6e8eb',
           padding: 32, fontFamily: 'Segoe UI, system-ui, sans-serif',
         }}>
-          <h1 style={{ color: '#ff6b9d', marginTop: 0 }}>Lyricist failed to start</h1>
+          <h1 style={{ color: '#ff6b9d', marginTop: 0 }}>Lyricist Pro failed to start</h1>
           <p style={{ color: '#e6e8eb' }}>Copy this and send it so it can be fixed:</p>
           <pre style={{
             whiteSpace: 'pre-wrap', background: '#101215', padding: 16,
@@ -53,6 +55,7 @@ class BootErrorBoundary extends React.Component {
 }
 
 startPrism();
+startWheelControls();
 
 const rootEl = document.getElementById('root');
 try {
@@ -69,7 +72,7 @@ try {
 } catch (e) {
   console.error(e);
   rootEl.innerHTML = `<div style="padding:32px;color:#fff;background:#0b0d10;min-height:100vh;font-family:sans-serif">
-    <h1 style="color:#ff6b9d">Lyricist failed to start</h1>
+    <h1 style="color:#ff6b9d">Lyricist Pro failed to start</h1>
     <pre style="white-space:pre-wrap;color:#e6e8eb">${String(e?.stack || e)}</pre>
   </div>`;
 }
