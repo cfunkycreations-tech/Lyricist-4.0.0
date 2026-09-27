@@ -220,7 +220,7 @@ export default function RecordingBooth({ onNavigate }) {
           <div>
             <h3 style={{ fontSize: '1rem', marginBottom: 4 }}><Icon i={Mic} />Recording Booth</h3>
             <p style={{ fontSize: '0.72rem', color: 'rgba(230,232,235,0.7)', lineHeight: 1.5 }}>
-              Record harmonica, guitar, or vocals straight into Lyricist — or upload takes you already have.
+              Record harmonica, guitar, or vocals straight into Lyricist Pro — or upload takes you already have.
               Everything lands in your library below, saved on this machine, ready to play while you write
               or to convert into MIDI.
             </p>

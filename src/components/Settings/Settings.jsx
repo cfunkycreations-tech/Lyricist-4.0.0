@@ -399,7 +399,7 @@ export default function Settings() {
       </p>
 
       {/* API Key box */}
-      <div style={{ marginBottom: 18 }} data-help="Your API key is like a password that lets Lyricist use an AI to write lyrics. You get one free from OpenRouter (link below), paste it here, and you're ready. It stays private on your computer — it's never sent to us.">
+      <div style={{ marginBottom: 18 }} data-help="Your API key is like a password that lets Lyricist Pro use an AI to write lyrics. You get one free from OpenRouter (link below), paste it here, and you're ready. It stays private on your computer — it's never sent to us.">
         <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
           OpenRouter API Key
         </label>
@@ -706,7 +706,7 @@ export default function Settings() {
               Multi-Model Fusion · NEW
             </div>
             <div style={{ fontSize: '0.68rem', color: 'rgba(230,195,215,0.9)', marginTop: 3, lineHeight: 1.4, maxWidth: 360 }}>
-              Pick 2 or 3 AI models. Lyricist asks all of them, then blends the best lines from each into one song.
+              Pick 2 or 3 AI models. Lyricist Pro asks all of them, then blends the best lines from each into one song.
               Uses more credits, but results are noticeably richer.
             </div>
           </div>
@@ -775,7 +775,7 @@ export default function Settings() {
           <Icon i={Hammer} />Song Forge — OpenRouter (Song + Cover Art)
         </div>
         <p style={{ fontSize: '0.68rem', color: 'rgba(230,232,235,0.75)', marginBottom: 12, lineHeight: 1.4 }}>
-          Song Forge uses <strong>the same OpenRouter key</strong> as the rest of Lyricist — one key for lyrics
+          Song Forge uses <strong>the same OpenRouter key</strong> as the rest of Lyricist Pro — one key for lyrics
           and for Nano Banana cover art (image models on OpenRouter). No Google AI Studio key. No second account.
         </p>
 
@@ -866,7 +866,7 @@ export default function Settings() {
           <textarea
             value={store.config.customArtStyle}
             onChange={(e) => handleUpdate('customArtStyle', e.target.value)}
-            placeholder="Leave blank to use Lyricist's signature circular medallion with magenta/orange neon glow..."
+            placeholder="Leave blank to use Lyricist Pro's signature circular medallion with magenta/orange neon glow..."
             rows={2}
             style={{
               width: '100%',

@@ -38,7 +38,7 @@ export default function StartHere({ onGoToSettings }) {
       <div className="sh-body">
         <h2>Start here: get your free key</h2>
         <p className="sh-lead">
-          The parts of Lyricist that <b>write words for you</b> need a free key from OpenRouter.
+          The parts of Lyricist Pro that <b>write words for you</b> need a free key from OpenRouter.
           It takes about two minutes, there are free models on it, and one key runs the whole
           studio. Doing it now means nothing stops you later.
         </p>
@@ -68,7 +68,7 @@ export default function StartHere({ onGoToSettings }) {
           </button>
         </div>
         <p className="sh-fine">
-          This card disappears the moment the key is saved. Nothing here costs money, and Lyricist
+          This card disappears the moment the key is saved. Nothing here costs money, and Lyricist Pro
           never sees your key — it goes straight from your computer to OpenRouter.
         </p>
       </div>

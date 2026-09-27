@@ -92,7 +92,7 @@ function openDB() {
     // an old connection left open anywhere turns the upgrade into a silent
     // forever-wait and the library just never loads.
     req.onblocked = () => reject(new Error(
-      'The sample library is open somewhere else and is blocking an upgrade. Close any other Lyricist window and try again.'));
+      'The sample library is open somewhere else and is blocking an upgrade. Close any other Lyricist Pro window and try again.'));
     req.onsuccess = () => {
       const db = req.result;
       // If another tab bumps the version later, let go rather than wedge it.

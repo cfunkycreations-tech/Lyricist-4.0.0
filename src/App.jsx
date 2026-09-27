@@ -558,7 +558,7 @@ function MainLayout() {
                 alignItems: 'center',
                 gap: 5
               }}
-              data-help="Shows whether your AI key is connected. Lyricist uses your own key (add it on the Settings tab) to write lyrics. Green padlock = ready to go. Red = add a key first or nothing will generate."
+              data-help="Shows whether your AI key is connected. Lyricist Pro uses your own key (add it on the Settings tab) to write lyrics. Green padlock = ready to go. Red = add a key first or nothing will generate."
             >
               <span>{store.config.openRouterApiKey ? <KeyRound size={18} strokeWidth={1.6} /> : <Lock size={18} strokeWidth={1.6} />}</span>
               {store.config.openRouterApiKey ? 'API Key Loaded' : 'API Key Required'}

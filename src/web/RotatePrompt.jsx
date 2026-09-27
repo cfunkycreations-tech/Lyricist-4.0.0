@@ -84,7 +84,7 @@ export default function RotatePrompt() {
         </div>
         <h2 className="rot-title">Turn your phone sideways</h2>
         <p className="rot-copy">
-          Lyricist is a studio. The piano roll, the mixer, the loop tracks and the
+          Lyricist Pro is a studio. The piano roll, the mixer, the loop tracks and the
           lattice all need the width — sideways gives you more than double it.
         </p>
         <button className="rot-btn" onClick={() => setDismissed(true)}>

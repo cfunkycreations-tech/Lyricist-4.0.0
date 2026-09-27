@@ -320,7 +320,7 @@ export default function SampleLibrary({ onUseSample, fxInput }) {
                 const a = document.createElement('a');
                 const stamp = new Date().toISOString().slice(0, 10);
                 a.href = url;
-                a.download = `Lyricist Sample Library ${stamp}.zip`;
+                a.download = `Lyricist Pro Sample Library ${stamp}.zip`;
                 a.click();
                 URL.revokeObjectURL(url);
                 setNote('Library backed up. Keep that .zip somewhere safe — it survives uninstalls.');

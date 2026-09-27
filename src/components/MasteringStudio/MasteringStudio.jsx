@@ -210,7 +210,7 @@ export default function MasteringStudio() {
       const tracklist = [
         `${meta.title}${meta.artist ? ` — ${meta.artist}` : ''} (${meta.year})`,
         meta.genre ? `Genre: ${meta.genre}` : '',
-        `Mastered in Lyricist 4.1.3 — preset: ${preset}`,
+        `Mastered in Lyricist Pro — preset: ${preset}`,
         '',
         ...tracks.map((t, i) => `${String(i + 1).padStart(2, '0')}. ${t.title} (${t.mastered.stats.duration.toFixed(0)}s)`)
       ].filter(Boolean).join('\r\n');

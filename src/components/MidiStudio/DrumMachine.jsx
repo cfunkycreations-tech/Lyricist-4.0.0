@@ -251,7 +251,7 @@ export default function DrumMachine() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'Lyricist 808 Presets.json';
+    a.download = 'Lyricist Pro 808 Presets.json';
     a.click();
     URL.revokeObjectURL(url);
   };

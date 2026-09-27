@@ -63,13 +63,13 @@ export function openPopout(display, { onClose } = {}) {
   ].join(',');
 
   const win = window.open('', POPOUT_NAME, features);
-  if (!win) throw new Error('The popout was blocked. Allow pop-ups for Lyricist and try again.');
+  if (!win) throw new Error('The popout was blocked. Allow pop-ups for Lyricist Pro and try again.');
 
   // A reused window (same name) already has our markup — wipe it so we never
   // stack two canvases on top of each other.
   win.document.open();
   win.document.write(`<!doctype html><html><head><meta charset="utf-8">
-<title>Lyricist Visualizer</title><style>
+<title>Lyricist Pro Visualizer</title><style>
   html,body{margin:0;height:100%;background:#000;overflow:hidden;
     font-family:'Segoe UI',system-ui,sans-serif;cursor:default}
   canvas{display:block;width:100vw;height:100vh}
