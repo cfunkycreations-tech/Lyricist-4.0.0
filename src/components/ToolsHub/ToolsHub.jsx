@@ -197,7 +197,7 @@ export default function ToolsHub() {
                 </div>
               </div>
               <a href={t.url} target="_blank" rel="noopener noreferrer"
-                style={{ marginTop: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.68rem', fontWeight: 700, color: '#ff7eb6', textDecoration: 'none' }}>
+                style={{ marginTop: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.68rem', fontWeight: 700, color: '#FFD08A', textDecoration: 'none' }}>
                 <ExternalLink size={12} /> Open tool
               </a>
             </div>

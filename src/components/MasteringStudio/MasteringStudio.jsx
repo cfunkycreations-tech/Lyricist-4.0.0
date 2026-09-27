@@ -304,7 +304,7 @@ export default function MasteringStudio() {
               <div style={{ position: 'relative', marginBottom: 8, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(231,165,64,0.4)', boxShadow: '0 0 0 1px rgba(231,165,64,0.3)' }}>
                 <img src={cover.dataUrl} alt="Album cover" style={{ width: '100%', display: 'block' }} />
                 <button onClick={() => setCover(null)} aria-label="Remove cover"
-                  style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.7)', color: '#ff7eb6', cursor: 'pointer' }}>
+                  style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.7)', color: '#ff8a7a', cursor: 'pointer' }}>
                   <X size={12} />
                 </button>
               </div>

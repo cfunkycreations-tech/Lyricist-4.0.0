@@ -788,7 +788,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                               fontWeight: 600,
                               background: 'rgba(155,161,170,0.1)',
                               border: '1px solid rgba(155,161,170,0.2)',
-                              color: '#f472b6'
+                              color: '#FFD08A'
                             }}
                           >
                             {tag.trim()}

@@ -25,7 +25,7 @@ export const KIT = [
   { id: 'tomL',    name: 'Low Tom',    color: '#ff8c00', key: 'G1' },
   { id: 'tomM',    name: 'Mid Tom',    color: '#fb923c', key: 'B1' },
   { id: 'tomH',    name: 'High Tom',   color: '#fdba74', key: 'D2' },
-  { id: 'conga',   name: 'Conga',      color: '#f472b6', key: 'E2' },
+  { id: 'conga',   name: 'Conga',      color: '#d9534f', key: 'E2' },
   { id: 'rim',     name: 'Rim',        color: '#f8eea6', key: 'C#2' },
   { id: 'clave',   name: 'Clave',      color: '#fde68a', key: 'D#3' },
   { id: 'cowbell', name: 'Cowbell',    color: '#facc15', key: 'G#2' },

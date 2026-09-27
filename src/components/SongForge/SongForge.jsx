@@ -499,7 +499,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                 <input ref={refInputRef} type="file" accept="image/*" onChange={handleUploadReference} style={{ display: 'none' }} />
                 <button
                   onClick={() => refInputRef.current?.click()}
-                  style={{ width: '100%', padding: '9px', borderRadius: 8, border: '1px solid rgba(231,165,64,0.35)', background: 'rgba(231,165,64,0.08)', color: '#ff7eb6', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                  style={{ width: '100%', padding: '9px', borderRadius: 8, border: '1px solid rgba(231,165,64,0.35)', background: 'rgba(231,165,64,0.08)', color: '#FFD08A', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
                   <ImageIcon size={13} /> Upload Reference Image
                 </button>
@@ -510,7 +510,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                       onClick={() => setRefImage(null)}
                       aria-label="Remove reference image"
                       data-help="Remove the reference image and go back to pure text-to-image cover art."
-                      style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.7)', color: '#ff7eb6', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.7)', color: '#ff8a7a', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                       <X size={12} />
                     </button>

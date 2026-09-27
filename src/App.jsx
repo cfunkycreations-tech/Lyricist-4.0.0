@@ -387,14 +387,18 @@ function MainLayout() {
           The floor used to be #05070C (a near-black tuned for OLED depth
           under the WebGL prism); the prism is gone with the rest of the
           artwork, so a colour designed to sit under motion looks slightly
-          dead on its own. Pure black is the whole floor now. */}
+          dead on its own. Pure black is the whole floor now.
+          Superseded 2026-09-27: Chris picked brushed black nickel for every
+          surface, so the floor is the nickel (materials.css --mat-floor). Flat
+          black here showed as a dead band under any tab shorter than the window. */}
       <div
         style={{
           position: 'fixed',
           inset: 0,
           zIndex: 0,
           pointerEvents: 'none',
-          background: '#000',
+          background: 'var(--mat-floor)',
+          backgroundColor: '#141517',
         }}
       />
 
