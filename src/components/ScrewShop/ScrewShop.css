@@ -3,11 +3,11 @@
    variables so this tab rotates with the rest of the app. */
 
 .screw {
-  --sc-line: var(--lx-line, hsla(158 60% 70% / .16));
+  --sc-line: var(--lx-line, hsla(36 78% 70% / .16));
   --sc-line-hot: var(--lx-line-hot, hsla(216 8% 64% / .30));
-  --sc-emerald: var(--lx-emerald, hsl(158 84% 40%));
-  --sc-emerald-lit: var(--lx-emerald-lit, hsl(158 80% 58%));
-  --sc-green2: var(--lx-green2, hsl(152 79% 44%));
+  --sc-emerald: var(--lx-emerald, hsl(36 78% 40%));
+  --sc-emerald-lit: var(--lx-emerald-lit, hsl(36 78% 58%));
+  --sc-green2: var(--lx-green2, hsl(36 78% 44%));
   --sc-violet: var(--lx-violet, hsl(216 8% 64%));
   --sc-magenta: var(--lx-magenta, hsl(216 8% 64%));
   --sc-text: #EAF2FF;
@@ -66,12 +66,12 @@
     conic-gradient(from 0deg,
       hsla(216 8% 64% / 0) 0deg,
       hsla(216 8% 64% / .40) 55deg,
-      hsla(158 80% 58% / .10) 140deg,
+      hsla(36 78% 58% / .10) 140deg,
       hsla(216 8% 64% / .34) 250deg,
       hsla(216 8% 64% / 0) 360deg),
     repeating-radial-gradient(circle at 50% 50%,
-      hsla(158 80% 58% / 0) 0 3px,
-      hsla(158 80% 58% / .20) 3px 4px);
+      hsla(36 78% 58% / 0) 0 3px,
+      hsla(36 78% 58% / .20) 3px 4px);
   -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 0 9%, #000 12% 88%, transparent 100%);
   mask-image: radial-gradient(circle at 50% 50%, transparent 0 9%, #000 12% 88%, transparent 100%);
   animation: screw-spin 22s linear infinite;
@@ -86,7 +86,7 @@
   pointer-events: none;
   background: linear-gradient(100deg,
     transparent 38%,
-    hsla(158 80% 58% / .09) 47%,
+    hsla(36 78% 58% / .09) 47%,
     hsla(216 8% 64% / .15) 52%,
     hsla(216 8% 64% / .07) 57%,
     transparent 64%);
@@ -224,7 +224,7 @@
 
 .screw-out {
   margin-top: 18px; padding: 14px; border-radius: 12px;
-  border: 1px solid hsla(158 84% 45% / .45); background: rgba(18,19,21,.44);
+  border: 1px solid hsla(36 78% 45% / .45); background: rgba(18,19,21,.44);
   backdrop-filter: blur(18px) saturate(1.2);
 }
 .screw-out .hd { margin-bottom: 10px; }

@@ -3,10 +3,10 @@
    ============================================================ */
 
 .ql-root {
-  --ql-mag: #ff2d95;
+  --ql-mag: #E7A540;
   --ql-org: #e7a540; /* was orange — now electric blue */
-  --ql-grn: #39ff14;
-  --ql-ylw: #10f0a0; /* was yellow — now electric emerald */
+  --ql-grn: #FFD08A;
+  --ql-ylw: #FFD08A; /* amber-hot (was emerald, 2026-09-27) */
   --ql-blu: #e7a540;
   --ql-vio: #9ba1aa;
   --ql-vio2: #9ba1aa;
@@ -346,8 +346,8 @@
 /* Mode toggles (orange / green / yellow) — keep these */
 .ql-btn.on-org { border-color: #ff6f00; color: #ff8c00; box-shadow: 0 0 0 1px rgba(255,111,0,0.7); }
 .ql-btn.on-grn { border-color: var(--ql-grn); color: var(--ql-grn); box-shadow: 0 0 0 1px rgba(57,255,20,0.45); }
-.ql-btn.on-ylw { border-color: var(--ql-ylw); color: var(--ql-ylw); box-shadow: 0 0 0 1px rgba(16,240,160,0.5); }
-.ql-btn.accent-ylw { border-color: rgba(16,240,160,0.75); color: var(--ql-ylw); }
+.ql-btn.on-ylw { border-color: var(--ql-ylw); color: var(--ql-ylw); box-shadow: 0 0 0 1px rgba(231,165,64,0.5); }
+.ql-btn.accent-ylw { border-color: rgba(231,165,64,0.75); color: var(--ql-ylw); }
 
 /* Steps 4+5 in one press. Deliberately the only orange-filled button on the
    bar so it reads as "the shortcut", distinct from the numbered singles it
@@ -355,7 +355,7 @@
 .ql-btn.ql-btn-combo {
   border-color: #ff8c00;
   color: #fff;
-  background: linear-gradient(135deg, rgba(255,111,0,0.32), rgba(255,45,149,0.26));
+  background: linear-gradient(135deg, rgba(255,111,0,0.32), rgba(231,165,64,0.26));
   box-shadow: 0 0 0 1px rgba(255,111,0,0.45);
 }
 .ql-btn.ql-btn-combo:hover {
@@ -409,10 +409,10 @@
 .ql-panels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 18px; }
 .ql-panel {
   background: var(--ql-panel);
-  border: 1.5px solid rgba(255, 45, 149, 0.4);
+  border: 1.5px solid rgba(231,165,64, 0.4);
   border-radius: 16px;
   padding: 16px 18px;
-  box-shadow: 0 0 0 1px rgba(255, 45, 149, 0.14), inset 0 0 24px rgba(0,0,0,0.35);
+  box-shadow: 0 0 0 1px rgba(231,165,64, 0.14), inset 0 0 24px rgba(0,0,0,0.35);
   backdrop-filter: blur(3px);
 }
 .ql-panel h4 {
@@ -548,7 +548,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ql-grn);
-  text-shadow: 0 0 10px rgba(16, 240, 160, 0.55);
+  text-shadow: 0 0 10px rgba(231,165,64, 0.55);
 }
 .ql-actionbar-sub {
   font-size: 0.74rem;
@@ -566,8 +566,8 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #0b0d10;
-  background: linear-gradient(135deg, #10f0a0, #e7a540);
-  box-shadow: 0 0 0 1px rgba(16, 240, 160, 0.5);
+  background: linear-gradient(135deg, #E7A540, #e7a540);
+  box-shadow: 0 0 0 1px rgba(231,165,64, 0.5);
   vertical-align: middle;
 }
 /* Row 1 = the four steps. Bigger and brighter than the helpers below. */
@@ -583,7 +583,7 @@
    stay ORANGE and Crystallize/Freeze/Entanglement GREEN once they're armed. */
 .ql-actionbar .ql-btn.on-org { border-color: #ff6f00; }
 .ql-actionbar .ql-btn.on-grn { border-color: var(--ql-grn); }
-.ql-actionbar .ql-btn.accent-ylw { border-color: rgba(16, 240, 160, 0.75); }
+.ql-actionbar .ql-btn.accent-ylw { border-color: rgba(231,165,64, 0.75); }
 
 /* Row 2 = optional helpers + handoffs. Quieter so the steps read first. */
 .ql-actionbar-secondary {
@@ -700,8 +700,8 @@
   color: #e6e8eb;
 }
 .ql-adv-pill.ok {
-  background: rgba(16, 240, 160, 0.12);
-  border-color: rgba(16, 240, 160, 0.4);
+  background: rgba(231,165,64, 0.12);
+  border-color: rgba(231,165,64, 0.4);
   color: #6ee7b7;
 }
 .ql-adv-pill.warn {
@@ -739,7 +739,7 @@
 }
 .ql-truth { margin-top: 12px; }
 .ql-truth-overall { font-size: 1.1rem; margin-bottom: 10px; color: #e8eef8; }
-.ql-truth-overall b { color: #10f0a0; }
+.ql-truth-overall b { color: #E7A540; }
 .ql-truth-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));

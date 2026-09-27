@@ -306,7 +306,7 @@ export default function DrumMachine() {
 
         <div style={{ display: 'flex', gap: 6, marginLeft: 'auto', flexWrap: 'wrap' }}>
           <button className="suno-chip" onClick={() => setFxOpen(fxOpen === 'master' ? null : 'master')}
-            style={{ borderColor: fxOpen === 'master' ? '#ff2d95' : undefined, color: fxOpen === 'master' ? '#ff2d95' : undefined }}
+            style={{ borderColor: fxOpen === 'master' ? '#E7A540' : undefined, color: fxOpen === 'master' ? '#E7A540' : undefined }}
             data-help="The master effects rack — filter, drive, bitcrusher, delay, reverb and compression across the whole kit.">
             <Sliders size={12} /> Master FX
           </button>
@@ -400,7 +400,7 @@ export default function DrumMachine() {
               <button
                 onClick={() => setSolo(solo === k.id ? null : k.id)}
                 className="suno-chip"
-                style={{ padding: '2px 5px', flexShrink: 0, opacity: solo === k.id ? 1 : 0.45, color: solo === k.id ? '#10f0a0' : undefined }}
+                style={{ padding: '2px 5px', flexShrink: 0, opacity: solo === k.id ? 1 : 0.45, color: solo === k.id ? '#E7A540' : undefined }}
                 data-help="Solo this track — everything else goes quiet."
               >
                 <Headphones size={10} />
@@ -409,7 +409,7 @@ export default function DrumMachine() {
               <button
                 onClick={() => setFxOpen(fxOpen === k.id ? null : k.id)}
                 className="suno-chip"
-                style={{ padding: '2px 5px', flexShrink: 0, color: fxOpen === k.id ? '#ff2d95' : undefined }}
+                style={{ padding: '2px 5px', flexShrink: 0, color: fxOpen === k.id ? '#E7A540' : undefined }}
                 data-help="This track's own effects rack."
               >
                 <Sliders size={10} />
@@ -457,8 +457,8 @@ export default function DrumMachine() {
 
       {/* Effects rack */}
       {fxTarget && (
-        <div style={{ border: '1px solid rgba(255,45,149,0.3)', borderRadius: 10, padding: 12, background: 'rgba(16,18,21,0.5)' }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 700, marginBottom: 8, color: '#ff2d95' }}>
+        <div style={{ border: '1px solid rgba(231,165,64,0.3)', borderRadius: 10, padding: 12, background: 'rgba(16,18,21,0.5)' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 700, marginBottom: 8, color: '#E7A540' }}>
             {fxOpen === 'master' ? 'Master' : KIT.find((k) => k.id === fxOpen)?.name} — Effects Rack
           </div>
           <FxKnobGrid fx={fxTarget} onChange={setFxTarget} />

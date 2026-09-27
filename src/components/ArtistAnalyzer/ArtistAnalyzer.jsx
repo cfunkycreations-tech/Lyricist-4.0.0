@@ -385,7 +385,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
           flexDirection: 'column',
           gap: 16,
           background: 'rgba(0,0,0,0.34)',
-          borderRight: '1px solid rgba(255,45,149,0.2)'
+          borderRight: '1px solid rgba(231,165,64,0.2)'
         }}
       >
         <div data-help="Type the name of any artist you admire. Ghost Rider will study how they write so it can help you write in a similar style — without ever copying their actual songs.">
@@ -617,11 +617,11 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                   </div>
                   <div>
                     <div style={{ color: 'rgba(155,161,170,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Rhyme density</div>
-                    <div style={{ color: '#39ff14', marginTop: 4, fontWeight: 700 }}>{styleDNA.rhymeDensity || '—'}</div>
+                    <div style={{ color: '#FFD08A', marginTop: 4, fontWeight: 700 }}>{styleDNA.rhymeDensity || '—'}</div>
                   </div>
                   <div>
                     <div style={{ color: 'rgba(155,161,170,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Emotional temp</div>
-                    <div style={{ color: '#ff2d95', marginTop: 4 }}>{styleDNA.emotionalTemp != null ? `${styleDNA.emotionalTemp}/100` : '—'}</div>
+                    <div style={{ color: '#E7A540', marginTop: 4 }}>{styleDNA.emotionalTemp != null ? `${styleDNA.emotionalTemp}/100` : '—'}</div>
                   </div>
                   <div style={{ gridColumn: '1 / -1' }}>
                     <div style={{ color: 'rgba(155,161,170,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Cadence notes</div>

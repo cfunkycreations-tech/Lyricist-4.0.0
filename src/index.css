@@ -627,7 +627,7 @@ select option {
   background: rgba(16, 18, 21, 0.98);
   color: #e6e8eb;
   border: 1px solid rgba(var(--accent-rgb), 0.5);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6), 0 0 16px rgba(var(--accent-rgb), 0.4), 0 0 0 1px rgba(16, 240, 160, 0.15);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6), 0 0 16px rgba(var(--accent-rgb), 0.4), 0 0 0 1px rgba(231,165,64, 0.15);
   font-size: 0.8rem;
   line-height: 1.55;
   font-weight: 400;

@@ -213,7 +213,7 @@
 .omb-tags .omb-tag.v { border-color: hsla(222 100% 65% / .6); color: #9CC0FF; }
 .omb-tags .omb-tag.c { border-color: hsla(216 8% 64% / .6); color: #E6E8EB; }
 .omb-tags .omb-tag.b { border-color: hsla(216 8% 64% / .6); color: #E6E8EB; }
-.omb-tags .omb-tag.i { border-color: rgba(var(--accent-rgb), .6); color: #8FF0C4; }
+.omb-tags .omb-tag.i { border-color: rgba(var(--accent-rgb), .6); color: #FFD08A; }
 .omb-tags .omb-tag.o { border-color: var(--omb-line-hot); }
 .omb-tags .omb-tag.add { border-style: dashed; color: var(--omb-faint); cursor: pointer; }
 .omb-tags .omb-tag.add:hover { color: var(--omb-emerald-lit); border-color: var(--omb-emerald); }
@@ -488,7 +488,7 @@
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   font-size: 12.5px; color: #A9C4E4;
 }
-.omb-rackwhere b { color: #8FF0C4; }
+.omb-rackwhere b { color: #FFD08A; }
 .omb-take .badge.saved {
-  color: #8FF0C4; border-color: rgba(var(--accent-rgb), .55); background: rgba(var(--accent-rgb), .18);
+  color: #FFD08A; border-color: rgba(var(--accent-rgb), .55); background: rgba(var(--accent-rgb), .18);
 }

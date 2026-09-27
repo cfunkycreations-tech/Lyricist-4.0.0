@@ -301,7 +301,7 @@ export default function MasteringStudio() {
           <div data-help="The album cover. Upload your own, or have Nano Banana paint one from the album's title and genre — with the signature neon medallion frame if you want it.">
             <label style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Album Cover</label>
             {cover && (
-              <div style={{ position: 'relative', marginBottom: 8, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,45,149,0.4)', boxShadow: '0 0 0 1px rgba(255,45,149,0.3)' }}>
+              <div style={{ position: 'relative', marginBottom: 8, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(231,165,64,0.4)', boxShadow: '0 0 0 1px rgba(231,165,64,0.3)' }}>
                 <img src={cover.dataUrl} alt="Album cover" style={{ width: '100%', display: 'block' }} />
                 <button onClick={() => setCover(null)} aria-label="Remove cover"
                   style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.7)', color: '#ff7eb6', cursor: 'pointer' }}>
@@ -321,7 +321,7 @@ export default function MasteringStudio() {
             <input className="input-cosmic" style={{ width: '100%', marginTop: 6, borderRadius: 8, padding: '6px 10px', fontSize: '0.7rem' }}
               placeholder="Optional: describe the cover you want..." value={coverPrompt} onChange={(e) => setCoverPrompt(e.target.value)} />
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontWeight: 400, cursor: 'pointer' }}>
-              <input type="checkbox" checked={medallion} onChange={(e) => setMedallion(e.target.checked)} style={{ accentColor: '#ff2d95' }} />
+              <input type="checkbox" checked={medallion} onChange={(e) => setMedallion(e.target.checked)} style={{ accentColor: '#E7A540' }} />
               <span style={{ fontSize: '0.66rem', color: '#e6e8eb' }}>Neon medallion frame</span>
             </label>
           </div>
@@ -427,7 +427,7 @@ export default function MasteringStudio() {
               onDrop={(e) => onDrop(e, i)}
               onDragEnd={() => { setDragIndex(null); setOverIndex(null); }}
             >
-              <GripVertical size={15} style={{ color: 'rgba(255,45,149,0.55)', flexShrink: 0 }} />
+              <GripVertical size={15} style={{ color: 'rgba(231,165,64,0.55)', flexShrink: 0 }} />
               <span className="album-track-num">{i + 1}</span>
               <input
                 className="album-input"

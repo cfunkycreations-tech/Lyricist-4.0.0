@@ -685,9 +685,9 @@ export default function SongwriterHub({ ghostRiderData }) {
               is, because last time it was not clear at all." */}
           <div style={{
             marginTop: 12, padding: '12px 13px', borderRadius: 10,
-            border: '1px dashed rgba(16,240,160,0.45)', background: 'rgba(6,20,16,0.45)',
+            border: '1px dashed rgba(231,165,64,0.45)', background: 'rgba(20,18,14,0.45)',
           }}>
-            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--ql-grn, #10f0a0)', marginBottom: 3 }}>
+            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--amber-hot, #FFD08A)', marginBottom: 3 }}>
               Already wrote a song?
             </div>
             <div style={{ fontSize: '0.68rem', color: 'rgba(230,232,235,0.72)', lineHeight: 1.5, marginBottom: 9 }}>
@@ -701,8 +701,8 @@ export default function SongwriterHub({ ghostRiderData }) {
                 className="btn-neon-green"
                 data-help="Opens a file picker. Choose a text file containing lyrics you already wrote, and they load into the workspace as editable sections."
                 style={{
-                  padding: '9px 14px', borderRadius: 8, border: '1px solid rgba(16,240,160,0.6)',
-                  background: 'rgba(16,240,160,0.12)', color: '#10f0a0', fontWeight: 700,
+                  padding: '9px 14px', borderRadius: 8, border: '1px solid rgba(231,165,64,0.6)',
+                  background: 'rgba(231,165,64,0.12)', color: '#E7A540', fontWeight: 700,
                   fontSize: '0.76rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7,
                 }}
               >
@@ -738,8 +738,8 @@ export default function SongwriterHub({ ghostRiderData }) {
                   disabled={!pasteDraft.trim()}
                   style={{
                     marginTop: 6, padding: '8px 14px', borderRadius: 8,
-                    border: '1px solid rgba(16,240,160,0.6)', background: 'rgba(16,240,160,0.12)',
-                    color: '#10f0a0', fontWeight: 700, fontSize: '0.76rem',
+                    border: '1px solid rgba(231,165,64,0.6)', background: 'rgba(231,165,64,0.12)',
+                    color: '#E7A540', fontWeight: 700, fontSize: '0.76rem',
                     cursor: pasteDraft.trim() ? 'pointer' : 'not-allowed', opacity: pasteDraft.trim() ? 1 : 0.5,
                   }}
                 >

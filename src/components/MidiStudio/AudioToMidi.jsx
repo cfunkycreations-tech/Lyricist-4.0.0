@@ -149,8 +149,8 @@ export default function AudioToMidi({ onNotes }) {
             <RefreshCw size={12} className="pulse-glow" />
             <Wand2 size={12} /> Extracting notes from “{sourceName}” — {Math.round(progress * 100)}%
           </div>
-          <div style={{ height: 5, borderRadius: 4, background: 'rgba(255,45,149,0.15)', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${progress * 100}%`, background: 'linear-gradient(90deg,#ff2d95,#e7a540)', boxShadow: '0 0 0 1px rgba(255,45,149,0.8)', transition: 'width 0.2s' }} />
+          <div style={{ height: 5, borderRadius: 4, background: 'rgba(231,165,64,0.15)', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${progress * 100}%`, background: 'linear-gradient(90deg,#E7A540,#e7a540)', boxShadow: '0 0 0 1px rgba(231,165,64,0.8)', transition: 'width 0.2s' }} />
           </div>
         </div>
       )}

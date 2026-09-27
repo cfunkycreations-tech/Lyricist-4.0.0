@@ -145,8 +145,8 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 4 }}>
             {/* Start */}
             <div style={{ flex: '1 1 320px', minWidth: 300, padding: 18, borderRadius: 14,
-              border: '1px solid rgba(16,240,160,0.35)', background: 'rgba(6,20,16,0.6)' }}>
-              <h3 style={{ margin: '0 0 8px', fontSize: '1rem', color: 'var(--ql-grn, #10f0a0)' }}>Start a session</h3>
+              border: '1px solid rgba(231,165,64,0.35)', background: 'rgba(20,18,14,0.6)' }}>
+              <h3 style={{ margin: '0 0 8px', fontSize: '1rem', color: 'var(--amber-hot, #FFD08A)' }}>Start a session</h3>
               <p style={{ fontSize: '0.74rem', color: 'rgba(230,232,235,0.7)', lineHeight: 1.6, margin: '0 0 14px' }}>
                 Get a code, send it to whoever you are writing with. Text it, say it down the phone —
                 it is twelve characters and it is the only thing they need.
@@ -194,12 +194,12 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
         <>
           {/* The code, big, because it is the whole handshake */}
           <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap',
-            padding: 16, borderRadius: 14, border: '1px solid rgba(16,240,160,0.4)', background: 'rgba(6,20,16,0.6)' }}>
+            padding: 16, borderRadius: 14, border: '1px solid rgba(231,165,64,0.4)', background: 'rgba(20,18,14,0.6)' }}>
             <div>
               <div style={{ fontSize: '0.66rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(230,232,235,0.55)' }}>
                 Session code — send this to them
               </div>
-              <div className="ql-mono" style={{ fontSize: '1.7rem', letterSpacing: '0.16em', color: 'var(--ql-grn, #10f0a0)', textShadow: '0 0 0 1px rgba(16,240,160,0.5)' }}>
+              <div className="ql-mono" style={{ fontSize: '1.7rem', letterSpacing: '0.16em', color: 'var(--amber-hot, #FFD08A)', textShadow: '0 0 0 1px rgba(231,165,64,0.5)' }}>
                 {session.code}
               </div>
             </div>

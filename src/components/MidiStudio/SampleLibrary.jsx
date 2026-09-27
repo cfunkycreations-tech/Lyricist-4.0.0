@@ -249,7 +249,7 @@ export default function SampleLibrary({ onUseSample, fxInput }) {
     <div className="card-cosmic" style={{ borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Package size={15} style={{ color: '#ff2d95' }} />
+          <Package size={15} style={{ color: '#E7A540' }} />
           <strong style={{ fontSize: '0.82rem' }}>Sample Library</strong>
           <span style={{ fontSize: '0.62rem', color: size > MAX_LIBRARY_BYTES * 0.8 ? '#fbbf24' : 'rgba(230,232,235,0.6)' }}>
             {packs.length} pack{packs.length === 1 ? '' : 's'} · {formatBytes(size)} of {formatBytes(MAX_LIBRARY_BYTES)} · stored on this machine
@@ -399,13 +399,13 @@ export default function SampleLibrary({ onUseSample, fxInput }) {
         onDrop={onDrop}
         data-help="Drag samples or a whole sample pack straight onto this panel. Your files never leave this computer."
         style={{
-          border: `1px dashed ${dragOver ? '#ff2d95' : 'rgba(231,165,64,0.32)'}`,
-          background: dragOver ? 'rgba(255,45,149,0.08)' : 'rgba(231,165,64,0.03)',
+          border: `1px dashed ${dragOver ? '#E7A540' : 'rgba(231,165,64,0.32)'}`,
+          background: dragOver ? 'rgba(231,165,64,0.08)' : 'rgba(231,165,64,0.03)',
           borderRadius: 10,
           padding: '10px 12px',
           textAlign: 'center',
           fontSize: '0.68rem',
-          color: dragOver ? '#ff2d95' : 'rgba(230,232,235,0.72)',
+          color: dragOver ? '#E7A540' : 'rgba(230,232,235,0.72)',
           transition: 'background 0.15s, border-color 0.15s',
         }}
       >
@@ -439,9 +439,9 @@ export default function SampleLibrary({ onUseSample, fxInput }) {
               onClick={() => setActivePackId(p.id)}
               className="suno-chip"
               style={{
-                borderColor: p.id === activePackId ? '#ff2d95' : undefined,
-                color: p.id === activePackId ? '#ff2d95' : undefined,
-                background: p.id === activePackId ? 'rgba(255,45,149,0.1)' : undefined,
+                borderColor: p.id === activePackId ? '#E7A540' : undefined,
+                color: p.id === activePackId ? '#E7A540' : undefined,
+                background: p.id === activePackId ? 'rgba(231,165,64,0.1)' : undefined,
               }}
             >
               {p.name}
@@ -594,9 +594,9 @@ export default function SampleLibrary({ onUseSample, fxInput }) {
                 className="suno-chip"
                 style={{
                   padding: '3px 7px', flexShrink: 0,
-                  borderColor: s.loop ? '#10f0a0' : undefined,
-                  color: s.loop ? '#10f0a0' : undefined,
-                  background: s.loop ? 'rgba(16,240,160,0.1)' : undefined,
+                  borderColor: s.loop ? '#E7A540' : undefined,
+                  color: s.loop ? '#E7A540' : undefined,
+                  background: s.loop ? 'rgba(231,165,64,0.1)' : undefined,
                 }}
                 data-help="Mark this sample as a loop so it repeats until you stop it. Leave it off for one-shots and drum hits."
               >

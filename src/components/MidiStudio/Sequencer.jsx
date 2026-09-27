@@ -601,7 +601,7 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
             const isC = m % 12 === 0;
             const black = [1, 3, 6, 8, 10].includes(m % 12);
             return (
-              <div key={m} style={{ position: 'absolute', top: r * ROW_H, left: 0, right: 0, height: ROW_H, background: black ? 'rgba(255,45,149,0.045)' : 'transparent', borderTop: isC ? '1px solid rgba(231,165,64,0.25)' : '1px solid rgba(255,255,255,0.03)' }}>
+              <div key={m} style={{ position: 'absolute', top: r * ROW_H, left: 0, right: 0, height: ROW_H, background: black ? 'rgba(231,165,64,0.045)' : 'transparent', borderTop: isC ? '1px solid rgba(231,165,64,0.25)' : '1px solid rgba(255,255,255,0.03)' }}>
                 {/* Playable key: click it to hear the note on the current instrument. */}
                 <div
                   onPointerDown={(e) => { e.stopPropagation(); auditionNote(m); }}
@@ -620,7 +620,7 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
           })}
           {/* Beat + snap grid */}
           {Array.from({ length: beatCount }, (_, b) => (
-            <div key={`b${b}`} style={{ position: 'absolute', top: 0, bottom: 0, left: KEYBED_W + b * secPerBeat * pxPerSec, width: 1, background: b % 4 === 0 ? 'rgba(255,45,149,0.22)' : 'rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
+            <div key={`b${b}`} style={{ position: 'absolute', top: 0, bottom: 0, left: KEYBED_W + b * secPerBeat * pxPerSec, width: 1, background: b % 4 === 0 ? 'rgba(231,165,64,0.22)' : 'rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
           ))}
           {snapSec > 0 && snapSec * pxPerSec > 7 && Array.from({ length: Math.ceil(totalSec / snapSec) + 1 }, (_, s) => (
             <div key={`s${s}`} style={{ position: 'absolute', top: 0, bottom: 0, left: KEYBED_W + s * snapSec * pxPerSec, width: 1, background: 'rgba(231,165,64,0.055)', pointerEvents: 'none' }} />

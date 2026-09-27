@@ -28,11 +28,12 @@
 // The legacy --lx-* anchors. They no longer rotate: rotating a green by the
 // slider is exactly how it used to end up purple. Violet and magenta keep their
 // names because OneManBand, ScrewShop and WaveSlicer read them, but they are
-// the signal amber and steel now.
+// the signal amber and steel now. So are the emeralds (2026-09-27): only the
+// Chopped & Screwed tab read them, and its neon green was the last accent that wasn't amber.
 const ANCHORS = {
-  '--lx-emerald': [158, 84, 40],
-  '--lx-emerald-lit': [158, 80, 58],
-  '--lx-green2': [152, 79, 44],
+  '--lx-emerald': [36, 78, 40],
+  '--lx-emerald-lit': [36, 78, 58],
+  '--lx-green2': [36, 70, 44],
   '--lx-blue': [36, 78, 58],
   '--lx-violet': [36, 78, 58],
   '--lx-magenta': [216, 8, 64],
@@ -112,7 +113,7 @@ export function applyPrism(t = getPrism()) {
   for (const [name, [h, s, l]] of Object.entries(ANCHORS)) {
     root.style.setProperty(name, `hsl(${h} ${s}% ${l}%)`);
   }
-  root.style.setProperty('--lx-line', 'hsla(158 60% 70% / .16)');
+  root.style.setProperty('--lx-line', 'hsla(36 78% 70% / .16)');
   root.style.setProperty('--lx-line-hot', 'hsla(216 8% 70% / .30)');
 
   // Both forms, written together. See the note at the top of this file.

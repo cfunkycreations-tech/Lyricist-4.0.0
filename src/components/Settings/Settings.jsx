@@ -698,7 +698,7 @@ export default function Settings() {
       </div>
 
       {/* Multi-Model Fusion */}
-      <div style={{ marginBottom: 22, background: 'rgba(255,45,149,0.06)', border: '1px solid rgba(255,45,149,0.22)', borderRadius: 10, padding: 14 }} data-help="Fusion Mode sends your song idea to multiple AI models at the same time, then combines the best parts of each result into one final version. It uses more of your API credits but often produces richer, more creative lyrics because each model thinks differently.">
+      <div style={{ marginBottom: 22, background: 'rgba(231,165,64,0.06)', border: '1px solid rgba(231,165,64,0.22)', borderRadius: 10, padding: 14 }} data-help="Fusion Mode sends your song idea to multiple AI models at the same time, then combines the best parts of each result into one final version. It uses more of your API credits but often produces richer, more creative lyrics because each model thinks differently.">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <div>
             <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,150,200,0.8)' }}>
@@ -722,9 +722,9 @@ export default function Settings() {
               fontWeight: 700,
               cursor: 'pointer',
               fontFamily: 'var(--faf-font)',
-              background: store.config.fusionEnabled ? 'linear-gradient(135deg,#ff2d95,#9ba1aa)' : 'rgba(53,55,58,0.6)',
+              background: store.config.fusionEnabled ? 'linear-gradient(135deg,#E7A540,#9ba1aa)' : 'rgba(53,55,58,0.6)',
               color: store.config.fusionEnabled ? '#fff' : 'rgba(155,161,170,0.6)',
-              boxShadow: store.config.fusionEnabled ? '0 0 0 1px rgba(255,45,149,0.5)' : 'none',
+              boxShadow: store.config.fusionEnabled ? '0 0 0 1px rgba(231,165,64,0.5)' : 'none',
               transition: 'all 0.2s'
             }}
           >

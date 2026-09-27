@@ -118,14 +118,16 @@ function heatColor(e) {
  * and flashing the whole grid white.
  */
 function tileColor(cell, selected, rankHeat) {
-  if (selected) return { c: '180, 77, 255', glow: 32, heat: 0 };
+  // The tile you picked is white, brighter than any temperature (was violet until 2026-09-27).
+  if (selected) return { c: '240, 242, 245', glow: 32, heat: 0 };
   // Frozen is grey in the design — a pinned tile is out of the temperature
   // system entirely, so it leaves the ramp rather than sitting cold on it.
   if (cell.frozen) return { c: '176, 180, 200', glow: 10, heat: 0 };
   const heat = Math.max(0, Math.min(1, rankHeat || 0));
-  // Superposition is its own state, not a temperature. Magenta, off the ramp,
-  // and it burns violet instead of orange.
-  if (cell.isSuperposition) return { c: '224, 64, 255', glow: Math.round(18 + heat * 30), heat };
+  // Superposition is its own state, not a temperature: steel, off the ramp, and
+  // it burns pale gold instead of orange. (Magenta and violet until 2026-09-27;
+  // the Sep 15 "no purple" pass missed this line.)
+  if (cell.isSuperposition) return { c: '155, 161, 170', glow: Math.round(18 + heat * 30), heat };
   return { c: heatColor(heat), glow: Math.round(10 + heat * 38), heat };
 }
 
@@ -135,8 +137,9 @@ function tileColor(cell, selected, rankHeat) {
  * TWO ANSWERS, and this is straight off his animation, not a design choice of
  * mine. Fire on this board is ORANGE — real fire, white at the fuel through
  * yellow and orange to red at the tip. The only exception is an ENTANGLED
- * tile, which burns VIOLET, deliberately wrong for fire, because a superposed
- * word is not behaving like the rest of the board.
+ * tile, which burns pale GOLD on a steel tile, set apart from the orange fire
+ * because a superposed word is not behaving like the rest of the board. (It
+ * burned violet until 2026-09-27; Chris: no purple anywhere.)
  *
  * An earlier pass had this cycling six hues by rhyme class, so the board came
  * out as a rainbow of green and blue and yellow flames. The colours in the
@@ -147,7 +150,7 @@ function tileColor(cell, selected, rankHeat) {
  * at the fuel, the light thrown back on the word, and the embers.
  */
 function fireHue(cell) {
-  return cell.isSuperposition ? 282 : 26;
+  return cell.isSuperposition ? 48 : 26;
 }
 
 // a gentle static sparkline path for the Entanglement State card

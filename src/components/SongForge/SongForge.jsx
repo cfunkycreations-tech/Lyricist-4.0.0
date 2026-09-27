@@ -415,7 +415,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                   padding: '8px 4px',
                   borderRadius: 8,
                   border: mode === id ? 'none' : '1px solid rgba(155,161,170,0.25)',
-                  background: mode === id ? 'linear-gradient(135deg,#ff2d95,#9ba1aa,#e7a540)' : 'rgba(16,18,21,0.7)',
+                  background: mode === id ? 'linear-gradient(135deg,#E7A540,#9ba1aa,#e7a540)' : 'rgba(16,18,21,0.7)',
                   color: mode === id ? '#fff' : 'rgba(230,232,235,0.6)',
                   fontSize: '0.72rem',
                   fontWeight: 700,
@@ -499,12 +499,12 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                 <input ref={refInputRef} type="file" accept="image/*" onChange={handleUploadReference} style={{ display: 'none' }} />
                 <button
                   onClick={() => refInputRef.current?.click()}
-                  style={{ width: '100%', padding: '9px', borderRadius: 8, border: '1px solid rgba(255,45,149,0.35)', background: 'rgba(255,45,149,0.08)', color: '#ff7eb6', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                  style={{ width: '100%', padding: '9px', borderRadius: 8, border: '1px solid rgba(231,165,64,0.35)', background: 'rgba(231,165,64,0.08)', color: '#ff7eb6', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
                   <ImageIcon size={13} /> Upload Reference Image
                 </button>
                 {refImage && (
-                  <div style={{ position: 'relative', marginTop: 8, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,45,149,0.4)', boxShadow: '0 0 0 1px rgba(255,45,149,0.25)' }}>
+                  <div style={{ position: 'relative', marginTop: 8, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(231,165,64,0.4)', boxShadow: '0 0 0 1px rgba(231,165,64,0.25)' }}>
                     <img src={refImage.dataUrl} alt="Cover art reference" style={{ width: '100%', display: 'block' }} />
                     <button
                       onClick={() => setRefImage(null)}
@@ -639,7 +639,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                     value={titleDraft}
                     onChange={(e) => setTitleDraft(e.target.value)}
                     data-help="Editable song title — used as the file name for downloads/auto-save, and fed into Remix Art if you re-roll the cover."
-                    style={{ fontSize: '1rem', fontWeight: 700, background: 'transparent', border: 'none', borderBottom: '1px dashed rgba(255,45,149,0.3)', color: '#ff8020', outline: 'none', minWidth: 120, flex: 1 }}
+                    style={{ fontSize: '1rem', fontWeight: 700, background: 'transparent', border: 'none', borderBottom: '1px dashed rgba(231,165,64,0.3)', color: '#ff8020', outline: 'none', minWidth: 120, flex: 1 }}
                   />
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <button onClick={handleCopyLyrics} style={{ fontSize: '0.7rem', background: 'transparent', border: '1px solid rgba(231,165,64,0.3)', color: copied ? '#34d399' : 'rgba(230,232,235,0.7)', padding: '4px 10px', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>

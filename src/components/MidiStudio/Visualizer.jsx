@@ -304,7 +304,7 @@ export default function Visualizer() {
             <button
               className="suno-chip"
               onClick={closePopout}
-              style={{ borderColor: '#10f0a0', color: '#10f0a0', background: 'rgba(16,240,160,0.1)' }}
+              style={{ borderColor: '#E7A540', color: '#E7A540', background: 'rgba(231,165,64,0.1)' }}
               data-help="Bring the visualizer back into this panel and close the full-screen window."
             >
               <MonitorUp size={11} /> On {describeDisplay(poppedTo).split(' · ')[0]} — bring back
@@ -362,7 +362,7 @@ export default function Visualizer() {
                 maxWidth: 160,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                borderColor: n === presetName ? 'rgba(255,45,149,0.7)' : undefined,
+                borderColor: n === presetName ? 'rgba(231,165,64,0.7)' : undefined,
                 color: n === presetName ? '#e7a540' : undefined,
               }}
               title={n}
