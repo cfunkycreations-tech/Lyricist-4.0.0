@@ -6,6 +6,7 @@ import { INSTRUMENT_GROUPS, DEFAULT_INSTRUMENT, loadInstrument, playNote, warmNo
 import { listSamples, getSampleBuffer } from '../../services/sampleLibrary.js';
 import { createPushLink, hueToPushColor, PUSH_CC } from '../../services/pushMidi.js';
 import { loadButterchurn } from '../../services/butterchurnLoader.js';
+import { getMidiOut, setMidiOut, subscribeMidiOut } from '../../services/midiOut.js';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Glyph } from '../common/Glyph.jsx';
 
@@ -429,6 +430,8 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
   const [pushName, setPushName] = useState(null);
   const [chordType, setChordType] = useState(0);        // Note mode: each pad plays a note or a chord
   const [instReady, setInstReady] = useState(null);     // id of the loaded sound
+  const [daw, setDaw] = useState(getMidiOut);
+  useEffect(() => subscribeMidiOut(setDaw), []);
 
   const outRef = useRef(null);
   const instRef = useRef(null);
@@ -709,6 +712,14 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
     window.addEventListener('pointerup', up);
   };
 
+  const toggleDaw = () => {
+    const toDaw = daw.mode !== 'daw';
+    setMidiOut({ mode: toDaw ? 'daw' : 'builtin' });
+    const port = daw.outputs.find((o) => o.id === daw.outputId);
+    setDisplay(!toDaw ? 'Built-in: Lyricist Pro plays the sound.'
+      : port ? `DAW: notes go to ${port.name}.` : 'DAW: pick a MIDI port in Settings → Play Through.');
+  };
+
   const BUTTONS = [
     { label: playing ? 'Stop' : 'Play', on: playing, act: () => setPlaying((p) => !p) },
     { label: 'Drum', on: mode === 'drum', act: () => setMode('drum') },
@@ -725,6 +736,8 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
     { label: 'Next vis', act: () => (viz.on ? viz.api.current.step(1) : viz.toggle()) },
     { label: 'Shuffle', act: () => (viz.on ? viz.api.current.next() : viz.toggle()) },
     { label: 'Hide', act: onClose },
+    // Play Through (Settings): the notes go to Ableton or any DAW as MIDI instead.
+    { label: daw.mode === 'daw' ? 'DAW' : 'Built-in', on: daw.mode === 'daw', act: toggleDaw },
   ];
 
   const cells = [];

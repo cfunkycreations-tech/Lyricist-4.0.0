@@ -58,8 +58,9 @@ export default function PlayThrough() {
       <p style={P}>
         <strong>DAW</strong> sends every note as MIDI and Lyricist Pro stays silent. Pitched notes go out on the note channel,
         drums on channel 10 in the General MIDI layout, so a drum rack lines up. In Ableton, set a MIDI track's input to
-        the other end of the cable and arm it (or set it to <em>In</em>). Windows 11 has a cable built in:
-        send to <code style={{ color: '#e7a540' }}>Loopback A</code>, and Ableton listens on <code style={{ color: '#e7a540' }}>Loopback B</code>.
+        the same port and arm it (or set monitoring to <em>In</em>). The cable is a virtual MIDI port such as
+        the free <code style={{ color: '#e7a540' }}>loopMIDI</code>: make one port, pick it here, and pick it in Ableton.
+        (The Windows 11 "Loopback A/B" ports don't show up in Lyricist Pro or Ableton.)
       </p>
       <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
         <Key on={!daw} onClick={() => setMidiOut({ mode: 'builtin' })} help="Lyricist Pro makes the sound itself.">

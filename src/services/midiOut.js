@@ -12,9 +12,9 @@
  *   notes  -> the note channel (1 by default)
  *   drums  -> channel 10, General MIDI drum map, so any drum rack lines up
  *
- * Getting the MIDI into the DAW needs a virtual cable. Windows 11 ships one:
- * Windows MIDI Services' "Loopback A" / "Loopback B" (send to A, the DAW
- * listens on B). loopMIDI or any other virtual port works the same way.
+ * Getting the MIDI into the DAW needs a virtual cable: loopMIDI (one port, both
+ * sides pick it). Windows MIDI Services' "Loopback A/B" are NOT visible to
+ * Chromium's Web MIDI or to WinMM DAWs, so they don't work (tested 2026-09-27).
  *
  * The two engines check isDaw() at the top of playNote / triggerVoice, so every
  * caller follows the toggle without knowing it exists.
