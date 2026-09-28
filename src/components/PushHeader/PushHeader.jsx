@@ -473,11 +473,15 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
     instRef.current = null;
     setInstReady(null);
     if (inst.vst) {
-      setDisplay(`Loading ${inst.name}…`);
-      loadVst(inst.vst)
-        .then((h) => { if (!dead) { instRef.current = { vst: h }; setInstReady(inst.id); setDisplay(`${inst.name} · VST3 on ${h.driver}`); } })
-        .catch((e) => { if (!dead) setDisplay(`${inst.name}: ${e.message}`); });
-      return () => { dead = true; };
+      setDisplay(`${inst.name} · VST3`);
+      // Wait for the knob to settle, so wheeling past a synth doesn't load it.
+      const t = setTimeout(() => {
+        setDisplay(`Loading ${inst.name}…`);
+        loadVst(inst.vst)
+          .then((h) => { if (!dead) { instRef.current = { vst: h }; setInstReady(inst.id); setDisplay(`${inst.name} · VST3 on ${h.driver}`); } })
+          .catch((e) => { if (!dead) setDisplay(`${inst.name}: ${e.message}`); });
+      }, 400);
+      return () => { dead = true; clearTimeout(t); };
     }
     loadInstrument(getAudioContext(), inst.id)
       .then((i) => { if (!dead) { instRef.current = i; setInstReady(inst.id); } })

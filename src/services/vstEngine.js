@@ -80,8 +80,16 @@ async function openAudio() {
   return name;
 }
 
-/** Load `inst` ({ name, path }) and make sure it can play. Resolves to a handle. */
-export async function loadInstrument(inst) {
+/** Load `inst` ({ name, path }) and make sure it can play. Resolves to a handle.
+ *  Loads run one after another, so a fast turn of the Sound knob can't leave
+ *  several synths loaded at once (each load unloads the one before it). */
+let chain = Promise.resolve();
+export function loadInstrument(inst) {
+  const next = chain.then(() => loadNow(inst));
+  chain = next.catch(() => {});
+  return next;
+}
+async function loadNow(inst) {
   if (!opened) opened = openAudio().catch((e) => { opened = null; throw e; });
   const driver = await opened;
   const key = `${inst.path}|${inst.name}`;
