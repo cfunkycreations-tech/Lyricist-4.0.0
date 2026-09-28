@@ -232,17 +232,25 @@ void IpcBridge::processCommand(const juce::String& line)
     else if (method.startsWith("plugin.") || method.startsWith("audio."))
     {
         // Plugin work touches editors and the graph, so it must happen on the
-        // message thread. The IPC reader runs on its own thread, so hop across
-        // and wait for the result before replying.
-        juce::var resultVar;
-        juce::String errorText;
-
-        auto* pObj = params.isObject() ? params.getDynamicObject() : nullptr;
-        const juce::String instanceId = pObj != nullptr ? pObj->getProperty("id").toString() : juce::String();
-
+        // message thread. The IPC reader runs on its own thread, so post the work
+        // there and wait. NOT a MessageManagerLock: createPluginInstance posts its
+        // own work to the message thread and waits for it, so holding the lock
+        // from here deadlocked every plugin.load (even tiny effects).
+        struct Job
         {
-            const juce::MessageManagerLock lock;
-            if (lock.lockWasGained())
+            juce::var resultVar;
+            juce::String errorText;
+            juce::WaitableEvent done;
+        };
+        auto job = std::make_shared<Job>();
+
+        juce::MessageManager::callAsync([job, params, method, &host = pluginHost]()
+        {
+            auto& pluginHost = host;
+            auto& resultVar = job->resultVar;
+            auto& errorText = job->errorText;
+            auto* pObj = params.isObject() ? params.getDynamicObject() : nullptr;
+            const juce::String instanceId = pObj != nullptr ? pObj->getProperty("id").toString() : juce::String();
             {
                 if (method == "plugin.load")
                 {
@@ -335,10 +343,19 @@ void IpcBridge::processCommand(const juce::String& line)
                     errorText = "Unknown method: " + method;
                 }
             }
-            else
-            {
-                errorText = "Could not reach the message thread.";
-            }
+            job->done.signal();
+        });
+
+        juce::var resultVar;
+        juce::String errorText;
+        if (job->done.wait(120000))
+        {
+            resultVar = job->resultVar;
+            errorText = job->errorText;
+        }
+        else
+        {
+            errorText = "The plugin took longer than two minutes: " + method;
         }
 
         auto* resp = new juce::DynamicObject();
