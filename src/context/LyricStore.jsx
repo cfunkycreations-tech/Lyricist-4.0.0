@@ -399,10 +399,21 @@ export const LyricStoreProvider = ({ children }) => {
 
   const asList = (next, prev) => (typeof next === 'function' ? next(prev) : next) || [];
 
+  // The subgenres that still belong to a genre list.
+  const keepSubgenres = (genresNow, subs) => {
+    const pool = genresNow.flatMap((g) => subgenres[g] || []);
+    return subs.filter((s) => pool.includes(s));
+  };
   const setGenreList = (next) => {
     const list = asList(next, genreList);
+    // Drop the orphaned subgenres HERE, before translating. The prune effect
+    // further down clears them from Songwriter a tick later, but Black Hole
+    // Studios had already been translated with them: Hip-Hop / Rap + West Coast
+    // swapped for R&B / Soul left G-funk sitting next to Soul over there.
+    const subs = keepSubgenres(list, subgenreList);
     setGenreListRaw(list);
-    setBhGenreListRaw(toBlackHoleGenres(list, subgenreList));
+    if (subs.length !== subgenreList.length) setSubgenreListRaw(subs);
+    setBhGenreListRaw(toBlackHoleGenres(list, subs));
   };
   const setSubgenreList = (next) => {
     const list = asList(next, subgenreList);
@@ -445,7 +456,7 @@ export const LyricStoreProvider = ({ children }) => {
    */
   const setStylePicks = ({ genres: g, subgenres: s, moods: m } = {}) => {
     const nextG = g === undefined ? genreList : (g || []);
-    const nextS = s === undefined ? subgenreList : (s || []);
+    const nextS = keepSubgenres(nextG, s === undefined ? subgenreList : (s || []));
     const nextM = m === undefined ? moodList : (m || []);
     setGenreListRaw(nextG);
     setSubgenreListRaw(nextS);
