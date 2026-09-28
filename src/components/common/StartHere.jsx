@@ -46,11 +46,12 @@ export default function StartHere({ onGoToSettings }) {
         <div className="sh-two">
           <div>
             <span className="sh-h waiting">Waiting on the key</span>
-            <p>Songwriter's AI writing, Ghost Rider, Song Forge, The Matrix, Rhyme Helper's AI suggestions</p>
+            <p>Songwriter's AI writing, Ghost Rider, Song Forge, The Matrix, Rhyme Helper's AI suggestions,
+              Black Hole Studios' Input Caption skill</p>
           </div>
           <div>
             <span className="sh-h ready">Ready right now, no key</span>
-            <p>Black Hole Studios, Recording Booth, RC-Funk 5000, Mastering, local stem extraction, MIDI Studio,
+            <p>Black Hole Studios (making the songs), Recording Booth, RC-Funk 5000, Mastering, local stem extraction, MIDI Studio,
               Chopped &amp; Screwed, Thesaurus, Dictionary, Scratch Pad</p>
           </div>
         </div>
