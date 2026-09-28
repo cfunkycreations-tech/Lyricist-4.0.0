@@ -87,6 +87,14 @@ export default function PlayThrough() {
             data-help="Sends a C major chord, then a kick and a snare, so you can see it arrive in your DAW.">
             Test
           </button>
+          <label style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: 'rgba(230,232,235,0.7)', cursor: 'pointer' }}
+            data-help="While the pad sequencer or MIDI Studio plays, send MIDI clock, start and stop, so the DAW follows Lyricist Pro's tempo. In Ableton: Settings → Link, Tempo & MIDI, turn on Sync for this port's input, then press EXT.">
+            <input type="checkbox" checked={m.sendClock !== false} onChange={(e) => setMidiOut({ sendClock: e.target.checked })} />
+            Send MIDI clock, start and stop, so the DAW follows our tempo
+          </label>
+          <p style={{ ...P, gridColumn: '1 / -1', margin: 0 }}>
+            Your own samples keep playing here in DAW mode; the DAW doesn't have those files.
+          </p>
         </div>
       )}
     </div>

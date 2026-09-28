@@ -6,7 +6,7 @@ import { INSTRUMENT_GROUPS, DEFAULT_INSTRUMENT, loadInstrument, playNote, warmNo
 import { listSamples, getSampleBuffer } from '../../services/sampleLibrary.js';
 import { createPushLink, hueToPushColor, PUSH_CC } from '../../services/pushMidi.js';
 import { loadButterchurn } from '../../services/butterchurnLoader.js';
-import { getMidiOut, setMidiOut, subscribeMidiOut } from '../../services/midiOut.js';
+import { getMidiOut, setMidiOut, subscribeMidiOut, clockStart, clockStop, clockTempo } from '../../services/midiOut.js';
 import { vstAvailable, cachedInstruments, listInstruments, loadInstrument as loadVst, vstNote, showEditor as showVstEditor } from '../../services/vstEngine.js';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Glyph } from '../common/Glyph.jsx';
@@ -607,8 +607,10 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
     };
     const id = setInterval(tick, 25);
     tick();
-    return () => clearInterval(id);
+    clockStart(live.current.tempo);   // DAW mode: the DAW follows our tempo
+    return () => { clearInterval(id); clockStop(); };
   }, [playing]);
+  useEffect(() => { clockTempo(tempo); }, [tempo]);
 
   const colorOf = useCallback((x, y) => {
     const info = padInfo(x, y);

@@ -121,7 +121,5 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   lessonReveal: () => ipcRenderer.invoke('ghost-lesson-reveal'),
 
   // Real Windows VST3 Plugin Scanner & Native Window Hosting
-  vst3ScanSystem: () => ipcRenderer.invoke('vst3-scan-system'),
-  openPluginGui: (pluginInfo) => ipcRenderer.invoke('vst3-open-gui', pluginInfo),
   sendJuceCommand: (cmd, args) => ipcRenderer.invoke('juce-command', { cmd, args }),
 });

@@ -14,6 +14,11 @@ import {
   playNote,
 } from '../../services/soundfontEngine.js';
 import { getSampleBuffer } from '../../services/sampleLibrary.js';
+import { clockStart, clockStop, clockTempo } from '../../services/midiOut.js';
+import { vstAvailable, cachedInstruments, listInstruments, loadInstrument as loadVst, vstNote } from '../../services/vstEngine.js';
+
+// A built-in sound, a sample, or a VST3 ({ vst: handle }), same call either way.
+const sound = (ctx, dest, inst, midi, opts) => (inst?.vst ? vstNote(ctx, inst.vst, midi, opts) : playNote(ctx, dest, inst, midi, opts));
 
 // Offline MIDI sequencer — Lyricist 4.2.0
 // FL-grade piano roll: four tools (select / draw / paint / erase), drag-to-move,
@@ -76,6 +81,16 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
   const [instrumentId, setInstrumentId] = useState(DEFAULT_INSTRUMENT);
   const [instrumentState, setInstrumentState] = useState('loading'); // loading | ready | error
   const instrumentRef = useRef(null);
+  // Creator build: your VST3 instruments, from the engine's last scan.
+  const [vsts, setVsts] = useState(() => (vstAvailable() ? cachedInstruments() : []));
+  useEffect(() => {
+    if (!vstAvailable()) return undefined;
+    let dead = false;
+    listInstruments().then((l) => { if (!dead) setVsts(l); }).catch(() => {});
+    return () => { dead = true; };
+  }, []);
+  const vstsRef = useRef(vsts);
+  vstsRef.current = vsts;
 
   const notes = midi?.notes || [];
   // Drag handlers live for the whole gesture — read notes through the ref so an
@@ -87,6 +102,7 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
   const timeScale = originalTempo / tempo;
 
   const secPerBeat = 60 / tempo;
+  useEffect(() => { clockTempo(tempo); }, [tempo]);
   const snapSec = (GRID_OPTIONS.find(g => g.id === gridId)?.beats || 0) * secPerBeat;
   const defaultLen = snapSec || 0.3;
 
@@ -127,6 +143,7 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
       try { v?.stop?.(); } catch { /* already stopped */ }
     });
     stateRef.current = {};
+    clockStop();
     setPlaying(false);
     setPlayheadX(0);
     if (onPlayStateChange) onPlayStateChange(false);
@@ -142,7 +159,11 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
     instrumentRef.current = null;
     const ctx = getAudioContext();
 
-    const load = instrumentId.startsWith('user:')
+    const vstName = instrumentId.startsWith('vst3:') ? instrumentId.slice(5) : null;
+    const vstInst = vstName && (vstsRef.current.find((v) => v.name === vstName) || cachedInstruments().find((v) => v.name === vstName));
+    const load = vstName
+      ? (vstInst ? loadVst(vstInst).then((h) => ({ vst: h })) : Promise.reject(new Error('not found')))
+      : instrumentId.startsWith('user:')
       ? (async () => {
           const [, sampleId, root] = instrumentId.split(':');
           const buf = await getSampleBuffer(ctx, sampleId);
@@ -187,7 +208,7 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
   const scheduleVoice = (ctx, note, when, dur) => {
     const inst = instrumentRef.current;
     if (!inst) return null;
-    const stopFn = playNote(ctx, destination(), inst, note.midi, {
+    const stopFn = sound(ctx, destination(), inst, note.midi, {
       when,
       duration: dur,
       velocity: 0.85 * (note.velocity ?? 0.8),
@@ -201,7 +222,7 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
     const ctx = getAudioContext();
     const inst = instrumentRef.current;
     if (!inst) return;
-    playNote(ctx, destination(), inst, midiNote, { duration: 0.45, velocity });
+    sound(ctx, destination(), inst, midiNote, { duration: 0.45, velocity });
   }, [destination]);
 
   const play = async () => {
@@ -210,6 +231,7 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
     const ctx = getAudioContext();
     // Don't start against a half-loaded instrument — that's how you get silence.
     if (!instrumentRef.current) {
+      if (instrumentId.startsWith('vst3:')) return;   // still loading; the status says so
       try {
         instrumentRef.current = await loadInstrument(ctx, instrumentId);
         setInstrumentState('ready');
@@ -227,6 +249,7 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
 
     stateRef.current = { startCtxTime: ctx.currentTime + 0.08, nextIdx: 0, scaledNotes: scaled, endTime, voices: [] };
     setPlaying(true);
+    clockStart(tempo);   // DAW mode: the DAW follows our tempo
     if (onPlayStateChange) onPlayStateChange(true);
 
     schedRef.current = setInterval(() => {
@@ -495,6 +518,11 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
                 <option value={instrumentId}>
                   {userSample?.name || 'Loaded sample'}
                 </option>
+              </optgroup>
+            )}
+            {vsts.length > 0 && (
+              <optgroup label="VST3 Instruments">
+                {vsts.map((v) => <option key={v.name} value={`vst3:${v.name}`}>{v.name}</option>)}
               </optgroup>
             )}
             {INSTRUMENT_GROUPS.map((g) => (

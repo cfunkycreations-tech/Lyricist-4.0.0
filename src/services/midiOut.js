@@ -21,7 +21,7 @@
  */
 
 const KEY = 'lyricist.midiout.v1';
-const DEFAULTS = { mode: 'builtin', outputId: '', outputName: '', noteChannel: 1, drumChannel: 10 };
+const DEFAULTS = { mode: 'builtin', outputId: '', outputName: '', noteChannel: 1, drumChannel: 10, sendClock: true };
 
 // 808 voice -> General MIDI percussion note.
 export const GM_DRUMS = {
@@ -80,7 +80,7 @@ export function setMidiOut(patch) {
   state = { ...state, ...patch };
   if (patch.outputId && access) state.outputName = access.outputs.get(patch.outputId)?.name || state.outputName;
   if (state.mode === 'daw') initMidiOut();
-  if (patch.mode === 'builtin') allNotesOff();
+  if (patch.mode === 'builtin') { clockStop(); allNotesOff(); }
   save();
 }
 
@@ -132,6 +132,42 @@ export function dawDrum(ctx, voiceId, when, velocity = 1) {
   if (note == null) return null;
   send(state.drumChannel, note, vel(Math.min(1, velocity)), stamp(ctx, when), 90);
   return null;
+}
+
+/* ── MIDI clock ──
+   While a sequencer plays in DAW mode, send start, 24 clocks per beat, and stop,
+   so the DAW can follow our tempo (Ableton: Preferences > Link/Tempo/MIDI, turn
+   on Sync for this port's input). Off with state.sendClock = false.
+   Samples are the one thing DAW mode does NOT send: the DAW doesn't have the
+   files, so sample pads keep playing here. */
+let clock = null;
+export function clockStart(bpm) {
+  if (!isDaw() || state.sendClock === false) return;
+  const out = port();
+  if (!out) return;
+  clockStop(false);
+  const c = { bpm, timer: 0, next: performance.now() };
+  try { out.send([0xFA]); } catch { return; }
+  const tick = () => {
+    const o = port();
+    if (!o) return;
+    const iv = 60000 / (Math.max(20, c.bpm) * 24);
+    const horizon = performance.now() + 100;
+    while (c.next < horizon) {
+      try { o.send([0xF8], c.next); } catch { /* port went away */ }
+      c.next += iv;
+    }
+  };
+  tick();
+  c.timer = setInterval(tick, 25);
+  clock = c;
+}
+export function clockTempo(bpm) { if (clock) clock.bpm = bpm; }
+export function clockStop(sendStop = true) {
+  if (!clock) return;
+  clearInterval(clock.timer);
+  clock = null;
+  if (sendStop) { try { port()?.send([0xFC]); } catch { /* */ } }
 }
 
 /** Panic: silence every note we started (also sent when switching back to built-in). */
