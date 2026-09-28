@@ -388,8 +388,8 @@ function MainLayout() {
           under the WebGL prism); the prism is gone with the rest of the
           artwork, so a colour designed to sit under motion looks slightly
           dead on its own. Pure black is the whole floor now.
-          Superseded 2026-09-27: Chris picked brushed black nickel for every
-          surface, so the floor is the nickel (materials.css --mat-floor). Flat
+          Superseded 2026-09-27: the floor is the app's surface material
+          (materials.css --mat-floor), black obsidian glass since 2026-09-28. Flat
           black here showed as a dead band under any tab shorter than the window. */}
       <div
         style={{

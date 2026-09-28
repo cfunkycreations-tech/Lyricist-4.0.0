@@ -370,7 +370,7 @@ export default function LoopStation() {
       <div style={{ position: 'relative', zIndex: 1 }}>
       <style>{`
         /* RC-Funk 5000 in Lyricist Pro's materials (styles/materials.css): black
-           anodized keys on brushed black nickel. The old candy colours live on as
+           black glass keys on obsidian glass. The old candy colours live on as
            each key's LED ring, so green still means go and red still means gone. */
         .rc-round-btn {
           --led: 150 70% 50%;

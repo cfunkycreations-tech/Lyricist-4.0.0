@@ -19,7 +19,7 @@ import React from 'react';
  * If a future skin needs per-tab colour again, this is the file that gets it.
  *
  * 2026-09-27: flat black is over. Chris: *"I don't want plain ugly ass flat."*
- * The floor is the brushed black nickel from styles/materials.css.
+ * The floor is the black obsidian glass from styles/materials.css.
  */
 // eslint-disable-next-line no-unused-vars
 export default function TabBackground({ name, art = null, artOpacity = 0.72 }) {

@@ -381,7 +381,7 @@ export default function Settings() {
   return (
     <div className="settings-page" style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <TabBackground name="settings" />
-      {/* Every setting sits on its own nickel plate (styles/materials.css, .settings-col). */}
+      {/* Every setting sits on its own pane of obsidian glass (styles/materials.css, .settings-col). */}
       <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, overflowY: 'auto', width: '100%' }}>
     <div className="settings-col" style={{ padding: 28, maxWidth: 720, margin: '0 auto', boxSizing: 'border-box' }}>
       <h2
@@ -950,7 +950,7 @@ export default function Settings() {
       {/* Your own voice — the voice pack folder */}
       <div style={{ marginBottom: 18 }} data-help="Record the tour in your own voice instead of the built-in one. Click the button, drop your recordings in the folder that opens, and restart the app. Name them splash.mp3 for the opening video and card-01.mp3 through card-18.mp3 for the tour cards. Anything you don't record keeps the built-in voice.">
         <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
-          Your Own Voice — <span style={{ color: voiceCount > 0 ? '#34d399' : '#9ba1aa' }}>
+          Your Own Voice — <span style={{ color: voiceCount > 0 ? '#34d399' : 'inherit' }}>
             {voiceCount > 0 ? `${voiceCount} recording${voiceCount === 1 ? '' : 's'} in use` : 'using the built-in voice'}
           </span>
         </label>
@@ -962,17 +962,8 @@ export default function Settings() {
         </p>
         <button
           onClick={openVoiceFolder}
-          style={{
-            padding: '8px 18px',
-            borderRadius: 8,
-            border: '1px solid rgba(231,165,64,0.45)',
-            background: 'rgba(16,18,21,0.7)',
-            color: '#FFD08A',
-            fontSize: '0.78rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            fontFamily: 'var(--faf-font)',
-          }}
+          className="btn-neon-purple key-lit settings-key"
+          style={{ cursor: 'pointer', fontFamily: 'var(--faf-font)' }}
         >
           <Icon i={FolderOpen} />Open my voice folder
         </button>
@@ -982,36 +973,18 @@ export default function Settings() {
       <div className="settings-actions" style={{ display: 'flex', gap: 10, marginBottom: 28 }}>
         <button
           onClick={handleSave}
-          className="btn-neon-purple"
+          className="btn-neon-purple settings-key"
           data-help="Saves your settings. (They also save automatically as you change them — this is just a confirm button.)"
-          style={{
-            padding: '9px 22px',
-            borderRadius: 8,
-            border: 'none',
-            color: saved ? '#34d399' : '#fff',
-            fontSize: '0.84rem',
-            fontWeight: 700,
-            fontFamily: 'var(--faf-font)',
-            cursor: 'pointer'
-          }}
+          style={{ fontFamily: 'var(--faf-font)', cursor: 'pointer' }}
         >
           {saved ? 'Saved' : 'Save Settings'}
         </button>
 
         <button
           onClick={handleReset}
+          className="btn-neon-purple settings-key"
           data-help="Puts all settings back to their starting values. Your API key gets cleared too, so you'd need to paste it back in. It asks you to confirm first."
-          style={{
-            padding: '9px 22px',
-            borderRadius: 8,
-            border: '1px solid rgba(155,161,170,0.25)',
-            background: 'rgba(16,18,21,0.7)',
-            color: 'rgba(230,232,235,0.6)',
-            fontSize: '0.84rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            fontFamily: 'var(--faf-font)'
-          }}
+          style={{ cursor: 'pointer', fontFamily: 'var(--faf-font)' }}
         >
           Reset to Defaults
         </button>
@@ -1025,16 +998,16 @@ export default function Settings() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[
             ['API Key Status', store.config.openRouterApiKey ? 'Configured' : 'Not configured', store.config.openRouterApiKey ? '#34d399' : '#f87171'],
-            ['Active Model', store.config.model, '#e6e8eb'],
-            ['Assistant Temperature', store.config.temperature, '#e6e8eb'],
-            ['Token Cap', store.config.maxTokens, '#e6e8eb'],
+            ['Active Model', store.config.model, '#ECEDEF'],
+            ['Assistant Temperature', store.config.temperature, '#ECEDEF'],
+            ['Token Cap', store.config.maxTokens, '#ECEDEF'],
             ['Song Forge (OpenRouter)', store.config.openRouterApiKey ? 'Same key as studio' : 'OpenRouter key needed', store.config.openRouterApiKey ? '#34d399' : '#f87171'],
-            ['Song Forge Text Model', store.config.geminiTextModel, '#e7a540'],
-            ['Song Forge Art Model', store.config.geminiImageModel, '#e7a540']
+            ['Song Forge Text Model', store.config.geminiTextModel, '#FFD08A'],
+            ['Song Forge Art Model', store.config.geminiImageModel, '#FFD08A']
           ].map(([k, v, c]) => (
             <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.75rem', color: 'rgba(230,232,235,0.7)' }}>{k}</span>
-              <span style={{ fontSize: '0.75rem', fontFamily: "'JetBrains Mono', monospace", color: c, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '300px' }}>
+              <span style={{ fontSize: 12, color: '#ECEDEF' }}>{k}</span>
+              <span style={{ fontSize: 12, fontFamily: 'Consolas, monospace', color: c, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '300px' }}>
                 {v}
               </span>
             </div>

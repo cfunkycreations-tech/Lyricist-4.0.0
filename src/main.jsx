@@ -6,7 +6,6 @@ import './index.css';
 import './styles/opsec.css';
 import './styles/materials.css';
 import { startWheelControls } from './services/wheelControls.js';
-import { installBrushedMetal } from './services/brushedMetal.js';
 import { registerPWA } from './web/registerPWA.js';
 import LandscapeSplash from './web/LandscapeSplash.jsx';
 import DialogHost from './components/common/DialogHost.jsx';
@@ -58,7 +57,6 @@ class BootErrorBoundary extends React.Component {
 
 startPrism();
 startWheelControls();
-installBrushedMetal();
 
 const rootEl = document.getElementById('root');
 try {

@@ -5,16 +5,25 @@
    Chris, 2026-09-27: "I don't want plain ugly ass flat ... line icons, at least
    make them glow white or amber where they're cut out. And I want the actual
    texture of the UI to be something, carbon fiber, brushed, anodized nickel.
-   Something to make it pop." He picked from the swatch board:
+   Something to make it pop."
 
-     SURFACE   brushed black nickel   the floor, the panels, the header
-     CONTROLS  black anodized         keys, fader caps, knob caps
+   2026-09-28 the surface became BLACK OBSIDIAN GLASS REFLECTING A RED LIGHT.
+   Chris turned down every brushed metal, then picked this from one swatch
+   (scratchpad obsidian-glow.html) and said: "leave it exactly like that make
+   it exactly like that ... don't change the damn thing". The values below are
+   that swatch's, layer for layer. Do not tune them.
+
+     SURFACE   black obsidian glass   the floor, the panels, the header
+               one red light          up and to the left of the window; every
+                                      pane reflects it from the same place
+                                      (background-attachment: fixed)
+     CONTROLS  black glass keys       same glass, domed, catching the red light
      ICONS     cut out and lit        white at rest, amber when on or under the pointer
      TYPE      Audiowide              everything in the chrome
                Bahnschrift            lyrics and anything you write into
                                       (Audiowide's l / I / 1 blur at lyric size)
 
-   Every texture is drawn here (SVG noise, gradients). Nothing is downloaded.
+   Every surface is drawn here with gradients. Nothing is downloaded.
    ══════════════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -26,30 +35,45 @@
   --amber: rgb(var(--accent-rgb));
   --amber-hot: #FFD08A;
 
-  /* brushed: services/brushedMetal.js replaces this at startup with a grain
-     drawn at the screen's pixel density (one hairline per device pixel row).
-     This SVG only covers the first frame; stitchTiles keeps it seamless. */
-  --mat-brush: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='300'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.003 1.4' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
-  /* a slow sheen across a panel, the way light sits on polished nickel */
-  --mat-sheen: linear-gradient(100deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0) 64%, rgba(255, 255, 255, 0.02) 84%, rgba(255, 255, 255, 0) 100%);
-  /* anodized: bead-blasted then dyed, a very fine even tooth */
-  --mat-bead: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* ── obsidian glass, exactly the swatch ── */
+  /* the red light, reflected (fixed: one light for the whole window) */
+  --obs-light: radial-gradient(60% 75% at 14% 0%, rgba(225, 28, 44, 0.34), rgba(225, 28, 44, 0.10) 42%, rgba(225, 28, 44, 0) 72%) fixed;
+  /* the gloss: a hard-edged reflection across the top third, the tell of polished glass */
+  --obs-gloss: linear-gradient(174deg, rgba(255, 120, 130, 0.14) 0%, rgba(255, 90, 100, 0.05) 38%, rgba(255, 90, 100, 0) 38.4%);
+  /* two thin diagonal reflections across the face */
+  --obs-streaks: linear-gradient(115deg, rgba(255, 255, 255, 0) 60%, rgba(255, 110, 120, 0.05) 60.4%, rgba(255, 110, 120, 0.05) 66%, rgba(255, 255, 255, 0) 66.4%,
+    rgba(255, 255, 255, 0) 69%, rgba(255, 110, 120, 0.035) 69.4%, rgba(255, 110, 120, 0.035) 71%, rgba(255, 255, 255, 0) 71.4%);
+  --obs-body: linear-gradient(180deg, rgba(20, 20, 23, 0.80) 0%, rgba(9, 9, 11, 0.90) 50%, rgba(4, 4, 5, 0.95) 100%);
+  /* The swatch also had backdrop-filter: blur(16px) saturate(160%). It is left
+     out on purpose: measured pixel for pixel, over this floor it changes nothing
+     on the glass (only text anti-aliasing), and backdrop-filter turns every
+     panel into the containing block for position:fixed children, which throws
+     menus and pop-ups inside panels out of place. */
 
-  /* Chris, 2026-09-28: darker than the mock, blacker. The mock's floor was
-     #1b1c1f→#0f1012 and its panels #2a2b2f→#131417; these sit well under it. */
-  --mat-floor: var(--mat-brush), radial-gradient(120% 90% at 50% 0%, #0f0f11 0%, #09090a 55%, #060607 100%);
-  --mat-floor-color: #08080a;
-  --mat-panel: var(--mat-sheen), var(--mat-brush), linear-gradient(180deg, #161619 0%, #0e0e10 70%, #0b0b0c 100%);
-  --mat-panel-color: #0e0e10;
-  --mat-panel-deep: var(--mat-brush), linear-gradient(180deg, #0f0f11, #070708);
-  --mat-bevel: inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 -1px 0 rgba(0, 0, 0, 0.6);
-  --mat-drop: 0 1px 0 rgba(255, 255, 255, 0.025), 0 10px 24px -12px #000;
+  --mat-floor:
+    linear-gradient(112deg, rgba(255, 255, 255, 0) 28%, rgba(255, 255, 255, 0.05) 45%, rgba(255, 255, 255, 0) 58%) fixed,
+    linear-gradient(112deg, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, 0.025) 74%, rgba(255, 255, 255, 0) 78%) fixed,
+    radial-gradient(55% 60% at 14% 0%, rgba(210, 24, 40, 0.20), rgba(210, 24, 40, 0.06) 45%, rgba(210, 24, 40, 0) 75%) fixed,
+    radial-gradient(140% 110% at 50% 0%, #121214 0%, #0a0a0b 45%, #050506 80%, #020203 100%) fixed;
+  --mat-floor-color: #020203;
+  /* in the swatch the gloss and streaks are ::before / ::after at z-index -1,
+     which paints exactly like two more layers on top of the background */
+  --mat-panel: var(--obs-streaks), var(--obs-gloss), var(--obs-light), var(--obs-body);
+  --mat-panel-color: transparent;
+  --mat-panel-deep: var(--mat-panel);
+  --mat-bevel: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  --mat-drop: 0 22px 40px -18px #000, 0 2px 6px rgba(0, 0, 0, 0.7);
 
-  --mat-key: var(--mat-bead), linear-gradient(180deg, #2a2c30 0%, #1a1b1e 55%, #111214 100%);
-  --mat-key-hover: var(--mat-bead), linear-gradient(180deg, #33363a 0%, #202226 55%, #16171a 100%);
-  --mat-key-edge: #050506;
-  --mat-key-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -2px 0 rgba(0, 0, 0, 0.35), 0 2px 3px rgba(0, 0, 0, 0.6);
-  --mat-key-pressed: inset 0 2px 4px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+  /* keys: the same black glass, domed. The swatch's ::before gloss sits 1px in,
+     over the top 48%. */
+  --obs-key-gloss: linear-gradient(180deg, rgba(255, 140, 150, 0.16), rgba(255, 110, 120, 0.03)) 1px 1px / calc(100% - 2px) 48% no-repeat;
+  --obs-key-light: radial-gradient(60% 75% at 14% 0%, rgba(225, 28, 44, 0.30), rgba(225, 28, 44, 0.08) 42%, rgba(225, 28, 44, 0) 72%) fixed;
+  --mat-key: var(--obs-key-gloss), var(--obs-key-light), linear-gradient(180deg, #202024 0%, #0f0f11 55%, #050506 100%);
+  --mat-key-hover: var(--obs-key-gloss), var(--obs-key-light), linear-gradient(180deg, #2a2a2f 0%, #141417 55%, #08080a 100%);
+  --mat-key-edge: #000;
+  --mat-key-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 2px 6px rgba(0, 0, 0, 0.85);
+  --mat-key-lit: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 0 0 1px rgba(231, 165, 64, 0.5), 0 0 14px -3px rgba(231, 165, 64, 0.6), 0 2px 6px rgba(0, 0, 0, 0.85);
+  --mat-key-pressed: inset 0 2px 4px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(0, 0, 0, 0.5);
   --mat-cap: linear-gradient(180deg, #45484e, #1f2124 48%, #0d0e10 52%, #2a2c30);
 
   --mat-well: linear-gradient(180deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.35));
@@ -81,40 +105,40 @@ h1:not(.gradient-title):not(.chrome-title), h2, h3, h4,
 
 /* ── the floor ── */
 html, body { background-color: var(--mat-floor-color); }
-body { background-image: var(--mat-floor); background-attachment: fixed; }
+body { background: var(--mat-floor); background-color: var(--mat-floor-color); }
 
-/* ── panels: brushed black nickel with a machined edge ── */
+/* ── panels: black obsidian glass reflecting the red light ── */
 .glass-panel, .card-cosmic, .output-cosmic, .ql-panel {
   background: var(--mat-panel) !important;
   background-color: var(--mat-panel-color) !important;
-  border: 1px solid rgba(0, 0, 0, 0.85) !important;
-  border-radius: 6px;
+  border: 1px solid #000 !important;
+  border-radius: 8px;
   box-shadow: var(--mat-bevel), var(--mat-drop) !important;
 }
-.card-cosmic:hover { border-color: rgba(0, 0, 0, 0.85) !important; box-shadow: var(--mat-bevel), 0 0 0 1px rgba(var(--accent-rgb), 0.25), var(--mat-drop) !important; }
+.card-cosmic:hover { border-color: #000 !important; box-shadow: var(--mat-bevel), 0 0 0 1px rgba(var(--accent-rgb), 0.25), var(--mat-drop) !important; }
 .sidebar-cosmic, .midi-sidebar, .booth-sidebar, .album-sidebar {
   background: var(--mat-panel-deep) !important;
-  border-right: 1px solid rgba(0, 0, 0, 0.9) !important;
-  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.04);
+  border-right: 1px solid #000 !important;
+  box-shadow: var(--mat-bevel);
 }
 .header-cosmic {
-  background: var(--mat-sheen), var(--mat-brush), linear-gradient(180deg, #161619, #0a0a0b) !important;
+  background: var(--mat-panel) !important;
   border-bottom: 1px solid #000 !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 0 rgba(255, 255, 255, 0.04), 0 6px 14px -6px rgba(0, 0, 0, 0.8);
+  box-shadow: var(--mat-bevel), var(--mat-drop);
 }
-.app-footer, .suno-player { background: var(--mat-panel-deep); border-top: 1px solid #000; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06); }
+.app-footer, .suno-player { background: var(--mat-panel-deep); border-top: 1px solid #000; box-shadow: var(--mat-bevel); }
 .help-tip-bubble, .help-layer-bubble, .suno-popover {
   background: var(--mat-panel); background-color: var(--mat-panel-color);
-  border: 1px solid #000; box-shadow: var(--mat-bevel), 0 12px 30px rgba(0, 0, 0, 0.7);
+  border: 1px solid #000; border-radius: 8px; box-shadow: var(--mat-bevel), var(--mat-drop);
 }
 
-/* ── keys: black anodized ── */
+/* ── keys: black obsidian glass ── */
 .btn-neon-purple, .btn-neon-cyan,
 button[style*="linear-gradient"]:not(.pc),
 .stemmer-btn, .stemmer-btn-emerald,
 .suno-btn, .suno-collapse, .suno-chip, .booth-icon-btn, .toolshub-vote {
   background: var(--mat-key) !important;
-  background-color: #1a1b1e !important;
+  background-color: #050506 !important;
   border: 1px solid var(--mat-key-edge) !important;
   color: var(--faf-text) !important;
   box-shadow: var(--mat-key-shadow) !important;
@@ -135,11 +159,11 @@ button[style*="linear-gradient"]:not(.pc):active:not(:disabled),
   box-shadow: var(--mat-key-pressed) !important;
 }
 /* The one lit key on a page (play, go, save all) is lit from inside, not painted white. */
-.suno-btn--play, .suno-chip--go, .toolshub-vote--voted, .stemmer-btn-gold {
+.suno-btn--play, .suno-chip--go, .toolshub-vote--voted, .stemmer-btn-gold, .key-lit {
   background: var(--mat-key) !important;
   color: var(--amber-hot) !important;
   border: 1px solid #000 !important;
-  box-shadow: var(--mat-key-shadow), inset 0 0 0 1px rgba(var(--accent-rgb), 0.55), 0 0 12px -3px rgba(var(--accent-rgb), 0.6) !important;
+  box-shadow: var(--mat-key-lit) !important;
 }
 
 /* ── wells: fields sit recessed into the metal ──
@@ -280,18 +304,29 @@ button.pc:not(.pc-pad):not(.pc-sweep):not(.pc-empty):active:not(:disabled)::afte
 .push-side > .pill-green svg.lucide { color: #5fd97f; filter: drop-shadow(0 -1px 0 rgba(0,0,0,.85)) drop-shadow(0 0 2px #5fd97f) drop-shadow(0 0 6px rgba(95,217,127,.55)); }
 .push-side > button:active { transform: translateY(1px); box-shadow: var(--mat-key-pressed) !important; }
 
-/* ── Settings: every setting on its own nickel plate, like a rack of units ── */
+/* ── Settings: every setting on its own pane of obsidian glass ──
+   Sizes and colours are the swatch's: 8px corners, 18px 20px inside, 16px
+   between panes, titles white 11px at 0.2em, body text #a9abb2 12px. */
 .settings-col > div:not(.settings-actions), .settings-summary {
   background: var(--mat-panel) !important; background-color: var(--mat-panel-color) !important;
-  border: 1px solid #000 !important; border-radius: 6px !important;
+  border: 1px solid #000 !important; border-radius: 8px !important;
   box-shadow: var(--mat-bevel), var(--mat-drop) !important;
-  padding: 14px 16px 12px !important; margin-bottom: 12px !important;
+  padding: 18px 20px !important; margin-bottom: 16px !important;
 }
-.settings-col label { color: #E6E8EB !important; letter-spacing: 0.16em !important; }
+.settings-col label { color: #fff !important; letter-spacing: 0.2em !important; }
+.settings-col > div > label:first-child { font-size: 11px !important; font-weight: 400 !important; margin-bottom: 10px !important; }
 .settings-col a { color: var(--amber-hot) !important; text-decoration-color: rgba(var(--accent-rgb), 0.5) !important; }
-.settings-col p { color: #9BA1AA !important; }
+.settings-col p { color: #a9abb2 !important; }
+.settings-col > div > p { font-size: 12px !important; line-height: 1.6 !important; margin: 0 0 14px !important; }
 .settings-col code { color: var(--amber-hot) !important; }
-.settings-summary > div:first-child { color: var(--amber-hot) !important; }
+.settings-summary > div:first-child { color: #fff !important; font-size: 11px !important; font-weight: 400 !important; letter-spacing: 0.2em !important; margin-bottom: 10px !important; }
+.settings-summary span { font-size: 12px !important; }
+/* the swatch's keys: 34px tall, 18px sides, 6px corners, 12px legend */
+.settings-col .settings-key {
+  display: inline-flex !important; align-items: center; gap: 8px;
+  height: 34px; padding: 0 18px !important; border-radius: 6px !important;
+  font-size: 12px !important; font-weight: 400 !important; letter-spacing: 0.06em !important;
+}
 
 /* the instrument's little screen: an amber LCD behind smoked glass */
 .pc-screen::after { background: linear-gradient(180deg, rgba(8, 6, 2, 0.94), rgba(3, 2, 1, 0.96)); box-shadow: inset 0 2px 6px #000, inset 0 0 0 1px #000; }
