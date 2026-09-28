@@ -296,3 +296,38 @@ body.lyricist-mobile .gha-face { font-size: 17px; }
   font-size: 10.5px; line-height: 1.5; white-space: pre-wrap; color: #9FB2D4; background: rgba(0, 0, 0, .45);
 }
 .ghj-clear { justify-self: start; }
+
+/* The Voice Lab view. Every knob is a range input, so the wheel runs it. */
+.vlab { flex: 1 1 auto; overflow-y: auto; display: flex; flex-direction: column; }
+.vlab .gha-voice { display: inline-flex; align-items: center; gap: 6px; }
+.vlab .gha-voice:disabled { opacity: .45; cursor: not-allowed; }
+.vlab-voice { display: flex; align-items: center; gap: 8px; padding: 10px 15px; border-bottom: 1px solid rgba(160, 200, 255, .14); }
+.vlab-voice > button {
+  flex: 0 0 auto; width: 26px; height: 26px; padding: 0; display: grid; place-items: center; border-radius: 6px; cursor: pointer;
+  color: #9FB2D4; background: rgba(3, 5, 9, .55); border: 1px solid hsla(216 8% 64% / .28);
+}
+.vlab-voice > button:hover { color: #fff; border-color: hsla(36 78% 58% / .6); }
+.vlab-voice-mid { flex: 1 1 auto; min-width: 0; display: grid; gap: 5px; }
+.vlab-voice-mid strong { font-weight: 400; font-size: 14px; letter-spacing: .04em; color: #FFD08A; text-align: center; }
+.vlab-voice-mid input[type="range"] { width: 100%; accent-color: hsl(36 78% 55%); }
+.vlab-knobs > label.is-off { opacity: .4; }
+.vlab-lbl {
+  padding: 10px 15px 4px; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 10px;
+  letter-spacing: .18em; text-transform: uppercase; color: #64789B;
+}
+.vlab-dir {
+  margin: 0 15px 10px; box-sizing: border-box; width: calc(100% - 30px); resize: vertical; min-height: 58px;
+  padding: 8px 10px; border-radius: 8px; font-family: var(--lyric-font, inherit); font-size: 12.5px; line-height: 1.5;
+  color: #EAF2FF; background: rgba(3, 5, 9, .7); border: 1px solid hsla(216 8% 64% / .3);
+}
+.vlab-dir:disabled { opacity: .45; }
+.vlab-line { display: flex; gap: 8px; align-items: center; padding: 8px 15px; border-top: 1px solid rgba(160, 200, 255, .14); }
+.vlab-line select {
+  flex: 1 1 auto; min-width: 0; padding: 6px 8px; border-radius: 8px; font-size: 11.5px;
+  color: #EAF2FF; background: rgba(3, 5, 9, .7); border: 1px solid hsla(216 8% 64% / .3);
+}
+.vlab-text { margin: 0; padding: 0 15px 10px; font-family: var(--lyric-font, inherit); font-size: 12px; line-height: 1.55; color: #9BA1AA; }
+.vlab-bake { display: flex; align-items: center; gap: 8px; padding: 10px 15px; margin-top: auto; border-top: 1px solid rgba(160, 200, 255, .14); }
+.vlab-bake > span { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 11px; color: #FFD08A; white-space: nowrap; }
+.vlab-meter { flex: 1 1 auto; height: 6px; border-radius: 3px; background: rgba(3, 5, 9, .7); border: 1px solid #000; overflow: hidden; }
+.vlab-meter > i { display: block; height: 100%; background: linear-gradient(90deg, #b87a22, #FFD08A); box-shadow: 0 0 8px rgba(231, 165, 64, .6); transition: width .2s; }

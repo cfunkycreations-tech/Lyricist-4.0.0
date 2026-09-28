@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-r"""Bake the Ghost Demo voice — Lyricist 4.2.0.
+r"""SUPERSEDED 2026-09-27. The narration is now Gemini 3.8 Flash TTS (voice Algieba)
+through OpenRouter: scripts/ghost-tts-openrouter.mjs, or tune it by ear in the
+Voice Lab (Ghost panel) and ship with scripts/harvest-voice-pack.mjs. Chris found
+this Kokoro bake monotone. Kept for the history below and as an offline fallback.
+
+Bake the Ghost Demo voice — Lyricist 4.2.0.
 
     python scripts/generate-ghost-audio.py            # bake every line
     python scripts/generate-ghost-audio.py --qa       # bake, then transcribe each

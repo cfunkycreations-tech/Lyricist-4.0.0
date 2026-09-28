@@ -130,13 +130,13 @@ export const GHOST_DEMOS = {
   quantum: {
     /* The TITLE is chrome and renames freely. The `say` lines below do not:
        each one is matched to a baked clip in assets/ghost-vo/ (quantum-0-say
-       .mp3 and so on), so editing the words here would put a caption on screen
-       that disagrees with the voice reading it. They still say "Quantum Lab"
-       and will until the voice-over is re-baked. */
+       .mp3 and so on), so editing the words here puts a caption on screen that
+       disagrees with the voice until that line is re-baked (Voice Lab, or
+       scripts/ghost-tts-openrouter.mjs). Re-baked 2026-09-27 as The Matrix. */
     title: 'The Matrix',
     steps: [
       {
-        say: 'Remote session starting on Quantum Lab. Nothing here needs typed commands, every step is a numbered button. Watch me press them in order.',
+        say: 'Remote session starting on The Matrix. Nothing here needs typed commands, every step is a numbered button. Watch me press them in order.',
         wait: 3200,
       },
       {
@@ -382,7 +382,7 @@ export const GHOST_DEMOS = {
         wait: 3800,
       },
       {
-        say: 'So the loop is: set the shape, generate a draft or write it cold, then fix it line by line until it sounds like you. Ghost Rider and Quantum Lab both send their work straight into this same editor.',
+        say: 'So the loop is: set the shape, generate a draft or write it cold, then fix it line by line until it sounds like you. Ghost Rider and The Matrix both send their work straight into this same editor.',
         wait: 3400,
       },
     ],
@@ -419,7 +419,7 @@ export const GHOST_DEMOS = {
         wait: 3200,
       },
       {
-        say: 'Quantum Lab can seed Forge notes before you hit Forge.',
+        say: 'The Matrix can seed Forge notes before you hit Forge.',
         wait: 2800,
       },
     ],
@@ -429,7 +429,7 @@ export const GHOST_DEMOS = {
     title: 'Recording Booth',
     steps: [
       {
-        say: 'This is the Recording Booth. It records straight into Lyricist, harmonica, guitar, singing, humming, anything, so you can catch an idea the second you have it instead of hunting for your phone. I am going to point at each control rather than press it, because pressing Record would switch your microphone on.',
+        say: 'This is the Recording Booth. It records straight into Lyricist Pro, harmonica, guitar, singing, humming, anything, so you can catch an idea the second you have it instead of hunting for your phone. I am going to point at each control rather than press it, because pressing Record would switch your microphone on.',
         wait: 3600,
       },
       {

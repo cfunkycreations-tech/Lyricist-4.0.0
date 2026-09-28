@@ -32,6 +32,14 @@ const CANDIDATES = {
   'gemini-charon':  { model: 'google/gemini-3.1-flash-tts-preview', voice: 'Charon', instructions: DIRECTION, pcm: 24000 },
   'gemini-fenrir':  { model: 'google/gemini-3.1-flash-tts-preview', voice: 'Fenrir', instructions: DIRECTION, pcm: 24000 },
   'gemini-algenib': { model: 'google/gemini-3.1-flash-tts-preview', voice: 'Algenib', instructions: DIRECTION, pcm: 24000 },
+  'g38-charon': { model: 'google/gemini-3.8-flash-tts', voice: 'Charon', instructions: DIRECTION, pcm: 24000 },
+  'g38-algenib': { model: 'google/gemini-3.8-flash-tts', voice: 'Algenib', instructions: DIRECTION, pcm: 24000 },
+  'g38-orus': { model: 'google/gemini-3.8-flash-tts', voice: 'Orus', instructions: DIRECTION, pcm: 24000 },
+  'g38-iapetus': { model: 'google/gemini-3.8-flash-tts', voice: 'Iapetus', instructions: DIRECTION, pcm: 24000 },
+  'g38-algieba': { model: 'google/gemini-3.8-flash-tts', voice: 'Algieba', instructions: DIRECTION, pcm: 24000 },
+  'g38-alnilam': { model: 'google/gemini-3.8-flash-tts', voice: 'Alnilam', instructions: DIRECTION, pcm: 24000 },
+  'g38-gacrux': { model: 'google/gemini-3.8-flash-tts', voice: 'Gacrux', instructions: DIRECTION, pcm: 24000 },
+  'g38-rasalgethi': { model: 'google/gemini-3.8-flash-tts', voice: 'Rasalgethi', instructions: DIRECTION, pcm: 24000 },
   'grok-rex':       { model: 'x-ai/grok-voice-tts-1.0', voice: 'Rex' },
   'grok-leo':       { model: 'x-ai/grok-voice-tts-1.0', voice: 'Leo' },
   'mai-voice-2':    { model: 'microsoft/mai-voice-2', voice: 'en-US-Harper:MAI-Voice-2', instructions: DIRECTION },
@@ -58,7 +66,7 @@ function findKey() {
 // Same reading fixes the Kokoro bake needed; symbols are never spoken aloud.
 function speakable(text) {
   return text
-    .replace(/\b4\.2\.0\b/g, '4, 2, 0').replace(/\bA\/B\b/g, 'A B').replace(/&/g, ' and ')
+    .replace(/\b4\.2\.0\b/g, '4, 2, 0').replace(/\b[Rr]ec\b/g, 'record').replace(/\s\+\s/g, ' plus ').replace(/\bA\/B\b/g, 'A B').replace(/&/g, ' and ')
     .replace(/\s*\/\s*/g, ' and ').replace(/[—–]/g, ', ').replace(/[“”]/g, '').replace(/[‘’]/g, "'")
     .replace(/\s+/g, ' ').trim();
 }
@@ -98,16 +106,8 @@ function finish(inFile, outMp3, pcm) {
   if (r.status !== 0) throw new Error('ffmpeg: ' + r.stderr.toString().slice(0, 200));
 }
 
-function ghostLines() {
-  const r = spawnSync('node', [path.join(ROOT, 'scripts', 'dump-ghost-lines.mjs')], { cwd: ROOT, encoding: 'utf8' });
-  if (r.status !== 0) throw new Error(r.stderr);
-  return JSON.parse(r.stdout);
-}
-
-async function wizardLines() {
-  const mod = await import('file:///' + path.join(ROOT, 'src', 'components', 'Onboarding', 'wizardCards.js').replace(/\\/g, '/'));
-  return mod.WIZARD_CARDS.filter((c) => c.audio && c.script).map((c) => ({ id: c.audio.replace(/\.mp3$/, ''), text: c.script }));
-}
+// Same list the Voice Lab bakes from (src/services/narrationLines.js).
+const lines = await import('file:///' + path.join(ROOT, 'src', 'services', 'narrationLines.js').split(path.sep).join('/'));
 
 const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : null; };
@@ -129,11 +129,12 @@ if (args.includes('--audition')) {
   const which = opt('--only');
   const jobs = [];
   if (which !== 'wizard') {
-    let g = ghostLines();
+    let g = lines.ghostLines();
     if (opt('--tab')) g = g.filter((l) => l.tabId === opt('--tab'));
+    if (opt('--ids')) g = g.filter((l) => opt('--ids').split(',').includes(l.id));
     jobs.push(...g.map((l) => ({ ...l, dir: GHOST_DIR })));
   }
-  if (which !== 'ghost' && !opt('--tab')) jobs.push(...(await wizardLines()).map((l) => ({ ...l, dir: WIZARD_DIR })));
+  if (which !== 'ghost' && !opt('--tab')) jobs.push(...lines.wizardLines().filter((l) => !opt('--ids') || opt('--ids').split(',').includes(l.id)).map((l) => ({ ...l, dir: WIZARD_DIR })));
   const manifestPath = path.join(GHOST_DIR, 'manifest.json');
   const manifest = fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, 'utf8')) : {};
   let fails = 0;

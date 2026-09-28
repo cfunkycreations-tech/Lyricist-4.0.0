@@ -30,6 +30,18 @@ const VO = Object.fromEntries(
   ])
 );
 
+// Lines re-baked in the Voice Lab (Ghost panel, Creator build) sit in the voice
+// pack and win over the built-in clip, so a new voice is heard without a
+// rebuild. Loaded once; a bake refreshes it through refreshOwnGhostVoice().
+let OWN = {};
+export function refreshOwnGhostVoice() {
+  return (window.lyricistAPI?.voicePack?.() || Promise.resolve(null))
+    .then((r) => { if (r?.ok) OWN = r.ghost || {}; })
+    .catch(() => { /* no pack is the normal case */ });
+}
+refreshOwnGhostVoice();
+const clipFor = (id) => OWN[id] || VO[id];
+
 /**
  * Ghost Demo — operates the UI like a remote operator:
  * hides the real cursor, moves a visible pointer, types into fields,
@@ -227,13 +239,13 @@ export default function GhostDemo({ tabId, onClose }) {
    * falls back to read-time alone.
    */
   const speak = useCallback((id) => new Promise((resolve) => {
-    if (!voiceOnRef.current || !VO[id]) return resolve(0);
+    if (!voiceOnRef.current || !clipFor(id)) return resolve(0);
     let a = audioRef.current;
     if (!a) { a = new Audio(); audioRef.current = a; }
     try { a.pause(); } catch { /* */ }
     a.onloadedmetadata = null;
     a.onerror = null;
-    a.src = VO[id];
+    a.src = clipFor(id);
     // Slow/Fast changes the pace of the whole walkthrough; the voice follows it
     // rather than desyncing from the captions. Clamped because the browser
     // refuses rates outside this range and throws.

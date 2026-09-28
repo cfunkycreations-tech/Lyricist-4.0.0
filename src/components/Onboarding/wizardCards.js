@@ -1,6 +1,6 @@
 // ============================================================
 // Wizard narration cards — Lyricist Pro
-// Companion narrator: Ava (en-US-AvaNeural).
+// Narrator: Gemini 3.8 Flash TTS, voice Algieba (was Ava, en-US-AvaNeural).
 // MP3s: public/wizard-audio/card-01.mp3 … card-20.mp3
 //
 // The clip a card plays is whatever its own `audio:` field names. The order of
@@ -8,18 +8,10 @@
 // was added last, so it plays card-17). Renaming a file without changing the
 // field that points at it is how a card ends up narrating the wrong tab.
 //
-// ⚠ THE NARRATION AUDIO IS STALE AFTER THE COMMERCIAL REBRAND.
-//
-// `script` is BOTH the on-screen text AND the words in the baked MP3. The text
-// below has been updated to Lyricist Pro / The Matrix; the twenty MP3s in
-// public/wizard-audio/ still say "Lyricist four two oh Goes Quantum" and
-// "Quantum Lab", because they are pre-rendered files, not synthesis at runtime.
-//
-// Until they are re-baked with the same narrator, the tour READS correct and
-// SOUNDS old on cards 1 and 7. That was the lesser of the two evils: leaving the
-// text alone would have kept the 420 branding on screen in the first thing a new
-// customer sees, which is the exact thing this refactor exists to remove.
-// Re-render card-01.mp3 and card-05.mp3 from the scripts below to close it.
+// Narration re-baked 2026-09-27 from the scripts below in Gemini 3.8 Flash TTS
+// (voice Algieba) — scripts/ghost-tts-openrouter.mjs, or the Voice Lab in the
+// Ghost panel. `script` is BOTH the on-screen text AND the words in the clip, so
+// after changing one, re-bake that card or it will say the old words.
 // ============================================================
 
 export const WIZARD_CARDS = [
@@ -62,7 +54,7 @@ Now let me walk you through the lab.`
 
 This is where most of the work lands. Ideas become lines, lines become sections, and sections become a full song. Ghost Rider, The Matrix, and Song Forge can all send finished or seed material straight here.
 
-Lyricist was built to bring people together through the craft, different backgrounds, one love of music.
+Lyricist Pro was built to bring people together through the craft, different backgrounds, one love of music.
 
 So let's write.`
   },
@@ -126,7 +118,7 @@ Two people on a corner, one song. That is where this app came from, and now it w
     id: 9, icon: 'repeat', title: 'RC-Funk 5000: live loop station', tab: 'loopstation', audio: 'card-06.mp3',
     script: `RC-Funk 5000. Your live loop station.
 
-Think Boss RC-style looping, built into Lyricist. Four tracks. Record a riff or vocal phrase on track one. Hit Play All. Stack track two, three, and four while the first loop runs.
+Think Boss RC-style looping, built into Lyricist Pro. Four tracks. Record a riff or vocal phrase on track one. Hit Play All. Stack track two, three, and four while the first loop runs.
 
 Master effects sit on the whole mix: Delay, Reverb, and Dub FX, each with on-off and amount. Fully offline. Perfect for catching a groove while you write the words next door.
 

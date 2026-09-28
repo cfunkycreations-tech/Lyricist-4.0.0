@@ -446,9 +446,42 @@ ipcMain.handle('voice-pack', async () => {
       const p = voiceFile(stem);
       if (p) found[stem] = require('url').pathToFileURL(p).href;
     }
-    return { ok: true, dir, found };
+    // Ghost Demo lines baked by the Voice Lab live one level down, in
+    // voice\ghost, named by their line id (onemanband-0-say.wav ...). Any id
+    // found here wins over the built-in clip, same rule as the cards.
+    const ghost = {};
+    const gdir = path.join(dir, 'ghost');
+    if (fs.existsSync(gdir)) {
+      for (const f of fs.readdirSync(gdir)) {
+        const m = f.match(/^(.+)\.(mp3|m4a|wav|ogg)$/i);
+        if (m) ghost[m[1]] = require('url').pathToFileURL(path.join(gdir, f)).href;
+      }
+    }
+    return { ok: true, dir, found, ghost };
   } catch (e) {
     return { ok: false, error: e.message, found: {} };
+  }
+});
+
+/**
+ * Voice Lab bake: write one rendered clip into the voice pack. `folder` is ''
+ * for the tour cards (card-01 ...) or 'ghost' for Ghost Demo lines. Names are
+ * checked so a line id can never walk out of the voice folder.
+ */
+ipcMain.handle('voice-lab-save', async (_event, { folder = '', name, bytes } = {}) => {
+  try {
+    if (!/^[A-Za-z0-9_-]+$/.test(name || '') || !['', 'ghost'].includes(folder)) throw new Error('bad clip name');
+    const dir = path.join(ensureVoiceDir(), folder);
+    fs.mkdirSync(dir, { recursive: true });
+    // A stale mp3 of the same line would win the extension race in voiceFile().
+    for (const ext of VOICE_EXTS) {
+      const old = path.join(dir, `${name}.${ext}`);
+      if (ext !== 'wav' && fs.existsSync(old)) fs.unlinkSync(old);
+    }
+    fs.writeFileSync(path.join(dir, `${name}.wav`), Buffer.from(bytes));
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
   }
 });
 

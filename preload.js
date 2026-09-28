@@ -61,6 +61,8 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   voicePack: () => ipcRenderer.invoke('voice-pack'),
   // Open that folder in Explorer so recordings can be dropped straight in.
   openVoiceFolder: () => ipcRenderer.invoke('open-voice-folder'),
+  // Voice Lab (Creator): save one baked clip into the voice pack as WAV.
+  voiceLabSave: (folder, name, bytes) => ipcRenderer.invoke('voice-lab-save', { folder, name, bytes }),
   // Fetch a Suno playlist's tracks from the main process (no browser CORS wall).
   // Returns { ok: true, tracks: [{ name, url }] } or { ok: false, error }.
   sunoPlaylist: (id) => ipcRenderer.invoke('suno-playlist', { id }),
