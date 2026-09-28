@@ -353,6 +353,8 @@ ACTION NOTES:
       ghostrider_check {}  ghostrider_send_to_songwriter {}
       ghostrider_save_tags {} saves the Suno tags it wrote, so Black Hole Studios
         can build the Input Caption from them.
+      ghostrider_save_song {} saves the song and its Suno tags as a .txt in
+        Documents\\Lyricist Style Reports (the Save Song & Tags button).
       ghostrider_send_dna_to_matrix {} sends the artist's Style DNA to The Matrix.
       No artist named? Leave "artist" out and it picks one itself. NEVER ask.
     Song Forge (tab "songforge"):

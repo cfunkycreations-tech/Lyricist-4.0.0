@@ -58,6 +58,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
     return v === null ? true : v === 'true';
   });
   const [saveNote, setSaveNote] = useState('');
+  const [songSaveNote, setSongSaveNote] = useState('');
 
   // One-time cleanup: clear the old in-app saved-reports list from earlier versions.
   useEffect(() => {
@@ -234,6 +235,63 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
     saveReportToDisk(analysis);
   };
 
+  /**
+   * SAVE THE SONG AND ITS SUNO TAGS.
+   *
+   * Chris, 2026-09-28: "make a save button for the suno tags and song created by
+   * ghost rider when writing in the style of the artist". Each song is its own
+   * .txt in the same folder as the style reports (Documents\Lyricist Style
+   * Reports), named after the artist so it sorts beside that artist's report.
+   * Its own file rather than appended to the report: a song can be written
+   * without studying the artist first, and a second song never rewrites the
+   * first one or the report. Hours and minutes in the name keep songs written
+   * on the same day apart.
+   *
+   * The tags are also kept for Black Hole Studios, the same as the Ghost's
+   * "save the tags", so its Input Caption starts from them.
+   */
+  const saveSongToDisk = async () => {
+    const song = ghostLyrics.trim();
+    if (!song) return '';
+    const who = artist.trim() || 'Unknown Artist';
+    const tags = sunoTags.trim();
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}-${pad(now.getMinutes())}`;
+    const filename = `${who} - Ghost Rider song - ${stamp}.txt`;
+    const content =
+      `LYRICIST PRO — Ghost Rider Song\n` +
+      `Written in the style of: ${who}\n` +
+      `Topic: ${ghostTopic.trim() || "the artist's usual subject"}\n` +
+      `Saved: ${now.toLocaleString()}\n` +
+      `${'='.repeat(50)}\n\n` +
+      `SUNO TAGS\n${tags || '(none)'}\n\n` +
+      `LYRICS\n${song}\n`;
+    if (tags) saveSunoTags(tags, who);
+    let note;
+    try {
+      if (window.lyricistAPI?.saveReport) {
+        const res = await window.lyricistAPI.saveReport(filename, content);
+        if (!res?.ok) throw new Error(res?.error || 'unknown error');
+        note = `Saved "${filename}" to Documents\\Lyricist Style Reports`;
+      } else {
+        // Browser / dev fallback — download the file.
+        const url = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        note = `Downloaded "${filename}"`;
+      }
+    } catch (e) {
+      note = `Could not save: ${e.message}`;
+    }
+    setSongSaveNote(note);
+    setTimeout(() => setSongSaveNote(''), 6000);
+    return note;
+  };
+
   const handleRunChecks = async () => {
     if (!ghostLyrics) return;
     setLoadingChecks(true);
@@ -281,7 +339,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
   const ghost = useRef({});
   ghost.current = {
     artist, tab, analysis, ghostTopic, ghostLyrics, sunoTags, errorMsg, styleDNA, loadingDNA, store,
-    handleAnalyze, handleGhostWrite, handleRunChecks, handleSendToSongwriter, extractStyleDNA,
+    handleAnalyze, handleGhostWrite, handleRunChecks, handleSendToSongwriter, extractStyleDNA, saveSongToDisk,
   };
   useEffect(() => registerGhostActions({
     describe_ghostrider: () => {
@@ -342,6 +400,13 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
       // the half-finished step Chris caught: "it's bypassing that process".
       const tagged = applySongTags(ghost.current.store, { text: tags });
       return `saved the Suno tags: ${tags}${tagged.said ? `, and ${tagged.said}` : ''}`;
+    },
+    /** The Save Song & Tags button: the song and its tags as a .txt in Documents. */
+    ghostrider_save_song: async () => {
+      if (!ghost.current.ghostLyrics.trim()) throw new Error('Nothing written on Ghost Rider yet to save. Write in the style first.');
+      const note = await ghost.current.saveSongToDisk();
+      if (note.startsWith('Could not')) throw new Error(note);
+      return note;
     },
     /**
      * SEND THE STYLE DNA TO THE MATRIX. The DNA is built in the background
@@ -825,6 +890,28 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                     </button>
 
                     <button
+                      onClick={saveSongToDisk}
+                      className="btn-neon-purple"
+                      data-demo="gr-save-song"
+                      data-help="Saves this song and its Suno tags as a text file in your Documents folder (Documents\Lyricist Style Reports), next to this artist's style reports. Every song gets its own file. The tags are also kept for Black Hole Studios, so its Input Caption starts from them."
+                      style={{
+                        padding: '9px 18px',
+                        borderRadius: 8,
+                        border: 'none',
+                        color: '#fff',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6
+                      }}
+                    >
+                      <Save size={14} />
+                      Save Song &amp; Tags
+                    </button>
+
+                    <button
                       onClick={handleRunChecks}
                       aria-busy={loadingChecks}
                       disabled={loadingChecks}
@@ -843,6 +930,11 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                       {loadingChecks ? 'Running Checks...' : 'Run Checks'}
                     </button>
                   </div>
+                  {songSaveNote && (
+                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: songSaveNote.startsWith('Could not') ? '#f87171' : '#34d399' }}>
+                      {songSaveNote}
+                    </span>
+                  )}
 
                   {/* Checked Output */}
                   {(clichés.length > 0 || plagiarismRisk !== null || themeCheck !== null) && (

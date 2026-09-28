@@ -223,6 +223,7 @@ const BEFORE = {
     { point: '[data-demo="gr-write"]' },
   ],
   ghostrider_send_to_songwriter: [{ point: '[data-demo="gr-send"]' }],
+  ghostrider_save_song: [{ point: '[data-demo="gr-save-song"]' }],
   ghostrider_send_dna_to_matrix: [{ label: 'send to matrix' }],
 
   songforge_forge: [{ point: '[data-demo="sf-forge"]' }],
