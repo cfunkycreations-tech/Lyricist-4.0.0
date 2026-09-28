@@ -127,6 +127,9 @@ void IpcBridge::processCommand(const juce::String& line)
     }
     else if (method == "asio.close")
     {
+        // Plugins play through this same device now, so stop them cleanly
+        // before it goes away rather than leave the player on a dead device.
+        pluginHost.stopAudio();
         asioDriver.closeDriver();
 
         auto* res = new juce::DynamicObject();

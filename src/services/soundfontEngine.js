@@ -27,6 +27,7 @@
  */
 
 import { SpessaSynthProcessor, SoundBankLoader } from 'spessasynth_core';
+import { isDaw, dawNote } from './midiOut.js';
 
 const NOTES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 const FLAT_TO_SHARP = { Db: 'C#', Eb: 'D#', Gb: 'F#', Ab: 'G#', Bb: 'A#' };
@@ -387,6 +388,8 @@ export function playNote(ctx, destination, instrument, midi, {
   minHold = null,
   lateLimit = 0.6,   // ...unless the render took longer than this; a late note is worse than none
 } = {}) {
+  // Play-through-DAW toggle (midiOut.js): the note goes out as MIDI and the DAW sounds it.
+  if (isDaw()) return dawNote(ctx, midi, { when, duration, velocity });
   if (!instrument) return () => {};
 
   // A user's own sample: straight one-shot playback, pitched from its root.

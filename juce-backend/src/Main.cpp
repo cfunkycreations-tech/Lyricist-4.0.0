@@ -32,7 +32,7 @@ public:
         // Initialise core subsystems
         asioDriver = std::make_unique<AsioDriver>();
         vst3Scanner = std::make_unique<Vst3Scanner>();
-        pluginHost = std::make_unique<PluginHost>(*vst3Scanner);
+        pluginHost = std::make_unique<PluginHost>(*vst3Scanner, asioDriver->getDeviceManager());
         ipcBridge = std::make_unique<IpcBridge>(*asioDriver, *vst3Scanner, *pluginHost);
 
         // Start listening for JSON-RPC commands on stdin

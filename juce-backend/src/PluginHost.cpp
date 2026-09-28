@@ -41,8 +41,8 @@ void PluginEditorWindow::closeButtonPressed()
 //==============================================================================
 // PluginHost
 
-PluginHost::PluginHost(Vst3Scanner& scannerToUse)
-    : scanner(scannerToUse)
+PluginHost::PluginHost(Vst3Scanner& scannerToUse, AudioDeviceManager& devices)
+    : scanner(scannerToUse), deviceManager(devices)
 {
     // Endpoints are permanent members of the graph; plugins are inserted
     // between them as they load.
@@ -71,10 +71,17 @@ String PluginHost::startAudio(int inputChannels, int outputChannels)
     if (audioRunning)
         return {};
 
-    const String error = deviceManager.initialise(inputChannels, outputChannels,
-                                                  nullptr, true);
-    if (error.isNotEmpty())
-        return error;
+    // If asio.open already chose a device, play through it. Only fall back to
+    // the system default when nothing is open yet.
+    openedDevice = false;
+    if (deviceManager.getCurrentAudioDevice() == nullptr)
+    {
+        const String error = deviceManager.initialise(inputChannels, outputChannels,
+                                                      nullptr, true);
+        if (error.isNotEmpty())
+            return error;
+        openedDevice = true;
+    }
 
     // Prepare the graph to match the device before any audio flows.
     if (auto* device = deviceManager.getCurrentAudioDevice())
@@ -110,7 +117,10 @@ void PluginHost::stopAudio()
 
     deviceManager.removeAudioCallback(&player);
     player.setProcessor(nullptr);
-    deviceManager.closeAudioDevice();
+    // A device asio.open chose stays open for the next audio.start.
+    if (openedDevice)
+        deviceManager.closeAudioDevice();
+    openedDevice = false;
 
     audioRunning = false;
 }

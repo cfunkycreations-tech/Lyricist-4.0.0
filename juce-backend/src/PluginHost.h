@@ -64,8 +64,12 @@ public:
     /**
      * @brief Builds the host graph. Does not open an audio device yet.
      * @param scanner Supplies the plugin format manager and the known-plugin list.
+     * @param devices The ONE device manager, owned by AsioDriver. Plugins play
+     *        through whatever asio.open selected (FlexASIO, the Yamaha, ...).
+     *        Each class used to own its own manager, so asio.open opened a
+     *        device nobody played through and plugins went to the Windows default.
      */
-    explicit PluginHost(Vst3Scanner& scanner);
+    PluginHost(Vst3Scanner& scanner, juce::AudioDeviceManager& devices);
 
     ~PluginHost();
 
@@ -175,7 +179,7 @@ private:
     void postMidi(const juce::MidiMessage& message);
 
     Vst3Scanner&                                    scanner;
-    juce::AudioDeviceManager                        deviceManager;
+    juce::AudioDeviceManager&                       deviceManager;   // AsioDriver's
     juce::AudioProcessorGraph                       graph;
     juce::AudioProcessorPlayer                      player;
 
@@ -185,6 +189,7 @@ private:
     std::map<juce::String, std::unique_ptr<Instance>> instances;
     int                                             nextInstanceId = 1;
     bool                                            audioRunning = false;
+    bool                                            openedDevice = false; // we opened it, so we close it
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginHost)
 };

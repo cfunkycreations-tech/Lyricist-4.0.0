@@ -12,6 +12,7 @@
  */
 
 import * as TR from './tr808.js';
+import { isDaw, dawDrum } from './midiOut.js';
 
 /* ── Voices ───────────────────────────────────────────────────────── */
 
@@ -61,6 +62,8 @@ export const DEFAULT_VOICE = {
  * a hi-hat is six square waves and a handclap is four bursts.
  */
 export function triggerVoice(ctx, dest, voiceId, when, params = {}, velocity = 1) {
+  // Play-through-DAW toggle (midiOut.js): General MIDI drum note on channel 10 instead.
+  if (isDaw()) return dawDrum(ctx, voiceId, when, velocity);
   const p = { ...DEFAULT_VOICE[voiceId], ...params };
   const level = (p.level ?? 1) * velocity;
 

@@ -8,6 +8,7 @@ import { IMAGE_MODELS, DEFAULT_IMAGE_MODEL } from '../../services/GeminiService.
 import { PRISM_NAMES, ACCENT_PRESETS, accentHex, getPrism } from '../../services/prismTheme.js';
 import { isEnabled as analyticsEnabled, optIn, optOut } from '../../services/analytics.js';
 import { Icon } from '../common/Glyph.jsx';
+import PlayThrough from './PlayThrough.jsx';
 
 /* The names, the presets and the swatch colour all come from prismTheme.js
    now. There were two copies of PRISM_NAMES — one here and one there — and
@@ -941,6 +942,9 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* Where the notes go: built-in, or out to a DAW as MIDI */}
+      <PlayThrough />
+
       {/* Your own voice — the voice pack folder */}
       <div style={{ marginBottom: 18 }} data-help="Record the tour in your own voice instead of the built-in one. Click the button, drop your recordings in the folder that opens, and restart the app. Name them splash.mp3 for the opening video and card-01.mp3 through card-18.mp3 for the tour cards. Anything you don't record keeps the built-in voice.">
         <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
@@ -951,7 +955,7 @@ export default function Settings() {
         <p style={{ fontSize: '0.72rem', color: 'rgba(230,232,235,0.6)', margin: '0 0 8px', lineHeight: 1.5 }}>
           Drop your own recordings in this folder and the app plays them instead of the built-in
           narration — <code style={{ color: '#e7a540' }}>splash.mp3</code> over the opening video,
-          <code style={{ color: '#e7a540' }}> card-01.mp3</code> to <code style={{ color: '#e7a540' }}>card-18.mp3</code> for
+          <code style={{ color: '#e7a540' }}> card-01.mp3</code> to <code style={{ color: '#e7a540' }}>card-20.mp3</code> for
           the tour. mp3, m4a, wav and ogg all work. Restart the app to pick up new files.
         </p>
         <button
