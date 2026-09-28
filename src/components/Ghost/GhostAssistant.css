@@ -5,14 +5,14 @@
   position: fixed; right: 18px; bottom: 84px; z-index: 60;
   display: flex; align-items: center; gap: 9px;
   padding: 10px 15px; border-radius: 999px; cursor: pointer;
-  font-family: inherit; font-size: 13px; font-weight: 600; color: #EAF2FF;
-  background: linear-gradient(180deg, hsla(36 78% 40% / .22), rgba(5, 7, 12, .92));
+  font-family: inherit; font-size: 13px; font-weight: 600; color: #E6E8EB;
+  background: linear-gradient(180deg, hsla(36 78% 40% / .22), rgba(10, 11, 12, .92));
   border: 1px solid hsla(36 78% 58% / .55);
   box-shadow: 0 0 0 1px hsla(36 78% 58% / .22), 0 10px 30px rgba(0, 0, 0, .55);
   backdrop-filter: blur(14px);
 }
 .gha-launch:hover { border-color: hsla(36 78% 68% / .9); box-shadow: 0 0 0 1px hsla(36 78% 58% / .34), 0 10px 30px rgba(0, 0, 0, .55); }
-.gha-launch.is-open { background: linear-gradient(180deg, hsla(216 8% 64% / .26), rgba(5, 7, 12, .92)); border-color: hsla(216 8% 64% / .6); }
+.gha-launch.is-open { background: linear-gradient(180deg, hsla(216 8% 64% / .26), rgba(10, 11, 12, .92)); border-color: hsla(216 8% 64% / .6); }
 .gha-face { font-size: 16px; filter: none; }
 
 .gha {
@@ -29,7 +29,7 @@
 
 .gha-hd {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-  padding: 13px 15px; border-bottom: 1px solid rgba(160, 200, 255, .14);
+  padding: 13px 15px; border-bottom: 1px solid rgba(255, 255, 255, .08);
   background: linear-gradient(180deg, hsla(36 78% 40% / .12), transparent);
 }
 .gha-hd h2 {
@@ -37,7 +37,7 @@
   font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
   color: hsl(36 78% 66%); font-weight: 600;
 }
-.gha-hd p { margin: 3px 0 0; font-size: 11.5px; line-height: 1.5; color: #64789B; }
+.gha-hd p { margin: 3px 0 0; font-size: 11.5px; line-height: 1.5; color: #7C828B; }
 
 /* The header now carries two chips (Stow, Voice), stacked vertically so a
    longer label doesn't push the h2 down or wrap. */
@@ -46,23 +46,23 @@
   flex: 0 0 auto; padding: 6px 11px; border-radius: 999px; cursor: pointer;
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 10.5px;
   letter-spacing: .08em; white-space: nowrap;
-  background: rgba(3, 5, 9, .6); color: #9FB2D4;
+  background: rgba(8, 9, 10, .6); color: #9BA1AA;
   border: 1px solid hsla(216 8% 64% / .3);
 }
 .gha-voice.on { color: #FFD08A; border-color: hsla(36 78% 58% / .6); background: hsla(36 78% 40% / .16); }
 
 .gha-picker {
   display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-  padding: 9px 15px; border-bottom: 1px solid rgba(160, 200, 255, .14);
+  padding: 9px 15px; border-bottom: 1px solid rgba(255, 255, 255, .08);
 }
 .gha-picker > span {
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 10px;
-  letter-spacing: .18em; text-transform: uppercase; color: #64789B; margin-right: 3px;
+  letter-spacing: .18em; text-transform: uppercase; color: #7C828B; margin-right: 3px;
 }
 .gha-picker button {
   padding: 5px 11px; border-radius: 999px; cursor: pointer;
-  font-family: inherit; font-size: 11.5px; color: #9FB2D4;
-  background: rgba(3, 5, 9, .55); border: 1px solid hsla(216 8% 64% / .28);
+  font-family: inherit; font-size: 11.5px; color: #9BA1AA;
+  background: rgba(8, 9, 10, .55); border: 1px solid hsla(216 8% 64% / .28);
 }
 .gha-picker button[aria-pressed="true"] {
   color: #FFD08A; background: hsla(36 78% 40% / .18); border-color: hsla(36 78% 58% / .6);
@@ -73,18 +73,18 @@
    either side for the last nudge a mouse cannot land. */
 .gha-tune {
   display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 7px 10px;
-  padding: 9px 15px; border-bottom: 1px solid rgba(160, 200, 255, .14);
+  padding: 9px 15px; border-bottom: 1px solid rgba(255, 255, 255, .08);
 }
 .gha-tune > label {
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 10px;
-  letter-spacing: .18em; text-transform: uppercase; color: #64789B;
+  letter-spacing: .18em; text-transform: uppercase; color: #7C828B;
 }
 .gha-tune-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .gha-tune-row input[type="range"] { flex: 1 1 auto; min-width: 0; accent-color: hsl(36 78% 55%); }
 .gha-tune-row button {
   flex: 0 0 auto; width: 24px; height: 24px; padding: 0; border-radius: 6px; cursor: pointer;
-  font-family: inherit; font-size: 14px; line-height: 1; color: #9FB2D4;
-  background: rgba(3, 5, 9, .55); border: 1px solid hsla(216 8% 64% / .28);
+  font-family: inherit; font-size: 14px; line-height: 1; color: #9BA1AA;
+  background: rgba(8, 9, 10, .55); border: 1px solid hsla(216 8% 64% / .28);
 }
 .gha-tune-row button:hover { color: #fff; border-color: hsla(36 78% 58% / .6); }
 .gha-tune-row output {
@@ -100,12 +100,12 @@
 
 .gha-log { flex: 1 1 auto; overflow-y: auto; padding: 14px 15px; display: flex; flex-direction: column; gap: 12px; }
 
-.gha-empty p { margin: 0 0 11px; font-size: 12.5px; line-height: 1.65; color: #9FB2D4; }
+.gha-empty p { margin: 0 0 11px; font-size: 12.5px; line-height: 1.65; color: #9BA1AA; }
 .gha-openers { display: flex; flex-wrap: wrap; gap: 7px; }
 .gha-openers button {
   padding: 7px 11px; border-radius: 8px; cursor: pointer;
-  font-family: inherit; font-size: 11.5px; color: #9FB2D4;
-  background: rgba(3, 5, 9, .55); border: 1px dashed hsla(36 78% 58% / .4);
+  font-family: inherit; font-size: 11.5px; color: #9BA1AA;
+  background: rgba(8, 9, 10, .55); border: 1px dashed hsla(36 78% 58% / .4);
 }
 .gha-openers button:hover { color: #fff; border-style: solid; border-color: hsl(36 78% 58%); }
 
@@ -115,15 +115,15 @@
   align-self: flex-end; max-width: 88%;
   padding: 8px 12px; border-radius: 12px 12px 3px 12px;
   background: hsla(222 100% 65% / .14); border: 1px solid hsla(222 100% 65% / .3);
-  color: #DCE8FF;
+  color: #E6E8EB;
 }
-.gha-msg.ghost { color: #C8D7F0; }
+.gha-msg.ghost { color: #D4D7DB; }
 .gha-msg.error {
   padding: 9px 12px; border-radius: 9px;
   color: hsl(350 90% 80%); background: hsla(350 80% 45% / .12);
   border: 1px solid hsla(350 80% 60% / .34);
 }
-.gha-msg.thinking { color: #64789B; font-style: italic; }
+.gha-msg.thinking { color: #7C828B; font-style: italic; }
 
 /* When it claimed to do something it did not do. */
 .gha-correction {
@@ -144,11 +144,11 @@
 .gha-tapbtns button {
   padding: 7px 13px; border-radius: 8px; cursor: pointer;
   font-family: inherit; font-size: 12px; font-weight: 600;
-  background: rgba(3, 5, 9, .55); color: #9FB2D4;
+  background: rgba(8, 9, 10, .55); color: #9BA1AA;
   border: 1px solid var(--omb-line-hot, hsla(216 8% 64% / .3));
 }
 .gha-tapbtns button.go {
-  color: #EAF2FF; background: hsla(36 78% 40% / .26);
+  color: #E6E8EB; background: hsla(36 78% 40% / .26);
   border-color: hsla(36 78% 58% / .6);
 }
 .gha-tapbtns button:hover { color: #fff; }
@@ -156,7 +156,7 @@
 .gha-did { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; }
 .gha-did li {
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 11px;
-  padding: 4px 8px; border-radius: 6px; background: rgba(3, 5, 9, .5);
+  padding: 4px 8px; border-radius: 6px; background: rgba(8, 9, 10, .5);
 }
 .gha-did li.ok { color: #8FF0C4; border-left: 2px solid hsl(158 80% 55%); }
 .gha-did li.no { color: hsl(35 90% 72%); border-left: 2px solid hsl(35 90% 60%); }
@@ -167,7 +167,7 @@
    button somebody reaches for while their stomach drops. */
 .gha-undo {
   margin-left: 9px; padding: 3px 9px; border-radius: 6px; cursor: pointer;
-  font-family: inherit; font-size: 11px; font-weight: 600; color: #EAF2FF;
+  font-family: inherit; font-size: 11px; font-weight: 600; color: #E6E8EB;
   background: hsla(216 8% 64% / .30); border: 1px solid hsla(216 8% 64% / .60);
 }
 .gha-undo:hover { background: hsla(216 8% 64% / .48); }
@@ -179,22 +179,22 @@
   line-height: 1.5; color: hsl(35 92% 76%);
 }
 
-.gha-ask { display: flex; gap: 8px; padding: 12px 15px; border-top: 1px solid rgba(160, 200, 255, .14); }
+.gha-ask { display: flex; gap: 8px; padding: 12px 15px; border-top: 1px solid rgba(255, 255, 255, .08); }
 .gha-ask input {
   flex: 1 1 auto; min-width: 0; padding: 9px 12px; border-radius: 9px;
-  font-family: inherit; font-size: 13px; color: #EAF2FF;
-  background: rgba(3, 5, 9, .72); border: 1px solid hsla(216 8% 64% / .3);
+  font-family: inherit; font-size: 13px; color: #E6E8EB;
+  background: rgba(8, 9, 10, .72); border: 1px solid hsla(216 8% 64% / .3);
 }
 .gha-ask input:focus { outline: none; border-color: hsla(36 78% 58% / .65); box-shadow: 0 0 0 1px hsla(36 78% 58% / .18); }
 .gha-ask button {
   padding: 9px 15px; border-radius: 9px; cursor: pointer;
-  font-family: inherit; font-size: 13px; font-weight: 600; color: #EAF2FF;
+  font-family: inherit; font-size: 13px; font-weight: 600; color: #E6E8EB;
   background: hsla(36 78% 40% / .24); border: 1px solid hsla(36 78% 58% / .55);
 }
 .gha-ask button:disabled { opacity: .4; cursor: not-allowed; }
 
 .gha-foot {
-  margin: 0; padding: 0 15px 12px; font-size: 10.5px; line-height: 1.5; color: #4E607F;
+  margin: 0; padding: 0 15px 12px; font-size: 10.5px; line-height: 1.5; color: #5E646C;
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
 }
 
@@ -223,49 +223,49 @@ body.lyricist-mobile .gha-launch {
 body.lyricist-mobile .gha-face { font-size: 17px; }
 
 /* Chat / Jobs. */
-.gha-views { display: flex; gap: 6px; padding: 8px 15px; border-bottom: 1px solid rgba(160, 200, 255, .14); }
+.gha-views { display: flex; gap: 6px; padding: 8px 15px; border-bottom: 1px solid rgba(255, 255, 255, .08); }
 .gha-views button {
   flex: 1 1 0; padding: 6px 10px; border-radius: 8px; cursor: pointer;
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
-  color: #9FB2D4; background: rgba(3, 5, 9, .55); border: 1px solid hsla(216 8% 64% / .28);
+  color: #9BA1AA; background: rgba(8, 9, 10, .55); border: 1px solid hsla(216 8% 64% / .28);
 }
 .gha-views button[aria-pressed="true"] { color: #FFD08A; background: hsla(36 78% 40% / .18); border-color: hsla(36 78% 58% / .6); }
 
 /* The Jobs view. */
 .ghj { flex: 1 1 auto; overflow-y: auto; display: flex; flex-direction: column; }
-.ghj-new { padding: 12px 15px; display: grid; gap: 8px; border-bottom: 1px solid rgba(160, 200, 255, .14); }
+.ghj-new { padding: 12px 15px; display: grid; gap: 8px; border-bottom: 1px solid rgba(255, 255, 255, .08); }
 .ghj-new textarea {
   width: 100%; box-sizing: border-box; resize: vertical; min-height: 70px;
   padding: 8px 10px; border-radius: 8px; font-family: inherit; font-size: 12.5px; line-height: 1.5;
-  color: #EAF2FF; background: rgba(3, 5, 9, .7); border: 1px solid hsla(216 8% 64% / .3);
+  color: #E6E8EB; background: rgba(8, 9, 10, .7); border: 1px solid hsla(216 8% 64% / .3);
 }
 .ghj-new textarea:focus { outline: none; border-color: hsla(36 78% 58% / .7); }
 .ghj-modes { display: flex; gap: 6px; flex-wrap: wrap; }
 .ghj-modes button, .ghj-go button, .ghj-btns button, .ghj-clear {
   padding: 6px 11px; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 11.5px; font-weight: 600;
-  color: #9FB2D4; background: rgba(3, 5, 9, .55); border: 1px solid hsla(216 8% 64% / .28);
+  color: #9BA1AA; background: rgba(8, 9, 10, .55); border: 1px solid hsla(216 8% 64% / .28);
 }
 .ghj-modes button.on { color: #FFD08A; background: hsla(36 78% 40% / .18); border-color: hsla(36 78% 58% / .6); }
 .ghj-go { display: flex; gap: 8px; }
-.ghj-go button.go, .ghj-btns button.go { color: #EAF2FF; background: hsla(36 78% 40% / .26); border-color: hsla(36 78% 58% / .6); }
+.ghj-go button.go, .ghj-btns button.go { color: #E6E8EB; background: hsla(36 78% 40% / .26); border-color: hsla(36 78% 58% / .6); }
 .ghj-btns button.stop { color: hsl(350 90% 82%); border-color: hsla(350 80% 60% / .5); }
 .ghj-modes button:hover, .ghj-go button:hover:not(:disabled), .ghj-btns button:hover, .ghj-clear:hover { color: #fff; }
 .ghj-go button:disabled { opacity: .45; cursor: default; }
-.ghj-hint { margin: 0; font-size: 11px; line-height: 1.5; color: #64789B; }
-.ghj-rec { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: #9FB2D4; }
+.ghj-hint { margin: 0; font-size: 11px; line-height: 1.5; color: #7C828B; }
+.ghj-rec { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: #9BA1AA; }
 .ghj-rec input { accent-color: hsl(36 78% 55%); }
 
 /* What the Ghost says at each press of a lesson. See GhostLessons.jsx. */
 .ghl-lines { display: grid; gap: 7px; max-height: 240px; overflow-y: auto; padding-right: 2px; }
 .ghl-line { display: grid; gap: 3px; }
 .ghl-when {
-  font-size: 10.5px; letter-spacing: 0.04em; color: #64789B;
+  font-size: 10.5px; letter-spacing: 0.04em; color: #7C828B;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
 .ghj-list { padding: 12px 15px; display: grid; gap: 10px; }
-.ghj-empty { margin: 0; font-size: 12px; line-height: 1.6; color: #64789B; }
-.ghj-job { padding: 10px 12px; border-radius: 10px; background: rgba(3, 5, 9, .5); border: 1px solid rgba(160, 200, 255, .14); display: grid; gap: 7px; }
+.ghj-empty { margin: 0; font-size: 12px; line-height: 1.6; color: #7C828B; }
+.ghj-job { padding: 10px 12px; border-radius: 10px; background: rgba(8, 9, 10, .5); border: 1px solid rgba(255, 255, 255, .08); display: grid; gap: 7px; }
 .ghj-job.s-running, .ghj-job.s-planning { border-color: hsla(36 78% 58% / .5); }
 .ghj-job.s-awaiting { border-color: hsla(35 90% 60% / .55); }
 .ghj-job.s-failed { border-color: hsla(350 80% 60% / .45); }
@@ -277,12 +277,12 @@ body.lyricist-mobile .gha-face { font-size: 17px; }
 }
 .s-failed .ghj-badge, .s-stopped .ghj-badge { color: hsl(350 90% 80%); border-color: hsla(350 80% 60% / .45); }
 .s-awaiting .ghj-badge, .s-paused .ghj-badge { color: hsl(35 90% 74%); border-color: hsla(35 90% 60% / .5); }
-.ghj-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; color: #DCE8FF; }
-.ghj-meta { flex: 0 0 auto; font-size: 10.5px; color: #64789B; }
-.ghj-note { margin: 0; font-size: 11.5px; line-height: 1.5; color: #9FB2D4; }
+.ghj-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; color: #E6E8EB; }
+.ghj-meta { flex: 0 0 auto; font-size: 10.5px; color: #7C828B; }
+.ghj-note { margin: 0; font-size: 11.5px; line-height: 1.5; color: #9BA1AA; }
 .ghj-steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
-.ghj-steps li { display: grid; grid-template-columns: 16px 1fr; gap: 6px; font-size: 12px; line-height: 1.5; color: #9FB2D4; }
-.ghj-steps li.st-running { color: #EAF2FF; }
+.ghj-steps li { display: grid; grid-template-columns: 16px 1fr; gap: 6px; font-size: 12px; line-height: 1.5; color: #9BA1AA; }
+.ghj-steps li.st-running { color: #E6E8EB; }
 .ghj-steps li.st-running .ghj-mark { color: hsl(36 78% 62%); }
 .ghj-steps li.st-done .ghj-mark { color: hsl(158 80% 55%); }
 .ghj-steps li.st-failed .ghj-mark { color: hsl(350 90% 70%); }
@@ -293,7 +293,7 @@ body.lyricist-mobile .gha-face { font-size: 17px; }
 .ghj-btns { display: flex; gap: 6px; flex-wrap: wrap; }
 .ghj-log {
   margin: 0; max-height: 180px; overflow: auto; padding: 8px; border-radius: 6px;
-  font-size: 10.5px; line-height: 1.5; white-space: pre-wrap; color: #9FB2D4; background: rgba(0, 0, 0, .45);
+  font-size: 10.5px; line-height: 1.5; white-space: pre-wrap; color: #9BA1AA; background: rgba(0, 0, 0, .45);
 }
 .ghj-clear { justify-self: start; }
 
@@ -301,10 +301,10 @@ body.lyricist-mobile .gha-face { font-size: 17px; }
 .vlab { flex: 1 1 auto; overflow-y: auto; display: flex; flex-direction: column; }
 .vlab .gha-voice { display: inline-flex; align-items: center; gap: 6px; }
 .vlab .gha-voice:disabled { opacity: .45; cursor: not-allowed; }
-.vlab-voice { display: flex; align-items: center; gap: 8px; padding: 10px 15px; border-bottom: 1px solid rgba(160, 200, 255, .14); }
+.vlab-voice { display: flex; align-items: center; gap: 8px; padding: 10px 15px; border-bottom: 1px solid rgba(255, 255, 255, .08); }
 .vlab-voice > button {
   flex: 0 0 auto; width: 26px; height: 26px; padding: 0; display: grid; place-items: center; border-radius: 6px; cursor: pointer;
-  color: #9FB2D4; background: rgba(3, 5, 9, .55); border: 1px solid hsla(216 8% 64% / .28);
+  color: #9BA1AA; background: rgba(8, 9, 10, .55); border: 1px solid hsla(216 8% 64% / .28);
 }
 .vlab-voice > button:hover { color: #fff; border-color: hsla(36 78% 58% / .6); }
 .vlab-voice-mid { flex: 1 1 auto; min-width: 0; display: grid; gap: 5px; }
@@ -313,21 +313,21 @@ body.lyricist-mobile .gha-face { font-size: 17px; }
 .vlab-knobs > label.is-off { opacity: .4; }
 .vlab-lbl {
   padding: 10px 15px 4px; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 10px;
-  letter-spacing: .18em; text-transform: uppercase; color: #64789B;
+  letter-spacing: .18em; text-transform: uppercase; color: #7C828B;
 }
 .vlab-dir {
   margin: 0 15px 10px; box-sizing: border-box; width: calc(100% - 30px); resize: vertical; min-height: 58px;
   padding: 8px 10px; border-radius: 8px; font-family: var(--lyric-font, inherit); font-size: 12.5px; line-height: 1.5;
-  color: #EAF2FF; background: rgba(3, 5, 9, .7); border: 1px solid hsla(216 8% 64% / .3);
+  color: #E6E8EB; background: rgba(8, 9, 10, .7); border: 1px solid hsla(216 8% 64% / .3);
 }
 .vlab-dir:disabled { opacity: .45; }
-.vlab-line { display: flex; gap: 8px; align-items: center; padding: 8px 15px; border-top: 1px solid rgba(160, 200, 255, .14); }
+.vlab-line { display: flex; gap: 8px; align-items: center; padding: 8px 15px; border-top: 1px solid rgba(255, 255, 255, .08); }
 .vlab-line select {
   flex: 1 1 auto; min-width: 0; padding: 6px 8px; border-radius: 8px; font-size: 11.5px;
-  color: #EAF2FF; background: rgba(3, 5, 9, .7); border: 1px solid hsla(216 8% 64% / .3);
+  color: #E6E8EB; background: rgba(8, 9, 10, .7); border: 1px solid hsla(216 8% 64% / .3);
 }
 .vlab-text { margin: 0; padding: 0 15px 10px; font-family: var(--lyric-font, inherit); font-size: 12px; line-height: 1.55; color: #9BA1AA; }
-.vlab-bake { display: flex; align-items: center; gap: 8px; padding: 10px 15px; margin-top: auto; border-top: 1px solid rgba(160, 200, 255, .14); }
+.vlab-bake { display: flex; align-items: center; gap: 8px; padding: 10px 15px; margin-top: auto; border-top: 1px solid rgba(255, 255, 255, .08); }
 .vlab-bake > span { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 11px; color: #FFD08A; white-space: nowrap; }
-.vlab-meter { flex: 1 1 auto; height: 6px; border-radius: 3px; background: rgba(3, 5, 9, .7); border: 1px solid #000; overflow: hidden; }
+.vlab-meter { flex: 1 1 auto; height: 6px; border-radius: 3px; background: rgba(8, 9, 10, .7); border: 1px solid #000; overflow: hidden; }
 .vlab-meter > i { display: block; height: 100%; background: linear-gradient(90deg, #b87a22, #FFD08A); box-shadow: 0 0 8px rgba(231, 165, 64, .6); transition: width .2s; }

@@ -369,3 +369,14 @@ button[aria-busy="true"]::after {
 @media (prefers-reduced-motion: reduce) {
   button[aria-busy="true"]::after { animation: none; background-size: 100% 100%; }
 }
+
+/* A pill used as the SELECTED chip in a row of buttons (Tools Hub categories,
+   and anything else that reuses .pill-purple on a <button>) is a lit key, not
+   a stencilled status tag: chrome font, amber legend, lit edge. */
+button.pill-purple {
+  font-family: var(--faf-font) !important; letter-spacing: .02em;
+  color: var(--amber-hot) !important;
+  background: hsla(36 78% 40% / .18) !important;
+  border: 1px solid hsla(36 78% 58% / .6) !important;
+  border-radius: 9999px;
+}

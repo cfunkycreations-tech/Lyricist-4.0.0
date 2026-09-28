@@ -334,8 +334,9 @@ export default function MasteringStudio() {
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 8 }}>
               {Object.keys(MASTERING_PRESETS).map(p => (
                 <button key={p} onClick={() => applyPreset(p)}
-                  className={preset === p ? 'pill-purple' : ''}
-                  style={{ padding: '3px 9px', borderRadius: 9999, fontSize: '0.62rem', fontWeight: 700, cursor: 'pointer', background: preset === p ? undefined : 'rgba(16,18,21,0.7)', color: preset === p ? undefined : 'rgba(230,232,235,0.6)', border: preset === p ? undefined : '1px solid rgba(155,161,170,0.25)' }}>
+                  className={preset === p ? 'is-active' : ''}
+                  aria-pressed={preset === p}
+                  style={{ padding: '3px 9px', borderRadius: 9999, fontSize: '0.62rem', fontWeight: 700, cursor: 'pointer', background: preset === p ? 'hsla(36 78% 40% / .18)' : 'rgba(16,18,21,0.7)', color: preset === p ? '#FFD08A' : 'rgba(230,232,235,0.6)', border: preset === p ? '1px solid hsla(36 78% 58% / .6)' : '1px solid rgba(155,161,170,0.25)' }}>
                   {p}
                 </button>
               ))}
