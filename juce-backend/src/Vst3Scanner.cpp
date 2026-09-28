@@ -4,6 +4,7 @@
  */
 
 #include "Vst3Scanner.h"
+#include <iostream>
 
 Vst3Scanner::Vst3Scanner()
 {
@@ -52,12 +53,17 @@ void Vst3Scanner::scanPaths(const juce::StringArray& directories)
         auto* format = formatManager.getFormat(i);
         if (format != nullptr)
         {
-            juce::PluginDirectoryScanner scanner(knownPluginList, *format, searchPath, true, juce::File());
-            juce::String pluginBeingScanned;
-
-            while (scanner.scanNextFile(true, pluginBeingScanned))
+            // Read each bundle directly, the same way PluginHost::loadPlugin does
+            // (which works). PluginDirectoryScanner came back with nothing here.
+            const auto files = format->searchPathsForPlugins(searchPath, true, false);
+            std::cerr << "[scan] " << format->getName() << ": " << files.size() << " files in "
+                      << searchPath.toString() << std::endl;
+            for (const auto& file : files)
             {
-                // Continue scanning until directory search is complete
+                juce::OwnedArray<juce::PluginDescription> found;
+                format->findAllTypesForFile(found, file);
+                for (auto* desc : found)
+                    knownPluginList.addType(*desc);
             }
         }
     }

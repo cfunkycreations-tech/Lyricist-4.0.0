@@ -9,6 +9,7 @@ import { PRISM_NAMES, ACCENT_PRESETS, accentHex, getPrism } from '../../services
 import { isEnabled as analyticsEnabled, optIn, optOut } from '../../services/analytics.js';
 import { Icon } from '../common/Glyph.jsx';
 import PlayThrough from './PlayThrough.jsx';
+import VstPlugins from './VstPlugins.jsx';
 
 /* The names, the presets and the swatch colour all come from prismTheme.js
    now. There were two copies of PRISM_NAMES — one here and one there — and
@@ -944,6 +945,7 @@ export default function Settings() {
 
       {/* Where the notes go: built-in, or out to a DAW as MIDI */}
       <PlayThrough />
+      <VstPlugins />
 
       {/* Your own voice — the voice pack folder */}
       <div style={{ marginBottom: 18 }} data-help="Record the tour in your own voice instead of the built-in one. Click the button, drop your recordings in the folder that opens, and restart the app. Name them splash.mp3 for the opening video and card-01.mp3 through card-18.mp3 for the tour cards. Anything you don't record keeps the built-in voice.">

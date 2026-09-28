@@ -150,7 +150,7 @@ void PluginHost::connectNode(AudioProcessorGraph::Node::Ptr node, bool wantsMidi
     }
 }
 
-String PluginHost::loadPlugin(const String& filePath, String& errorOut)
+String PluginHost::loadPlugin(const String& filePath, const String& wantedName, String& errorOut)
 {
     const File file(filePath);
     if (! file.exists())
@@ -180,6 +180,15 @@ String PluginHost::loadPlugin(const String& filePath, String& errorOut)
                  + ". It may be 32-bit, or a different format.";
         return {};
     }
+
+    // One bundle can hold several plugins (Zebra2(x64).vst3 is Zebra2, Zebralette,
+    // Zebrify and ZRev). Take the one asked for by name; otherwise the first.
+    int pick = 0;
+    if (wantedName.isNotEmpty())
+        for (int i = 0; i < found.size(); ++i)
+            if (found[i]->name.equalsIgnoreCase(wantedName)) { pick = i; break; }
+    if (pick != 0)
+        found.swap(0, pick);
 
     const double sampleRate = audioRunning && deviceManager.getCurrentAudioDevice() != nullptr
                             ? deviceManager.getCurrentAudioDevice()->getCurrentSampleRate()

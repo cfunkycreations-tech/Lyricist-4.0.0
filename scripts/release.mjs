@@ -146,6 +146,29 @@ if (creator) {
     recursive: true,
     filter: (p) => !/\.(exp|lib)$/i.test(p),
   });
+
+  // The native audio engine (ASIO + VST3), Creator only, with the three VC++
+  // runtime DLLs it links against beside it, so it runs on a PC without the
+  // redistributable. main.js getJuceEnginePath() looks in resources/creator/engine.
+  const engineExe = path.join(ROOT, 'juce-backend', 'build', 'Release', 'LyricistEngine.exe');
+  if (!fs.existsSync(engineExe)) {
+    console.error(`Creator build needs ${engineExe} (cmake --build juce-backend/build --config Release).`);
+    process.exit(1);
+  }
+  const engineStage = path.join(creatorStage, 'engine');
+  fs.mkdirSync(engineStage, { recursive: true });
+  fs.copyFileSync(engineExe, path.join(engineStage, 'LyricistEngine.exe'));
+  const redistRoot = 'C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Redist\\MSVC';
+  const crt = fs.existsSync(redistRoot) && fs.readdirSync(redistRoot)
+    .map((v) => path.join(redistRoot, v, 'x64', 'Microsoft.VC143.CRT'))
+    .find((p) => fs.existsSync(path.join(p, 'msvcp140.dll')));
+  if (!crt) {
+    console.error('Creator build needs the VC++ runtime DLLs from Visual Studio Build Tools (VC\\Redist\\MSVC\\*\\x64\\Microsoft.VC143.CRT).');
+    process.exit(1);
+  }
+  for (const dll of ['msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll']) {
+    fs.copyFileSync(path.join(crt, dll), path.join(engineStage, dll));
+  }
 } else {
   fs.writeFileSync(path.join(creatorStage, 'customer.txt'), 'Customer build: no Ghost Pilot.\n', 'utf8');
 }

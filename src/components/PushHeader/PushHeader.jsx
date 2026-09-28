@@ -7,6 +7,7 @@ import { listSamples, getSampleBuffer } from '../../services/sampleLibrary.js';
 import { createPushLink, hueToPushColor, PUSH_CC } from '../../services/pushMidi.js';
 import { loadButterchurn } from '../../services/butterchurnLoader.js';
 import { getMidiOut, setMidiOut, subscribeMidiOut } from '../../services/midiOut.js';
+import { vstAvailable, cachedInstruments, listInstruments, loadInstrument as loadVst, vstNote, showEditor as showVstEditor } from '../../services/vstEngine.js';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Glyph } from '../common/Glyph.jsx';
 
@@ -330,6 +331,8 @@ const SCALES = {
 const SCALE_NAMES = Object.keys(SCALES);
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const INSTRUMENTS = INSTRUMENT_GROUPS.flatMap((g) => g.items);
+// A built-in sound or a VST3 ({ vst: handle } from vstEngine), same call either way.
+const play = (ctx, out, instr, midi, opts) => (instr?.vst ? vstNote(ctx, instr.vst, midi, opts) : playNote(ctx, out, instr, midi, opts));
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const hexHue = (hex) => {
   const n = parseInt(hex.slice(1), 16);
@@ -454,16 +457,33 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
     return () => { dead = true; };
   }, []);
 
-  const inst = INSTRUMENTS[instIdx];
+  // Creator build: your VST3 instruments come after the built-in sounds on the Sound knob.
+  const [vsts, setVsts] = useState(() => (vstAvailable() ? cachedInstruments() : []));
+  useEffect(() => {
+    if (!vstAvailable()) return undefined;
+    let dead = false;
+    listInstruments().then((l) => { if (!dead) setVsts(l); }).catch(() => {});
+    return () => { dead = true; };
+  }, []);
+  const SOUNDS = useMemo(() => [...INSTRUMENTS, ...vsts.map((v) => ({ id: `vst3:${v.name}`, name: v.name, vst: v }))], [vsts]);
+
+  const inst = SOUNDS[instIdx] || SOUNDS[0];
   useEffect(() => {
     let dead = false;
     instRef.current = null;
     setInstReady(null);
+    if (inst.vst) {
+      setDisplay(`Loading ${inst.name}…`);
+      loadVst(inst.vst)
+        .then((h) => { if (!dead) { instRef.current = { vst: h }; setInstReady(inst.id); setDisplay(`${inst.name} · VST3 on ${h.driver}`); } })
+        .catch((e) => { if (!dead) setDisplay(`${inst.name}: ${e.message}`); });
+      return () => { dead = true; };
+    }
     loadInstrument(getAudioContext(), inst.id)
       .then((i) => { if (!dead) { instRef.current = i; setInstReady(inst.id); } })
       .catch((e) => { if (!dead) setDisplay(`${inst.name} did not load: ${e.message}`); });
     return () => { dead = true; };
-  }, [inst.id, inst.name]);
+  }, [inst.id, inst.name, inst.vst]);
 
   /** What a pad is. x 0-7 left to right, y 0-7 top to bottom. */
   const padInfo = useCallback((x, y) => {
@@ -551,7 +571,7 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
       const instr = instRef.current;
       if (!instr) { setDisplay(`${inst.name} is loading…`); return; }
       stopsRef.current.get(key)?.();
-      const stops = info.midis.map((m) => playNote(ctx, out, instr, m, { duration: PAD_HOLD, velocity: vel, minHold: 0.3 }));
+      const stops = info.midis.map((m) => play(ctx, out, instr, m, { duration: PAD_HOLD, velocity: vel, minHold: 0.3 }));
       stopsRef.current.set(key, () => stops.forEach((stop) => stop()));
       setDisplay(info.label);
     }
@@ -629,9 +649,10 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
         const midis = s.mode === 'note' && s.chordType === 0
           ? [low]
           : stackOn(SCALE_NAMES[s.scaleIdx], low + 12, low + 12, s.mode === 'note' ? NOTE_CHORDS[s.chordType].stack : [0, 2, 4]);
-        midis.forEach((m) => playNote(ctx, outRef.current, instr, m, { duration: 0.6, velocity: PAD_VEL * 0.8 }));
+        midis.forEach((m) => play(ctx, outRef.current, instr, m, { duration: 0.6, velocity: PAD_VEL * 0.8 }));
         setDisplay(`${NOTE_NAMES[s.root]} ${SCALE_NAMES[s.scaleIdx]} · ${midis.length > 1 ? chordName(midis) : midiToNoteName(midis[0])}`);
       }
+      if (instr.vst) return;   // a VST3 plays live; nothing to render ahead
       const want = new Set();
       for (let y = 0; y < 8; y++) {
         for (let x = 0; x < 8; x++) {
@@ -654,7 +675,7 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
     { label: 'Octave', value: `${octave + 1}`, nudge: (d) => setOctave((o) => clamp(o + Math.sign(d), 0, 6)) },
     { label: 'Key', value: NOTE_NAMES[root], nudge: (d) => setRoot((r) => (r + Math.sign(d) + 12) % 12) },
     { label: 'Scale', value: SCALE_NAMES[scaleIdx], nudge: (d) => setScaleIdx((s) => (s + Math.sign(d) + SCALE_NAMES.length) % SCALE_NAMES.length) },
-    { label: 'Sound', value: inst.name, nudge: (d) => setInstIdx((s) => (s + Math.sign(d) + INSTRUMENTS.length) % INSTRUMENTS.length) },
+    { label: 'Sound', value: inst.vst ? `${inst.name} ·VST3` : inst.name, nudge: (d) => setInstIdx((s) => (s + Math.sign(d) + SOUNDS.length) % SOUNDS.length) },
     { label: 'Drum', value: KIT.find((k) => k.id === voice)?.name, nudge: (d) => setVoice((v) => KIT[(KIT.findIndex((k) => k.id === v) + Math.sign(d) + KIT.length) % KIT.length].id) },
     { label: 'Visual', value: viz.on ? (viz.info.count ? `${viz.info.idx + 1}/${viz.info.count}` : 'loading') : 'off', nudge: (d) => (viz.on ? viz.api.current.step(Math.sign(d)) : viz.toggle()) },
   ];
@@ -738,6 +759,8 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
     { label: 'Hide', act: onClose },
     // Play Through (Settings): the notes go to Ableton or any DAW as MIDI instead.
     { label: daw.mode === 'daw' ? 'DAW' : 'Built-in', on: daw.mode === 'daw', act: toggleDaw },
+    // A VST3 on the Sound knob: open the synth's own window to tweak it.
+    ...(inst.vst ? [{ label: 'Synth UI', off: !instReady, act: () => { const h = instRef.current?.vst; if (h) showVstEditor(h).catch((e) => setDisplay(`${inst.name}: ${e.message}`)); } }] : []),
   ];
 
   const cells = [];

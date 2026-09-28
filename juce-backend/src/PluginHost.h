@@ -96,7 +96,7 @@ public:
      * @param errorOut Receives a human-readable reason when loading fails.
      * @return The new instance id, or an empty string on failure.
      */
-    juce::String loadPlugin(const juce::String& filePath, juce::String& errorOut);
+    juce::String loadPlugin(const juce::String& filePath, const juce::String& wantedName, juce::String& errorOut);
 
     /**
      * @brief Removes a plugin, closing its editor first.

@@ -177,7 +177,15 @@ void IpcBridge::processCommand(const juce::String& line)
             }
         }
 
-        vst3Scanner.scanPaths(paths);
+        // VST3 bundles can only be opened on the message thread; scanned from
+        // this reader thread every file came back empty (count 0 in half a second).
+        auto scanned = std::make_shared<juce::WaitableEvent>();
+        juce::MessageManager::callAsync([paths, scanned, &scanner = vst3Scanner]()
+        {
+            scanner.scanPaths(paths);
+            scanned->signal();
+        });
+        scanned->wait(300000);
 
         auto* res = new juce::DynamicObject();
         res->setProperty("success", true);
@@ -255,7 +263,7 @@ void IpcBridge::processCommand(const juce::String& line)
                 if (method == "plugin.load")
                 {
                     const juce::String path = pObj != nullptr ? pObj->getProperty("path").toString() : juce::String();
-                    const juce::String newId = pluginHost.loadPlugin(path, errorText);
+                    const juce::String newId = pluginHost.loadPlugin(path, pObj != nullptr ? pObj->getProperty("name").toString() : juce::String(), errorText);
                     if (newId.isNotEmpty())
                     {
                         auto* res = new juce::DynamicObject();

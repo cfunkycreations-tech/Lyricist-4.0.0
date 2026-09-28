@@ -1472,6 +1472,9 @@ const readline = require('readline');
 let juceProcess = null;
 
 function getJuceEnginePath() {
+  // Installed Creator build: release.mjs ships it in resources/creator/engine.
+  const packaged = process.resourcesPath && path.join(process.resourcesPath, 'creator', 'engine', 'LyricistEngine.exe');
+  if (packaged && fs.existsSync(packaged)) return packaged;
   const p1 = path.join(__dirname, 'juce-backend', 'build', 'LyricistEngine.exe');
   const p2 = path.join(__dirname, 'juce-backend', 'build', 'Release', 'LyricistEngine.exe');
   if (fs.existsSync(p1)) return p1;
@@ -1932,7 +1935,7 @@ ipcMain.handle('juce-command', async (event, payload) => {
   // samples off disk, and opening an audio device can wait on a driver. Ten
   // seconds is fine for a status query but far too short for those, so give the
   // slow commands real time instead of reporting a false failure.
-  const SLOW_METHODS = ['plugin.load', 'plugin.showEditor', 'audio.start'];
+  const SLOW_METHODS = ['plugin.load', 'plugin.showEditor', 'audio.start', 'asio.open', 'vst3.scan'];
   const timeoutMs = SLOW_METHODS.includes(method) ? 90000 : 10000;
 
   return new Promise((resolve) => {
@@ -1952,6 +1955,9 @@ ipcMain.handle('juce-command', async (event, payload) => {
     }
   });
 });
+
+// Never leave the engine holding the ASIO driver after Lyricist Pro closes.
+app.on('will-quit', () => { try { juceProcess?.kill(); } catch (_) {} juceProcess = null; });
 
 ipcMain.handle('juce-close', async () => {
   if (juceProcess) {
