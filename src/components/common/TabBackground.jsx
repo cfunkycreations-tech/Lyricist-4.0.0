@@ -31,7 +31,7 @@ export default function TabBackground({ name, art = null, artOpacity = 0.72 }) {
         inset: 0,
         zIndex: 0,
         background: 'var(--mat-floor)',
-        backgroundColor: '#141517',
+        backgroundColor: 'var(--mat-floor-color)',
         backgroundAttachment: 'fixed',
         pointerEvents: 'none',
       }}

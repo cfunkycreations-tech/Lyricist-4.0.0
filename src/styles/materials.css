@@ -26,19 +26,27 @@
   --amber: rgb(var(--accent-rgb));
   --amber-hot: #FFD08A;
 
-  /* brushed: noise stretched along x is the grain a brushing wheel leaves */
-  --mat-brush: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='140'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.004 .9' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
+  /* brushed: services/brushedMetal.js replaces this at startup with a grain
+     drawn at the screen's pixel density (one hairline per device pixel row).
+     This SVG only covers the first frame; stitchTiles keeps it seamless. */
+  --mat-brush: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='300'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.003 1.4' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
+  /* a slow sheen across a panel, the way light sits on polished nickel */
+  --mat-sheen: linear-gradient(100deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0) 64%, rgba(255, 255, 255, 0.02) 84%, rgba(255, 255, 255, 0) 100%);
   /* anodized: bead-blasted then dyed, a very fine even tooth */
   --mat-bead: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 
-  --mat-floor: var(--mat-brush), radial-gradient(120% 90% at 50% 0%, #222327 0%, #18191c 55%, #131416 100%);
-  --mat-panel: var(--mat-brush), linear-gradient(180deg, #2a2b2f 0%, #1a1b1e 70%, #151619 100%);
-  --mat-panel-deep: var(--mat-brush), linear-gradient(180deg, #1f2023, #121315);
-  --mat-bevel: inset 0 1px 0 rgba(255, 255, 255, 0.09), inset 0 -1px 0 rgba(0, 0, 0, 0.5);
-  --mat-drop: 0 1px 0 rgba(255, 255, 255, 0.03), 0 10px 24px -12px rgba(0, 0, 0, 0.9);
+  /* Chris, 2026-09-28: darker than the mock, blacker. The mock's floor was
+     #1b1c1f→#0f1012 and its panels #2a2b2f→#131417; these sit well under it. */
+  --mat-floor: var(--mat-brush), radial-gradient(120% 90% at 50% 0%, #0f0f11 0%, #09090a 55%, #060607 100%);
+  --mat-floor-color: #08080a;
+  --mat-panel: var(--mat-sheen), var(--mat-brush), linear-gradient(180deg, #161619 0%, #0e0e10 70%, #0b0b0c 100%);
+  --mat-panel-color: #0e0e10;
+  --mat-panel-deep: var(--mat-brush), linear-gradient(180deg, #0f0f11, #070708);
+  --mat-bevel: inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 -1px 0 rgba(0, 0, 0, 0.6);
+  --mat-drop: 0 1px 0 rgba(255, 255, 255, 0.025), 0 10px 24px -12px #000;
 
-  --mat-key: var(--mat-bead), linear-gradient(180deg, #34373c 0%, #202226 55%, #17181b 100%);
-  --mat-key-hover: var(--mat-bead), linear-gradient(180deg, #3b3e44 0%, #25272b 55%, #1b1c1f 100%);
+  --mat-key: var(--mat-bead), linear-gradient(180deg, #2a2c30 0%, #1a1b1e 55%, #111214 100%);
+  --mat-key-hover: var(--mat-bead), linear-gradient(180deg, #33363a 0%, #202226 55%, #16171a 100%);
   --mat-key-edge: #050506;
   --mat-key-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -2px 0 rgba(0, 0, 0, 0.35), 0 2px 3px rgba(0, 0, 0, 0.6);
   --mat-key-pressed: inset 0 2px 4px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(0, 0, 0, 0.4);
@@ -72,13 +80,13 @@ h1:not(.gradient-title):not(.chrome-title), h2, h3, h4,
 .ql-mono, .metric, .mono, code, kbd, samp, pre { font-family: var(--faf-mono); font-variant-numeric: tabular-nums slashed-zero; }
 
 /* ── the floor ── */
-html, body { background-color: #141517; }
+html, body { background-color: var(--mat-floor-color); }
 body { background-image: var(--mat-floor); background-attachment: fixed; }
 
 /* ── panels: brushed black nickel with a machined edge ── */
 .glass-panel, .card-cosmic, .output-cosmic, .ql-panel {
   background: var(--mat-panel) !important;
-  background-color: #1d1e21 !important;
+  background-color: var(--mat-panel-color) !important;
   border: 1px solid rgba(0, 0, 0, 0.85) !important;
   border-radius: 6px;
   box-shadow: var(--mat-bevel), var(--mat-drop) !important;
@@ -90,13 +98,13 @@ body { background-image: var(--mat-floor); background-attachment: fixed; }
   box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.04);
 }
 .header-cosmic {
-  background: var(--mat-brush), linear-gradient(180deg, #2a2b2f, #16171a) !important;
+  background: var(--mat-sheen), var(--mat-brush), linear-gradient(180deg, #161619, #0a0a0b) !important;
   border-bottom: 1px solid #000 !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 0 rgba(255, 255, 255, 0.04), 0 6px 14px -6px rgba(0, 0, 0, 0.8);
 }
 .app-footer, .suno-player { background: var(--mat-panel-deep); border-top: 1px solid #000; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06); }
 .help-tip-bubble, .help-layer-bubble, .suno-popover {
-  background: var(--mat-panel); background-color: #1d1e21;
+  background: var(--mat-panel); background-color: var(--mat-panel-color);
   border: 1px solid #000; box-shadow: var(--mat-bevel), 0 12px 30px rgba(0, 0, 0, 0.7);
 }
 
@@ -106,7 +114,7 @@ button[style*="linear-gradient"]:not(.pc),
 .stemmer-btn, .stemmer-btn-emerald,
 .suno-btn, .suno-collapse, .suno-chip, .booth-icon-btn, .toolshub-vote {
   background: var(--mat-key) !important;
-  background-color: #202226 !important;
+  background-color: #1a1b1e !important;
   border: 1px solid var(--mat-key-edge) !important;
   color: var(--faf-text) !important;
   box-shadow: var(--mat-key-shadow) !important;
@@ -151,7 +159,7 @@ input[type="text"], input[type="search"], input[type="number"], input[type="url"
   box-shadow: var(--mat-well-shadow), 0 0 0 1px rgba(var(--accent-rgb), 0.75), 0 0 10px -2px rgba(var(--accent-rgb), 0.5) !important;
 }
 .pc input, .push-side input { background: transparent !important; box-shadow: none !important; border: 0 !important; }
-select option { background: #1a1b1e; }
+select option { background: #0e0e10; }
 input[type="checkbox"], input[type="radio"] { accent-color: rgb(var(--accent-rgb)); }
 
 /* ── sliders: a slot cut into the metal, a lit fill, an anodized cap ──
@@ -259,7 +267,7 @@ button.pc:not(.pc-pad):not(.pc-sweep):not(.pc-empty):active:not(:disabled)::afte
 
 .push-side > button, .push-side > div {
   background: var(--mat-key) !important;
-  background-color: #202226 !important;
+  background-color: #1a1b1e !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -2px 0 rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.6) !important;
   text-shadow: none !important;
   transition: transform 0.08s ease;
@@ -274,7 +282,7 @@ button.pc:not(.pc-pad):not(.pc-sweep):not(.pc-empty):active:not(:disabled)::afte
 
 /* ── Settings: every setting on its own nickel plate, like a rack of units ── */
 .settings-col > div:not(.settings-actions), .settings-summary {
-  background: var(--mat-panel) !important; background-color: #1d1e21 !important;
+  background: var(--mat-panel) !important; background-color: var(--mat-panel-color) !important;
   border: 1px solid #000 !important; border-radius: 6px !important;
   box-shadow: var(--mat-bevel), var(--mat-drop) !important;
   padding: 14px 16px 12px !important; margin-bottom: 12px !important;
@@ -334,7 +342,7 @@ button.pc:not(.pc-pad):not(.pc-sweep):not(.pc-empty):active:not(:disabled)::afte
 
 /* ── Ask the Ghost: an anodized key with a pilot light, not a green pill ── */
 .gha-launch {
-  background: var(--mat-key) !important; background-color: #202226 !important;
+  background: var(--mat-key) !important; background-color: #1a1b1e !important;
   border: 1px solid #000 !important; border-radius: 6px !important;
   color: #E6E8EB !important; font-family: var(--faf-font) !important; letter-spacing: 0.06em;
   box-shadow: var(--mat-key-shadow), inset 0 0 0 1px rgba(var(--accent-rgb), 0.35), 0 10px 26px -8px rgba(0, 0, 0, 0.9) !important;

@@ -88,7 +88,7 @@ export default function Scratchpad() {
           gap: 16,
           padding: '0 22px',
           height: 58,
-          background: 'var(--mat-brush), linear-gradient(180deg, #34363b 0%, #202125 60%, #151619 100%)',
+          background: 'var(--mat-sheen), var(--mat-brush), linear-gradient(180deg, #1c1d20 0%, #111214 60%, #0b0b0c 100%)',
           borderBottom: '1px solid #000',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.6), 0 6px 14px rgba(0,0,0,0.45)',
           position: 'relative',

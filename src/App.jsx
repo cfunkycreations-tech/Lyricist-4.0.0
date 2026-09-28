@@ -398,7 +398,7 @@ function MainLayout() {
           zIndex: 0,
           pointerEvents: 'none',
           background: 'var(--mat-floor)',
-          backgroundColor: '#141517',
+          backgroundColor: 'var(--mat-floor-color)',
         }}
       />
 

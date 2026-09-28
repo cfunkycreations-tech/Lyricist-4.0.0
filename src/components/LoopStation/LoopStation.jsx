@@ -425,7 +425,7 @@ export default function LoopStation() {
         .rc-track-red { --led: 0 0% 70%; }
 
         .rc-plate {
-          background: var(--mat-panel); background-color: #1d1e21;
+          background: var(--mat-panel); background-color: var(--mat-panel-color);
           border: 1px solid #000; border-radius: 6px;
           box-shadow: var(--mat-bevel), var(--mat-drop);
         }

@@ -108,68 +108,15 @@ export async function resolveGhostModel() {
   return cachedModel;
 }
 
-/**
- * A STRONG MODEL, SUGGESTED BY THE APP.
- *
- * Chris, 2026-09-15: *"model strength does matter... It needs to suggest a
- * strong model. Like either a reasoning model or a multimodal model."* Driving
- * tabs, following a whole job and writing a song in one reply is where the free
- * pool falls over first.
- *
- * Same rule as above: no hand-written ids. What counts as strong is read off
- * the live list (it can take images AND it can reason, and it is not a free
- * pool model), and the family preference is only an order to look in. Returns
- * null when what they have is already strong, or when OpenRouter is unreachable.
+/*
+ * suggestStrongModel() lived here and is gone on purpose. It read the live
+ * OpenRouter list, picked a paid "strong" model and the Ghost panel saved it as
+ * the writing model in one tap. Its Anthropic filter only matched ids that start
+ * with `anthropic/`, so OpenRouter's `~anthropic/claude-sonnet-latest` alias went
+ * straight through and ended up as Chris's default. The app never picks a paid
+ * model for anyone: the default is the free one in LyricStore DEFAULT_CONFIG,
+ * and the only thing that changes it is the person, in the Settings picker.
  */
-// Chris, 2026-09-15: "Don't ever suggest an anthropic model for anything in my
-// app, too fucking expensive." Anthropic ids are never suggested, not even as
-// the last-resort pick.
-const STRONG_FAMILIES = [
-  /^google\/gemini-[\d.]+-pro/,
-  /^openai\/gpt-5(\.\d+)?$/,
-];
-const NEVER_SUGGEST = /^anthropic\//i;
-const canSee = (m) => (m?.architecture?.input_modalities || []).includes('image');
-const canReason = (m) => (m?.supported_parameters || []).includes('reasoning');
-
-export async function suggestStrongModel(current) {
-  try {
-    const res = await fetch(MODELS_URL, { headers: { 'HTTP-Referer': 'https://lyricist.app' } });
-    const list = (await res.json())?.data || [];
-    const id = String(current || '').trim();
-    const mine = list.find((m) => m.id === id);
-    if (mine && !id.endsWith(':free') && canSee(mine) && canReason(mine)) return null;
-
-    const strong = list
-      .filter((m) => !NEVER_SUGGEST.test(m.id))
-      .filter((m) => !String(m.id).endsWith(':free') && canSee(m) && canReason(m))
-      .filter((m) => (m.context_length || 0) >= 100000)
-      .filter((m) => !/preview|beta|exp|image|audio|search|online/i.test(m.id))
-      .sort((a, b) => (b.created || 0) - (a.created || 0));
-    let pick = null;
-    for (const family of STRONG_FAMILIES) {
-      pick = strong.find((m) => family.test(m.id));
-      if (pick) break;
-    }
-    pick ||= strong[0];
-    if (!pick) return null;
-
-    const perMillion = (p) => Number(p || 0) * 1e6;
-    return {
-      current: id || null,
-      why: !id ? 'no model is picked in Settings, so it borrows a free one'
-        : !mine ? `${id} is not on OpenRouter any more`
-          : id.endsWith(':free') ? `${id} is a free shared model`
-            : `${id} cannot both see images and reason step by step`,
-      id: pick.id,
-      name: pick.name || pick.id,
-      inPerM: perMillion(pick.pricing?.prompt),
-      outPerM: perMillion(pick.pricing?.completion),
-    };
-  } catch {
-    return null;
-  }
-}
 
 /* ------------------------------------------------------------------ */
 /* what it knows about the app                                         */
