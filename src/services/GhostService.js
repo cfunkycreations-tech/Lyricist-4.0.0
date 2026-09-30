@@ -329,7 +329,7 @@ ACTION NOTES:
 
   append_lyrics {"text":"..."} still exists for adding a section to the end.
   set_length {"seconds":180}, set_takes {"count":2}, roll_take_number {},
-    set_engine {"engine":"cloud"|"kaggle"|"local"}, lay_out_song {}.
+    set_engine {"engine":"cloud"|"kaggle"|"local"|"modal"}, lay_out_song {}.
   make_the_song {} EMIT IT whenever they want the song made or finished. It
     starts straight away. Do not ask first and never tell them to tap anything.
   stop {} stops a run.

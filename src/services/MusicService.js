@@ -21,6 +21,9 @@
 // because the spread between cards is enormous: a T4 measured 34x, a 4 GB
 // Pascal card measured about 360x. Guessing on the user's behalf is worse than
 // saying "we do not know yet".
+/** A cold Modal container: image start, ComfyUI boot, weights off the volume. */
+const MODAL_COLD_START_S = 75;
+
 const REALTIME_FACTOR = {
   cloud: 1.2,     // measured 2026-08-16: 12 s of music in 13.8 s
   // Kaggle's free T4: about 17 minutes for 30 s of music, measured, PLUS a fixed
@@ -30,6 +33,11 @@ const REALTIME_FACTOR = {
   // the wait, and a single multiplier cannot say both.
   kaggle: 34,
   local: 34,      // a T4 class card. Slower cards are far worse, see above.
+  // An A10G is roughly two and a half times a free T4, so this is Kaggle's
+  // measured 34 scaled by that. It is an ESTIMATE, not a measurement — nothing
+  // has been timed on Modal yet, and this line should be replaced with a real
+  // figure after the first few runs rather than left to look authoritative.
+  modal: 14,
   server: 3,      // a rented 4090 class card. Nobody has measured one yet.
 };
 
@@ -145,6 +153,10 @@ export function estimateSeconds(engine, duration, takes = 1) {
   // takes are made side by side and cost one take's time. Four is two rounds.
   // The warm-up (queue, fetch, load) is paid once no matter how many takes.
   if (engine === 'kaggle') return base * Math.ceil(n / 2) + KAGGLE_WARMUP_S;
+  // A sleeping Modal container costs a cold start: image, ComfyUI, and 12 GB
+  // of weights off the volume. Warm, it is none of that, but the picker should
+  // quote the slower case rather than surprise anyone.
+  if (engine === 'modal') return base * n + MODAL_COLD_START_S;
   // The cloud demo hands back one song per call and the local card is one card,
   // so there every take really is another full wait.
   return base * n;
@@ -375,33 +387,46 @@ async function generateCloudOnce(opts, attempt = 1) {
  */
 const bridge = () => (typeof window !== 'undefined' ? window.lyricistAPI?.musicFetch : null);
 
-async function comfyJson(url, { method = 'GET', body = null } = {}) {
+async function comfyJson(url, { method = 'GET', body = null, token = '' } = {}) {
   const via = bridge();
   if (via) {
-    const r = await via({ url, method, body });
+    const r = await via({ url, method, body, token });
     if (!r.ok) throw new Error(r.error || `HTTP ${r.status}`);
     return JSON.parse(r.text);
   }
+  // A local ComfyUI has no auth and wants none. A remote one is on the open
+  // internet, where an unauthenticated /prompt is a free GPU and a filesystem
+  // for anybody who finds the URL, so the token rides on every call.
+  const headers = {};
+  if (body) headers['Content-Type'] = 'application/json';
+  if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(url, {
     method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    headers: Object.keys(headers).length ? headers : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
+  if (res.status === 401) throw new Error('The engine rejected the token. Check Settings.');
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
-async function comfyBlob(url) {
+async function comfyBlob(url, token = '') {
   const via = bridge();
   if (via) {
-    const r = await via({ url, binary: true });
+    // The token has to ride the audio download too. The song is fetched with a
+    // separate request from the one that queued it, and a Modal endpoint
+    // refuses every request without the bearer, so dropping it here would fail
+    // the take at the very last step, after the whole generation was paid for.
+    const r = await via({ url, binary: true, token });
+    if (r.status === 401) throw new Error('The engine rejected the token. Check Settings.');
     if (!r.ok) throw new Error(r.error || `HTTP ${r.status}`);
     const bin = atob(r.base64);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
     return new Blob([bytes], { type: r.contentType });
   }
-  const res = await fetch(url);
+  const res = await fetch(url, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined);
+  if (res.status === 401) throw new Error('The engine rejected the token. Check Settings.');
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.blob();
 }
@@ -416,10 +441,10 @@ async function comfyBlob(url) {
  * --enable-cors-header, which is a setting no beginner will ever find. Until
  * that lands, the local engine only works in the packaged app.
  */
-export async function detectComfy(base = 'http://127.0.0.1:8188', timeoutMs = 2500) {
+export async function detectComfy(base = 'http://127.0.0.1:8188', timeoutMs = 2500, token = '') {
   try {
     const s = await Promise.race([
-      comfyJson(`${base}/system_stats`),
+      comfyJson(`${base}/system_stats`, { token }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), timeoutMs)),
     ]);
     return { base, version: s?.system?.comfyui_version ?? 'unknown' };
@@ -453,19 +478,42 @@ function comfyGraph({ state, duration, seed, steps, guidance, dit }) {
   };
 }
 
+/**
+ * Drive a ComfyUI, local or remote.
+ *
+ * Modal runs the SAME ComfyUI with the SAME MiniMax weights behind an
+ * authenticated proxy, so it is this function with a different base and a
+ * token rather than a fourth inference path. A take made on Modal comes off
+ * the identical graph as one made on the desk, which is the whole reason for
+ * containerising ComfyUI instead of writing bespoke Modal inference.
+ *
+ * @param {Object} opts
+ * @param {string} [opts.token]   Bearer token; empty for a local ComfyUI.
+ * @param {boolean} [opts.remote] Remote hosts get cold-start patience.
+ */
 async function generateComfy(opts) {
   const { base, state, duration, seed, steps, guidance, onProgress, signal } = opts;
+  const token = opts.token || '';
+  const remote = !!opts.remote;
   const dit = opts.dit || 'minimax_music3_dit_fp16.safetensors';
 
-  const alive = await detectComfy(base, 4000);
+  // A local ComfyUI is up or it is not. A Modal container is asleep until the
+  // first request wakes it, and boot is image start + ComfyUI + 12 GB of
+  // weights mapped off the volume. Four seconds would call that "down".
+  onProgress?.({ phase: remote ? 'waking' : 'checking', host: base });
+  const alive = await detectComfy(base, remote ? 180000 : 4000, token);
   if (!alive) {
     throw new Error(
-      `Nothing is running at ${base}. Start ComfyUI first, or switch to the free cloud.`
+      remote
+        ? `The Modal engine at ${base} did not answer. Check the URL and token in Settings, `
+          + 'and that `modal deploy` has been run.'
+        : `Nothing is running at ${base}. Start ComfyUI first, or switch to the free cloud.`
     );
   }
 
   const posted = await comfyJson(`${base}/prompt`, {
     method: 'POST',
+    token,
     body: {
       prompt: comfyGraph({ state, duration, seed, steps, guidance, dit }),
       client_id: `lyricist-${Date.now()}`,
@@ -481,7 +529,7 @@ async function generateComfy(opts) {
 
     let hist;
     try {
-      hist = await comfyJson(`${base}/history/${promptId}`);
+      hist = await comfyJson(`${base}/history/${promptId}`, { token });
     } catch { continue; }          // a blip is not a failure
     const entry = hist?.[promptId];
     if (!entry) { onProgress?.({ phase: 'generating', host: base }); continue; }
@@ -496,7 +544,7 @@ async function generateComfy(opts) {
         const url = `${base}/view?filename=${encodeURIComponent(a.filename)}`
           + `&subfolder=${encodeURIComponent(a.subfolder ?? '')}&type=${a.type ?? 'output'}`;
         onProgress?.({ phase: 'downloading', host: base });
-        return { blob: await comfyBlob(url), host: base };
+        return { blob: await comfyBlob(url, token), host: base };
       }
     }
     throw new Error('ComfyUI finished but produced no audio.');
@@ -654,9 +702,14 @@ export async function generateSong({
   guidance = 1.7,
   dit,
   hfToken = '',
+  modalUrl = '',
+  modalToken = '',
   onProgress,
   signal,
 } = {}) {
+  if (engine === 'modal' && !modalUrl) {
+    throw new Error('Add your Modal endpoint URL in Settings first.');
+  }
   if (!state || typeof state !== 'object') throw new Error('No song to make.');
   if (!state.lyrics && !state.instrumental) {
     throw new Error('Add some words, or switch it to instrumental.');
@@ -669,11 +722,19 @@ export async function generateSong({
   // server refuses must not be able to reach any of the three.
   seed = safeSeed(seed);
 
-  const run = engine === 'cloud'
-    ? generateCloud({ state, duration, seed, steps, guidance, onProgress, signal, hfToken })
-    : engine === 'kaggle'
-      ? generateKaggle({ state, duration, seed, seeds, steps, guidance, hfToken, onProgress, signal })
-      : generateComfy({ base, state, duration, seed, steps, guidance, dit, onProgress, signal });
+  const run = engine === 'modal'
+    // Modal IS the comfy path: same graph, same weights, remote base, token.
+    ? generateComfy({
+        base: modalUrl.replace(/\/+$/, ''), token: modalToken, remote: true,
+        state, duration, seed, steps, guidance,
+        dit: dit || 'minimax_music3_dit_int8_convrot.safetensors',
+        onProgress, signal,
+      })
+    : engine === 'cloud'
+      ? generateCloud({ state, duration, seed, steps, guidance, onProgress, signal, hfToken })
+      : engine === 'kaggle'
+        ? generateKaggle({ state, duration, seed, seeds, steps, guidance, hfToken, onProgress, signal })
+        : generateComfy({ base, state, duration, seed, steps, guidance, dit, onProgress, signal });
 
   const { blob, takes, host } = await run;
 

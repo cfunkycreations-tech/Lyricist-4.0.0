@@ -515,15 +515,22 @@ ipcMain.handle('app-log', async (event, { message }) => {
  * Deliberately narrow: http(s) only. This is not a general purpose proxy and
  * must not become one.
  */
-ipcMain.handle('music-fetch', async (event, { url, method = 'GET', body = null, binary = false }) => {
+ipcMain.handle('music-fetch', async (event, { url, method = 'GET', body = null, binary = false, token = '' }) => {
   try {
     const target = new URL(String(url));
     if (target.protocol !== 'http:' && target.protocol !== 'https:') {
       return { ok: false, error: `Refusing to fetch a ${target.protocol} address.` };
     }
+    // A local ComfyUI has no auth and gets none. A remote one (Modal) sits on
+    // the open internet behind a bearer token, and this handler is the only way
+    // the packaged app reaches it, so the token has to be forwarded here or
+    // every Modal request arrives bare and comes back 401.
+    const headers = {};
+    if (body) headers['Content-Type'] = 'application/json';
+    if (token) headers.Authorization = `Bearer ${String(token)}`;
     const res = await fetch(target.toString(), {
       method,
-      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      headers: Object.keys(headers).length ? headers : undefined,
       body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined,
     });
     if (binary) {
