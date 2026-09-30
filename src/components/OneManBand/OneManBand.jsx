@@ -711,6 +711,9 @@ export default function OneManBand() {
         steps,
         guidance,
         hfToken: store.config?.huggingFaceToken || '',
+        // Only read when engine === 'modal'; the other engines ignore them.
+        modalUrl: store.config?.modalUrl || '',
+        modalToken: store.config?.modalToken || '',
         signal: ac.signal,
         onProgress: (p) => setPhase(p.phase),
         onTake: (res) => {
@@ -1070,11 +1073,12 @@ export default function OneManBand() {
     roll_take_number: () => { roll(); return 'rolled a new take number'; },
     set_engine: ({ engine: e }) => {
       const want = String(e || '').toLowerCase();
-      if (!['cloud', 'kaggle', 'local'].includes(want)) throw new Error(`"${e}" is not one of the three`);
+      if (!['cloud', 'kaggle', 'local', 'modal'].includes(want)) throw new Error(`"${e}" is not one of the four`);
       if (want === 'kaggle' && !kaggle?.connected) throw new Error('Kaggle is not connected yet, open Set-up first');
       if (want === 'local' && !comfy) throw new Error('this computer is not set up for it yet, open Set-up first');
+      if (want === 'modal' && !store.config?.modalUrl) throw new Error('Modal is not set up yet, add its address in Settings first');
       setEngine(want);
-      return `switched it to ${want === 'cloud' ? 'the free cloud' : want === 'kaggle' ? 'Kaggle' : 'this computer'}`;
+      return `switched it to ${want === 'cloud' ? 'the free cloud' : want === 'kaggle' ? 'Kaggle' : want === 'modal' ? 'Modal' : 'this computer'}`;
     },
     lay_out_song: () => { addWholeShape(); return 'laid out a whole song and made it long enough to hold it'; },
     make_the_song: () => {
@@ -1157,6 +1161,14 @@ export default function OneManBand() {
                   disabled={!comfy} onClick={() => setEngine('local')}>
             <span className="omb-dot" />This computer{' '}
             <span className="omb-cost">{comfy ? `ready` : 'not set up'}</span>
+          </button>
+          {/* MODAL: the same ComfyUI and the same model as "This computer", on a
+              rented GPU, so a full song needs no graphics card here. It stays
+              disabled until Settings holds the address of a deployed endpoint. */}
+          <button type="button" className="omb-eng" aria-pressed={engine === 'modal'}
+                  disabled={!store.config?.modalUrl} onClick={() => setEngine('modal')}>
+            <span className="omb-dot" />Modal{' '}
+            <span className="omb-cost">{store.config?.modalUrl ? 'your GPU' : 'not set up'}</span>
           </button>
           <button type="button" className="omb-setup-link" data-demo="omb-setup"
                   onClick={() => { setupTouched.current = true; setShowSetup((v) => !v); }}>

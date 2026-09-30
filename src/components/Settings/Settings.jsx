@@ -342,9 +342,15 @@ export default function Settings() {
     // The Hugging Face token is pasted from a web page by the same hands and
     // picks up exactly the same junk, so it gets cleaned the same way. It has a
     // different prefix (hf_) so the OpenRouter range check must not apply.
+    // The Modal token and endpoint are pasted from a terminal, so they pick up
+    // the same quotes and trailing whitespace; the token can also arrive with
+    // "Bearer " on the front, which the app adds itself.
+    const unquote = (v) => String(v ?? '').trim().replace(/^["'“”]|["'“”]$/g, '');
     const next = field === 'openRouterApiKey'
       ? normalizeApiKey(val)
-      : (field === 'huggingFaceToken' ? String(val ?? '').trim().replace(/^["'“”]|["'“”]$/g, '').replace(/^Bearer\s+/i, '') : val);
+      : (field === 'huggingFaceToken' || field === 'modalToken'
+        ? unquote(val).replace(/^Bearer\s+/i, '')
+        : (field === 'modalUrl' ? unquote(val) : val));
 
     store.setConfig({ ...store.config, [field]: next });
 
@@ -481,6 +487,58 @@ export default function Settings() {
             huggingface.co/settings/tokens
           </a>{' '}
           raises how many you can make in a day. Nothing to pay, and the token never leaves your computer.
+        </p>
+      </div>
+
+      {/* ---- Black Hole Studios: your own GPU on Modal ---------------------------
+          Runs the same ComfyUI and the same music model as "This computer", but
+          on a rented card, so a full song needs no graphics card here. Both
+          boxes stay empty until modal/lyricist_comfy.py has been deployed, and
+          the Modal button in Black Hole Studios stays disabled until the URL is
+          filled in. The token is entered here, never baked into the build. */}
+      <div style={{ marginBottom: 18 }} data-help="Optional. Runs Black Hole Studios on your own GPU at Modal instead of this computer. Deploy modal/lyricist_comfy.py once, then paste the address it prints and the token you chose. Both stay on your computer.">
+        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(231,165,64,0.75)', marginBottom: 5, display: 'block' }}>
+          Black Hole Studios — Modal GPU (optional)
+        </label>
+        <input
+          type="text"
+          value={store.config.modalUrl || ''}
+          onChange={(e) => handleUpdate('modalUrl', e.target.value)}
+          placeholder="https://your-name--lyricist-comfy-web.modal.run"
+          style={{
+            width: '100%',
+            background: 'rgba(16,18,21,0.7)',
+            border: '1px solid rgba(231,165,64,0.3)',
+            borderRadius: 8,
+            padding: '8px 11px',
+            fontSize: '0.84rem',
+            color: '#e6e8eb',
+            outline: 'none',
+            fontFamily: 'var(--faf-font)',
+            marginBottom: 7
+          }}
+        />
+        <input
+          type={showGoogleKey ? 'text' : 'password'}
+          value={store.config.modalToken || ''}
+          onChange={(e) => handleUpdate('modalToken', e.target.value)}
+          placeholder="Token (the LYRICIST_TOKEN you set on Modal)"
+          style={{
+            width: '100%',
+            background: 'rgba(16,18,21,0.7)',
+            border: '1px solid rgba(231,165,64,0.3)',
+            borderRadius: 8,
+            padding: '8px 11px',
+            fontSize: '0.84rem',
+            color: '#e6e8eb',
+            outline: 'none',
+            fontFamily: 'var(--faf-font)'
+          }}
+        />
+        <p style={{ fontSize: '0.65rem', color: 'rgba(155,161,170,0.45)', marginTop: 5, lineHeight: 1.5 }}>
+          Deploy <code>modal/lyricist_comfy.py</code> once (steps are in <code>.env.example</code>), paste the address
+          it prints and your token, then pick Modal under &ldquo;Where it runs&rdquo;. You pay Modal for the GPU time;
+          the first song after a quiet spell takes a minute or so longer while it wakes up.
         </p>
       </div>
 
