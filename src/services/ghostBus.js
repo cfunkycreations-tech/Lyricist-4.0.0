@@ -30,8 +30,12 @@
  * The Ghost is the creator's tool only (Chris, 2026-09-15), so the hand that
  * shows each action is loaded only in a creator build. In a customer build this
  * folds to null and ghostHands.js / ghostCursor.js never enter the bundle.
+ *
+ * `?.` so plain Node (the check scripts) can import this file: there
+ * `import.meta.env` does not exist. Vite still folds it, verified both ways:
+ * a customer build emits no Ghost chunk and a creator build emits all of them.
  */
-export const PILOT_ENABLED = import.meta.env.VITE_FAFO_INTERNAL_BUILD === 'true';
+export const PILOT_ENABLED = import.meta.env?.VITE_FAFO_INTERNAL_BUILD === 'true';
 const loadHands = PILOT_ENABLED
   ? () => Promise.all([import('./ghostHands.js'), import('./ghostCursor.js')])
   : null;
@@ -154,6 +158,11 @@ export async function runGhostAction(name, args = {}) {
     }
     const out = await fn(args);
     if (out && typeof out === 'object') {
+      // A handler that says { ok: false } has refused. Reporting that as a tick
+      // told the user it worked when the action had rejected the command.
+      if (out.ok === false) {
+        return { ok: false, said: out.said || out.error || `"${name}" did not work.`, undo: null, warn: out.warn || null };
+      }
       return { ok: true, said: out.said || null, undo: out.undo || null, warn: out.warn || null };
     }
     return { ok: true, said: out || null };
