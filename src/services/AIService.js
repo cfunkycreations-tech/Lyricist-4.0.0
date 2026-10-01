@@ -214,12 +214,17 @@ async function postCompletion(body, config) {
   return { ok: false, status: response.status, message: msg };
 }
 
-async function singleCall(messages, config, modelId, customTemp, customMax) {
+/**
+ * `room` is the second-chance call for a thinking model that spent its whole
+ * token budget thinking and never wrote a word (see guardedCall). It gets far
+ * more tokens and is asked to think briefly.
+ */
+async function singleCall(messages, config, modelId, customTemp, customMax, room = null) {
   const targetModel = modelId || config?.model || DEFAULT_AI_MODEL;
   const body = {
     model: targetModel,
     temperature: customTemp !== null && customTemp !== undefined ? customTemp : (config?.temperature ?? 0.85),
-    max_tokens: customMax !== null && customMax !== undefined ? customMax : (config?.maxTokens ?? 2000),
+    max_tokens: room ?? (customMax !== null && customMax !== undefined ? customMax : (config?.maxTokens ?? 2000)),
     top_p: 0.9,
     frequency_penalty: 0.3,
     presence_penalty: 0.2,
@@ -227,7 +232,7 @@ async function singleCall(messages, config, modelId, customTemp, customMax) {
       quantizations: ['fp32', 'bf16', 'fp16', 'fp8', 'unknown'],
       allow_fallbacks: true,
     },
-    reasoning: { exclude: true },
+    reasoning: room ? { effort: 'low', exclude: true } : { exclude: true },
     messages
   };
 
@@ -251,11 +256,20 @@ async function singleCall(messages, config, modelId, customTemp, customMax) {
   const served = result.model || targetModel;
   const provider = result.provider || null;
   const finish = result.choices?.[0]?.finish_reason || null;
-  const raw = result.choices?.[0]?.message?.content || "";
+  const msg = result.choices?.[0]?.message;
+  // Some hosts return the content as a list of parts.
+  const content = Array.isArray(msg?.content)
+    ? msg.content.map((p) => (typeof p === 'string' ? p : p?.text || '')).join('')
+    : msg?.content;
+  const raw = content || "";
   const text = stripReasoning(raw, { aggressive: true });
+  const thought = Boolean(msg?.reasoning || msg?.reasoning_content || msg?.reasoning_details?.length);
 
-  return { text, raw, model: served, provider, finish, unfiltered };
+  return { text, raw, model: served, asked: targetModel, provider, finish, unfiltered, thought };
 }
+
+/** Free slugs are the only ones the app may swap for another model. */
+const isFreeSlug = (id) => /:free$/i.test(String(id || ''));
 
 async function guardedCall(messages, config, modelId, customTemp, customMax) {
   const wanted = modelId || config?.model || DEFAULT_AI_MODEL;
@@ -296,6 +310,10 @@ async function guardedCall(messages, config, modelId, customTemp, customMax) {
     // fixes it, and DATA_POLICY_HELP already says exactly what to change.
     if (/data policy|settings\/privacy/i.test(err.message || '')) throw err;
 
+    // A model they picked and pay for is never swapped for one they did not.
+    // Say what went wrong with THEIR model.
+    if (!isFreeSlug(chosen)) throw err;
+
     const candidates = [
       DEFAULT_AI_MODEL,
       FALLBACK_MODEL,
@@ -327,6 +345,28 @@ async function guardedCall(messages, config, modelId, customTemp, customMax) {
     }
   }
 
+  /**
+   * THE EMPTY REPLY. A thinking model (MiniMax M3 is one) spends its token
+   * budget thinking BEFORE it writes. `reasoning.exclude` hides the thinking
+   * from the reply but does not stop it costing tokens, so on a 2000-token cap
+   * the whole budget goes on thinking and `content` comes back empty with
+   * finish_reason "length". The old code read that as "not lyrics" and went
+   * hunting for other models. The model is fine; it ran out of room. Give the
+   * SAME model the room, and ask it to think briefly.
+   */
+  if (!attemptResult.raw.trim() && (attemptResult.finish === 'length' || attemptResult.thought)) {
+    const cap = customMax ?? config?.maxTokens ?? 2000;
+    try {
+      const roomy = await singleCall(
+        messages, config, attemptResult.asked, customTemp, customMax,
+        Math.min(16000, Math.max(8000, cap * 4)),
+      );
+      if (roomy.raw.trim()) attemptResult = roomy;
+    } catch (e) {
+      console.warn(`Second try with more room failed on ${attemptResult.asked}:`, e.message);
+    }
+  }
+
   const { text, raw, model, provider, finish, unfiltered } = attemptResult;
   const verdict = inspectGenerated(text);
   const rawLines = raw.split('\n').filter((l) => l.trim()).length;
@@ -335,10 +375,10 @@ async function guardedCall(messages, config, modelId, customTemp, customMax) {
 
   if (!text.trim() || isMostlyReasoning(text) || gutted) {
     verdict.ok = false;
-    verdict.reasons = [
+    verdict.reasons = [...new Set([
       ...verdict.reasons,
       raw.trim() ? 'returned thinking passes instead of lyrics' : 'empty response',
-    ];
+    ])];
   }
 
   Object.assign(lastGeneration, {
@@ -369,6 +409,16 @@ async function guardedCall(messages, config, modelId, customTemp, customMax) {
    * on 2026-09-15 was one throw of the same dice: Chris's run took the bad
    * answer, took one more, and gave up naming a code model he never picked.
    */
+  const why = verdict.reasons.length ? ` (${verdict.reasons.join(', ')})` : '';
+
+  // They picked this model. Do not swap in a different one behind their back.
+  if (!isFreeSlug(chosen)) {
+    throw new Error(
+      `${model} sent back something that is not lyrics${why}. `
+      + 'Nothing else was tried, because you picked this model. Pick a different one in Settings.'
+    );
+  }
+
   const alternatives = [...(await discoverFreeModels()), FALLBACK_MODEL, DEFAULT_AI_MODEL]
     .filter((m) => m && m !== model && m !== chosen)
     .slice(0, 3);
@@ -386,8 +436,8 @@ async function guardedCall(messages, config, modelId, customTemp, customMax) {
   }
 
   throw new Error(
-    `${model} sent back something that is not lyrics${verdict.reasons.length ? ` (${verdict.reasons.join(', ')})` : ''}`
-    + `, and ${alternatives.length} other free model${alternatives.length === 1 ? '' : 's'} did the same. `
+    `${model} sent back something that is not lyrics${why}`
+    + (alternatives.length ? `, and so did ${alternatives.join(', ')}. ` : '. ')
     + 'Pick a different model in Settings.'
   );
 }
