@@ -563,36 +563,46 @@ function peelCaption(body) {
 /** Anything that opened and never closed, because the reply was cut short. */
 const UNCLOSED = /<(do|caption|lyrics)>[\s\S]*$/i;
 
+/**
+ * ONE PASS, LEFT TO RIGHT.
+ *
+ * This used to peel every <caption> first, then every <lyrics>, then every <do>,
+ * which re-ordered the reply: "set the style, write the words, build the caption,
+ * make the song" ran as caption, words, style, make. The model had the order
+ * right and the parser threw it away. Every executable tag is now read once, in
+ * the order it appears, and the actions come out in that order.
+ */
+const ANY_TAG = new RegExp(`${CAPTION_TAG.source}|${LYRICS_TAG.source}|${DO_TAG.source}`, 'gi');
+
 /** Pull the action blocks out of a reply, and give back the prose without them. */
 export function splitActions(reply) {
   const actions = [];
   let text = String(reply || '');
 
-  text = text.replace(CAPTION_TAG, (_m, body) => {
-    const value = String(body || '').trim();
-    if (value) actions.push({ name: 'set_caption', args: { text: value } });
-    return '';
-  });
+  // Whether the reply carries a proper <caption> of its own, wherever it sits.
+  // If it does, that one wins over a caption found stuck on the front of the lyrics.
+  const sentCaption = [...text.matchAll(new RegExp(CAPTION_TAG.source, 'gi'))]
+    .some((m) => String(m[1] || '').trim());
 
-  text = text.replace(LYRICS_TAG, (_m, body) => {
-    const value = String(body || '').trim();
-    if (!value) return '';
-    const split = peelCaption(value);
-    // Only when it did NOT also send a proper caption tag. If it sent both, the
-    // real one wins and the stray heading block is its problem, not ours.
-    if (split.caption && !actions.some((a) => a.name === 'set_caption')) {
-      actions.push({ name: 'set_caption', args: { text: split.caption } });
+  text = text.replace(ANY_TAG, (_m, caption, lyrics, json) => {
+    if (caption !== undefined) {
+      const value = String(caption).trim();
+      if (value) actions.push({ name: 'set_caption', args: { text: value } });
+    } else if (lyrics !== undefined) {
+      const value = String(lyrics).trim();
+      if (!value) return '';
+      const split = peelCaption(value);
+      if (split.caption && !sentCaption) {
+        actions.push({ name: 'set_caption', args: { text: split.caption } });
+      }
+      const words = split.caption ? split.lyrics : value;
+      if (words) actions.push({ name: 'set_lyrics', args: { text: words } });
+    } else if (json !== undefined) {
+      try {
+        const parsed = JSON.parse(json);
+        if (parsed && parsed.action) actions.push({ name: String(parsed.action), args: parsed.args || {} });
+      } catch { /* a malformed block is dropped, never shown raw */ }
     }
-    const words = split.caption ? split.lyrics : value;
-    if (words) actions.push({ name: 'set_lyrics', args: { text: words } });
-    return '';
-  });
-
-  text = text.replace(DO_TAG, (_m, json) => {
-    try {
-      const parsed = JSON.parse(json);
-      if (parsed && parsed.action) actions.push({ name: String(parsed.action), args: parsed.args || {} });
-    } catch { /* a malformed block is dropped, never shown raw */ }
     return '';
   });
 

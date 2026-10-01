@@ -79,6 +79,11 @@ const STOW_KEY = 'lyricist.ghost.stow';
  * doing it is asked again, once, to actually do it (see askActing).
  */
 const TALK_NOT_WORK = /\b(i'?m (running|sending|writing|opening|starting|making|pulling|loading|saving|gonna)|let'?s|we'?re gonna|i'?ll|here we go|on it|starting)\b/i;
+/**
+ * A flat "I can't" with no action in it. Usually wrong: the control lives on a tab
+ * that is not open yet, and opening it is the first step, not a reason to refuse.
+ */
+const FALSE_REFUSAL = /\b(i (can'?t|cannot|can not|am unable|am not able|don'?t have)|i'?m (unable|not able|sorry|afraid)|unable to|not something (i|any)|no (action|way|tab|button)\b)/i;
 const NEEDS_A_TAP = {};
 
 // Setup runs before anything speaks; OBS starts before anything is done.
@@ -331,11 +336,14 @@ export default function GhostAssistant({ tab, config, getContext }) {
     const base = { config: live.current.config, tab: live.current.tab, context, signal };
     let r = await askGhost({ ...base, history, question });
     const wantsWork = !/\?\s*$/.test(String(question).trim());
-    if (wantsWork && !r.actions.length && (/\?/.test(r.text) || TALK_NOT_WORK.test(r.text))) {
+    const refused = FALSE_REFUSAL.test(r.text);
+    if (wantsWork && !r.actions.length && (/\?/.test(r.text) || TALK_NOT_WORK.test(r.text) || refused)) {
       r = await askGhost({
         ...base,
         history: [...history, { role: 'user', content: question }, { role: 'assistant', content: r.text || '(nothing)' }],
-        question: 'You answered without doing it. Do not ask anything. Pick whatever is missing yourself and emit the <do> lines that do the work, right now.',
+        question: refused
+          ? 'You said you cannot, but nearly everything is reachable. The control is probably on a tab that is not open yet: emit open_tab for the tab that owns it, then the <do> lines that do the work, right now. Do not refuse again.'
+          : 'You answered without doing it. Do not ask anything. Pick whatever is missing yourself and emit the <do> lines that do the work, right now.',
       });
     }
     return r;

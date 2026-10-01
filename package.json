@@ -16,6 +16,7 @@
     "release:same": "node scripts/release.mjs --no-bump",
     "release:dir": "node scripts/release.mjs --dir",
     "preflight": "node scripts/preflight.mjs",
+    "check:ghost": "node scripts/ghost-check.mjs",
     "copy:ort": "node scripts/copy-onnx-runtime.mjs",
     "fetch:voice": "node scripts/fetch-ghost-voice-model.mjs"
   },
