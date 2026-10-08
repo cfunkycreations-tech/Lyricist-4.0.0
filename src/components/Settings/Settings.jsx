@@ -17,7 +17,7 @@ import VstPlugins from './VstPlugins.jsx';
    colour pair the slider had stopped producing. One source, one truth. */
 
 const MODELS_CACHE_KEY = 'openrouter-models-cache';
-const MODELS_CACHE_TTL = 60 * 60 * 1000; // refresh from OpenRouter at most hourly
+const MODELS_CACHE_TTL = 10 * 60 * 1000; // a model added on openrouter.ai shows up here within ten minutes
 
 function readModelsCache() {
   try {
@@ -240,6 +240,18 @@ function ModelSelector({ value, onChange }) {
               <div style={{ padding: 10, color: 'rgba(155,161,170,0.4)', fontSize: '0.78rem', textAlign: 'center' }}>
                 No models match.
               </div>
+            )}
+            {/* A model that is on openrouter.ai but not in this list (brand new, or
+                hidden from the public catalogue) can still be used: type its exact id
+                from the model's page, e.g. vendor/model-name, and take it as typed. */}
+            {!loading && /^[^\s/]+\/[^\s]+$/.test(search.trim()) && !models.some(m => m.id === search.trim()) && (
+              <button
+                type="button"
+                onClick={() => { onChange(search.trim()); setIsOpen(false); setSearch(''); }}
+                style={{ width: '100%', textAlign: 'left', padding: '10px 12px', background: 'rgba(52,211,153,0.1)', border: 'none', borderBottom: '1px solid rgba(155,161,170,0.2)', cursor: 'pointer', color: '#e6e8eb', fontSize: '0.78rem' }}
+              >
+                Use <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{search.trim()}</span> exactly as typed
+              </button>
             )}
             {filtered.map(m => {
               const isFree = m.id.endsWith(':free');
