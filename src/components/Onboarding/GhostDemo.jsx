@@ -1,3 +1,4 @@
+import { withFades } from '../../services/clipFade.js';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { getGhostDemo } from './ghostDemoScripts.js';
 import { captureAll, restoreAll } from '../../services/demoSafety.js';
@@ -241,7 +242,7 @@ export default function GhostDemo({ tabId, onClose }) {
   const speak = useCallback((id) => new Promise((resolve) => {
     if (!voiceOnRef.current || !clipFor(id)) return resolve(0);
     let a = audioRef.current;
-    if (!a) { a = new Audio(); audioRef.current = a; }
+    if (!a) { a = withFades(new Audio()); audioRef.current = a; }
     try { a.pause(); } catch { /* */ }
     a.onloadedmetadata = null;
     a.onerror = null;
