@@ -143,3 +143,29 @@ body.lyricist-mobile .push-hd { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .pc-sweep, .pc-ctl, .pc-empty { animation: none; --hue: 215; --sat: 30%; --spread: 8; }
 }
+
+/* ── Performance deck: XY pads, faders, Live Loops ─────────────────── */
+.pd { display: flex; gap: 3px; align-items: stretch; height: 168px; margin-top: 3px; background: #000; user-select: none; touch-action: none; }
+.pd-xy { position: relative; flex: 0 0 168px; background: linear-gradient(#10141c, #060810); border: 1px solid #2a3140; cursor: crosshair; overflow: hidden; }
+.pd-xy.is-active { border-color: var(--c); box-shadow: inset 0 0 22px color-mix(in srgb, var(--c) 35%, transparent); }
+.pd-label { font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #C9D2E0; }
+.pd-xy .pd-label { position: absolute; top: 6px; left: 8px; }
+.pd-hint { position: absolute; bottom: 6px; left: 8px; font-size: 8.5px; color: #7d8799; }
+.pd-dot { position: absolute; width: 18px; height: 18px; margin: 0 0 -9px -9px; border-radius: 50%; background: var(--c, #fff); box-shadow: 0 0 14px var(--c, #fff); pointer-events: none; }
+.pd-xy:not(.is-active) .pd-dot { opacity: .35; }
+.pd-faders { display: flex; gap: 3px; flex: 0 0 auto; }
+.pd-slider-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 46px; padding: 6px 0 4px; background: #0a0d14; border: 1px solid #2a3140; }
+.pd-slider { position: relative; flex: 1; width: 16px; background: #05070b; border: 1px solid #2a3140; cursor: ns-resize; }
+.pd-fill { position: absolute; left: 0; right: 0; bottom: 0; background: var(--c); opacity: .55; pointer-events: none; }
+.pd-thumb { position: absolute; left: -7px; right: -7px; height: 8px; margin-bottom: -4px; background: #e8edf5; border-radius: 2px; pointer-events: none; }
+.pd-clips { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.pd-grid { flex: 1; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(2, 1fr); gap: 3px; }
+.pd-clip { background: #0a0d14; border: 1px solid #2a3140; color: #7d8799; font-size: 10px; font-weight: 700; cursor: pointer; overflow: hidden; padding: 2px 4px; }
+.pd-clip.has { color: #e8edf5; background: #14304f; border-color: #3b7fc4; }
+.pd-clip.queued { animation: pd-blink .35s steps(2) infinite; }
+.pd-clip.playing { background: #1f7a3a; border-color: #5be37d; }
+.pd-clip.stopping { background: #5a4a14; border-color: #e0b84a; }
+.pd-clip span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pd-clip-bar { display: flex; align-items: center; gap: 8px; font-size: 9px; color: #7d8799; }
+.pd-stop { background: #1a1f2b; border: 1px solid #2a3140; color: #C9D2E0; font-size: 9.5px; font-weight: 700; padding: 3px 8px; cursor: pointer; text-transform: uppercase; }
+@keyframes pd-blink { 50% { background: #3b7fc4; } }

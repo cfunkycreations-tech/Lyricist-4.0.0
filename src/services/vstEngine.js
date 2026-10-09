@@ -100,6 +100,8 @@ async function loadNow(inst) {
   return { id: r.id, driver, name: inst.name };
 }
 
+const sounding = new Map();
+
 /** Same shape as soundfontEngine.playNote: plays now (or at `when`), returns a stop handle. */
 export function vstNote(ctx, handle, midi, { when, duration = 0.5, velocity = 0.8 } = {}) {
   if (isDaw()) return dawNote(ctx, midi, { when, duration, velocity });
@@ -108,9 +110,11 @@ export function vstNote(ctx, handle, midi, { when, duration = 0.5, velocity = 0.
   const delay = ctx && when != null ? Math.max(0, (when - ctx.currentTime) * 1000) : 0;
   let on = false;
   let done = false;
+  const key = `${handle.id}:${note}`;
   const off = () => {
     if (done) return;
     done = true;
+    sounding.delete(key);
     clearTimeout(startT);
     clearTimeout(endT);
     if (on) cmd('plugin.noteOff', { id: handle.id, note }).catch(() => {});
@@ -118,6 +122,7 @@ export function vstNote(ctx, handle, midi, { when, duration = 0.5, velocity = 0.
   const startT = setTimeout(() => {
     if (done) return;
     on = true;
+    sounding.set(key, { id: handle.id, note });
     cmd('plugin.noteOn', { id: handle.id, note, velocity: vel }).catch(() => {});
   }, delay);
   const endT = setTimeout(off, delay + duration * 1000);
@@ -126,4 +131,33 @@ export function vstNote(ctx, handle, midi, { when, duration = 0.5, velocity = 0.
 
 export async function showEditor(handle) {
   return cmd('plugin.showEditor', { id: handle.id });
+}
+
+/** Silence anything still ringing (stuck notes after a stutter or a dropped pointer). */
+export function panic() {
+  for (const { id, note } of sounding.values()) cmd('plugin.noteOff', { id, note }).catch(() => {});
+  sounding.clear();
+}
+
+/** The plugin's parameters: [{ index, name, value }]. */
+export async function getParams(handle) {
+  return (await cmd('plugin.getParams', { id: handle.id })).params || [];
+}
+
+export async function setParam(handle, index, value) {
+  return cmd('plugin.setParam', { id: handle.id, index, value: Math.max(0, Math.min(1, value)) });
+}
+
+const paramCache = new Map();
+
+/** Set the first parameter whose name matches `re` (e.g. /cutoff|filter.*freq/i). 0..1. No match: quietly false. */
+export async function setParamByName(handle, re, value) {
+  try {
+    let list = paramCache.get(handle.id);
+    if (!list) { list = await getParams(handle); paramCache.set(handle.id, list); }
+    const p = list.find((x) => re.test(x.name));
+    if (!p) return false;
+    await setParam(handle, p.index, value);
+    return true;
+  } catch { return false; }
 }
