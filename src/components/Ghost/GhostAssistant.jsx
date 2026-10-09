@@ -11,7 +11,6 @@ import { setJobDeps, addJob, subscribeJobs } from '../../services/ghostJobs.js';
 import GhostHand from './GhostHand.jsx';
 import GhostJobs from './GhostJobs.jsx';
 import GhostLessons from './GhostLessons.jsx';
-import VoiceLab from './VoiceLab.jsx';
 import { subscribeTeach, beginTeach, endTeach, teachState, playLesson } from '../../services/ghostTeach.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import {
@@ -713,11 +712,10 @@ spoken line of talk.${attempt ? `\n\nThe last try at this step did not work (${s
               Jobs{jobCount ? ` · ${jobCount}` : ''}
             </button>
             <button type="button" aria-pressed={view === 'lessons'} onClick={() => setView('lessons')}>Lessons</button>
-            <button type="button" aria-pressed={view === 'voicelab'} onClick={() => setView('voicelab')}>Voice Lab</button>
           </div>
 
 
-          {view === 'voicelab' ? <VoiceLab apiKey={config?.openRouterApiKey} /> : view === 'jobs' ? <GhostJobs /> : view === 'lessons' ? (
+          {view === 'jobs' ? <GhostJobs /> : view === 'lessons' ? (
             <GhostLessons tab={tab} onTeachStart={() => setOpen(false)} />
           ) : (<>
           <div className="gha-log" ref={logRef}>

@@ -40,6 +40,7 @@ import SunoPlayer from './components/AudioPlayer/SunoPlayer.jsx';
 import RecordingBooth from './components/Recordings/RecordingBooth.jsx';
 import CollabTab from './components/Collab/CollabTab.jsx';
 import MasteringStudio from './components/MasteringStudio/MasteringStudio.jsx';
+import VoiceLab from './components/VoiceLab/VoiceLab.jsx';
 import QuantumLab from './components/QuantumLab/QuantumLab.jsx';
 import LoopStation from './components/LoopStation/LoopStation.jsx';
 import Stemmer from './components/Stemmer/Stemmer.jsx';
@@ -120,6 +121,7 @@ const tabs = [
   { id: 'loopstation', icon: 'repeat', label: 'RC-Funk 5000', blurb: 'drum machine and looper', help: 'Live multi-track loop station (Boss RC-style). Record loops on up to 4 tracks, stack layers, control volume, undo a track. Fully offline. Great for riffs and vocal hooks while you write.' },
   { id: 'stemmer', icon: 'audio-lines', label: 'Cloud Stem Extraction', blurb: 'BYO Replicate key', help: 'Splits a full mix into Vocals, Drums, Bass, Guitar, Keys, and Other. Local mode runs on your own CPU with no key and no GPU. High-fidelity Demucs separation offloads to the Replicate API using your own key, so a 4 GB VRAM machine is never asked to hold the model.' },
   { id: 'booth', icon: 'mic', label: 'Recording Booth', blurb: 'record your own takes', help: 'Record harmonica, guitar, or vocals straight into the app (or upload takes) and keep them in a saved library. Play them in the persistent player while you write, convert them to MIDI, or export them as WAV.' },
+  { id: 'voicelab', icon: 'mic-2', label: 'Voice Lab', blurb: 'scripts read aloud', help: 'Write a script or a speech, pick a voice, shape it with the knobs, and save it as a WAV. Runs on your OpenRouter key. Long scripts are read a paragraph at a time and joined together.' },
   { id: 'midistudio', icon: 'piano', label: 'MIDI Studio', blurb: 'audio to MIDI, piano roll', help: 'Turn any audio into editable MIDI, tweak it on a piano-roll with a stronger multi-voice synth, and pick from dozens of Milkdrop-class visualizer presets. Runs fully offline.' },
   { id: 'mastering', icon: 'gauge', label: 'Mastering Studio', blurb: 'master and export', help: 'The finish line: pull your songs together into an album, master each track with a real EQ/compression/limiter chain (all offline), add cover art (upload or AI-generated), and export the finished album — WAVs, cover, and tracklist.' },
   // Sits after Mastering because it is something you do TO a finished track.
@@ -631,6 +633,9 @@ function MainLayout() {
           </TabPane>
           <TabPane id="booth" active={activeTab} opened={openedTabs}>
             <RecordingBooth onNavigate={setActiveTab} />
+          </TabPane>
+          <TabPane id="voicelab" active={activeTab} opened={openedTabs}>
+            <VoiceLab />
           </TabPane>
           <TabPane id="midistudio" active={activeTab} opened={openedTabs}>
             <MidiStudio />

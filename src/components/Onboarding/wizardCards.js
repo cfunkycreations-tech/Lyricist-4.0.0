@@ -143,6 +143,14 @@ Do not let an idea slip away. Guitar, harmonica, vocals: record here or import t
 Export WAV. Or send audio into MIDI Studio to turn a hum into editable notes. Ready the moment inspiration hits.`
   },
   {
+    id: 21, icon: 'mic-2', title: 'Voice Lab: scripts read aloud', tab: 'voicelab', audio: 'card-21.mp3',
+    script: `Voice Lab. Your words, read out loud.
+
+Write a script or a speech, word for word. Pick one of thirty-three voices, then shape it: faster, slower, deeper, warmer, a little room around it.
+
+Press Read it to hear the whole thing, and Save WAV when it's right. Intros, skits, voiceovers, anything. It runs on your OpenRouter key.`
+  },
+  {
     id: 12, icon: 'piano', title: 'MIDI Studio: stronger synth & vizzes', tab: 'midistudio', audio: 'card-08.mp3',
     script: `MIDI Studio. Convert audio, edit notes, watch the room move.
 

@@ -56,11 +56,9 @@ const EXPRESSION = [
 export const DEFAULTS = {
   voice: 'g38:Algieba',
   expression: 60,        // 0..100
-  // The exact direction of the audition Chris picked (g38-algieba, 2026-09-27).
-  direction: 'You are the Ghost, the guide inside a music studio app. Speak like a warm, '
-    + 'confident late-night radio host with a little mischief: lively, varied intonation, '
-    + 'real emphasis on the words that matter, natural pauses, a smile in the voice. '
-    + 'Never flat, never robotic, never rushed. Clear enough for a beginner to follow.',
+  // Empty for everyone: Voice Lab is a general tool now, not the Ghost's
+  // (Chris, 2026-10-09). Settings already saved on a machine keep their own.
+  direction: '',
   pace: 1.0,             // 0.60..1.40, time only, pitch untouched
   depth: 0,              // semitones, -12..+6  (pitch). Chris picked Algieba as-is, 2026-09-27: -6 was too low
   size: 0,               // semitones, -6..+6   (formants: minus = bigger chest)
