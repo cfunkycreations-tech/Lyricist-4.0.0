@@ -14,7 +14,7 @@ import GhostLessons from './GhostLessons.jsx';
 import { subscribeTeach, beginTeach, endTeach, teachState, playLesson } from '../../services/ghostTeach.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import {
-  speak, hush, loadVoice, voiceState, playSample, VOICES, getVoiceName, setVoiceName, prewarm,
+  speak, hush, loadVoice, voiceState, getVoiceName, setVoiceName, prewarm,
   getVoiceSpeed, setVoiceSpeed, getVoiceWarmth, setVoiceWarmth, SPEED_MIN, SPEED_MAX,
 } from '../../services/GhostVoice.js';
 import { Ghost } from 'lucide-react';
@@ -150,19 +150,16 @@ export default function GhostAssistant({ tab, config, getContext }) {
       }
       return `voice ${tuned.join(', ')}`;
     }
-    const n = String(name || '').trim().toLowerCase();
-    const key =
-      /wom|fem|girl|lady|heart|bella|nicole/.test(n) ? 'woman' :
-      /man|male|dude|guy|michael|adam(?!.*ghost)/.test(n) ? 'man' :
-      /ghost|onyx|deep/.test(n) ? 'ghost' :
-      Object.keys(VOICES).find((k) => k === n || VOICES[k].label.toLowerCase() === n);
-    if (!key) return { ok: false, said: `no voice called "${name}" — pick woman, man, or ghost` };
-    setVoiceName_(setVoiceName(key));
+    // The Ghost has one voice. Asking for another is reported, not faked.
+    if (name && !/ghost|onyx|deep/.test(String(name).toLowerCase())) {
+      return { ok: false, said: 'The Ghost has one voice now. Speed and warmth still change.' };
+    }
+    setVoiceName_(setVoiceName('ghost'));
     if (!voiceOn) {
       setVoiceOn(true);
       localStorage.setItem(VOICE_KEY, '1');
     }
-    return `voice set to ${VOICES[key].label}`;
+    return 'voice on';
   }), [voiceOn]);
 
   /**
@@ -639,31 +636,6 @@ spoken line of talk.${attempt ? `\n\nThe last try at this step did not work (${s
               </button>
             </div>
           </header>
-
-          {/* Who it sounds like. Only worth showing once the voice is on, and
-              switching says one line in the new voice so you can hear it
-              without having to think of something to ask. */}
-          {voiceOn && (
-            <div className="gha-picker">
-              <span>Voice</span>
-              {Object.entries(VOICES).map(([key, v]) => (
-                <button
-                  key={key}
-                  type="button"
-                  aria-pressed={voiceName === key}
-                  onClick={() => {
-                    setVoiceName_(setVoiceName(key));
-                    // The BAKED line, not the model. This has to be instant or a
-                    // button marked "Woman" that sits silent for a minute reads
-                    // as broken. It also works with nothing downloaded at all.
-                    if (!playSample(key)) speak(`This is the ${v.label.toLowerCase()}.`);
-                  }}
-                >
-                  {v.label}
-                </button>
-              ))}
-            </div>
-          )}
 
           {/* Speed in hundredths and warmth. Letting go of a slider says one
               line in the new setting, so you hear it without asking anything. */}

@@ -146,9 +146,9 @@ export function setVoiceWarmth(v) {
  * it sound like a telephone.
  */
 export const VOICES = {
+  // One voice. Chris, 2026-10-09: "I like the way the ghost sounds", so the
+  // Man and Woman options are gone. A saved choice of either falls back here.
   ghost: { id: 'am_adam',    pitch: GHOST_PITCH, label: 'Ghost' },
-  man:   { id: 'am_michael', pitch: 1,           label: 'Man' },
-  woman: { id: 'af_heart',   pitch: 1,           label: 'Woman' },
 };
 
 /**
