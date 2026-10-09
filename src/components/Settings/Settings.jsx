@@ -47,6 +47,10 @@ async function fetchOpenRouterModels(forceRefresh = false, apiKey = '') {
     ]);
     lists.forEach((l) => { if (l.status === 'fulfilled') l.value.forEach((m) => byId.set(m.id, m)); });
     if (!byId.size) throw new Error('OpenRouter returned no models');
+    // Stealth models are often absent from every catalogue endpoint; pin known ones.
+    if (!byId.has('stealth/space-bunny-alpha')) {
+      byId.set('stealth/space-bunny-alpha', { id: 'stealth/space-bunny-alpha', name: 'Space Bunny Alpha (stealth)' });
+    }
     const models = [...byId.values()];
     try {
       localStorage.setItem(MODELS_CACHE_KEY, JSON.stringify({ fetchedAt: Date.now(), models }));
