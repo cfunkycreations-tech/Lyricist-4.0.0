@@ -190,18 +190,29 @@ let bankPromise = null;
  * the app keeps every GM instrument working and only Chris's textures go
  * missing. A decorative bank must never be able to take the piano roll down.
  */
+// fetch() can't read file:// in the packaged app; XHR can.
+function getBuffer(url) {
+  return fetch(url).then(
+    (r) => { if (!r.ok) throw new Error(`Could not load ${url} (${r.status})`); return r.arrayBuffer(); },
+    () => new Promise((resolve, reject) => {
+      const x = new XMLHttpRequest();
+      x.open('GET', url);
+      x.responseType = 'arraybuffer';
+      x.onload = () => ((x.status === 200 || x.status === 0) && x.response && x.response.byteLength ? resolve(x.response) : reject(new Error(`Could not load ${url} (${x.status})`)));
+      x.onerror = () => reject(new Error(`Could not load ${url}`));
+      x.send();
+    }),
+  );
+}
+
 function loadBank() {
   if (!bankPromise) {
     bankPromise = (async () => {
-      const res = await fetch(SF2_URL);
-      if (!res.ok) throw new Error(`Could not load the instrument bank (${res.status})`);
-      const main = SoundBankLoader.fromArrayBuffer(await res.arrayBuffer());
+      const main = SoundBankLoader.fromArrayBuffer(await getBuffer(SF2_URL));
 
       let cfunky = null;
       try {
-        const r2 = await fetch(SF2_CFUNKY_URL);
-        if (r2.ok) cfunky = SoundBankLoader.fromArrayBuffer(await r2.arrayBuffer());
-        else console.warn(`[Lyricist] CFunky Quantum bank missing (${r2.status}); GM instruments still work.`);
+        cfunky = SoundBankLoader.fromArrayBuffer(await getBuffer(SF2_CFUNKY_URL));
       } catch (e) {
         console.warn('[Lyricist] CFunky Quantum bank failed to load; GM instruments still work.', e);
       }
