@@ -79,7 +79,12 @@ import {
 import { blendLabel } from '../../utils/blend.js';
 import { saveRecording, listRecordings } from '../../services/RecordingsStore.js';
 import './OneManBand.css';
+import bhLoop from '../../assets/blackhole/bh_loop.webm';
+import bhStill from '../../assets/blackhole/bh_still.webp';
 import { Dices } from 'lucide-react';
+
+const REDUCED_MOTION = typeof window !== 'undefined'
+  && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 /**
  * BLACK HOLE STUDIOS — your words, sung by a full band.
@@ -1108,15 +1113,22 @@ export default function OneManBand() {
         <header className="omb-top">
           <div className="omb-id">
             {/* THE BLACK HOLE.
-                Drawn, not photographed: an event horizon with a lit accretion
-                disc leaning behind the wordmark, turning slowly. SVG and CSS
-                rather than an image file, so it is sharp on any screen, adds
-                nothing to the download, and re-colours itself with Prism like
-                the rest of the app. Swapping in real artwork later means
-                replacing this one block with an <img>; nothing else knows. */}
+                A rendered loop, not CSS: scripts/blackhole_textures.py makes the
+                disc and lensed-halo images, the same rig as scripts/blackhole_c4d.py
+                spins them for 10 seconds, and the last frame flows into the first.
+                VP9 WebM with alpha, so it sits on the header with no box around it.
+                Reduced motion gets the still. */}
             <div className="omb-hole" aria-hidden="true">
-              <span className="omb-hole-disc" />
-              <span className="omb-hole-horizon" />
+              <video
+                className="omb-hole-video"
+                src={bhLoop}
+                poster={bhStill}
+                autoPlay={!REDUCED_MOTION}
+                loop
+                muted
+                playsInline
+                disablePictureInPicture
+              />
               <span className="omb-hole-glow" />
             </div>
             <div className="omb-brand">Lyricist Pro 4.2.0</div>
