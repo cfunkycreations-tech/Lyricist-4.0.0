@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   PenLine, Orbit, Radar, Hammer, Grid3x3, Users, Repeat, AudioLines, Mic, Piano, Gauge, Scissors,
-  BookOpen, Library, BookA, Blocks, StickyNote, Settings2, Drum, Guitar, Activity, Layers, Sparkles, Ghost,
+  BookOpen, Library, BookA, Blocks, StickyNote, Settings2, Drum, Guitar, Activity, Layers, Sparkles, Ghost, Mic2,
 } from 'lucide-react';
 
 /**
@@ -23,6 +23,7 @@ const MAP = {
   repeat: Repeat,
   'audio-lines': AudioLines,
   mic: Mic,
+  'mic-2': Mic2,
   piano: Piano,
   gauge: Gauge,
   scissors: Scissors,

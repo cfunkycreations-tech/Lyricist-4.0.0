@@ -8,6 +8,7 @@
 export const GHOST_DEMO_TABS = new Set([
   'songwriter',
   'onemanband',
+  'voicelab',
   'analyzer',
   'songforge',
   'quantum',
@@ -449,6 +450,56 @@ export const GHOST_DEMOS = {
       {
         say: 'From here a take can go two ways: Export WAV writes a real audio file to your Documents folder for a DAW, or you can send it to MIDI Studio to turn what you played into editable notes. So the whole path is: press Record, play the idea, press Stop, and it is saved.',
         wait: 3600,
+      },
+    ],
+  },
+
+  voicelab: {
+    title: 'Voice Lab',
+    steps: [
+      {
+        say: "Voice Lab. Write anything. A script, a speech, an intro for your mixtape. It reads it out loud in the voice you pick. I'll point at each part. Nothing gets read until you say so.",
+        wait: 3400,
+      },
+      {
+        target: '[data-demo="vl-script"]',
+        say: 'This is the script box. Type it word for word, just like you want it read. Leave a blank line between paragraphs, and the voice takes a breath there.',
+        action: 'point',
+        wait: 3200,
+      },
+      {
+        target: '[data-demo="vl-voice"]',
+        say: 'Pick a voice. Flip through them with the arrows, or slide across. Thirty-three of them, from Gemini, MiniMax and Grok.',
+        action: 'point',
+        wait: 3000,
+      },
+      {
+        target: '[data-demo="vl-knobs"]',
+        say: 'These shape the voice. Pace makes it faster or slower. Depth drops it deeper without that slowed-tape sound. Size, Warmth and Room do the rest. Double-click any of them to put it back.',
+        action: 'point',
+        wait: 3400,
+      },
+      {
+        target: '[data-demo="vl-direction"]',
+        say: "Direction tells a Gemini voice who's talking and how. A tired old bluesman, taking his time. It follows.",
+        action: 'point',
+        wait: 3000,
+      },
+      {
+        target: '[data-demo="vl-play"]',
+        say: 'Read it plays your whole script in that voice. It runs on your OpenRouter key, so set that in Settings first.',
+        action: 'point',
+        wait: 3000,
+      },
+      {
+        target: '[data-demo="vl-save"]',
+        say: 'Save WAV writes it out as an audio file. An intro, a skit, a voiceover, anything.',
+        action: 'point',
+        wait: 2800,
+      },
+      {
+        say: "That's the Voice Lab. Write it. Pick a voice. Shape it. Save it.",
+        wait: 2600,
       },
     ],
   },

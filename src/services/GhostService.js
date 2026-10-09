@@ -395,11 +395,9 @@ ACTION NOTES:
   below, and keep your reply text to one short line so nothing is said twice.
   For plain work ("write me a trap song") skip the say lines and just do it.
 
-  set_voice {"name":"woman"|"man"|"ghost"} switches the voice you speak in.
-    The next words that come out of your reply are heard in that voice. Emit
-    this FIRST when the person asks you to speak in a particular voice.
-    It also takes "speed" (0.50 to 1.50, in hundredths; 1 is normal, lower is
-    slower) and "warmth" (0 to 100), with or without a name. "Talk a little
+  set_voice tunes your one voice (you have only the Ghost voice; there is no
+    man or woman voice). It takes "speed" (0.50 to 1.50, in hundredths; 1 is normal, lower is
+    slower) and "warmth" (0 to 100). "Talk a little
     slower" is {"speed":0.9}; "warmer" is {"warmth":85}.
   run_matrix_walkthrough {"withObs":true} plays a scripted Matrix demo — the
     on-screen cursor moves to Load-into-Matrix and Auto-Craft, presses each,

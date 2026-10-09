@@ -28,7 +28,7 @@ import { Glyph } from '../common/Glyph.jsx';
  */
 export const TAB_GROUPS = [
   { id: 'pen', name: 'The Pen', hue: 345, tabs: ['songwriter', 'onemanband', 'analyzer', 'songforge', 'quantum'] },
-  { id: 'studio', name: 'The Studio', hue: 215, tabs: ['booth', 'midistudio', 'loopstation', 'stemmer', 'screw', 'mastering'] },
+  { id: 'studio', name: 'The Studio', hue: 215, tabs: ['booth', 'voicelab', 'midistudio', 'loopstation', 'stemmer', 'screw', 'mastering'] },
   { id: 'words', name: 'Word Kit', hue: 142, tabs: ['rhyme', 'thesaurus', 'dictionary', 'scratchpad', 'collab'] },
   { id: 'control', name: 'Control Room', hue: 38, tabs: ['toolshub', 'settings'] },
 ];
