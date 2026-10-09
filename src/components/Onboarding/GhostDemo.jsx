@@ -9,6 +9,9 @@ import { captureAll, restoreAll } from '../../services/demoSafety.js';
 // went too. What is left is a plain SVG pointer that looks and moves like any
 // other cursor a viewer might be watching. The .png file is left in src/assets/
 // untouched but no longer imported.
+// Chris, 2026-10-09: the Ghost is back on screen during the demo, with a button
+// to hide it. Same art as the Ask-the-Ghost hand (ghost-sprite.png).
+import ghostSprite from '../../assets/ghost-sprite.png';
 import './GhostDemo.css';
 
 /**
@@ -215,6 +218,13 @@ export default function GhostDemo({ tabId, onClose }) {
   // Voice on by default, and switchable from the demo bar — a labelled button,
   // not a setting hidden on another tab.
   const [voiceOn, setVoiceOn] = useState(true);
+  const FIGURE_KEY = 'lyricistGhostFigure';
+  const [showGhost, setShowGhost] = useState(() => {
+    try { return localStorage.getItem(FIGURE_KEY) !== 'off'; } catch { return true; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(FIGURE_KEY, showGhost ? 'on' : 'off'); } catch { /* storage blocked */ }
+  }, [showGhost]);
   const voiceOnRef = useRef(true);
   const audioRef = useRef(null);
 
@@ -629,6 +639,13 @@ export default function GhostDemo({ tabId, onClose }) {
             recording to betray that a canned operator is driving, and a name
             tag hovering next to a pointer is the tell. The cursor stands
             alone now, and looks like any other cursor on screen. */}
+        {showGhost && (
+          <div className="ghost-demo-figure" aria-hidden>
+            <div className="ghost-demo-sprite-wrap">
+              <img className="ghost-demo-sprite" src={ghostSprite} alt="" draggable={false} />
+            </div>
+          </div>
+        )}
         <div className="ghost-demo-cursor" aria-hidden>
           <svg width="32" height="32" viewBox="0 0 24 24">
             <path
@@ -682,6 +699,16 @@ export default function GhostDemo({ tabId, onClose }) {
           title={voiceOn ? 'Turn the ghost’s voice off' : 'Turn the ghost’s voice on'}
         >
           {voiceOn ? 'Voice On' : 'Voice Off'}
+        </button>
+
+        <button
+          type="button"
+          className={`ghost-demo-bar-btn ${showGhost ? 'is-on' : ''}`}
+          aria-pressed={showGhost}
+          onClick={() => setShowGhost((v) => !v)}
+          title={showGhost ? 'Hide the Ghost on screen' : 'Show the Ghost on screen'}
+        >
+          {showGhost ? 'Ghost On' : 'Ghost Off'}
         </button>
 
         <button type="button" className="ghost-demo-bar-btn" onClick={() => setPaused((p) => !p)}>
