@@ -369,6 +369,14 @@ export default function GhostDemo({ tabId, onClose }) {
     });
 
   /** Human-ish path with a slight curve */
+  // Hold until the clip has really ended, so the next step never cuts it off.
+  const voiceDone = async (runId) => {
+    const a = audioRef.current;
+    for (let n = 0; a && voiceOnRef.current && !a.ended && !a.paused && n < 600; n += 1) {
+      await wait(50, runId);
+    }
+  };
+
   const animateCursorTo = (x, y, duration = 850, runId) =>
     new Promise((resolve) => {
       const from = { ...cursorRef.current };
@@ -518,7 +526,7 @@ export default function GhostDemo({ tabId, onClose }) {
 
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-        await wait(500 * speedRef.current, runId);
+        await wait(220 * speedRef.current, runId);
         const r = el.getBoundingClientRect();
         tx = r.left + Math.min(r.width * 0.55, r.width - 8);
         ty = r.top + r.height / 2;
@@ -533,7 +541,7 @@ export default function GhostDemo({ tabId, onClose }) {
       }
 
       // Move the visible mouse like a remote session
-      await animateCursorTo(tx, ty, (el ? 900 + Math.random() * 200 : 600) * speedRef.current, runId);
+      await animateCursorTo(tx, ty, (el ? 420 + Math.random() * 80 : 300) * speedRef.current, runId);
 
       const spot = placeBubble(tx, ty);
       setBubble({ text: step.say, x: spot.x, y: spot.y, visible: true });
@@ -543,7 +551,8 @@ export default function GhostDemo({ tabId, onClose }) {
       // the app had already moved on. Now it waits for the sentence — and, when
       // the voice is on, for the ghost to finish saying it, whichever is longer.
       const sayMs = await speak(`${tabId}-${i}-say`);
-      await wait(Math.max(readTimeFor(step.say), sayMs + 450), runId);
+      await wait(sayMs > 0 ? sayMs + 300 : readTimeFor(step.say), runId);
+      await voiceDone(runId);
 
       const action = step.action || (el ? 'click' : 'say');
 
@@ -578,9 +587,10 @@ export default function GhostDemo({ tabId, onClose }) {
         setBubble((b) => ({ ...b, text: step.then }));
         setStatusLine('Showing the result');
         const thenMs = await speak(`${tabId}-${i}-then`);
-        await wait(Math.max(readTimeFor(step.then), thenMs + 450), runId);
+        await wait(thenMs > 0 ? thenMs + 300 : readTimeFor(step.then), runId);
+        await voiceDone(runId);
       } else {
-        await wait((step.wait ?? 2800) * speedRef.current, runId);
+        await wait((sayMs > 0 ? 450 : (step.wait ?? 2800)) * speedRef.current, runId);
       }
     }
 
