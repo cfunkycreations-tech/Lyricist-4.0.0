@@ -210,10 +210,36 @@ export default function GhostDemo({ tabId, onClose }) {
    * Slow is roughly half pace for someone reading carefully; Fast is for a
    * second watch when you already know the tab.
    */
-  const SPEEDS = { slow: 1.55, medium: 1.0, fast: 0.62 };
-  const [speed, setSpeed] = useState('medium');
+  // Speed is a knob now: pace 0.5x (slow) to 2x (fast), log scale so the
+  // middle stays 1.0x. The timers want the inverse (bigger = slower).
+  const PACE_MIN = 0.5;
+  const PACE_MAX = 2;
+  const clampPace = (v) => Math.min(PACE_MAX, Math.max(PACE_MIN, v));
+  const [pace, setPace] = useState(() => {
+    try { const v = parseFloat(localStorage.getItem('lyricistGhostPace')); if (v) return clampPace(v); } catch { /* ignore */ }
+    return 1;
+  });
   const speedRef = useRef(1.0);
-  useEffect(() => { speedRef.current = SPEEDS[speed] ?? 1.0; }, [speed]);
+  useEffect(() => {
+    speedRef.current = 1 / pace;
+    try { localStorage.setItem('lyricistGhostPace', String(pace)); } catch { /* ignore */ }
+  }, [pace]);
+  const nudgePace = useCallback((steps) => {
+    setPace((p) => clampPace(Math.pow(2, Math.log2(p) + steps * 0.02)));
+  }, []);
+  const knobRef = useRef(null);
+  useEffect(() => {
+    const el = knobRef.current;
+    if (!el) return undefined;
+    const onWheel = (e) => {
+      e.preventDefault();
+      nudgePace((e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? 5 : 1));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [nudgePace]);
+  const dragRef = useRef(null);
+  const knobAngle = -135 + ((Math.log2(pace) + 1) / 2) * 270;
 
   // Voice on by default, and switchable from the demo bar — a labelled button,
   // not a setting hidden on another tab.
@@ -678,17 +704,35 @@ export default function GhostDemo({ tabId, onClose }) {
             Settings. Medium is the default. */}
         <span className="ghost-demo-bar-speed" aria-label="Demo speed">
           <span className="ghost-demo-bar-speed-label">Speed</span>
-          {[['slow', 'Slow'], ['medium', 'Medium'], ['fast', 'Fast']].map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              className={`ghost-demo-bar-btn ghost-demo-bar-speed-btn ${speed === id ? 'is-on' : ''}`}
-              aria-pressed={speed === id}
-              onClick={() => setSpeed(id)}
-            >
-              {label}
-            </button>
-          ))}
+          <span
+            ref={knobRef}
+            className="ghost-demo-knob"
+            role="slider"
+            tabIndex={0}
+            aria-label="Demo speed"
+            aria-valuemin={PACE_MIN}
+            aria-valuemax={PACE_MAX}
+            aria-valuenow={Number(pace.toFixed(2))}
+            title="Scroll the mouse wheel over it (Shift = bigger steps), drag up/down, arrow keys, double-click to reset"
+            onPointerDown={(e) => { dragRef.current = e.clientY; e.currentTarget.setPointerCapture(e.pointerId); }}
+            onPointerMove={(e) => {
+              if (dragRef.current == null) return;
+              nudgePace((dragRef.current - e.clientY) * 0.5);
+              dragRef.current = e.clientY;
+            }}
+            onPointerUp={() => { dragRef.current = null; }}
+            onDoubleClick={() => setPace(1)}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { e.preventDefault(); nudgePace(e.shiftKey ? 5 : 1); }
+              if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { e.preventDefault(); nudgePace(e.shiftKey ? -5 : -1); }
+              if (e.key === 'Home') setPace(1);
+            }}
+          >
+            <span className="ghost-demo-knob-cap" style={{ transform: `rotate(${knobAngle}deg)` }}>
+              <span className="ghost-demo-knob-tick" />
+            </span>
+          </span>
+          <span className="ghost-demo-knob-read">{pace.toFixed(2)}×</span>
         </span>
 
         <button
