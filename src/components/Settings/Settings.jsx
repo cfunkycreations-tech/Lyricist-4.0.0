@@ -16,8 +16,8 @@ import VstPlugins from './VstPlugins.jsx';
    they had already drifted apart, so the label under the slider was naming a
    colour pair the slider had stopped producing. One source, one truth. */
 
-const MODELS_CACHE_KEY = 'openrouter-models-cache';
-const MODELS_CACHE_TTL = 60 * 60 * 1000; // refresh from OpenRouter at most hourly
+const MODELS_CACHE_KEY = 'openrouter-models-cache-v2';
+const MODELS_CACHE_TTL = 15 * 60 * 1000; // new/stealth models show up within 15 min
 
 function readModelsCache() {
   try {
@@ -27,16 +27,27 @@ function readModelsCache() {
   return null;
 }
 
-async function fetchOpenRouterModels(forceRefresh = false) {
+async function fetchOpenRouterModels(forceRefresh = false, apiKey = '') {
   const cached = readModelsCache();
   if (!forceRefresh && cached && Date.now() - cached.fetchedAt < MODELS_CACHE_TTL) {
     return cached.models;
   }
   try {
-    const res = await fetch("https://openrouter.ai/api/v1/models");
-    if (!res.ok) throw new Error(`OpenRouter answered HTTP ${res.status}`);
-    const data = await res.json();
-    const models = data.data || [];
+    const get = async (url, key) => {
+      const r = await fetch(url, key ? { headers: { Authorization: `Bearer ${key}` } } : undefined);
+      if (!r.ok) throw new Error(`OpenRouter answered HTTP ${r.status}`);
+      return (await r.json()).data || [];
+    };
+    // With a key the list includes account-visible models (stealth/cloaked ones
+    // are often missing from the anonymous catalogue). Merge, never replace.
+    const byId = new Map();
+    const lists = await Promise.allSettled([
+      get('https://openrouter.ai/api/v1/models'),
+      ...(apiKey ? [get('https://openrouter.ai/api/v1/models', apiKey), get('https://openrouter.ai/api/v1/models/user', apiKey)] : []),
+    ]);
+    lists.forEach((l) => { if (l.status === 'fulfilled') l.value.forEach((m) => byId.set(m.id, m)); });
+    if (!byId.size) throw new Error('OpenRouter returned no models');
+    const models = [...byId.values()];
     try {
       localStorage.setItem(MODELS_CACHE_KEY, JSON.stringify({ fetchedAt: Date.now(), models }));
     } catch { /* storage full — cache is best-effort */ }
@@ -49,6 +60,8 @@ async function fetchOpenRouterModels(forceRefresh = false) {
 }
 
 function ModelSelector({ value, onChange }) {
+  const { config: selCfg } = useLyricStore();
+  const apiKey = selCfg?.openRouterApiKey || '';
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -60,7 +73,7 @@ function ModelSelector({ value, onChange }) {
   const loadModels = (forceRefresh = false) => {
     setLoading(true);
     setErrorMsg('');
-    fetchOpenRouterModels(forceRefresh)
+    fetchOpenRouterModels(forceRefresh, apiKey)
       .then(res => {
         // Sort models: free first, then alphabetical
         const sorted = [...res].sort((a, b) => {
@@ -78,7 +91,7 @@ function ModelSelector({ value, onChange }) {
 
   useEffect(() => {
     loadModels();
-  }, []);
+  }, [apiKey]);
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -235,6 +248,15 @@ function ModelSelector({ value, onChange }) {
                   Retry
                 </button>
               </div>
+            )}
+            {search.trim() && /^[\w.-]+\/[\w.:-]+$/.test(search.trim()) && !models.some(m => m.id === search.trim()) && (
+              <button
+                type="button"
+                onClick={() => { onChange(search.trim()); setIsOpen(false); setSearch(''); }}
+                style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'rgba(155,161,170,0.15)', border: 'none', cursor: 'pointer', color: '#e6e8eb', fontSize: '0.8rem' }}
+              >
+                Use exact model ID: <b>{search.trim()}</b>
+              </button>
             )}
             {!loading && filtered.length === 0 && (
               <div style={{ padding: 10, color: 'rgba(155,161,170,0.4)', fontSize: '0.78rem', textAlign: 'center' }}>
