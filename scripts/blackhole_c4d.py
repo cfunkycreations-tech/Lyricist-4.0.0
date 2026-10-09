@@ -36,6 +36,15 @@ from c4d import utils
 
 GROUP_NAME = "BLACK_HOLE_RIG"      # re-running the script replaces this group
 
+# "header": the art for the Black Hole Studios tab. Square, transparent
+#           background, a seamless loop (last frame flows into the first), PNG
+#           sequence with alpha. Hand the folder back and it goes in the app.
+# "hero":   the original 1920x1080 cinematic shot with the camera drift.
+MODE = "header"
+HEADER_RES = 720                   # square; the tab shows it at ~350px on retina
+HEADER_FOCUS = 34.0                # wide enough that the whole disc is in frame
+OUTPUT_PATH = "bh_header/bh_"      # relative to the saved .c4d file
+
 HORIZON_RADIUS = 100.0             # the black sphere
 RING_RADIUS = 118.0                # photon ring, just outside the horizon
 RING_THICKNESS = 2.2
@@ -44,7 +53,7 @@ DISC_OUTER = 620.0                 # and outer rim
 DISC_TILT = 76.0                   # degrees off flat-on; 90 is dead edge-on
 HALO_SCALE = 1.0                   # the lensed arc over the top
 
-FRAMES = 360                       # length of the animation
+FRAMES = 300                       # length of the loop (10 s at 30 fps)
 FPS = 30
 DISC_TURNS = 1.0                   # full rotations of the disc across FRAMES
 CAM_ORBIT_DEG = 24.0               # slow camera drift, degrees across FRAMES
@@ -84,12 +93,14 @@ def deg(d):
     return utils.DegToRad(d)
 
 
+class _Knot(object):
+    """Plain holder. c4d.GradientKnot is not in every build, InsertKnot is."""
+    def __init__(self, col, pos, bias):
+        self.col, self.pos, self.bias = col, pos, bias
+
+
 def gradient_knot(color, pos, brightness=1.0):
-    knot = c4d.GradientKnot()
-    knot.col = color * brightness
-    knot.pos = pos
-    knot.bias = 0.5
-    return knot
+    return _Knot(color * brightness, pos, 0.5)
 
 
 def build_gradient(shader, knots, radial=True):
@@ -133,6 +144,14 @@ def rotation_id(axis):
 
 
 # ── MATERIALS ──────────────────────────────────────────────────────────────
+
+def loop_noise(shader):
+    """Make an animated noise repeat exactly once per loop, so frame FRAMES
+    is frame 0 again and the header never visibly jumps."""
+    param = getattr(c4d, "SLA_NOISE_LOOP_PERIOD", None)
+    if param is not None:
+        shader[param] = float(FRAMES) / FPS
+
 
 def cid(name):
     """
@@ -246,6 +265,7 @@ def make_horizon_material(doc):
     # bubbling in place — bands are what read as flow.
     flow[c4d.SLA_NOISE_RELSCALE] = c4d.Vector(1.0, 0.18, 1.0)
     flow[c4d.SLA_NOISE_ANI_SPEED] = HORIZON_FLOW_SPEED
+    loop_noise(flow)
     flow[c4d.SLA_NOISE_SPACE] = c4d.SLA_NOISE_SPACE_UV
     mat.InsertShader(flow)
     set_layer(mat, layer, "REFLECTION_LAYER_MAIN_SHADER_ROUGHNESS", flow)
@@ -259,6 +279,7 @@ def make_horizon_material(doc):
     bump[c4d.SLA_NOISE_SCALE] = 0.7
     bump[c4d.SLA_NOISE_RELSCALE] = c4d.Vector(1.0, 0.18, 1.0)
     bump[c4d.SLA_NOISE_ANI_SPEED] = HORIZON_FLOW_SPEED
+    loop_noise(bump)
     bump[c4d.SLA_NOISE_SPACE] = c4d.SLA_NOISE_SPACE_UV
     mat[c4d.MATERIAL_BUMP_SHADER] = bump
     mat.InsertShader(bump)
@@ -309,6 +330,7 @@ def make_disc_material(doc, name="BH_Disc"):
     turb[c4d.SLA_NOISE_BRIGHTNESS] = 0.22
     turb[c4d.SLA_NOISE_RELSCALE] = c4d.Vector(0.06, 1.0, 1.0)   # smear it round
     turb[c4d.SLA_NOISE_ANI_SPEED] = 0.35                        # it churns
+    loop_noise(turb)
     turb[c4d.SLA_NOISE_SPACE] = c4d.SLA_NOISE_SPACE_UV
 
     fusion.InsertShader(heat)
@@ -353,10 +375,20 @@ def make_ring_material(doc):
     return mat
 
 
-def texture_tag(obj, mat, projection=c4d.TEXTURETAG_PROJECTION_FLAT):
+def texture_tag(obj, mat, projection=c4d.TEXTURETAG_PROJECTION_FLAT, radius=None):
     tag = c4d.TextureTag()
     tag.SetMaterial(mat)
     tag[c4d.TEXTURETAG_PROJECTION] = projection
+    if radius is not None:
+        # A disc primitive lies in its XZ plane; a flat projection looks down
+        # its own Z. Turn the projection to look down the disc's Y and size it
+        # to the rim, or the radial gradient is smeared edge-on across it.
+        for name, value in (("TEXTURETAG_ROTATION", c4d.Vector(0, deg(90), 0)),
+                            ("TEXTURETAG_SIZE", c4d.Vector(radius, radius, radius)),
+                            ("TEXTURETAG_TILE", False)):
+            param = getattr(c4d, name, None)
+            if param is not None:
+                tag[param] = value
     obj.InsertTag(tag)
     return tag
 
@@ -402,9 +434,14 @@ def build(doc):
     disc[c4d.PRIM_DISC_SUB] = 4
     disc[c4d.PRIM_DISC_DISCSUB] = 24
     disc[c4d.PRIM_DISC_ROTSUB] = 128
-    disc.SetRelRot(c4d.Vector(0, deg(90 - DISC_TILT), 0))
-    disc.InsertUnder(root)
-    texture_tag(disc, mat_disc)
+    # The tilt lives on a parent; the disc itself only spins about its own
+    # axis. Spinning a tilted disc on world H made it wobble like a coin.
+    disc_tilt = c4d.BaseObject(c4d.Onull)
+    disc_tilt.SetName("Disc Tilt")
+    disc_tilt.SetRelRot(c4d.Vector(0, deg(90 - DISC_TILT), 0))
+    disc_tilt.InsertUnder(root)
+    disc.InsertUnder(disc_tilt)
+    texture_tag(disc, mat_disc, radius=DISC_OUTER)
 
     # --- the lensed far side, arcing over the top ---------------------------
     halo = c4d.BaseObject(c4d.Odisc)
@@ -416,9 +453,12 @@ def build(doc):
     halo[c4d.PRIM_DISC_ROTSUB] = 128
     # Straight up and perpendicular to the disc — this is the bent light from
     # the material passing BEHIND the hole, which gravity lifts into view.
-    halo.SetRelRot(c4d.Vector(deg(90), 0, deg(90)))
-    halo.InsertUnder(root)
-    texture_tag(halo, mat_halo)
+    halo_tilt = c4d.BaseObject(c4d.Onull)
+    halo_tilt.SetName("Halo Stand")
+    halo_tilt.SetRelRot(c4d.Vector(0, deg(90), 0))
+    halo_tilt.InsertUnder(root)
+    halo.InsertUnder(halo_tilt)
+    texture_tag(halo, mat_halo, radius=halo[c4d.PRIM_DISC_ORAD])
 
     # --- something for the shimmer to reflect -------------------------------
     if ENV_SKY and HORIZON_STYLE == "shimmer":
@@ -475,7 +515,7 @@ def build(doc):
     # the lensed halo comes over the top. That near-edge-on angle IS the shot.
     cam = c4d.BaseObject(c4d.Ocamera)
     cam.SetName("BH Camera")
-    cam[c4d.CAMERA_FOCUS] = 55.0
+    cam[c4d.CAMERA_FOCUS] = HEADER_FOCUS if MODE == "header" else 55.0
     cam.SetRelPos(c4d.Vector(0, DISC_OUTER * 0.28, -DISC_OUTER * 2.25))
     cam.SetRelRot(c4d.Vector(0, deg(-7), 0))
     cam.InsertUnder(root)
@@ -489,16 +529,20 @@ def build(doc):
     # so the gas moves as well as revolves. The halo turns with it, backwards,
     # because you are looking at the far side of the same disc.
     set_keys(disc, rotation_id("h"), [(0, 0.0), (FRAMES, deg(360.0 * DISC_TURNS))])
-    set_keys(halo, rotation_id("b"), [(0, deg(90)), (FRAMES, deg(90) - deg(360.0 * DISC_TURNS))])
+    set_keys(halo, rotation_id("h"), [(0, 0.0), (FRAMES, -deg(360.0 * DISC_TURNS))])
 
     # A drift, not an orbit. Movement enough to feel three-dimensional, slow
     # enough that it can loop behind a title without pulling the eye.
     orbit = c4d.BaseObject(c4d.Onull)
     orbit.SetName("Camera Orbit")
     orbit.InsertUnder(root)
+    cam.Remove()          # it is already under root; C4D won't double-insert
     cam.InsertUnder(orbit)
-    set_keys(orbit, rotation_id("h"), [(0, deg(-CAM_ORBIT_DEG / 2.0)),
-                                       (FRAMES, deg(CAM_ORBIT_DEG / 2.0))])
+    if MODE == "header":
+        pass   # a drift that does not come back would put a jump in the loop
+    else:
+        set_keys(orbit, rotation_id("h"), [(0, deg(-CAM_ORBIT_DEG / 2.0)),
+                                           (FRAMES, deg(CAM_ORBIT_DEG / 2.0))])
 
     return root, cam
 
@@ -512,12 +556,23 @@ def configure_document(doc, cam):
 
     rd = doc.GetActiveRenderData()
     if rd is not None:
-        rd[c4d.RDATA_XRES] = float(RES_X)
-        rd[c4d.RDATA_YRES] = float(RES_Y)
+        header = MODE == "header"
+        rd[c4d.RDATA_XRES] = float(HEADER_RES if header else RES_X)
+        rd[c4d.RDATA_YRES] = float(HEADER_RES if header else RES_Y)
         rd[c4d.RDATA_FRAMERATE] = float(FPS)
         rd[c4d.RDATA_FRAMESEQUENCE] = c4d.RDATA_FRAMESEQUENCE_MANUAL
         rd[c4d.RDATA_FRAMEFROM] = c4d.BaseTime(0, FPS)
-        rd[c4d.RDATA_FRAMETO] = c4d.BaseTime(FRAMES, FPS)
+        # Header: stop one short. Frame FRAMES is frame 0 again; rendering both
+        # puts a held frame, a visible hitch, at the loop point.
+        rd[c4d.RDATA_FRAMETO] = c4d.BaseTime(FRAMES - 1 if header else FRAMES, FPS)
+        if header:
+            rd[c4d.RDATA_SAVEIMAGE] = True
+            rd[c4d.RDATA_PATH] = OUTPUT_PATH
+            rd[c4d.RDATA_FORMAT] = c4d.FILTER_PNG
+            rd[c4d.RDATA_ALPHACHANNEL] = True
+            # Straight alpha: no dark fringe when it sits on the app's graphite.
+            rd[c4d.RDATA_STRAIGHTALPHA] = True
+            rd[c4d.RDATA_FORMATDEPTH] = c4d.RDATA_FORMATDEPTH_8
 
     # Look through the camera we just built.
     bd = doc.GetActiveBaseDraw()
@@ -553,7 +608,10 @@ def main():
     finally:
         doc.EndUndo()
     c4d.EventAdd()
-    print("Black hole rig built: {} frames at {} fps.".format(FRAMES, FPS))
+    print("Black hole rig built ({} mode): {} frames at {} fps.".format(MODE, FRAMES, FPS))
+    if MODE == "header":
+        print("Save the .c4d first, then Render to Picture Viewer. PNGs land in {}*.png "
+              "next to the file.".format(OUTPUT_PATH))
 
 
 if __name__ == "__main__":
