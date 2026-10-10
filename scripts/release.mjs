@@ -215,8 +215,15 @@ if (creator) {
     : fs.existsSync(redistRoot) && fs.readdirSync(redistRoot)
       .map((v) => path.join(redistRoot, v, 'x64', 'Microsoft.VC143.CRT'))
       .find((p) => fs.existsSync(path.join(p, 'msvcp140.dll')));
+  // The prebuilt engine links the C++ runtime in statically: nothing to put
+  // beside it. One built here with Visual Studio needs the three DLLs.
+  const staticEngine = engineExe === path.join(prebuilt, 'LyricistEngine.exe') && !fs.existsSync(path.join(prebuilt, 'msvcp140.dll'));
   if (!fs.existsSync(engineExe)) {
     skipped.push('Native audio engine (ASIO + VST3): could not build it. Install Visual Studio 2022 Build Tools with "Desktop development with C++" (it brings CMake), then run this again.');
+  } else if (staticEngine) {
+    const engineStage = path.join(creatorStage, 'engine');
+    fs.mkdirSync(engineStage, { recursive: true });
+    fs.copyFileSync(engineExe, path.join(engineStage, 'LyricistEngine.exe'));
   } else if (!crt) {
     skipped.push('Native audio engine: the VC++ runtime DLLs were not found (Visual Studio Build Tools, VC\\Redist\\MSVC\\*\\x64\\Microsoft.VC143.CRT).');
   } else {
