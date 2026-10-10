@@ -31,7 +31,10 @@ import crypto from 'node:crypto';
 
 const OWNER = 'cfunkycreations-tech';
 const REPO = 'lyricist-releases';
-const RELEASE_DIR = process.env.LYRICIST_RELEASE_DIR || 'V:/Releases/Lyricist 4.2.0 Releases';
+const RELEASE_ROOT = process.env.LYRICIST_RELEASE_DIR || 'V:/Releases/Lyricist 4.2.0 Releases';
+// release.mjs puts customer builds in Customer/ (Creator builds in Creator/,
+// never published). Older builds sit in the root.
+const RELEASE_DIR = fs.existsSync(path.join(RELEASE_ROOT, 'Customer')) ? path.join(RELEASE_ROOT, 'Customer') : RELEASE_ROOT;
 
 /** The website's index.html. Publishing rewrites the RELEASE block inside it so
  *  the version, sizes, date and hashes on the site are never stale. Set
@@ -74,7 +77,7 @@ if (auth.code !== 0) {
 console.log('  Signed in to GitHub.');
 
 /* ---- 2. Which build? ------------------------------------------------- */
-if (!fs.existsSync(RELEASE_DIR)) die(`No release folder at ${RELEASE_DIR}`, 'Build first:  npm run release');
+if (!fs.existsSync(RELEASE_DIR)) die(`No release folder at ${RELEASE_DIR}`, 'Build first:  npm run release:customer');
 
 const setups = fs.readdirSync(RELEASE_DIR)
   .map((f) => ({ f, m: f.match(/^Lyricist (\d+\.\d+\.\d+)\.(\d+) Setup\.exe$/) }))
@@ -82,7 +85,7 @@ const setups = fs.readdirSync(RELEASE_DIR)
   .map((x) => ({ file: x.f, version: x.m[1], build: Number(x.m[2]) }))
   .sort((a, b) => b.build - a.build);
 
-if (!setups.length) die(`No "Lyricist x.y.z.NNN Setup.exe" found in ${RELEASE_DIR}`, 'Build first:  npm run release');
+if (!setups.length) die(`No "Lyricist x.y.z.NNN Setup.exe" found in ${RELEASE_DIR}`, 'Build first:  npm run release:customer');
 
 const pick = wantBuild ? setups.find((s) => s.build === Number(wantBuild)) : setups[0];
 if (!pick) die(`Build ${wantBuild} is not in ${RELEASE_DIR}`, `Newest there is ${setups[0].build}.`);

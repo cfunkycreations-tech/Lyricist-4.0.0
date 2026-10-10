@@ -93,8 +93,9 @@ export const WINDOW_TITLE = 'Lyricist Pro';
 fs.writeFileSync(BUILD_INFO, buildInfoSrc, 'utf8');
 console.log(`\n═══ Lyricist release ${fullVersion} ═══\n`);
 
-// Desktop output folder (user convention)
-const desktopOut =
+// Desktop output folder (user convention). Creator and Customer builds land in
+// their own subfolders so Chris can always tell which is which.
+const releaseRoot =
   process.env.LYRICIST_RELEASE_DIR ||
   path.join(
     process.env.USERPROFILE || process.env.HOME || ROOT,
@@ -102,6 +103,7 @@ const desktopOut =
     'Desktop',
     'New Releases for Lyricist Pro'
   );
+const desktopOut = path.join(releaseRoot, creator ? 'Creator' : 'Customer');
 
 fs.mkdirSync(desktopOut, { recursive: true });
 
