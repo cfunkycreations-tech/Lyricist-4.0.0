@@ -28,10 +28,12 @@ const PKG_PATH = path.join(ROOT, 'package.json');
 
 const args = process.argv.slice(2);
 const noBump = args.includes('--no-bump');
-// --creator: Chris's own build, with Ask the Ghost and the Ghost Pilot in it.
-// Without it the flag is forced OFF below, even if a .env file sets it, so a
-// customer installer can never pick the Ghost up by accident.
-const creator = args.includes('--creator');
+// One build: every release is Chris's full build, with Ask the Ghost, the Ghost
+// Pilot and the native engine in it. --customer makes the stripped installer
+// for other people; there the flag is forced OFF below, even if a .env file
+// sets it, so a customer can never pick the Ghost up by accident. (--creator
+// is still accepted and changes nothing.)
+const creator = !args.includes('--customer');
 const edition = creator ? ' Creator' : '';
 const dirOnly = args.includes('--dir');
 const setIdx = args.indexOf('--set');

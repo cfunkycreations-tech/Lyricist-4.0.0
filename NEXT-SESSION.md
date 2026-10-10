@@ -1,16 +1,17 @@
-# Handoff, 2026-10-10, branch `claude/push-performance` (draft PR #15)
+# Handoff, 2026-10-10 (PR #15 merged into main)
 
-Everything below is pushed to `claude/push-performance` and CI is green. It is
-NOT merged into `main`. Chris gets it with:
+Everything below is on `main` (PR #15). Chris gets it with:
 
 ```
-git pull origin claude/push-performance
+git pull origin claude/one-build
 npm install
-npm run release:creator
+npm run release
 ```
 
-`release:creator`, not `release`: the plain build is the customer build and
-has no Ask the Ghost panel by design.
+One build (branch `claude/one-build`): `npm run release` and `npm run dev`
+now include Ask the Ghost, the Ghost Pilot and the native engine. The
+stripped installer for other people is `npm run release:customer` /
+`npm run dev:customer`.
 
 ## Ghost Demo background music (wired)
 
