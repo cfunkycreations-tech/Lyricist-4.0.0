@@ -396,11 +396,14 @@ DO STEP ${i + 1} NOW, AND ONLY STEP ${i + 1}: ${step.text}
 
 Emit the <do> lines (or the <lyrics> tag) that do this step. Never ask a
 question: pick anything missing yourself. Do not do later steps. Do not emit
-obs_record_start or obs_record_stop, the job records itself. At most one short
-spoken line of talk.${attempt ? `\n\nThe last try at this step did not work (${step.said || 'nothing happened'}). Do it another way.` : ''}`;
+obs_record_start or obs_record_stop, the job records itself. No say: this
+step's line was already spoken.${attempt ? `\n\nThe last try at this step did not work (${step.said || 'nothing happened'}). Do it another way.` : ''}`;
         const r = await askActing({ question, context: await gatherContext(), signal });
         if (signal.aborted) return { ok: false, said: 'stopped', did: [] };
-        const acts = r.actions.filter((a) => !/^obs_record_/.test(a.name));
+        // The step's line was spoken before it started. A `say` from the model
+        // on top of it was the Ghost saying everything twice on the recording,
+        // and a step that only talked used to pass as done.
+        const acts = r.actions.filter((a) => !/^obs_record_/.test(a.name) && a.name !== 'say');
         if (!acts.length) {
           return { ok: false, said: r.text ? `it only talked: "${r.text.slice(0, 140)}"` : 'it did nothing for this step', did: [] };
         }

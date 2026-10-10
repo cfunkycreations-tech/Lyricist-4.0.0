@@ -34,6 +34,47 @@ const TIP_X = 0.885;
 const TIP_Y = 0.55;
 const SIZE = 150;
 
+/**
+ * NEVER UNDER THE TITLE BAR. Chris's recording: the Ghost flew to the tab row
+ * and its head went up under the window's title bar, pointing at nothing you
+ * could see. The fingertip still lands on the control, but the body turns
+ * around it (tilting to reach up, or flipping to face the other way at the left
+ * edge) until all of it is inside the window. Only if no turn fits does the
+ * whole Ghost shift, which moves the fingertip a little off the control.
+ *
+ * The art's outline, in its own 320px square, from its opaque pixels.
+ */
+const OUTLINE = [[18, 204], [28, 156], [44, 84], [170, 44], [202, 38], [220, 40], [234, 48], [248, 72], [288, 176], [150, 254], [124, 266], [88, 274], [38, 274]];
+const TURNS = [0, -15, 15, -30, 30, -45, 45, -60];
+const EDGE = 4;
+
+function fitOnScreen(x, y) {
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const k = SIZE / 320;
+  const rel = OUTLINE.map(([px, py]) => [(px - TIP_X * 320) * k, (py - TIP_Y * 320) * k]);
+  // Facing left (the art) when there is room for the body on the left.
+  const mirror = x + Math.min(...rel.map((p) => p[0])) < EDGE;
+  let best = null;
+  for (const deg of TURNS) {
+    const r = (deg * Math.PI) / 180;
+    const c = Math.cos(r);
+    const s = Math.sin(r);
+    const pts = rel.map(([px, py]) => {
+      const mx = mirror ? -px : px;
+      return [x + mx * c - py * s, y + mx * s + py * c];
+    });
+    const xs = pts.map((p) => p[0]);
+    const ys = pts.map((p) => p[1]);
+    const dx = Math.max(0, EDGE - Math.min(...xs)) - Math.max(0, Math.max(...xs) - (W - EDGE));
+    const dy = Math.max(0, EDGE - Math.min(...ys)) - Math.max(0, Math.max(...ys) - (H - EDGE));
+    const miss = Math.abs(dx) + Math.abs(dy);
+    if (!best || miss < best.miss) best = { deg, mirror, dx, dy, miss };
+    if (!miss) break;
+  }
+  return best;
+}
+
 export default function GhostHand() {
   const [s, setS] = useState(readHand);
   const [teach, setTeach] = useState(teachState);
@@ -62,10 +103,12 @@ export default function GhostHand() {
   const caption = s.caption;
   if (!(riding ? Boolean(live) : s.visible)) return null;
 
-  const at = { transform: `translate3d(${x}px, ${y}px, 0)`, transitionDuration: `${riding ? 0 : s.dur}ms` };
+  const fit = fitOnScreen(x, y);
+  const at = { transform: `translate3d(${x + fit.dx}px, ${y + fit.dy}px, 0)`, transitionDuration: `${riding ? 0 : s.dur}ms` };
+  const turn = { transform: `rotate(${fit.deg}deg) scaleX(${fit.mirror ? -1 : 1})` };
 
   // The bubble sits above the Ghost's head and flips to stay on screen.
-  const headX = -SIZE * (TIP_X - 0.7);
+  const headX = -SIZE * (TIP_X - 0.7) * (fit.mirror ? -1 : 1);
   const headY = -SIZE * (TIP_Y - 0.2);
   const flipX = x < 330;
   const flipY = y < 190;
@@ -82,7 +125,7 @@ export default function GhostHand() {
           src={ghostSprite}
           alt=""
           draggable="false"
-          style={{ width: SIZE, height: SIZE, left: -SIZE * TIP_X, top: -SIZE * TIP_Y }}
+          style={{ width: SIZE, height: SIZE, left: -SIZE * TIP_X, top: -SIZE * TIP_Y, ...turn }}
         />
       </div>
 

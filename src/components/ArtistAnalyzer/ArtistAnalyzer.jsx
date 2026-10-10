@@ -6,6 +6,7 @@ import { applySongTags } from '../../services/songTags.js';
 import { writeStylePressure } from '../QuantumLab/quantumFeatures.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { callAI, refineLyrics, analyzeClichés, checkSimilarity, checkThemeConsistency } from '../../services/AIService.js';
+import { parseStyleDNA } from '../../utils/styleDNA.js';
 import { Search, Sparkles, BookOpen, AlertTriangle, ShieldCheck, Check, Copy, Save, Heart, Send, TrendingUp, Dna, Grid3x3, Ghost, Tags } from 'lucide-react';
 import { notify } from '../../services/dialog.js';
 import { Icon } from '../common/Glyph.jsx';
@@ -156,33 +157,50 @@ export default function ArtistAnalyzer({ onGhostSend }) {
     }
   };
 
-  /** Deeper Style DNA: rhythm, rhyme density, image clusters — JSON from the analysis */
-  const extractStyleDNA = async (reportText, artistName) => {
-    if (!reportText || !store.config.openRouterApiKey) return;
+  /**
+   * Deeper Style DNA: rhythm, rhyme density, image clusters, from the analysis.
+   *
+   * Returns the DNA, so a caller never has to wait on React state for it. Chris's
+   * recorded job died here three times: the reply was cut off at 400 tokens or
+   * came back as something other than clean JSON, and the failure was swallowed.
+   * Now it has room, the parse takes whatever fields arrived, and a second ask
+   * in plain lines backs up the JSON one. `loud` throws the real reason.
+   */
+  const extractStyleDNA = async (reportText, artistName, { loud = false } = {}) => {
+    if (!reportText || !store.config.openRouterApiKey) {
+      if (loud) throw new Error(reportText ? 'API Key is missing in Settings.' : 'No style report yet. Study the artist first.');
+      return null;
+    }
     setLoadingDNA(true);
+    let why = '';
     try {
-      const raw = await callAI([
-        {
-          role: 'system',
-          content: 'Extract a compact Style DNA fingerprint as pure JSON only (no markdown). Keys: rhythm (string: pocket/feel), rhymeDensity (sparse|balanced|dense), imageClusters (array of 4-8 short image/motif phrases), emotionalTemp (0-100 number), cadenceNotes (string). No artist name in values.',
-        },
-        {
-          role: 'user',
-          content: `Artist analyzed: ${artistName}\n\nReport:\n${reportText.slice(0, 6000)}\n\nReturn JSON only.`,
-        },
-      ], store.config, 0.3, 400);
-      const match = String(raw).match(/\{[\s\S]*\}/);
-      if (match) {
-        const parsed = JSON.parse(match[0]);
-        setStyleDNA(parsed);
-        // Persist for Quantum Lab pressure chamber (feature 8)
+      const asks = [
+        'Extract a compact Style DNA fingerprint as pure JSON only (no markdown). Keys: rhythm (string: pocket/feel, one sentence), rhymeDensity (sparse|balanced|dense), imageClusters (array of 4-8 short image/motif phrases), emotionalTemp (0-100 number), cadenceNotes (string, one sentence). No artist name in values.',
+        'Describe the Style DNA in exactly five lines, nothing else:\nRHYTHM: <the pocket/feel, one sentence>\nRHYME DENSITY: <sparse, balanced or dense>\nIMAGES: <4 to 8 short image or motif phrases, separated by ;>\nTEMPERATURE: <0-100>\nCADENCE: <one sentence>\nNo artist name.',
+      ];
+      for (const ask of asks) {
         try {
-          writeStylePressure(parsed, artistName);
-          window.dispatchEvent(new CustomEvent('lyricist:style-dna', { detail: parsed }));
-        } catch { /* */ }
+          const raw = await callAI([
+            { role: 'system', content: ask },
+            { role: 'user', content: `Artist analyzed: ${artistName}\n\nReport:\n${reportText.slice(0, 6000)}` },
+          ], store.config, 0.3, 1200);
+          const parsed = parseStyleDNA(raw);
+          if (parsed) {
+            setStyleDNA(parsed);
+            // Persist for Quantum Lab pressure chamber (feature 8)
+            try {
+              writeStylePressure(parsed, artistName);
+              window.dispatchEvent(new CustomEvent('lyricist:style-dna', { detail: parsed }));
+            } catch { /* */ }
+            return parsed;
+          }
+          why = 'the model answered without the Style DNA in it';
+        } catch (e) {
+          why = e?.message || 'the model did not answer';
+        }
       }
-    } catch {
-      /* DNA is optional — analysis still stands */
+      if (loud) throw new Error(`The Style DNA did not come back: ${why}`);
+      return null;
     } finally {
       setLoadingDNA(false);
     }
@@ -332,6 +350,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
     onGhostSend({
       lyrics: ghostLyrics,
       artist: artist.trim(),
+      topic: ghostTopic.trim(),
       sunoTags
     });
     setGhostSent(true);
@@ -437,13 +456,9 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
         if (g().errorMsg) throw new Error(g().errorMsg);
       }
       await ghostSettle(300);
-      if (!g().loadingDNA && !g().styleDNA) g().extractStyleDNA(g().analysis, g().artist.trim());
-      for (let waited = 0; (g().loadingDNA || !g().styleDNA) && waited < 45000; waited += 250) {
-        await ghostSettle(250);
-        if (!g().loadingDNA && !g().styleDNA && waited > 1000) break;
-      }
-      const dna = g().styleDNA;
-      if (!dna) throw new Error('The Style DNA did not come back from the model. Study the artist again.');
+      // One already building after the study: let it finish first.
+      for (let waited = 0; g().loadingDNA && waited < 60000; waited += 250) await ghostSettle(250);
+      const dna = g().styleDNA || await g().extractStyleDNA(g().analysis, g().artist.trim(), { loud: true });
       writeStylePressure(dna, g().artist.trim());
       window.dispatchEvent(new CustomEvent('lyricist:style-dna', { detail: dna }));
       return `sent ${g().artist.trim()}'s Style DNA to The Matrix`;

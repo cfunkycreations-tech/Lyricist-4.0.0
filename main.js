@@ -114,12 +114,62 @@ ipcMain.handle('pilot-type', async (event, { text }) => {
 /* GHOST JOBS. Open OBS when a recorded job starts and it is not running, and
    hold the PC awake while an overnight batch works. Neither touches anything
    but OBS and the sleep timer, so neither is gated like the pilot above. */
+/**
+ * OBS's own WebSocket settings (OBS 28+). The app can START a recording by
+ * opening OBS with --startrecording, but it can only STOP one over the
+ * websocket, which is off in OBS until someone turns it on. Chris's recorded
+ * job started and then could not stop. So before the app opens OBS it turns
+ * the server on in OBS's config (that one setting, nothing else), and it hands
+ * back the password OBS set so the connect is not refused.
+ */
+function obsWebsocket({ enable = false } = {}) {
+  if (!process.env.APPDATA) return { wsOn: null, password: '' };
+  const dir = path.join(process.env.APPDATA, 'obs-studio');
+  const read = (f) => { try { return fs.readFileSync(f, 'utf8'); } catch { return null; } };
+  // Only a file that read cleanly is ever written back, and only the one
+  // setting changes, so his port and password are never lost.
+  const turnOn = (f, text) => {
+    try { fs.writeFileSync(f, text); bootLog(`OBS: turned its WebSocket server on in ${f}`); return true; } catch (e) { bootLog(`OBS: could not turn its WebSocket server on: ${e.message}`); return false; }
+  };
+
+  // obs-websocket 5.5+ (OBS 31): its own JSON file.
+  const jsonFile = path.join(dir, 'plugin_config', 'obs-websocket', 'config.json');
+  const jsonText = read(jsonFile);
+  if (jsonText != null) {
+    let cfg = null;
+    try { cfg = JSON.parse(jsonText.replace(/^﻿/, '')); } catch { return { wsOn: null, password: '' }; }
+    let on = cfg.server_enabled === true;
+    if (enable && !on) on = turnOn(jsonFile, JSON.stringify({ ...cfg, server_enabled: true }, null, 4));
+    return { wsOn: on, port: Number(cfg.server_port) || 4455, password: cfg.auth_required ? String(cfg.server_password || '') : '' };
+  }
+
+  // Older obs-websocket 5.x: an [OBSWebSocket] section in global.ini / user.ini.
+  for (const name of ['user.ini', 'global.ini']) {
+    const f = path.join(dir, name);
+    const text = read(f);
+    const sec = text && text.match(/^\[OBSWebSocket\][^\S\r\n]*\r?\n((?:(?!\[)[^\n]*\n?)*)/m);
+    if (!sec) continue;
+    const val = (k) => sec[1].match(new RegExp(`^${k}=(.*)$`, 'm'))?.[1]?.trim();
+    let on = /^true$/i.test(val('ServerEnabled') || '');
+    if (enable && !on) {
+      const nl = text.includes('\r\n') ? '\r\n' : '\n';
+      const body = /^ServerEnabled=/m.test(sec[1])
+        ? sec[1].replace(/^ServerEnabled=.*$/m, 'ServerEnabled=true')
+        : `ServerEnabled=true${nl}${sec[1]}`;
+      on = turnOn(f, text.slice(0, sec.index) + sec[0].replace(sec[1], body) + text.slice(sec.index + sec[0].length));
+    }
+    return { wsOn: on, port: Number(val('ServerPort')) || 4455, password: /^true$/i.test(val('AuthRequired') || '') ? (val('ServerPassword') || '') : '' };
+  }
+  return { wsOn: null, password: '' };   // never opened, or a build without obs-websocket: unknown
+}
+
 ipcMain.handle('obs-launch', async (_event, { record = false } = {}) => {
   const { execFile, spawn } = require('child_process');
   const running = await new Promise((resolve) => {
     execFile('tasklist', ['/FI', 'IMAGENAME eq obs64.exe', '/NH'], (err, out) => resolve(!err && /obs64\.exe/i.test(out)));
   });
-  if (running) return { ok: true, already: true };
+  if (running) return { ok: true, already: true, ...obsWebsocket() };
+  const ws = obsWebsocket({ enable: true });
   const candidates = [
     path.join(process.env.ProgramFiles || 'C:\\Program Files', 'obs-studio', 'bin', '64bit', 'obs64.exe'),
     path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'obs-studio', 'bin', '64bit', 'obs64.exe'),
@@ -134,7 +184,7 @@ ipcMain.handle('obs-launch', async (_event, { record = false } = {}) => {
   if (record) args.push('--startrecording');
   const child = spawn(exe, args, { cwd: path.dirname(exe), detached: true, stdio: 'ignore' });
   child.unref();
-  return { ok: true, recording: Boolean(record) };
+  return { ok: true, recording: Boolean(record), ...ws };
 });
 
 let ghostAwakeId = null;

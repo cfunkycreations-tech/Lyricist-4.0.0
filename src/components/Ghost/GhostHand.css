@@ -25,7 +25,7 @@
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
   transform-origin: 88.5% 55%;
   animation: ghost-hand-float 2.6s ease-in-out infinite;
-  transition: scale 0.09s ease-out;
+  transition: scale 0.09s ease-out, transform 0.35s ease-out;
 }
 .ghost-hand.is-pressed .ghost-hand-art { scale: 0.9; }
 .ghost-hand.is-typing .ghost-hand-art { animation: ghost-hand-float 2.6s ease-in-out infinite, ghost-hand-type 0.9s ease-in-out infinite; }
