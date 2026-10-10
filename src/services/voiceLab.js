@@ -131,7 +131,7 @@ async function requestTake(s, text, apiKey) {
     if (res.ok || (res.status && res.status < 500 && res.status !== 429)) break;
     await new Promise((r) => setTimeout(r, 1200 * attempt));
   }
-  if (!res.ok) throw new Error(`${v.label}: ${res.message || res.status}`);
+  if (!res.ok) throw Object.assign(new Error(`${v.label}: ${res.message || res.status}`), { status: res.status });
   const buf = await res.res.arrayBuffer();
   if (v.pcm) {                       // Gemini: raw 16-bit little-endian mono at 24 kHz
     const i16 = new Int16Array(buf, 0, buf.byteLength >> 1);

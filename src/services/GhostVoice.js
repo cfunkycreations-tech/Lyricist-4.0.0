@@ -57,7 +57,22 @@ function openRouterKey() {
   } catch { return ''; }
 }
 
-let demoVoiceDownUntil = 0;   // after a failure, Kokoro for a while instead of retrying every line
+let demoVoiceDownUntil = 0;   // no key credit / offline: Kokoro instead of failing every line
+
+// Two takes at a time, first come first served. A job prewarms every line at
+// once, in order; firing them all together got rate-limited (429) and line 1
+// could wait behind line 12.
+let inFlight = 0;
+const waiting = [];
+function oneAtATime(fn) {
+  return new Promise((resolve, reject) => {
+    const run = () => {
+      inFlight++;
+      fn().then(resolve, reject).finally(() => { inFlight--; waiting.shift()?.(); });
+    };
+    if (inFlight < 2) run(); else waiting.push(run);
+  });
+}
 
 /** True when live lines will be in the demo's voice (Algieba), not Kokoro. */
 export const usingDemoVoice = () => !!openRouterKey() && Date.now() >= demoVoiceDownUntil;
@@ -66,7 +81,18 @@ const demoBuffers = new WeakSet();   // already the finished sound: no pitch, fi
 
 async function demoVoice(line, speed, key) {
   const s = { ...LAB_DEFAULTS, voice: 'g38:Algieba', instructions: DEMO_DIRECTION, pace: speed, depth: 0, size: 0, warmth: 0, room: 0 };
-  const raw = await withTimeout(labTake(s, line, key), 20000);
+  let raw;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      raw = await oneAtATime(() => withTimeout(labTake(s, line, key), 20000)
+        .catch((e) => { throw Object.assign(e, { status: e.status ?? (/no audio after/.test(e.message) ? 'timeout' : undefined) }); }));
+      break;
+    } catch (e) {
+      const busy = e.status === 429 || e.status === 'timeout' || e.status >= 500;
+      if (!busy || attempt >= 3) throw e;
+      await new Promise((r) => setTimeout(r, 1500 * attempt));
+    }
+  }
   const buf = await processTake(raw, s);
   demoBuffers.add(buf);
   voiceState.ready = true;
@@ -487,8 +513,15 @@ export function synthesize(line, name = chosen) {
   if (hit) return hit;
   const p = apiKey
     ? demoVoice(line, speed, apiKey).catch((e) => {
-      console.warn('[ghost-voice] demo voice failed, using Kokoro:', e?.message);
-      demoVoiceDownUntil = Date.now() + 5 * 60 * 1000;
+      // Bad key or no credit: Kokoro for the session. No network: Kokoro for
+      // five minutes, then the demo voice gets another try. Anything else
+      // (busy, slow, one odd line): that line is caption-only, the voice stays.
+      const s = e?.status;
+      const noAccount = s === 401 || s === 402 || s === 403;
+      const offline = !s;   // 0: OpenRouter could not be reached at all
+      if (!noAccount && !offline) throw e;
+      console.warn('[ghost-voice] demo voice unavailable, using Kokoro:', e?.message);
+      demoVoiceDownUntil = noAccount ? Infinity : Date.now() + 5 * 60 * 1000;
       return kokoroLine(line, name, speed);
     })
     : kokoroLine(line, name, speed);
