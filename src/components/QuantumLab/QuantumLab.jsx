@@ -240,7 +240,13 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const [stylePressure, setStylePressure] = useState(() => readStylePressure());
   // Ghost Rider's "send DNA to The Matrix" lands here while this tab is open.
   useEffect(() => {
-    const pick = () => setStylePressure(readStylePressure());
+    // Say it landed on the status line: the Style box itself sits closed in
+    // Advanced Studio, so without this the send looked like it did nothing.
+    const pick = () => {
+      const s = readStylePressure();
+      setStylePressure(s);
+      if (s) setStatus({ lead: `${s.artist || 'Ghost Rider'} Style DNA loaded.`, rest: ' The next verse writes under its rhythm, density and images. Advanced Studio → 8 Style shows it.' });
+    };
     window.addEventListener('lyricist:style-dna', pick);
     return () => window.removeEventListener('lyricist:style-dna', pick);
   }, []);

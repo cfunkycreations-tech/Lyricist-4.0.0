@@ -704,7 +704,14 @@ body.tips-on [data-help] {
    image can show through while the clip is still buffering. */
 .tab-video-shell {
   position: relative;
-  min-height: 100%;
+  /* A flex column that fills the pane and no more. It used to be min-height
+     100% with overflow hidden: in the pane's flex column that shrank it to the
+     pane and CLIPPED everything below, so on a 1261x680 screen Song Forge lost
+     Forge Song + Cover Art, Mastering its presets, Loop Station its tracks. */
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
   width: 100%;
   background: #000;
   overflow: hidden;
@@ -713,7 +720,13 @@ body.tips-on [data-help] {
 .tab-video-content {
   position: relative;
   z-index: 1;
-  min-height: 100%;
+  /* Fills the shell; tabs with their own scrollers (sidebars) get a bounded
+     height to scroll in, and tabs without one scroll here. */
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
 
 /* Chris's dichroic-glass tab icons. They replaced the flat emoji, so they need
