@@ -170,7 +170,11 @@ if (creator) {
   // so a Creator build never ships without the engine just because nobody ran
   // cmake first ("LyricistEngine.exe not found" in Settings → VST3).
   const engineDir = path.join(ROOT, 'juce-backend');
+  // prebuilt/ is the copy GitHub builds on Windows and commits
+  // (.github/workflows/engine.yml), with its VC++ runtime DLLs beside it.
+  const prebuilt = path.join(engineDir, 'prebuilt');
   const engineBuilt = () => [
+    path.join(prebuilt, 'LyricistEngine.exe'),
     path.join(engineDir, 'build', 'Release', 'LyricistEngine.exe'),
     path.join(engineDir, 'build', 'LyricistEngine.exe'),
     path.join(engineDir, 'build', 'LyricistEngine_artefacts', 'Release', 'Lyricist Engine.exe'),
@@ -191,9 +195,10 @@ if (creator) {
   }
   const engineExe = engineBuilt() || path.join(engineDir, 'build', 'Release', 'LyricistEngine.exe');
   const redistRoot = 'C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Redist\\MSVC';
-  const crt = fs.existsSync(redistRoot) && fs.readdirSync(redistRoot)
-    .map((v) => path.join(redistRoot, v, 'x64', 'Microsoft.VC143.CRT'))
-    .find((p) => fs.existsSync(path.join(p, 'msvcp140.dll')));
+  const crt = fs.existsSync(path.join(prebuilt, 'msvcp140.dll')) ? prebuilt
+    : fs.existsSync(redistRoot) && fs.readdirSync(redistRoot)
+      .map((v) => path.join(redistRoot, v, 'x64', 'Microsoft.VC143.CRT'))
+      .find((p) => fs.existsSync(path.join(p, 'msvcp140.dll')));
   if (!fs.existsSync(engineExe)) {
     skipped.push('Native audio engine (ASIO + VST3): could not build it. Install Visual Studio 2022 Build Tools with "Desktop development with C++" (it brings CMake), then run this again.');
   } else if (!crt) {

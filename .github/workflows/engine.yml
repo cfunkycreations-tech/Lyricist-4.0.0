@@ -1,0 +1,78 @@
+# Builds the native audio engine (ASIO + VST3) on a Windows machine and commits
+# it to juce-backend/prebuilt/, with the VC++ runtime DLLs beside it.
+#
+# Chris, 2026-10-10: "why isn't it already built out?" It had been, once, on his
+# PC. juce-backend/build/ is not in git, so the next clone (V:\Opencut-Funk)
+# came without it and Settings said "LyricistEngine.exe not found". Built here,
+# it travels with the repo and release:creator ships it without Visual Studio.
+name: Build audio engine
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'juce-backend/src/**'
+      - 'juce-backend/CMakeLists.txt'
+      - '.github/workflows/engine.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  engine:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Steinberg ASIO SDK
+        shell: pwsh
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri 'https://www.steinberg.net/asiosdk' -OutFile asiosdk.zip -MaximumRedirection 10
+          Expand-Archive asiosdk.zip -DestinationPath asiosdk
+          $h = Get-ChildItem asiosdk -Recurse -Filter iasiodrv.h | Select-Object -First 1
+          if (-not $h) { throw 'ASIO SDK download has no iasiodrv.h' }
+          "ASIO_SDK_DIR=$($h.DirectoryName -replace '\\','/')" >> $env:GITHUB_ENV
+
+      - name: Configure
+        working-directory: juce-backend
+        run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DASIO_SDK_DIR="${{ env.ASIO_SDK_DIR }}"
+
+      - name: Build
+        working-directory: juce-backend
+        run: cmake --build build --config Release --parallel
+
+      - name: Stage engine + VC++ runtime
+        shell: pwsh
+        run: |
+          $out = 'juce-backend/prebuilt'
+          New-Item -ItemType Directory -Force $out | Out-Null
+          Copy-Item 'juce-backend/build/Release/LyricistEngine.exe' "$out/LyricistEngine.exe"
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          $crt = Get-ChildItem "$vs\VC\Redist\MSVC\*\x64\Microsoft.VC143.CRT" -Directory | Sort-Object FullName -Descending | Select-Object -First 1
+          foreach ($d in 'msvcp140.dll','vcruntime140.dll','vcruntime140_1.dll') { Copy-Item "$($crt.FullName)\$d" "$out\$d" }
+          Get-ChildItem $out | Format-Table Name, Length
+
+      - name: Smoke test (answers a JSON-RPC call)
+        continue-on-error: true
+        shell: bash
+        run: |
+          printf '{"jsonrpc":"2.0","id":1,"method":"asio.enumerate","params":{}}\n' > in.txt
+          timeout 20 ./juce-backend/prebuilt/LyricistEngine.exe < in.txt | head -c 600 || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LyricistEngine
+          path: juce-backend/prebuilt/
+
+      - name: Commit the engine to this branch
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
+          git add -f juce-backend/prebuilt
+          git diff --cached --quiet && exit 0
+          git commit -m "Engine: LyricistEngine.exe built on Windows (ASIO + VST3) with VC++ runtime"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
