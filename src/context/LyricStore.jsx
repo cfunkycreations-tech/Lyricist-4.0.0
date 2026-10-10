@@ -437,14 +437,14 @@ export const LyricStoreProvider = ({ children }) => {
   const setBhGenreList = (next) => {
     const list = asList(next, bhGenreList);
     setBhGenreListRaw(list);
-    const { genreList: g, subgenreList: s } = toSongwriterGenres(list);
+    const { genreList: g, subgenreList: s } = toSongwriterGenres(list, { genreList, subgenreList });
     setGenreListRaw(g);
     setSubgenreListRaw(s);
   };
   const setBhMoodList = (next) => {
     const list = asList(next, bhMoodList);
     setBhMoodListRaw(list);
-    setMoodListRaw(toSongwriterMoods(list));
+    setMoodListRaw(toSongwriterMoods(list, moodList));
   };
 
   /**

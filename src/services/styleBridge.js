@@ -141,7 +141,7 @@ const SUBGENRE_TO_BH = {
   // Corridos / Regional Mexican
   'Corridos Tumbados': 'Corrido', 'Corridos Belicos': 'Corrido', 'Mariachi': 'Mariachi', 'Banda': 'Banda',
   // Synthwave / Retrowave
-  'Outrun': 'Synthwave', 'Dreamwave': 'Synthwave', 'Darksynth': 'Darksynth',
+  'Outrun': 'Synthwave', 'Dreamwave': 'Synthwave', 'Darksynth': 'Synthwave',
   'Vaporwave Retrowave': 'Vaporwave',
 };
 
@@ -236,15 +236,35 @@ const cap = (list) => [...new Set(list.filter(Boolean))].slice(0, MAX_PICKS);
  */
 export function toBlackHoleGenres(genreList = [], subgenreList = []) {
   const fromSubs = subgenreList.map((s) => SUBGENRE_TO_BH[s]).filter(Boolean);
-  const fromGenres = genreList.map((g) => GENRE_TO_BH[g]).filter(Boolean);
+  // A genre whose subgenre already said the sound adds nothing: West Coast is
+  // G-funk, and tacking on Hip-Hop's Boom bap made it two songs at once.
+  const saidBySub = (g) => subgenreList.some((s) => SUBGENRE_TO_BH[s] && (SW_SUBGENRES[g] || []).includes(s));
+  const fromGenres = genreList.filter((g) => !saidBySub(g)).map((g) => GENRE_TO_BH[g]).filter(Boolean);
   return cap([...fromSubs, ...fromGenres]);
 }
 
-/** Black Hole Studios' picks, said in Songwriter's vocabulary. */
-export function toSongwriterGenres(bhList = []) {
-  const genreOut = [];
-  const subOut = [];
+/**
+ * Black Hole Studios' picks, said in Songwriter's vocabulary.
+ *
+ * `current` is what Songwriter has now. Every pick there that still says one of
+ * these sounds is KEPT as it is, and only the sounds nothing explains get
+ * translated. Without that, adding one sound over there rewrote Songwriter from
+ * the table: Hip-Hop / Rap came back with East Coast ticked, Trap with Melodic
+ * Trap, Country with Country Pop, picks the person never made.
+ */
+export function toSongwriterGenres(bhList = [], current = {}) {
+  // A subgenre with no sound of its own (Latin Pop) rides on its genre's.
+  const parentSound = (s) => (current.genreList || []).filter((g) => (SW_SUBGENRES[g] || []).includes(s)).map((g) => GENRE_TO_BH[g]);
+  const keptSubs = (current.subgenreList || []).filter((s) => (SUBGENRE_TO_BH[s]
+    ? bhList.includes(SUBGENRE_TO_BH[s])
+    : parentSound(s).some((bh) => bhList.includes(bh))));
+  const keptGenres = (current.genreList || []).filter((g) => bhList.includes(GENRE_TO_BH[g])
+    || keptSubs.some((s) => (SW_SUBGENRES[g] || []).includes(s)));
+  const explained = new Set([...keptSubs.map((s) => SUBGENRE_TO_BH[s]).filter(Boolean), ...keptGenres.map((g) => GENRE_TO_BH[g])]);
+  const genreOut = [...keptGenres];
+  const subOut = [...keptSubs];
   for (const bh of bhList) {
+    if (explained.has(bh)) continue;   // eslint-disable-line no-continue
     const hit = bhToSw().get(bh)
       || { genre: BH_GROUP_TO_SW[BH_GENRE_GROUP.get(bh)] || '', subgenre: '' };
     if (!hit.genre || !SW_GENRES.includes(hit.genre)) continue;   // eslint-disable-line no-continue
@@ -295,7 +315,7 @@ const MOOD_ALIASES = {
   'chaotic': 'Rebellious', 'mischievous': 'Playful', 'otherworldly': 'Spiritual',
   'feverish': 'Restless', 'prayerful': 'Spiritual', 'searching': 'Lost',
   'testifying': 'Spiritual', 'mystical': 'Spiritual', 'mourning': 'Mournful (grieving)',
-  'praise-filled': 'Grateful',
+  'praise-filled': 'Grateful', 'intimate': 'Tender',
 };
 
 /**
@@ -331,7 +351,12 @@ export function toBlackHoleMoods(moodList = []) {
   return cap(moodList.map((m) => translateMood(m, bhMoodIndex())));
 }
 
-/** Taxonomy moods → Songwriter moods. */
-export function toSongwriterMoods(bhMoodList = []) {
-  return cap(bhMoodList.map((m) => translateMood(m, swMoodIndex())));
+/**
+ * Taxonomy moods → Songwriter moods. Songwriter moods that still say one of
+ * these are kept as they are (Happy stays Happy, not Joyful), the rest translate.
+ */
+export function toSongwriterMoods(bhMoodList = [], current = []) {
+  const kept = current.filter((m) => bhMoodList.includes(translateMood(m, bhMoodIndex())));
+  const explained = new Set(kept.map((m) => translateMood(m, bhMoodIndex())));
+  return cap([...kept, ...bhMoodList.filter((m) => !explained.has(m)).map((m) => translateMood(m, swMoodIndex()))]);
 }
