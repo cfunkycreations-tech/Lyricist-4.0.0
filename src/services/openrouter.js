@@ -141,7 +141,15 @@ async function check(model, apiKey) {
     endpoints = r.json?.data?.endpoints;
   }
   if (r.ok && Array.isArray(endpoints)) {
-    if (!endpoints.length) return { state: 'dead', reason: 'OpenRouter lists it, but no provider is serving it' };
+    if (!endpoints.length) {
+      // An alias like "Claude Haiku Latest" has no endpoints of its own: it
+      // forwards to the current model, and calls to it work. So an empty list
+      // is a question, not a verdict. Ask with one real token.
+      const probe = await probeModel(model, apiKey);
+      if (probe === 'answers') return { state: 'live', providers: null, name: r.json?.data?.name || got.json?.data?.name || model };
+      if (probe === 'no-endpoints') return { state: 'dead', reason: 'OpenRouter lists it, but no provider is serving it' };
+      return { state: 'unknown', reason: 'OpenRouter lists it with no providers, and a test call did not answer' };
+    }
     return { state: 'live', providers: endpoints.length, name: r.json?.data?.name || got.json?.data?.name || model };
   }
   if (got.status === 404 && r.status === 404) {

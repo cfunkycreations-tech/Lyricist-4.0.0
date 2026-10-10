@@ -531,10 +531,18 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
   const SOUNDS = useMemo(() => [...INSTRUMENTS, ...vsts.map((v) => ({ id: `vst3:${v.name}`, name: v.name, vst: v }))], [vsts]);
 
   const inst = SOUNDS[instIdx] || SOUNDS[0];
+  // Why the sound did not load, kept so a pad press shows it instead of
+  // "is loading" forever, and a counter that a pad press bumps to try again.
+  const instErr = useRef('');
+  const [instRetry, setInstRetry] = useState(0);
+  const retryNow = useRef(false);
   useEffect(() => {
     let dead = false;
     instRef.current = null;
+    instErr.current = '';
     setInstReady(null);
+    const settle = retryNow.current ? 0 : 400;
+    retryNow.current = false;
     if (inst.vst) {
       setDisplay(`${inst.name} · VST3`);
       // Wait for the knob to settle, so wheeling past a synth doesn't load it.
@@ -542,15 +550,15 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
         setDisplay(`Loading ${inst.name}…`);
         loadVst(inst.vst)
           .then((h) => { if (!dead) { instRef.current = { vst: h }; setInstReady(inst.id); setDisplay(`${inst.name} · VST3 on ${h.driver}`); } })
-          .catch((e) => { if (!dead) setDisplay(`${inst.name}: ${e.message}`); });
-      }, 400);
+          .catch((e) => { if (!dead) { instErr.current = e.message; setDisplay(`${inst.name}: ${e.message}`); } });
+      }, settle);
       return () => { dead = true; clearTimeout(t); };
     }
     loadInstrument(getAudioContext(), inst.id)
       .then((i) => { if (!dead) { instRef.current = i; setInstReady(inst.id); } })
-      .catch((e) => { if (!dead) setDisplay(`${inst.name} did not load: ${e.message}`); });
+      .catch((e) => { if (!dead) { instErr.current = e.message; setDisplay(`${inst.name} did not load: ${e.message}`); } });
     return () => { dead = true; };
-  }, [inst.id, inst.name, inst.vst]);
+  }, [inst.id, inst.name, inst.vst, instRetry]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   /** What a pad is. x 0-7 left to right, y 0-7 top to bottom. */
   const padInfo = useCallback((x, y) => {
@@ -637,7 +645,19 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
       }
     } else if (info.kind === 'notes') {
       const instr = instRef.current;
-      if (!instr) { setDisplay(`${inst.name} is loading…`); return; }
+      if (!instr) {
+        if (instErr.current) {
+          // Say why, then try again: an engine that was blocked or crashed
+          // starts fresh on the next load.
+          setDisplay(`${inst.name}: ${instErr.current}`);
+          instErr.current = '';
+          retryNow.current = true;
+          setInstRetry((n) => n + 1);
+        } else {
+          setDisplay(`Loading ${inst.name}…`);
+        }
+        return;
+      }
       stopsRef.current.get(key)?.();
       const stops = info.midis.map((m) => play(ctx, out, instr, m, { duration: PAD_HOLD, velocity: vel, minHold: 0.3 }));
       stopsRef.current.set(key, () => stops.forEach((stop) => stop()));
