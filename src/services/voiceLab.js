@@ -103,7 +103,7 @@ const takes = new Map();   // take key -> Promise<Float32Array @ SR>
 
 function takeKey(s, text) {
   const v = VOICES.find((x) => x.key === s.voice) || VOICES[0];
-  return JSON.stringify([v.key, v.directed ? directionFor(s) : '', text]);
+  return JSON.stringify([v.key, v.directed ? (s.instructions || directionFor(s)) : '', text]);
 }
 
 export function hasTake(s, text) { return takes.has(takeKey(s, text)); }
@@ -122,14 +122,16 @@ async function requestTake(s, text, apiKey) {
   if (!apiKey) throw new Error('Voice Lab needs your OpenRouter key (Settings).');
   const v = VOICES.find((x) => x.key === s.voice) || VOICES[0];
   const body = { model: v.model, voice: v.voice, input: speakable(text), response_format: v.pcm ? 'pcm' : 'mp3' };
-  if (v.directed) body.instructions = directionFor(s);
+  // `instructions` verbatim, when given, replaces the expression dial: the
+  // Ghost's live voice uses it to read exactly like the baked demo clips.
+  if (v.directed) body.instructions = s.instructions || directionFor(s);
   let res;
   for (let attempt = 1; attempt <= 3; attempt++) {
     res = await createSpeech(body, { apiKey });
     if (res.ok || (res.status && res.status < 500 && res.status !== 429)) break;
     await new Promise((r) => setTimeout(r, 1200 * attempt));
   }
-  if (!res.ok) throw new Error(`${v.label}: ${res.message || res.status}`);
+  if (!res.ok) throw Object.assign(new Error(`${v.label}: ${res.message || res.status}`), { status: res.status });
   const buf = await res.res.arrayBuffer();
   if (v.pcm) {                       // Gemini: raw 16-bit little-endian mono at 24 kHz
     const i16 = new Int16Array(buf, 0, buf.byteLength >> 1);

@@ -6,7 +6,9 @@
 
 import { callAI, buildPromptContext, parseSectionsFromText, assertApiKey, normalizeApiKey } from './AIService.js';
 import { blendLabel } from '../utils/blend.js';
-import { chatCompletion } from './openrouter.js';
+import { chatCompletion, listModels } from './openrouter.js';
+import { stripReasoning, isMostlyReasoning } from '../utils/stripReasoning.js';
+import { modelFit } from './modelFit.js';
 
 // OpenRouter image-model slugs (Nano Banana family exposed through OpenRouter).
 // User can change these in Settings; defaults target Nano Banana 2 Lite/class.
@@ -101,6 +103,35 @@ function requireOpenRouter(store) {
     throw e;
   }
 }
+
+/**
+ * FREE MODELS THAT CAN DO THE JOB, FROM THE LIVE CATALOGUE.
+ *
+ * Chris, 2026-10-10: "None of these free keys work". Art First died on
+ * "Provider returned error" and "OpenRouter returned empty lyrics for that
+ * image": one model tried, and the hardcoded vision fallback had been retired.
+ * The catalogue says what is free today and what can see a picture or draw
+ * one, so the chain is built from it, the same way AIService builds its own.
+ */
+let catalogue = null;
+async function freeModels(test) {
+  try {
+    if (!catalogue) catalogue = await listModels();
+  } catch { return []; }
+  return catalogue
+    .filter((m) => String(m?.pricing?.prompt) === '0' && String(m?.pricing?.completion) === '0')
+    .filter((m) => !/^openrouter\//i.test(m?.id || ''))
+    .filter((m) => !modelFit(m).cannot)
+    .filter(test)
+    .map((m) => m.id)
+    .sort((a, b) => (/-it(?::|$)|-instruct|gemma|gemini/i.test(b) ? 1 : 0) - (/-it(?::|$)|-instruct|gemma|gemini/i.test(a) ? 1 : 0));
+}
+const canSee = (m) => (m?.architecture?.input_modalities || []).includes('image') || /vision|-vl|gemma-[34]|gemini|llama-4/i.test(m?.id || '');
+const canDraw = (m) => (m?.architecture?.output_modalities || []).includes('image');
+
+const NO_FREE_ART =
+  'Making a picture needs OpenRouter credits: no image model is free. Add a few dollars at openrouter.ai/credits, '
+  + 'or upload your own picture in Art First and press Write Lyrics from it, which works on the free models.';
 
 async function openRouterChat({ apiKey, model, messages, temperature = 0.75, max_tokens = 4000, modalities }) {
   const body = {
@@ -248,34 +279,43 @@ function buildArtPrompt({ title, genre, mood, topic, styleOverride }) {
   return `${subject}\n\nStyle: ${style}\n\nGenerate a single polished image. No text or lettering.`;
 }
 
+/**
+ * Draw with the chosen image model, then any image model the catalogue lists as
+ * free. Out of credits (402) or nothing free to draw with: say what to do.
+ */
+async function drawWithChain(apiKey, chosen, messages) {
+  const chain = [chosen, ...(await freeModels(canDraw))].filter((m, i, a) => m && a.indexOf(m) === i);
+  let first = null;
+  for (const model of chain) {
+    try {
+      const result = await openRouterChat({ apiKey, model, temperature: 0.7, max_tokens: 2048, modalities: ['image', 'text'], messages });
+      const url = extractImageFromOR(result);
+      if (url) return url;
+      first ??= new Error(`${model} answered without a picture.`);
+    } catch (e) {
+      first ??= e;
+    }
+  }
+  const m = String(first?.message || '');
+  if (/credit|402|payment|insufficient|provider returned error|no endpoints|not a valid model/i.test(m) || chain.length === 1) {
+    throw new Error(`${NO_FREE_ART}\n\n(OpenRouter said: ${m || 'no picture came back'})`);
+  }
+  throw first;
+}
+
 // Low-level image gen via OpenRouter (Nano Banana / image models on one key)
 export async function generateImage(store, { prompt, aspectRatio, imageSize } = {}) {
   if (!prompt || !prompt.trim()) {
     throw new Error('Enter a description of the image you want to create.');
   }
   const apiKey = requireOpenRouter(store);
-  const model = resolveImageModel(store);
-
-  const result = await openRouterChat({
-    apiKey,
-    model,
-    temperature: 0.7,
-    max_tokens: 2048,
-    modalities: ['image', 'text'],
-    messages: [
-      {
-        role: 'user',
-        content: `${prompt.trim()}\n\nAspect: ${aspectRatio || store.config.imageAspectRatio || '1:1'}. High quality. Output an image.`,
-      },
-    ],
-  });
-
-  const url = extractImageFromOR(result);
-  if (!url) {
-    throw new Error(
-      'OpenRouter did not return image data. In Settings, pick a Nano Banana / image model available on your OpenRouter account (and ensure the model supports image output).'
-    );
-  }
+  const messages = [
+    {
+      role: 'user',
+      content: `${prompt.trim()}\n\nAspect: ${aspectRatio || store.config.imageAspectRatio || '1:1'}. High quality. Output an image.`,
+    },
+  ];
+  const url = await drawWithChain(apiKey, resolveImageModel(store), messages);
 
   // If it's a remote URL, fetch and convert to data URL for save/export
   let dataUrl = url;
@@ -308,31 +348,17 @@ export async function generateImageToImage(store, { referenceBase64, referenceMi
     throw new Error('No reference image provided. Upload one first.');
   }
   const apiKey = requireOpenRouter(store);
-  const model = resolveImageModel(store);
   const mime = referenceMimeType || 'image/png';
   const dataUrl = `data:${mime};base64,${referenceBase64}`;
-
-  const result = await openRouterChat({
-    apiKey,
-    model,
-    temperature: 0.7,
-    max_tokens: 2048,
-    modalities: ['image', 'text'],
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { type: 'text', text: prompt || 'Transform this into polished album cover art. No text.' },
-          { type: 'image_url', image_url: { url: dataUrl } },
-        ],
-      },
-    ],
-  });
-
-  const url = extractImageFromOR(result);
-  if (!url) {
-    throw new Error('OpenRouter did not return image data for that reference. Try another image model on OpenRouter.');
-  }
+  const url = await drawWithChain(apiKey, resolveImageModel(store), [
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: prompt || 'Transform this into polished album cover art. No text.' },
+        { type: 'image_url', image_url: { url: dataUrl } },
+      ],
+    },
+  ]);
 
   let finalUrl = url;
   if (url.startsWith('http')) {
@@ -398,13 +424,12 @@ export async function generateSongFromImage(store, { imageBase64, mimeType, note
   const structureSequence = (store.customStructure || []).map((s) => s.toUpperCase()).join(' -> ');
   const dataUrl = `data:${mimeType || 'image/png'};base64,${imageBase64}`;
 
-  // Writing lyrics from a picture needs a model that can SEE the picture. The
-  // user's chosen model is used when it can; most frontier models and the app's
-  // free default are vision-capable, but plenty are not, and a text-only model
-  // answers an image request with an opaque provider error.
-  const model = store.config.model || VISION_FALLBACK_MODEL;
-
-  const userText = `Study the attached image closely — its subject, colors, lighting, mood, and any story it seems to tell. Use it as the creative seed for a song; the lyrics should feel clearly inspired by what's in the image.
+  const messages = [
+    { role: 'system', content: WRITING_LAWS },
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: `Study the attached image closely — its subject, colors, lighting, mood, and any story it seems to tell. Use it as the creative seed for a song; the lyrics should feel clearly inspired by what's in the image.
 ${notes && notes.trim() ? `Additional direction from the songwriter: ${notes.trim()}\n` : ''}
 SONGWRITING CONFIGURATION:
 ${context}
@@ -412,52 +437,56 @@ ${context}
 STRUCTURE:
 ${structureSequence}
 
-Write the complete song lyrics. Ensure every section is clearly labeled. Output only the lyrics.`;
-
-  const messages = [
-    { role: 'system', content: WRITING_LAWS },
-    {
-      role: 'user',
-      content: [
-        { type: 'text', text: userText },
+Write the complete song lyrics. Ensure every section is clearly labeled. Output only the lyrics.` },
         { type: 'image_url', image_url: { url: dataUrl } },
       ],
     },
   ];
-  const opts = {
-    apiKey,
-    temperature: store.config.temperature ?? 0.75,
-    max_tokens: store.config.maxTokens ?? 4000,
-    messages,
-  };
 
-  let result;
-  try {
-    result = await openRouterChat({ ...opts, model });
-  } catch (e) {
-    // A text-only model rejects the image part rather than ignoring it. Retry
-    // once on a known vision model instead of handing the user a provider error
-    // about "content parts" that names nothing they can act on.
-    if (model === VISION_FALLBACK_MODEL || !/image|modal|content|vision|not support/i.test(e.message || '')) {
-      throw e;
+  /**
+   * THE CHAIN. Their model first (unless it is a router), then every free
+   * model the catalogue says can see a picture, then the old fallback. A
+   * provider error, an empty reply or a thinking pass with no lyrics moves on
+   * to the next one; a thinking model that ran out of room gets one more go
+   * with room to write. Moving to a free model never costs them anything.
+   */
+  const picked = String(store.config.model || '');
+  const chain = [
+    /^openrouter\//i.test(picked) ? null : picked,
+    ...(await freeModels(canSee)),
+    VISION_FALLBACK_MODEL,
+  ].filter((m, i, a) => m && a.indexOf(m) === i);
+
+  const temperature = store.config.temperature ?? 0.75;
+  const cap = store.config.maxTokens ?? 4000;
+  const read = (result) => {
+    const raw = result?.choices?.[0]?.message?.content;
+    const t = typeof raw === 'string' ? raw : Array.isArray(raw) ? raw.map((p) => p?.text || '').join('\n') : '';
+    return stripReasoning(t, { aggressive: true });
+  };
+  let first = null;
+  for (const model of chain.slice(0, 6)) {
+    try {
+      let result = await openRouterChat({ apiKey, model, temperature, max_tokens: cap, messages });
+      let text = read(result);
+      if (!text.trim() && result?.choices?.[0]?.finish_reason === 'length') {
+        result = await openRouterChat({ apiKey, model, temperature, max_tokens: Math.min(16000, cap * 4), messages });
+        text = read(result);
+      }
+      if (text.trim() && !isMostlyReasoning(text)) {
+        if (model !== chain[0]) console.warn(`[Lyricist] Wrote from the picture on ${model}.`);
+        return { rawText: text, sections: parseSectionsFromText(text, store) };
+      }
+      first ??= new Error(`${model} came back empty.`);
+    } catch (e) {
+      first ??= e;
+      console.warn(`[Lyricist] ${model} could not write from the picture:`, e.message);
     }
-    console.warn(`[Lyricist] "${model}" could not read the image; retrying on ${VISION_FALLBACK_MODEL}.`);
-    result = await openRouterChat({ ...opts, model: VISION_FALLBACK_MODEL });
   }
-
-  const rawText = result?.choices?.[0]?.message?.content;
-  const text = typeof rawText === 'string' ? rawText : Array.isArray(rawText)
-    ? rawText.map((p) => p?.text || '').join('\n')
-    : '';
-
-  if (!text.trim()) {
-    throw new Error('OpenRouter returned empty lyrics for that image. Try again or add notes.');
-  }
-
-  return {
-    rawText: text,
-    sections: parseSectionsFromText(text, store),
-  };
+  throw new Error(
+    `No model would write from that picture (tried ${chain.slice(0, 6).join(', ')}). `
+    + `First answer: ${first?.message || 'empty'}. Try again in a minute, or pick a different model in Settings.`
+  );
 }
 
 function deriveTitle(sections) {

@@ -1482,10 +1482,16 @@ function getJuceEnginePath() {
   // Installed Creator build: release.mjs ships it in resources/creator/engine.
   const packaged = process.resourcesPath && path.join(process.resourcesPath, 'creator', 'engine', 'LyricistEngine.exe');
   if (packaged && fs.existsSync(packaged)) return packaged;
+  // The copy GitHub builds and commits (.github/workflows/engine.yml).
+  const p0 = path.join(__dirname, 'juce-backend', 'prebuilt', 'LyricistEngine.exe');
+  if (fs.existsSync(p0)) return p0;
   const p1 = path.join(__dirname, 'juce-backend', 'build', 'LyricistEngine.exe');
   const p2 = path.join(__dirname, 'juce-backend', 'build', 'Release', 'LyricistEngine.exe');
   if (fs.existsSync(p1)) return p1;
   if (fs.existsSync(p2)) return p2;
+  // JUCE's own output folder, for a build that skipped the POST_BUILD copy.
+  const p3 = path.join(__dirname, 'juce-backend', 'build', 'LyricistEngine_artefacts', 'Release', 'Lyricist Engine.exe');
+  if (fs.existsSync(p3)) return p3;
   return null;
 }
 

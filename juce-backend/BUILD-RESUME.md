@@ -66,3 +66,18 @@ ASIO is enabled in CMake (`JUCE_ASIO=1`) but the ASIO SDK is not vendored in
 this repo. If the build fails on a missing `iasiodrv.h`, either drop
 `JUCE_ASIO=1` (WASAPI still works fine) or place the Steinberg ASIO SDK where
 CMake can see it.
+
+## prebuilt/LyricistEngine.exe
+
+The engine that ships. `release:creator` and `npm run dev` both use it first,
+so nobody needs Visual Studio to get ASIO + VST3. Built 2026-10-10 off
+Windows: clang-cl 18 + lld-link against the MSVC 14.11 toolset and Windows SDK
+10.0.22621 (both from NuGet), static C++ runtime (`/MT`), JUCE 8.0.3, ASIO on
+(Steinberg's iasiodrv.h/asio.h/asiosys.h). Two shims stood in for parts of
+C++17 that the 14.11 STL lacks: `std::tuple` deduction guides and an integer
+`std::from_chars`. Checked under Wine: engine.ping, asio.enumerate,
+audio.status, plugin.list, engine.quit all answer.
+
+Rebuilding on Windows with Visual Studio (the steps above) and copying
+`build/Release/LyricistEngine.exe` here replaces it; then the three VC++ DLLs
+go beside it too.

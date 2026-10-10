@@ -485,11 +485,15 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
       setParamByName(h, /reso|^q$/i, y);
     }
   };
-  const stutter = (x, y, first, end) => {
+  // `clips` = the Repeater is already repeating playing clips, so no pad is needed.
+  const stutter = (x, y, first, end, clips) => {
     const st = stut.current;
     if (end) { st.on = false; clearTimeout(st.timer); return; }
     st.x = x; st.y = y;
-    if (!first || st.on || !lastHit.current) { if (first && !lastHit.current) setDisplay('Hit a pad first, then stutter it.'); return; }
+    if (!first || st.on || !lastHit.current) {
+      if (first && !lastHit.current) setDisplay(clips ? 'Repeater' : 'Hit a pad or launch a clip, then slide the Repeater.');
+      return;
+    }
     st.on = true; st.t0 = performance.now();
     const fire = () => {
       if (!st.on || !lastHit.current) return;

@@ -28,7 +28,77 @@
  * throws. If the model will not load, the answer is still on screen to read.
  */
 
+import { take as labTake, processTake, DEFAULTS as LAB_DEFAULTS } from './voiceLab.js';
+
 const MODEL_ID = 'onnx-community/Kokoro-82M-v1.0-ONNX';
+
+/**
+ * THE DEMO'S VOICE, LIVE. Chris, 2026-10-10: the Ghost answering in a job
+ * "is using the old ghost voice ... it needs to sound like the ghost that's
+ * flying around during the demo", and "plug that voice lab back into it, just
+ * not in the interface, on the back end".
+ *
+ * The demo clips are Gemini 3.8 Flash TTS, voice Algieba, read with this exact
+ * direction (scripts/ghost-tts-openrouter.mjs) and left untreated. So with an
+ * OpenRouter key every live line is made the same way, through the Voice Lab's
+ * own take + process. It is also far faster than Kokoro: on a GPU without f16
+ * Kokoro runs on one CPU thread, which is where the two-minute waits came from.
+ * Kokoro stays as the fallback for no key or no internet.
+ */
+const DEMO_DIRECTION = 'You are the Ghost, the guide inside a music studio app. Speak like a warm, '
+  + 'confident late-night radio host with a little mischief: lively, varied intonation, '
+  + 'real emphasis on the words that matter, natural pauses, a smile in the voice. '
+  + 'Never flat, never robotic, never rushed. Clear enough for a beginner to follow.';
+
+function openRouterKey() {
+  try {
+    const raw = JSON.parse(localStorage.getItem('lyricistConfig') || '{}').openRouterApiKey;
+    return String(raw ?? '').replace(/[\s\u200b]+/g, '').replace(/^["'‘’“”]+|["'‘’“”]+$/g, '').replace(/^bearer\s*/i, '');
+  } catch { return ''; }
+}
+
+let demoVoiceDownUntil = 0;   // no key credit / offline: Kokoro instead of failing every line
+
+// Two takes at a time, first come first served. A job prewarms every line at
+// once, in order; firing them all together got rate-limited (429) and line 1
+// could wait behind line 12.
+let inFlight = 0;
+const waiting = [];
+function oneAtATime(fn) {
+  return new Promise((resolve, reject) => {
+    const run = () => {
+      inFlight++;
+      fn().then(resolve, reject).finally(() => { inFlight--; waiting.shift()?.(); });
+    };
+    if (inFlight < 2) run(); else waiting.push(run);
+  });
+}
+
+/** True when live lines will be in the demo's voice (Algieba), not Kokoro. */
+export const usingDemoVoice = () => !!openRouterKey() && Date.now() >= demoVoiceDownUntil;
+
+const demoBuffers = new WeakSet();   // already the finished sound: no pitch, filters or warmth
+
+async function demoVoice(line, speed, key) {
+  const s = { ...LAB_DEFAULTS, voice: 'g38:Algieba', instructions: DEMO_DIRECTION, pace: speed, depth: 0, size: 0, warmth: 0, room: 0 };
+  let raw;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      raw = await oneAtATime(() => withTimeout(labTake(s, line, key), 20000)
+        .catch((e) => { throw Object.assign(e, { status: e.status ?? (/no audio after/.test(e.message) ? 'timeout' : undefined) }); }));
+      break;
+    } catch (e) {
+      const busy = e.status === 429 || e.status === 'timeout' || e.status >= 500;
+      if (!busy || attempt >= 3) throw e;
+      await new Promise((r) => setTimeout(r, 1500 * attempt));
+    }
+  }
+  const buf = await processTake(raw, s);
+  demoBuffers.add(buf);
+  voiceState.ready = true;
+  voiceState.backend = 'algieba';
+  return buf;
+}
 
 /**
  * PUT THE VOICES WHERE KOKORO WILL LOOK FOR THEM.
@@ -246,6 +316,17 @@ function audio() {
  * boot, because a person who never turns the voice on should never pay for it.
  */
 export function loadVoice() {
+  // The demo voice needs nothing loaded. Kokoro only comes off disk if a line
+  // ever has to fall back to it.
+  if (usingDemoVoice()) {
+    voiceState.ready = true;
+    voiceState.backend = 'algieba';
+    return Promise.resolve(null);
+  }
+  return loadKokoro();
+}
+
+function loadKokoro() {
   if (ttsPromise) return ttsPromise;
   voiceState.loading = true;
   ttsPromise = (async () => {
@@ -418,17 +499,41 @@ async function reloadOnWasm() {
  * Say it, in the ghost's voice. Resolves when it finishes, or immediately if it
  * cannot speak. Never throws.
  */
-export async function synthesize(line, name = chosen) {
-  const voice = VOICES[name] || VOICES.ghost;
+export function synthesize(line, name = chosen) {
   // Speed is baked into the audio, so a line at 0.90× and the same line at
   // 1.00× are two different recordings. Warmth is applied on the way out and
   // is not part of the key.
   const speed = voiceSpeed;
-  const key = `${name}|${speed}|${line}`;
-  let buffer = cache.get(key);
-  if (buffer) return buffer;
+  const apiKey = usingDemoVoice() ? openRouterKey() : '';
+  const key = `${apiKey ? 'algieba' : name}|${speed}|${line}`;
+  // THE PROMISE IS CACHED, NOT THE RESULT. A job prewarms every line the moment
+  // it starts; caching only finished audio meant line 1's own speak() missed
+  // the cache and queued a second copy behind all the prewarms.
+  const hit = cache.get(key);
+  if (hit) return hit;
+  const p = apiKey
+    ? demoVoice(line, speed, apiKey).catch((e) => {
+      // Bad key or no credit: Kokoro for the session. No network: Kokoro for
+      // five minutes, then the demo voice gets another try. Anything else
+      // (busy, slow, one odd line): that line is caption-only, the voice stays.
+      const s = e?.status;
+      const noAccount = s === 401 || s === 402 || s === 403;
+      const offline = !s;   // 0: OpenRouter could not be reached at all
+      if (!noAccount && !offline) throw e;
+      console.warn('[ghost-voice] demo voice unavailable, using Kokoro:', e?.message);
+      demoVoiceDownUntil = noAccount ? Infinity : Date.now() + 5 * 60 * 1000;
+      return kokoroLine(line, name, speed);
+    })
+    : kokoroLine(line, name, speed);
+  if (cache.size >= 40) cache.delete(cache.keys().next().value);
+  cache.set(key, p);
+  p.catch(() => { if (cache.get(key) === p) cache.delete(key); });
+  return p;
+}
 
-  const tts = await loadVoice();
+async function kokoroLine(line, name, speed) {
+  const voice = VOICES[name] || VOICES.ghost;
+  const tts = await loadKokoro();
 
   // Generated fast on purpose when there is a shift coming: the playback rate at
   // the other end slows it back down and takes the pitch with it. At pitch 1
@@ -459,10 +564,7 @@ export async function synthesize(line, name = chosen) {
     const wasm = await reloadOnWasm();
     raw = await wasm.generate(line, opts);
   }
-  buffer = toBuffer(raw);
-  if (cache.size > 40) cache.delete(cache.keys().next().value);
-  cache.set(key, buffer);
-  return buffer;
+  return toBuffer(raw);
 }
 
 /**
@@ -550,6 +652,11 @@ export function ghostChain(context, buffer, name = chosen) {
   const voice = VOICES[name] || VOICES.ghost;
   const src = context.createBufferSource();
   src.buffer = buffer;
+  // The demo voice arrives finished, exactly as the demo clips sound.
+  if (demoBuffers.has(buffer)) {
+    src.connect(context.destination);
+    return src;
+  }
   src.playbackRate.value = voice.pitch;   // the asetrate half of the shift
 
   // An untreated voice skips the ghost's two filters: they are there to sell

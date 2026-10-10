@@ -24,24 +24,36 @@ const promptBuilders = {
   full: (artist) => `Comprehensive analysis of ${artist} as a lyricist: style, flow, themes, era, influences, and what makes them unique. Use catalog examples.`
 };
 
+/**
+ * THE WORK STAYS PUT. The artist, report, Style DNA and the song written in
+ * that style are kept in localStorage and come back on the next launch, so a
+ * report never vanishes after it is saved, after a restart, or after a reload.
+ * It is replaced only by the next study.
+ */
+const SESSION_KEY = 'lyricistGhostRiderSession';
+const readSession = () => {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY)) || {}; } catch { return {}; }
+};
+
 export default function ArtistAnalyzer({ onGhostSend }) {
   const store = useLyricStore();
-  const [artist, setArtist] = useState('');
-  const [tab, setTab] = useState('full');
-  const [focus, setFocus] = useState('');
+  const [boot] = useState(readSession);
+  const [artist, setArtist] = useState(boot.artist || '');
+  const [tab, setTab] = useState(promptBuilders[boot.tab] ? boot.tab : 'full');
+  const [focus, setFocus] = useState(boot.focus || '');
   
   // Results
-  const [analysis, setAnalysis] = useState('');
+  const [analysis, setAnalysis] = useState(boot.analysis || '');
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   // Style DNA (4.2.0) — structured fingerprint from the freeform analysis
-  const [styleDNA, setStyleDNA] = useState(null);
+  const [styleDNA, setStyleDNA] = useState(boot.styleDNA || null);
   const [loadingDNA, setLoadingDNA] = useState(false);
 
   // Ghost Rider
-  const [ghostTopic, setGhostTopic] = useState('');
-  const [ghostLyrics, setGhostLyrics] = useState('');
-  const [sunoTags, setSunoTags] = useState('');
+  const [ghostTopic, setGhostTopic] = useState(boot.ghostTopic || '');
+  const [ghostLyrics, setGhostLyrics] = useState(boot.ghostLyrics || '');
+  const [sunoTags, setSunoTags] = useState(boot.sunoTags || '');
   const [loadingGhost, setLoadingGhost] = useState(false);
   const [copied, setCopied] = useState('');
   const [ghostSent, setGhostSent] = useState(false);
@@ -71,6 +83,12 @@ export default function ArtistAnalyzer({ onGhostSend }) {
     localStorage.setItem('lyricistAutoSaveReports', String(autoSaveReports));
   }, [autoSaveReports]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ artist, tab, focus, analysis, styleDNA, ghostTopic, ghostLyrics, sunoTags }));
+    } catch { /* storage full or blocked: the work is still on screen */ }
+  }, [artist, tab, focus, analysis, styleDNA, ghostTopic, ghostLyrics, sunoTags]);
+
   // Write the current report to a .txt file in Documents\Lyricist Style Reports
   // (in the desktop app). In a plain browser it falls back to a normal download.
   const saveReportToDisk = async (txt) => {
@@ -89,7 +107,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
       if (window.lyricistAPI?.saveReport) {
         const res = await window.lyricistAPI.saveReport(filename, content);
         setSaveNote(res?.ok
-          ? 'Saved to your Documents\\Lyricist Style Reports folder'
+          ? 'Saved to Documents\\Lyricist Style Reports. The report stays here too.'
           : `Could not save: ${res?.error || 'unknown error'}`);
       } else {
         // Browser / dev fallback — download the file.
@@ -159,10 +177,8 @@ export default function ArtistAnalyzer({ onGhostSend }) {
         setStyleDNA(parsed);
         // Persist for Quantum Lab pressure chamber (feature 8)
         try {
-          localStorage.setItem(
-            'lyricistStyleDNAPressure',
-            JSON.stringify({ ...parsed, artist: artistName, savedAt: Date.now() })
-          );
+          writeStylePressure(parsed, artistName);
+          window.dispatchEvent(new CustomEvent('lyricist:style-dna', { detail: parsed }));
         } catch { /* */ }
       }
     } catch {
@@ -708,10 +724,8 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                       type="button"
                       onClick={() => {
                         try {
-                          localStorage.setItem(
-                            'lyricistStyleDNAPressure',
-                            JSON.stringify({ ...styleDNA, artist: artist.trim(), savedAt: Date.now() })
-                          );
+                          writeStylePressure(styleDNA, artist.trim());
+                          window.dispatchEvent(new CustomEvent('lyricist:style-dna', { detail: styleDNA }));
                           notify('Style DNA sent to The Matrix.\nOpen The Matrix → Advanced Studio → 8 Style → Load Style DNA pressure.', { tone: 'ok' });
                         } catch (e) {
                           notify('Could not save Style DNA: ' + (e?.message || e), { tone: 'error' });
@@ -729,7 +743,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                         cursor: 'pointer',
                       }}
                     >
-                      <Icon i={Grid3x3} />Send Style DNA to Quantum
+                      <Icon i={Grid3x3} />Send Style DNA to The Matrix
                     </button>
                   </div>
                 </div>

@@ -166,13 +166,64 @@ if (creator) {
   // links against beside it, so it runs on a PC without the redistributable.
   // main.js getJuceEnginePath() looks in resources/creator/engine and copes
   // with it missing, as every customer build does.
-  const engineExe = path.join(ROOT, 'juce-backend', 'build', 'Release', 'LyricistEngine.exe');
+  // Not built yet: build it here when CMake and the C++ tools are on this PC,
+  // so a Creator build never ships without the engine just because nobody ran
+  // cmake first ("LyricistEngine.exe not found" in Settings → VST3).
+  const engineDir = path.join(ROOT, 'juce-backend');
+  // prebuilt/ is the copy GitHub builds on Windows and commits
+  // (.github/workflows/engine.yml), with its VC++ runtime DLLs beside it.
+  const prebuilt = path.join(engineDir, 'prebuilt');
+  const engineBuilt = () => [
+    path.join(prebuilt, 'LyricistEngine.exe'),
+    path.join(engineDir, 'build', 'Release', 'LyricistEngine.exe'),
+    path.join(engineDir, 'build', 'LyricistEngine.exe'),
+    path.join(engineDir, 'build', 'LyricistEngine_artefacts', 'Release', 'Lyricist Engine.exe'),
+    path.join(engineDir, 'build', 'LyricistEngine_artefacts', 'Release', 'LyricistEngine.exe'),
+  ].find((p) => fs.existsSync(p));
+  if (!engineBuilt() && process.platform === 'win32') {
+    // CMake ships inside every Visual Studio 2022 install (Build Tools,
+    // Community, Pro); vswhere says where that is.
+    const vswhere = 'C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe';
+    const vs = fs.existsSync(vswhere)
+      ? String(spawnSync(`"${vswhere}"`, ['-latest', '-products', '*', '-property', 'installationPath'], { shell: true, encoding: 'utf8' }).stdout || '').trim()
+      : '';
+    const vsCmake = vs && path.join(vs, 'Common7', 'IDE', 'CommonExtensions', 'Microsoft', 'CMake', 'CMake', 'bin', 'cmake.exe');
+    const onPath = spawnSync('where', ['cmake'], { shell: true, encoding: 'utf8' });
+    const cmake = onPath.status === 0 ? 'cmake' : vsCmake && fs.existsSync(vsCmake) ? `"${vsCmake}"` : null;
+    if (cmake) {
+      console.log('\n  Building the native audio engine (first time downloads JUCE, takes a while)...\n');
+      const opts = { cwd: engineDir, stdio: 'inherit', shell: true };
+      // ASIO needs Steinberg's SDK, which is not in git. Fetch it once into
+      // juce-backend/asiosdk (gitignored); without it the engine still builds,
+      // on WASAPI only.
+      const asioHeader = () => {
+        const walk = (d) => { for (const f of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, f.name); if (f.isDirectory()) { const r = walk(p); if (r) return r; } else if (f.name.toLowerCase() === 'iasiodrv.h') return d; } return null; };
+        return fs.existsSync(path.join(engineDir, 'asiosdk')) ? walk(path.join(engineDir, 'asiosdk')) : null;
+      };
+      if (!asioHeader()) {
+        spawnSync('powershell', ['-NoProfile', '-Command', `"$ProgressPreference='SilentlyContinue'; Invoke-WebRequest https://www.steinberg.net/asiosdk -OutFile asiosdk.zip; Expand-Archive -Force asiosdk.zip asiosdk; Remove-Item asiosdk.zip"`], opts);
+      }
+      const asio = asioHeader();
+      if (!asio) console.warn('  ASIO SDK could not be fetched: the engine builds with WASAPI only.');
+      spawnSync(cmake, ['-B', 'build', '-G', '"Visual Studio 17 2022"', '-A', 'x64', ...(asio ? [`-DASIO_SDK_DIR="${asio.replace(/\\/g, '/')}"`] : [])], opts);
+      spawnSync(cmake, ['--build', 'build', '--config', 'Release'], opts);
+    }
+  }
+  const engineExe = engineBuilt() || path.join(engineDir, 'build', 'Release', 'LyricistEngine.exe');
   const redistRoot = 'C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Redist\\MSVC';
-  const crt = fs.existsSync(redistRoot) && fs.readdirSync(redistRoot)
-    .map((v) => path.join(redistRoot, v, 'x64', 'Microsoft.VC143.CRT'))
-    .find((p) => fs.existsSync(path.join(p, 'msvcp140.dll')));
+  const crt = fs.existsSync(path.join(prebuilt, 'msvcp140.dll')) ? prebuilt
+    : fs.existsSync(redistRoot) && fs.readdirSync(redistRoot)
+      .map((v) => path.join(redistRoot, v, 'x64', 'Microsoft.VC143.CRT'))
+      .find((p) => fs.existsSync(path.join(p, 'msvcp140.dll')));
+  // The prebuilt engine links the C++ runtime in statically: nothing to put
+  // beside it. One built here with Visual Studio needs the three DLLs.
+  const staticEngine = engineExe === path.join(prebuilt, 'LyricistEngine.exe') && !fs.existsSync(path.join(prebuilt, 'msvcp140.dll'));
   if (!fs.existsSync(engineExe)) {
-    skipped.push(`Native audio engine (ASIO + VST3): not built. Build it with: cmake --build juce-backend/build --config Release`);
+    skipped.push('Native audio engine (ASIO + VST3): could not build it. Install Visual Studio 2022 Build Tools with "Desktop development with C++" (it brings CMake), then run this again.');
+  } else if (staticEngine) {
+    const engineStage = path.join(creatorStage, 'engine');
+    fs.mkdirSync(engineStage, { recursive: true });
+    fs.copyFileSync(engineExe, path.join(engineStage, 'LyricistEngine.exe'));
   } else if (!crt) {
     skipped.push('Native audio engine: the VC++ runtime DLLs were not found (Visual Studio Build Tools, VC\\Redist\\MSVC\\*\\x64\\Microsoft.VC143.CRT).');
   } else {
