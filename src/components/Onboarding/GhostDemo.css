@@ -48,13 +48,13 @@
 
 .ghost-demo-operator {
   position: fixed;
-  /* ABOVE the speech bubble (120020), deliberately. Chris: "make sure that
+  /* ABOVE the speech bubble (120035), deliberately. Chris: "make sure that
      ghost never goes behind the speech box ... nobody can see it." The bubble
      used to win the stacking order, so any overlap swallowed him whole. The
      placement maths in GhostDemo.jsx keeps them apart in the normal case; this
      is the guarantee for the ones it cannot, like the screen-centred bubbles
      that appear wherever the ghost happens to be standing. */
-  z-index: 120025;
+  z-index: 120040;   /* and above the demo bar (120030): it never hides him */
   pointer-events: none;
   transform: translate(-4px, -2px);
   transition: filter 0.1s;
@@ -75,6 +75,7 @@
   opacity: 1;
   filter: none;
   animation: ghost-float 2.4s ease-in-out infinite;
+  transition: top 0.25s ease;
   pointer-events: none;
   background: transparent !important;
   border: none !important;
@@ -114,6 +115,11 @@
   mix-blend-mode: normal;
   -webkit-user-drag: none;
   user-select: none;
+}
+
+/* Up against the demo bar the ghost hangs below the pointer instead of above. */
+.ghost-demo-operator.is-below .ghost-demo-figure {
+  top: 30px;
 }
 
 /* Old circular aura killed — transparency only, no Bubble Boy */
@@ -175,7 +181,7 @@
 
 .ghost-demo-bubble {
   position: fixed;
-  z-index: 120020;
+  z-index: 120035;   /* above the demo bar; placeBubble keeps it below the bar anyway */
   width: min(300px, calc(100vw - 32px));
   padding: 12px 14px 10px;
   border-radius: 14px;
@@ -228,6 +234,12 @@
   border: 1px solid rgba(155, 161, 170, 0.5);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
   pointer-events: auto;
+}
+
+/* While the ghost works near the top of the screen the bar waits at the bottom. */
+.ghost-demo-bar.at-bottom {
+  top: auto;
+  bottom: 12px;
 }
 
 .ghost-demo-bar-title {

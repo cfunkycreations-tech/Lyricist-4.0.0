@@ -122,20 +122,48 @@ function firePointerSequence(el, clientX, clientY, { click = true } = {}) {
  * Order of preference: right of the ghost (the way he faces, so he points at
  * what he is saying), then left, then above, then below. Never on top.
  */
+/**
+ * The free band between the demo bar (Pause, Stop, Speed...) and the screen
+ * edges. Chris: the bar covered the ghost and the bubbles. The bar docks at
+ * the top, or at the bottom while the ghost works near the top (see runDemo),
+ * and nothing the demo draws goes past it.
+ */
+function freeBand() {
+  const bar = document.querySelector('.ghost-demo-bar');
+  const r = bar && bar.getBoundingClientRect();
+  if (!r) return { top: 0, bottom: window.innerHeight };
+  return r.top < window.innerHeight / 2
+    ? { top: r.bottom, bottom: window.innerHeight }
+    : { top: 0, bottom: r.top };
+}
+
+/** The ghost hangs above the pointer; with no room up there he hangs below it. */
+function ghostBelow(ty) {
+  return ty - 122 < freeBand().top + 6;
+}
+
+/** Keep a centred bubble clear of the bar. */
+const belowBar = (y) => Math.max(freeBand().top + 12, y);
+
 function placeBubble(tx, ty) {
   const M = 12;                                        // keep off the edges
   const GAP = 18;
   const W = Math.min(300, window.innerWidth - 32);      // matches the CSS width
   const H = 150;                                       // generous; text varies
+  const band = freeBand();
+  const TOP = band.top + M;                            // never under the bar
+  const BOTTOM = band.bottom - M;
 
-  // The ghost's own rectangle in viewport coordinates.
+  // The ghost's own rectangle in viewport coordinates (above the pointer, or
+  // below it when he's up against the bar; see ghostBelow).
+  const below = ghostBelow(ty);
   const gLeft = tx - 100;
   const gRight = tx + 20;
-  const gTop = ty - 122;
-  const gBottom = ty + 16;
+  const gTop = below ? ty + 20 : ty - 122;
+  const gBottom = below ? ty + 160 : ty + 16;
 
   let x = gRight + GAP;
-  let y = Math.max(M, ty - 130);
+  let y = Math.max(TOP, below ? ty : ty - 130);
 
   if (x + W > window.innerWidth - M) {
     const leftX = gLeft - GAP - W;
@@ -145,17 +173,17 @@ function placeBubble(tx, ty) {
       // No room either side. Go above him, or below if the top is tight.
       x = Math.min(window.innerWidth - M - W, Math.max(M, tx - W / 2));
       const aboveY = gTop - GAP - H;
-      y = aboveY >= M ? aboveY : gBottom + GAP;
+      y = aboveY >= TOP ? aboveY : gBottom + GAP;
     }
   }
 
   x = Math.min(window.innerWidth - M - W, Math.max(M, x));
-  y = Math.min(window.innerHeight - M - H, Math.max(M, y));
+  y = Math.max(TOP, Math.min(BOTTOM - H, y));
 
   // Last look. If clamping to the viewport pushed it back over him, drop it
   // below him, which is always somewhere.
   const overlaps = x < gRight && x + W > gLeft && y < gBottom && y + H > gTop;
-  if (overlaps) y = Math.min(window.innerHeight - M - H, gBottom + GAP);
+  if (overlaps) y = Math.max(TOP, Math.min(BOTTOM - H, gBottom + GAP));
 
   return { x, y };
 }
@@ -199,6 +227,22 @@ export default function GhostDemo({ tabId, onClose }) {
   const [clickPulse, setClickPulse] = useState(false);
   const [paused, setPaused] = useState(false);
   const [statusLine, setStatusLine] = useState('Connecting…');
+  // The bar moves to the bottom while the ghost works near the top, so it never
+  // sits on top of him or on the control he is pointing at.
+  const [barAtBottom, setBarAtBottom] = useState(false);
+  const barAtBottomRef = useRef(false);
+  const dockBarAwayFrom = async (y) => {
+    const bar = document.querySelector('.ghost-demo-bar');
+    const h = (bar?.offsetHeight || 48) + 12;
+    let next = barAtBottomRef.current;
+    if (!next && y < h + 40) next = true;
+    else if (next && y > window.innerHeight - h - 40) next = false;
+    if (next === barAtBottomRef.current) return;
+    barAtBottomRef.current = next;
+    setBarAtBottom(next);
+    // Let it move before anything measures where the bar is.
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  };
   const cancelRef = useRef(false);
   const snapshotRef = useRef(null);
 
@@ -503,7 +547,7 @@ export default function GhostDemo({ tabId, onClose }) {
       setBubble({
         text: 'Dictionary, Thesaurus, and the simple tools don’t get a walkthrough. Use Tips ON and hover. Ghost Demo is for Quantum Lab, Ghost Rider, Song Forge, RC-Funk 5000, MIDI, Mastering, and the other hard tabs.',
         x: Math.max(16, window.innerWidth / 2 - 170),
-        y: Math.max(90, window.innerHeight / 2 - 50),
+        y: belowBar(Math.max(90, window.innerHeight / 2 - 50)),
         visible: true,
       });
       const noneMs = await speak('system-0-notabdemo');
@@ -550,7 +594,7 @@ export default function GhostDemo({ tabId, onClose }) {
           setBubble({
             text: step.whenMissing || `${step.say} — it is not on screen yet; it appears once the step before it has produced a result.`,
             x: Math.max(16, window.innerWidth / 2 - 190),
-            y: Math.max(80, window.innerHeight * 0.32),
+            y: belowBar(Math.max(80, window.innerHeight * 0.32)),
             visible: true,
           });
           setStatusLine('Not on screen yet — explaining instead of pointing');
@@ -580,6 +624,8 @@ export default function GhostDemo({ tabId, onClose }) {
       } else {
         setHighlight(null);
       }
+
+      await dockBarAwayFrom(ty);
 
       // Move the visible mouse like a remote session
       await animateCursorTo(tx, ty, (el ? 420 + Math.random() * 80 : 300) * speedRef.current, runId);
@@ -636,17 +682,9 @@ export default function GhostDemo({ tabId, onClose }) {
     }
 
     if (!isDead(runId)) {
+      // No sign-off bubble: Chris doesn't want one after every demo.
       setHighlight(null);
       restoreWork();
-      setBubble({
-        text: `Walkthrough finished for ${demo.title}. Your own work has been put back exactly as you left it — the demo never keeps anything. Play Demo again anytime while Ghost Demo is On.`,
-        x: Math.max(16, window.innerWidth / 2 - 170),
-        y: Math.max(70, window.innerHeight / 2 - 40),
-        visible: true,
-      });
-      setStatusLine('Session complete — your work restored');
-      const endMs = await speak('system-0-finished');
-      await wait(Math.max(3500, endMs + 600), runId);
       stopVoice();
       bedWantedRef.current = false;
       stopBed();
@@ -714,7 +752,7 @@ export default function GhostDemo({ tabId, onClose }) {
 
       {/* The only visible mouse during the session */}
       <div
-        className={`ghost-demo-operator ${clickPulse ? 'is-click' : ''}`}
+        className={`ghost-demo-operator ${clickPulse ? 'is-click' : ''} ${ghostBelow(cursor.y) ? 'is-below' : ''}`}
         style={{ left: cursor.x, top: cursor.y }}
       >
         {/* The transparent ghost art and the "Remote" name tag both used to
@@ -753,7 +791,7 @@ export default function GhostDemo({ tabId, onClose }) {
         </div>
       )}
 
-      <div className="ghost-demo-bar">
+      <div className={`ghost-demo-bar ${barAtBottom ? 'at-bottom' : ''}`}>
         <span className="ghost-demo-bar-title">
           Ghost walkthrough — {demo?.title || 'Tips'} · {statusLine}
         </span>
