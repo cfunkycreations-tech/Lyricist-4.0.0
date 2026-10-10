@@ -21,9 +21,15 @@ const COLS = 8;
 const ROWS = 3;
 const CELLS = COLS * ROWS;
 
+// Typed-array loop: Array.from on a full track is millions of boxed floats.
 const reversed = (buf) => {
   const out = getAudioContext().createBuffer(buf.numberOfChannels, buf.length, buf.sampleRate);
-  for (let c = 0; c < buf.numberOfChannels; c++) out.getChannelData(c).set(Array.from(buf.getChannelData(c)).reverse());
+  const n = buf.length;
+  for (let c = 0; c < buf.numberOfChannels; c++) {
+    const src = buf.getChannelData(c);
+    const dst = out.getChannelData(c);
+    for (let i = 0; i < n; i++) dst[i] = src[n - 1 - i];
+  }
   return out;
 };
 const read = () => { try { return JSON.parse(localStorage.getItem(CLIPS_KEY)) || {}; } catch { return {}; } };
@@ -113,7 +119,8 @@ export default function PerformanceDeck({ out, tempo, filter, stutter, echo, set
   const load = useCallback(async (cell, id) => {
     const buf = await getSampleBuffer(getAudioContext(), id);
     bufs.current.set(cell, buf);
-    rbufs.current.delete(cell);
+    // Built now, not on the first Stop or Scratch, so those land on time.
+    rbufs.current.set(cell, reversed(buf));
     return buf;
   }, []);
   const bufFor = (cell, r = rev) => {

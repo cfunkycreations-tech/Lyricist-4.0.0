@@ -328,11 +328,14 @@ function MainLayout() {
   };
 
   return (
-    // The window is the frame: exactly 100vh, never taller. With only a
-    // min-height the whole app grew to the tallest tab and the PAGE scrolled,
-    // header and all, so the tab's own scroller never moved and anything below
-    // the fold (Ghost Rider's Write section under Style DNA) was out of reach.
-    <div className="min-h-screen flex flex-col" style={{ color: '#e6e8eb', position: 'relative', overflow: 'hidden', height: '100vh' }}>
+    // The window is the frame: exactly 100vh. With only a min-height the whole
+    // app grew to the tallest tab and the PAGE scrolled, header and all, so a
+    // tab's own scroller never moved and anything below the fold (Ghost Rider's
+    // Write section under Style DNA) slid under the player. It scrolls itself
+    // only when the header grows past the window (the pad board open, the key
+    // card showing); the tab below keeps a usable height then (see minHeight
+    // on the workspace).
+    <div className="min-h-screen flex flex-col" style={{ color: '#e6e8eb', position: 'relative', overflowX: 'hidden', overflowY: 'auto', height: '100vh' }}>
       {/* Phone navigation. An overlay, not a wrapper - see MobileShell.jsx. */}
       {isMobile && (
         <MobileShell
@@ -411,7 +414,7 @@ function MainLayout() {
       />
 
       {/* Main Layout Wrap */}
-      <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100vh' }}>
+      <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', flexShrink: 0, height: '100%' }}>
         {/* Header — flat black, controls only. 2026-08-27.
 
             The bar's old size, `min(calc(100vw * 0.5625), 62vh)`, was tuned to
@@ -595,7 +598,7 @@ function MainLayout() {
             and artwork loaded at once was enough to run the renderer out of
             memory and leave a black window. Now you pay for a tab when you
             actually open it. */}
-        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, minHeight: 'max(360px, calc(100vh - 200px))', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <TabPane id="songwriter" active={activeTab} opened={openedTabs}>
             <SongwriterHub ghostRiderData={ghostRiderData} />
           </TabPane>
