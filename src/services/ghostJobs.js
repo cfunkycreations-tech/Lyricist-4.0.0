@@ -25,6 +25,8 @@
  *                that fails does not hold up the next one.
  */
 
+import { record } from './ghostRecorder.js';
+
 const KEY = 'lyricist.ghost.jobs';
 const MAX_KEPT = 40;
 
@@ -72,6 +74,7 @@ const logTo = (id, line) => {
   const stamp = new Date().toLocaleTimeString();
   jobs = jobs.map((j) => (j.id === id ? { ...j, log: [...(j.log || []), `${stamp}  ${line}`] } : j));
   emit();
+  record('job', line);
 };
 const get = (id) => jobs.find((j) => j.id === id);
 

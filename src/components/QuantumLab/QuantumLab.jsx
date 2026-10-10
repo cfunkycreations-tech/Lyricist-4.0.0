@@ -3,6 +3,7 @@ import TabBackground from '../common/TabBackground.jsx';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { callAI } from '../../services/AIService.js';
 import { NO_CLICHES } from '../../services/cliches.js';
+import { useLogged } from '../../services/useLogged.js';
 import EnergyField from './EnergyField.jsx';
 import {
   buildSection, buildSectionFromKeywords, buildEntanglements, setCellText,
@@ -738,6 +739,11 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   };
 
   const activeNeural = neuralPick === 'B' ? neuralB : neuralA;
+  // Every box on this tab, in the Ghost's flight recorder (useLogged.js).
+  useLogged('The Matrix · Verse A', neuralA);
+  useLogged('The Matrix · Verse B', neuralB);
+  useLogged('The Matrix · Picked', neuralPick);
+  useLogged('The Matrix · Keywords', keywordDraft);
 
   const sendToSongwriter = () => {
     if (!activeNeural) {
