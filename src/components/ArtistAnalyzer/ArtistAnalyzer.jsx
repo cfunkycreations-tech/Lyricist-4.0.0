@@ -7,6 +7,8 @@ import { writeStylePressure } from '../QuantumLab/quantumFeatures.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { callAI, refineLyrics, analyzeClichés, checkSimilarity, checkThemeConsistency } from '../../services/AIService.js';
 import { parseStyleDNA } from '../../utils/styleDNA.js';
+import { labelSections } from '../../utils/importLyrics.js';
+import { NO_CLICHES } from '../../services/cliches.js';
 import { Search, Sparkles, BookOpen, AlertTriangle, ShieldCheck, Check, Copy, Save, Heart, Send, TrendingUp, Dna, Grid3x3, Ghost, Tags } from 'lucide-react';
 import { notify } from '../../services/dialog.js';
 import { Icon } from '../common/Glyph.jsx';
@@ -229,7 +231,7 @@ After the lyrics, on a new line write exactly this separator and nothing else:
 Then on the very next line write 10-14 comma-separated Suno AI style keywords. STRICT RULES for the tags: NO artist names, NO real person names, NO celebrity names whatsoever. Only include: genre, subgenre, production style, mood, tempo, instruments, vocal style, era. One line only.`;
 
       const rawResult = await callAI([
-        { role: 'system', content: 'You are an elite ghostwriter who captures the raw, authentic artistic voice, flow, cadence, vocabulary, and stylistic nuances of specific musical artists. You despise generic AI-sounding imitations. Focus on subtext, friction, and rhythm.' },
+        { role: 'system', content: 'You are an elite ghostwriter who captures the raw, authentic artistic voice, flow, cadence, vocabulary, and stylistic nuances of specific musical artists. You despise generic AI-sounding imitations. Focus on subtext, friction, and rhythm.\n' + NO_CLICHES },
         { role: 'user', content: prompt }
       ], store.config);
 
@@ -244,7 +246,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
         .filter(t => t.toLowerCase() !== artistClean && t.length > 2)
         .join(', ');
 
-      setGhostLyrics(lyrics);
+      setGhostLyrics(lyrics ? labelSections(lyrics, 'Verse') : '');
       setSunoTags(tags);
 
       /**
@@ -430,6 +432,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
       const tags = ghost.current.sunoTags.trim();
       if (!tags) throw new Error('No Suno tags yet. Write in the style first.');
       saveSunoTags(tags, ghost.current.artist.trim());
+      ghost.current.store.setSunoTags?.(tags);
       // Saving the tags also TAGS THE SONG. Writing them to storage for the
       // caption skill to read later, while the pickers sat empty, is exactly
       // the half-finished step Chris caught: "it's bypassing that process".

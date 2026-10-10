@@ -6,8 +6,9 @@ import { useLyricStore, genres, subgenres, moods, rhymeSchemes, rapFlowPatterns 
 import SectionEditor from './SectionEditor.jsx';
 import StructureBuilder from './StructureBuilder.jsx';
 import { generateFullSong, fillBlank, generateBridgeVariations, lastGeneration, parseSectionsFromText } from '../../services/AIService.js';
-import { normalizeLineEndings, hasLineStructure, splitProseIntoLines, groupIntoSections } from '../../utils/importLyrics.js';
-import { applySongTags } from '../../services/songTags.js';
+import { normalizeLineEndings, hasLineStructure, splitProseIntoLines, groupIntoSections, labelSections } from '../../utils/importLyrics.js';
+import { applySongTags, tagsFromText } from '../../services/songTags.js';
+import { saveSunoTags } from '../../services/ghostMemory.js';
 import { notify } from '../../services/dialog.js';
 import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, AlertCircle, Upload, PenLine, GitBranch, X } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
@@ -102,60 +103,44 @@ export default function SongwriterHub({ ghostRiderData }) {
   // Sync Ghost Rider OR Quantum Lab handoff if it came in
   React.useEffect(() => {
     if (!ghostRiderData) return;
+    const fromQuantum = ghostRiderData.source === 'quantum';
+    const newSong = Boolean(ghostRiderData.lyrics) && !fromQuantum;
     if (ghostRiderData.lyrics) {
-      const lines = ghostRiderData.lyrics.split('\n').filter((l) => l.trim());
-      const fromQuantum = ghostRiderData.source === 'quantum';
       const label = fromQuantum
         ? 'Matrix Verse'
         : `Ghost Rider Verse (${ghostRiderData.artist || 'style'})`;
-      store.setFullLyrics([
-        {
-          id: `sec-${Date.now()}`,
-          name: label,
-          type: 'verse',
-          lines: lines.map((line) => ({
-            text: line,
-            locked: false,
-            lockedWord: '',
-            targetSyllables: 0,
-            activeVariation: 'draft',
-            variations: { draft: line, A: '', B: '', C: '' },
-          })),
-          adLibs: '',
-          showAdLibs: false,
-        },
-      ]);
+      // Its own headers become sections ("**Verse**" was landing as a lyric).
+      const sections = parseSectionsFromText(labelSections(ghostRiderData.lyrics, label), store);
+      if (sections.length) store.setFullLyrics(sections);
     }
-    if (ghostRiderData.artist && ghostRiderData.source !== 'quantum') {
+    if (ghostRiderData.artist && !fromQuantum) {
       store.setArtistRef(ghostRiderData.artist);
     }
-    // A NEW SONG BRINGS ITS OWN TOPIC. Chris's Weeknd song landed under the
-    // topic from two songs back ("tech bros invading Austin"), and Missing
-    // Ideas flagged the new words for not matching it. Ghost Rider's song
-    // replaces the topic, with nothing when it was written with none.
-    if (ghostRiderData.lyrics && (ghostRiderData.source !== 'quantum' || ghostRiderData.topic !== undefined)) {
-      store.setTopic(String(ghostRiderData.topic || ''));
-      if (ghostRiderData.source !== 'quantum') store.setNotes?.('');
-    }
     /**
-     * THE ATTRIBUTES COME WITH THE WORDS.
+     * A NEW SONG FROM GHOST RIDER REPLACES THE WHOLE LAST SONG.
      *
-     * Chris, 2026-09-15: *"if you write a song in one tab, then the attributes
-     * need to go with it. So the mood, the genre, the subgenre."*
+     * Chris, 2026-10-10: a Clutch song landed under the topic from five songs
+     * back and the tags "R&B / Soul" and "Dark", and Missing Ideas nagged about
+     * tech bros. Topic, notes, Suno tags and all three pickers belong to the
+     * song, so a new one replaces every one of them, with nothing where the
+     * new song has nothing.
      *
-     * Ghost Rider has always sent its Suno tags along with the lyrics, and
-     * App.jsx has always carried them through, and this effect read the lyrics,
-     * the artist and the notes and threw the tags away. So a verse written in
-     * an artist's style landed here untagged, and stayed untagged all the way
-     * into Black Hole Studios. They are picks now, which also fills in the
-     * Black Hole side through styleBridge. A new song's tags replace the last
-     * song's: Chris found a new song under the old song's picks.
+     * The Suno tags go in WORD FOR WORD (the Suno Tags box), and the pickers
+     * get only what those tags actually name, so a stoner rock song is never
+     * filed as soul because soul was what the last song left there.
      */
-    if (ghostRiderData.sunoTags) {
-      // A new song's own tags replace the last song's.
-      applySongTags(store, { text: ghostRiderData.sunoTags, force: Boolean(ghostRiderData.lyrics) });
+    if (newSong) {
+      store.setTopic(String(ghostRiderData.topic || ''));
+      store.setNotes?.('');
+      store.setSunoTags?.(String(ghostRiderData.sunoTags || ''));
+      if (ghostRiderData.sunoTags) saveSunoTags(ghostRiderData.sunoTags, ghostRiderData.artist || '');
+      const found = tagsFromText(ghostRiderData.sunoTags || '');
+      store.setStylePicks?.({ genres: found.genres, subgenres: found.subgenres, moods: found.moods });
+    } else if (ghostRiderData.sunoTags) {
+      applySongTags(store, { text: ghostRiderData.sunoTags });
     }
-    if (ghostRiderData.source === 'quantum' && ghostRiderData.notes && store.setNotes) {
+    if (fromQuantum && ghostRiderData.topic !== undefined) store.setTopic(String(ghostRiderData.topic || ''));
+    if (fromQuantum && ghostRiderData.notes && store.setNotes) {
       store.setNotes(ghostRiderData.notes);
     }
   }, [ghostRiderData]);
@@ -411,6 +396,35 @@ export default function SongwriterHub({ ghostRiderData }) {
           gap: 16
         }}
       >
+        {/* THE SONG'S OWN SUNO TAGS, word for word. Chris sent a Clutch song over
+            and the pickers called it "R&B / Soul": they can only name what is on
+            their lists. These say exactly what the song is, they go into every
+            prompt, and they ride along to Black Hole Studios. */}
+        <div data-help="The song's own style tags, exactly as Ghost Rider wrote them (or type your own). They describe the sound better than the pickers below can, and every write on this tab follows them.">
+          <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
+            Suno Tags
+          </label>
+          <textarea
+            value={store.sunoTags || ''}
+            onChange={(e) => store.setSunoTags(e.target.value)}
+            onBlur={(e) => { if (e.target.value.trim()) saveSunoTags(e.target.value.trim(), store.artistRef || ''); }}
+            placeholder="e.g. stoner rock, southern rock, fuzz guitar, gritty male vocals, 110 BPM"
+            rows={3}
+            style={{
+              width: '100%',
+              background: 'rgba(16,18,21,0.7)',
+              border: '1px solid rgba(155,161,170,0.22)',
+              borderRadius: 8,
+              padding: '7px 10px',
+              fontSize: '0.82rem',
+              color: '#e6e8eb',
+              outline: 'none',
+              fontFamily: 'var(--faf-font)',
+              resize: 'vertical'
+            }}
+          />
+        </div>
+
         {/* GENRE, SUBGENRE AND MOOD ARE BLENDS NOW — up to five each, mixed into
             one song, lead pick first. See MultiPick for why this is chips and a
             dropdown rather than a ctrl-click multi-select. */}
@@ -449,14 +463,14 @@ export default function SongwriterHub({ ghostRiderData }) {
         />
 
         {/* Topic Input (Keywords) */}
-        <div data-help="What the song is about, plus any words or images you want woven in. Type freely — separate ideas with commas, spaces, dashes, periods, or new lines, whatever feels natural. Example: city lights, midnight, running late.">
+        <div data-help="What the song is about, plus any words or images you want woven in. Type freely — separate ideas with commas, spaces, dashes, periods, or new lines, whatever feels natural. Example: pawn shop, borrowed truck, last paycheck.">
           <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
             Topic & Keyword Ideas
           </label>
           <textarea
             value={store.topic}
             onChange={(e) => store.setTopic(e.target.value)}
-            placeholder="e.g. city lights - midnight - running late - suitcase"
+            placeholder="e.g. pawn shop - borrowed truck - last paycheck"
             rows={2}
             style={{
               width: '100%',

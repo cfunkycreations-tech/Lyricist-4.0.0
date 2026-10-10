@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import TabBackground from '../common/TabBackground.jsx';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { callAI } from '../../services/AIService.js';
+import { NO_CLICHES } from '../../services/cliches.js';
 import EnergyField from './EnergyField.jsx';
 import {
   buildSection, buildSectionFromKeywords, buildEntanglements, setCellText,
@@ -603,7 +604,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       {
         role: 'system',
         content:
-          'You are a surgical lyricist working INSIDE hard craft constraints (word grid). Write ONE tight 4-line verse. Land each line on its given end-word. Honor contracts and style pressure. No clichés, no explanations — output only the 4 lines. Never copy any real artist lyrics.',
+          'You are a surgical lyricist working INSIDE hard craft constraints (word grid). Write ONE tight 4-line verse. Land each line on its given end-word. Honor contracts and style pressure. No clichés, no explanations — output only the 4 lines. Never copy any real artist lyrics.\n' + NO_CLICHES,
       },
       {
         role: 'user',

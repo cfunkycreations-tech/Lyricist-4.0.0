@@ -136,3 +136,30 @@ export function groupIntoSections(lines, per = 4) {
   }
   return blocks;
 }
+
+/**
+ * SECTION HEADERS, HOWEVER THE MODEL WROTE THEM, BECOME [LABELS].
+ *
+ * Ghost Rider's Clutch song reached Songwriter with "**Verse**" as its first
+ * lyric line, one syllable long. Models write headers as **Verse**, ## Chorus,
+ * Hook:, (Bridge) or [Verse 1]; all of them become [Verse], [Chorus] and so on,
+ * markdown stars come off the lyric lines, and a song with no header at all is
+ * filed under `fallback`.
+ */
+const HEADER = /^\s*(?:#{1,6}\s*)?(?:\*\*|__|\*)?\s*[[(]?\s*((?:verse|chorus|hook|pre[- ]?chorus|post[- ]?chorus|bridge|intro|outro|refrain|interlude|breakdown|tag|coda)\b(?:\s*\d+)?(?:\s*[-–]\s*[^,\])*:]{1,20}|\s*\([^),]{1,20}\))?)\s*[\])]?\s*:?\s*(?:\*\*|__|\*)?\s*:?\s*$/i;
+
+export function labelSections(text, fallback = 'Verse') {
+  const out = normalizeLineEndings(String(text || ''))
+    .split('\n')
+    .map((line) => {
+      const m = line.match(HEADER);
+      if (m) {
+        const name = m[1].trim().replace(/\s+/g, ' ');
+        return `[${name.charAt(0).toUpperCase()}${name.slice(1)}]`;
+      }
+      return line.replace(/\*\*|__/g, '').replace(/^\s*[*_]\s+/, '').trimEnd();
+    })
+    .join('\n')
+    .trim();
+  return /^\[[^\]]+\]\s*$/m.test(out) ? out : `[${fallback}]\n${out}`;
+}
