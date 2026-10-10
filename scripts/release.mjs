@@ -181,15 +181,31 @@ if (creator) {
     path.join(engineDir, 'build', 'LyricistEngine_artefacts', 'Release', 'LyricistEngine.exe'),
   ].find((p) => fs.existsSync(p));
   if (!engineBuilt() && process.platform === 'win32') {
-    const vsCmake = 'C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe';
+    // CMake ships inside every Visual Studio 2022 install (Build Tools,
+    // Community, Pro); vswhere says where that is.
+    const vswhere = 'C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe';
+    const vs = fs.existsSync(vswhere)
+      ? String(spawnSync(`"${vswhere}"`, ['-latest', '-products', '*', '-property', 'installationPath'], { shell: true, encoding: 'utf8' }).stdout || '').trim()
+      : '';
+    const vsCmake = vs && path.join(vs, 'Common7', 'IDE', 'CommonExtensions', 'Microsoft', 'CMake', 'CMake', 'bin', 'cmake.exe');
     const onPath = spawnSync('where', ['cmake'], { shell: true, encoding: 'utf8' });
-    const cmake = onPath.status === 0 ? 'cmake' : fs.existsSync(vsCmake) ? `"${vsCmake}"` : null;
+    const cmake = onPath.status === 0 ? 'cmake' : vsCmake && fs.existsSync(vsCmake) ? `"${vsCmake}"` : null;
     if (cmake) {
       console.log('\n  Building the native audio engine (first time downloads JUCE, takes a while)...\n');
       const opts = { cwd: engineDir, stdio: 'inherit', shell: true };
-      if (!fs.existsSync(path.join(engineDir, 'build', 'CMakeCache.txt'))) {
-        spawnSync(cmake, ['-B', 'build', '-G', '"Visual Studio 17 2022"', '-A', 'x64'], opts);
+      // ASIO needs Steinberg's SDK, which is not in git. Fetch it once into
+      // juce-backend/asiosdk (gitignored); without it the engine still builds,
+      // on WASAPI only.
+      const asioHeader = () => {
+        const walk = (d) => { for (const f of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, f.name); if (f.isDirectory()) { const r = walk(p); if (r) return r; } else if (f.name.toLowerCase() === 'iasiodrv.h') return d; } return null; };
+        return fs.existsSync(path.join(engineDir, 'asiosdk')) ? walk(path.join(engineDir, 'asiosdk')) : null;
+      };
+      if (!asioHeader()) {
+        spawnSync('powershell', ['-NoProfile', '-Command', `"$ProgressPreference='SilentlyContinue'; Invoke-WebRequest https://www.steinberg.net/asiosdk -OutFile asiosdk.zip; Expand-Archive -Force asiosdk.zip asiosdk; Remove-Item asiosdk.zip"`], opts);
       }
+      const asio = asioHeader();
+      if (!asio) console.warn('  ASIO SDK could not be fetched: the engine builds with WASAPI only.');
+      spawnSync(cmake, ['-B', 'build', '-G', '"Visual Studio 17 2022"', '-A', 'x64', ...(asio ? [`-DASIO_SDK_DIR="${asio.replace(/\\/g, '/')}"`] : [])], opts);
       spawnSync(cmake, ['--build', 'build', '--config', 'Release'], opts);
     }
   }
