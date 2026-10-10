@@ -21,7 +21,7 @@ function client(apiKey, body) {
   const http = new HTTPClient();
   http.addHook('beforeRequest', (req) => {
     const headers = new Headers(req.headers);
-    headers.set('X-Title', APP_TITLE);                 // the older name for the same thing
+    headers.set('X-Title', APP_TITLE);
     const init = { headers };
     if (body && req.method !== 'GET') {
       init.body = JSON.stringify(body);
@@ -30,10 +30,12 @@ function client(apiKey, body) {
     return new Request(req, init);
   });
   http.addHook('response', (res) => { seen.res = res.clone(); });
+  // The title goes out as X-Title only (set in the hook): it's the header the
+  // packaged app has always sent from file://, so OpenRouter's CORS is known to
+  // allow it. The SDK's newer X-OpenRouter-Title is left off until it's proven.
   const sdk = new OpenRouter({
     apiKey: apiKey || undefined,
     httpReferer: APP_URL,
-    appTitle: APP_TITLE,
     httpClient: http,
     // The Ghost switches model on a fast 429; SDK retries would sit on it.
     retryConfig: { strategy: 'none' },

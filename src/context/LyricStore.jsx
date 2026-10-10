@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { registerDemoSnapshot } from '../services/demoSafety.js';
 import { verifyModel } from '../services/openrouter.js';
+import { DEFAULT_AI_MODEL, discoverFreeModels } from '../services/AIService.js';
 import { notify } from '../services/dialog.js';
 import {
   toBlackHoleGenres, toSongwriterGenres, toBlackHoleMoods, toSongwriterMoods,
@@ -522,10 +523,22 @@ export const LyricStoreProvider = ({ children }) => {
     const id = config.model;
     if (!id || modelCheckedRef.current === id) return;
     modelCheckedRef.current = id;
-    verifyModel(id, String(config.openRouterApiKey || '').trim()).then((r) => {
-      if (r.state !== 'dead' || id === DEFAULT_CONFIG.model) return;
-      setConfigState((c) => (c.model === id ? { ...c, model: DEFAULT_CONFIG.model } : c));
-      notify(`${id} isn't on OpenRouter any more (${r.reason}). Switched to ${DEFAULT_CONFIG.model}. Pick another in Settings any time.`, { tone: 'error' });
+    const key = String(config.openRouterApiKey || '').trim();
+    verifyModel(id, key).then(async (r) => {
+      if (r.state !== 'dead') return;
+      // The replacement is checked too, or the toast would hand over a model
+      // that dies the same way.
+      const bench = [DEFAULT_CONFIG.model, DEFAULT_AI_MODEL, ...(await discoverFreeModels()).slice(0, 4)];
+      let next = null;
+      for (const c of bench) {
+        if (c && c !== id && (await verifyModel(c, key)).state === 'live') { next = c; break; }
+      }
+      if (!next) {
+        notify(`${id} isn't on OpenRouter any more (${r.reason}). Pick a model in Settings.`, { tone: 'error' });
+        return;
+      }
+      setConfigState((c) => (c.model === id ? { ...c, model: next } : c));
+      notify(`${id} isn't on OpenRouter any more (${r.reason}). Switched to ${next}. Pick another in Settings any time.`, { tone: 'error' });
     });
   }, [config.model]);   // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -98,7 +98,7 @@ function ModelSelector({ value, onChange }) {
 
   // A typed id is checked before it is saved. Dead is refused; offline is let
   // through, since the next call will say so anyway.
-  const useExactId = async (id) => {
+  const pickExactId = async (id) => {
     setCheckingId(id);
     const r = await verifyModel(id, apiKey);
     setCheckingId('');
@@ -285,7 +285,7 @@ function ModelSelector({ value, onChange }) {
             {search.trim() && /^[\w.-]+\/[\w.:-]+$/.test(search.trim()) && !models.some(m => m.id === search.trim()) && (
               <button
                 type="button"
-                onClick={() => useExactId(search.trim())}
+                onClick={() => pickExactId(search.trim())}
                 disabled={checkingId === search.trim()}
                 style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'rgba(155,161,170,0.15)', border: 'none', cursor: 'pointer', color: '#e6e8eb', fontSize: '0.8rem' }}
               >

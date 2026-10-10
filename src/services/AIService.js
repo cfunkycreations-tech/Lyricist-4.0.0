@@ -130,7 +130,7 @@ function rankFreeModel(id) {
   return 7;
 }
 
-async function discoverFreeModels() {
+export async function discoverFreeModels() {
   if (freeModelCache) return freeModelCache;
   try {
     // Public catalogue: no auth, no cost, and it is the only source of truth

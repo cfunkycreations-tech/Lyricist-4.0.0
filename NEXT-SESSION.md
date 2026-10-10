@@ -54,8 +54,8 @@ Still open:
   `reasoning.exclude` and its parsed result drops `provider`. Callers get
   OpenRouter's raw JSON and status back. SDK retries are off (the Ghost needs
   a fast 429).
-- Attribution on every request: `HTTP-Referer: https://cfunkycreationsllc.com`,
-  `X-OpenRouter-Title` and `X-Title: Lyricist Pro`. Before this it was split
+- Attribution on every request: `HTTP-Referer: https://cfunkycreationsllc.com`
+  and `X-Title: Lyricist Pro`. Before this it was split
   across lyricist.app / fafoaudio.com and five names. Change both in one place.
 - The hand-pinned `stealth/space-bunny-alpha` in the Settings picker is gone
   (it caused "No endpoints found for stealth/space-bunny-alpha"). Cache key
@@ -68,8 +68,9 @@ Still open:
   with a toast.
 - Tested against a stub (Node and real Chromium): exact wire body, headers,
   404/429/400 status and message, abort, TTS bytes. **Not tested against the
-  real openrouter.ai** (blocked from the sandbox), so the first real run on
-  Chris's machine is the CORS check for `X-OpenRouter-Title`.
+  real openrouter.ai** (blocked from the sandbox). Only headers the app already
+  sent from `file://` go out; the SDK's newer `X-OpenRouter-Title` is left off
+  until a real run proves OpenRouter's CORS allows it.
 
 ## What else landed this session
 
