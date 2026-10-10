@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { registerDemoSnapshot } from '../services/demoSafety.js';
+import { useLogged } from '../services/useLogged.js';
 import { verifyModel, probeModel, why } from '../services/openrouter.js';
 import { DEFAULT_AI_MODEL, discoverFreeModels } from '../services/AIService.js';
 import { notify } from '../services/dialog.js';
@@ -591,6 +592,19 @@ export const LyricStoreProvider = ({ children }) => {
   // writes lyrics — Songwriter, Ghost Rider, Song Forge. The demo really does
   // generate a song and drop it in; without this it would land on top of yours.
   const demoRef = useRef(null);
+  // Every Songwriter box, in the Ghost's flight recorder (useLogged.js).
+  useLogged('Songwriter · Lyrics', (lyrics || []).map((sec) => `[${sec.name || sec.type}]\n${(sec.lines || []).map((l) => l.text || '').join('\n')}`).join('\n\n'));
+  useLogged('Songwriter · Topic', topic);
+  useLogged('Songwriter · Artist', artistRef);
+  useLogged('Songwriter · Notes', notes);
+  useLogged('Songwriter · Suno tags', sunoTags);
+  useLogged('Songwriter · Genre', genreList);
+  useLogged('Songwriter · Subgenre', subgenreList);
+  useLogged('Songwriter · Mood', moodList);
+  useLogged('Black Hole Studios · Genre', bhGenreList);
+  useLogged('Black Hole Studios · Mood', bhMoodList);
+  useLogged('Black Hole Studios · Voice', voiceList);
+
   demoRef.current = {
     lyrics, undoStack, redoStack,
     genreList, subgenreList, moodList,

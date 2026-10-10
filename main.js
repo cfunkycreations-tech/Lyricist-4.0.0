@@ -621,6 +621,46 @@ ipcMain.handle('list-displays', async () => {
 
 // Save a Ghost Rider style report as a .txt file in the user's Documents folder.
 // Called from the UI via the preload bridge (window.lyricistAPI.saveReport).
+/* THE GHOST'S FLIGHT RECORDER, on disk (src/services/ghostRecorder.js).
+   Chris: "You need a way to be able to go back and log everything that it
+   does. On every tab." Each line is appended as it happens, so a crash cannot
+   lose the log, and a screenshot is saved after every Ghost action:
+   Documents\Lyricist Ghost Logs\<session start>\log.txt + NNNN action.jpg */
+let ghostLogDir = null;
+let ghostShots = 0;
+function ghostLogFolder() {
+  if (!ghostLogDir) {
+    const started = new Date().toISOString().slice(0, 19).replace('T', ' ').replace(/:/g, '-');
+    ghostLogDir = path.join(app.getPath('documents'), 'Lyricist Ghost Logs', started);
+    fs.mkdirSync(ghostLogDir, { recursive: true });
+  }
+  return ghostLogDir;
+}
+ipcMain.handle('ghost-log-append', async (_event, line) => {
+  try { fs.appendFileSync(path.join(ghostLogFolder(), 'log.txt'), `${String(line)}\n`, 'utf8'); return { ok: true }; } catch (e) { return { ok: false, error: e.message }; }
+});
+ipcMain.handle('ghost-log-shot', async (event, label) => {
+  if (ghostShots >= 600) return { ok: false, error: 'screenshot limit for this session' };
+  try {
+    const img = await event.sender.capturePage();
+    const name = `${String(label || 'shot').replace(/[\\/:*?"<>|]/g, '-').slice(0, 80)}.jpg`;
+    fs.writeFileSync(path.join(ghostLogFolder(), name), img.toJPEG(60));
+    ghostShots += 1;
+    return { ok: true };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+ipcMain.handle('ghost-log-save', async (_event, { filename, content }) => {
+  try {
+    const full = path.join(ghostLogFolder(), String(filename).replace(/[\\/:*?"<>|]/g, '-').slice(0, 120));
+    fs.writeFileSync(full, String(content), 'utf8');
+    return { ok: true, path: full };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+ipcMain.handle('ghost-log-open', async () => {
+  const { shell } = require('electron');
+  try { return { ok: !(await shell.openPath(ghostLogFolder())) }; } catch (e) { return { ok: false, error: e.message }; }
+});
+
 ipcMain.handle('save-report', async (event, { filename, content }) => {
   try {
     const dir = path.join(app.getPath('documents'), 'Lyricist Style Reports');

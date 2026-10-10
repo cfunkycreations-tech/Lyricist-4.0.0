@@ -7,6 +7,11 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   // Save a Ghost Rider style report into the user's Documents folder.
   // Returns { ok: true, path } or { ok: false, error }.
   saveReport: (filename, content) => ipcRenderer.invoke('save-report', { filename, content }),
+  // The Ghost's flight recorder (src/services/ghostRecorder.js).
+  ghostLogAppend: (line) => ipcRenderer.invoke('ghost-log-append', line),
+  ghostLogShot: (label) => ipcRenderer.invoke('ghost-log-shot', label),
+  ghostLogSave: (filename, content) => ipcRenderer.invoke('ghost-log-save', { filename, content }),
+  ghostLogOpen: () => ipcRenderer.invoke('ghost-log-open'),
   // Save a Song Forge result (lyrics .txt + cover art .png) into the user's Documents folder.
   // Returns { ok: true, lyricsPath, imagePath } or { ok: false, error }.
   saveSongForge: (payload) => ipcRenderer.invoke('save-song-forge', payload),

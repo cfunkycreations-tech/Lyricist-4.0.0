@@ -15,7 +15,8 @@ import HelpLayer from './components/common/HelpLayer.jsx';
 import OnboardingWizard from './components/Onboarding/OnboardingWizard.jsx';
 import RotatePrompt from './web/RotatePrompt.jsx';
 import GhostDemo from './components/Onboarding/GhostDemo.jsx';
-import { registerGhostAction } from './services/ghostBus.js';
+import { registerGhostAction, PILOT_ENABLED } from './services/ghostBus.js';
+import { record, installRecorder, setTabNames } from './services/ghostRecorder.js';
 
 /**
  * ASK THE GHOST IS FOR CHRIS, NOT CUSTOMERS.
@@ -224,6 +225,16 @@ function MainLayout() {
 
   openedTabsRef.current.add(activeTab);
   const openedTabs = openedTabsRef.current;
+
+  // The Ghost's flight recorder (creator build): every tab change goes in the log.
+  useEffect(() => {
+    if (!PILOT_ENABLED) return;
+    setTabNames(Object.fromEntries(tabs.map((t) => [t.id, t.label])));
+    installRecorder();
+  }, []);
+  useEffect(() => {
+    if (PILOT_ENABLED) record('tab', `opened ${tabs.find((t) => t.id === activeTab)?.label || activeTab}`);
+  }, [activeTab]);
 
   // main.js reads this when it samples memory, so boot.log records which tab
   // was open while the renderer was growing.

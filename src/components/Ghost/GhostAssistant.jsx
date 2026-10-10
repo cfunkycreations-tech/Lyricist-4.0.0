@@ -11,6 +11,8 @@ import { setJobDeps, addJob, subscribeJobs } from '../../services/ghostJobs.js';
 import GhostHand from './GhostHand.jsx';
 import GhostJobs from './GhostJobs.jsx';
 import GhostLessons from './GhostLessons.jsx';
+import GhostFlightLog from './GhostFlightLog.jsx';
+import { record } from '../../services/ghostRecorder.js';
 import { subscribeTeach, beginTeach, endTeach, teachState, playLesson } from '../../services/ghostTeach.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import {
@@ -93,6 +95,19 @@ const NARRATING_ACTIONS = new Set(['run_matrix_walkthrough', 'pilot_run', 'say']
 export default function GhostAssistant({ tab, config, getContext }) {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState([]);
+  // The flight recorder gets every chat message, both sides (ghostRecorder.js).
+  const logged = useRef(0);
+  useEffect(() => {
+    if (msgs.length < logged.current) logged.current = 0;
+    msgs.slice(logged.current).forEach((m) => {
+      const kind = m.who === 'you' ? 'you' : 'ghost';
+      const text = String(m.text || '');
+      const did = (m.did || []).map((d) => `  ${d.ok ? '✓' : '✗'} ${d.said || d.name}${d.warn ? ` (${d.warn})` : ''}`).join('\n');
+      const full = [text.length > 300 ? text : '', did].filter(Boolean).join('\n\n');
+      record(kind, `${m.who === 'error' ? '✗ ' : ''}${text.slice(0, 300)}${m.did?.length ? ` [did ${m.did.length}]` : ''}`, full || null);
+    });
+    logged.current = msgs.length;
+  }, [msgs]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [voiceOn, setVoiceOn] = useState(() => localStorage.getItem(VOICE_KEY) === '1');
@@ -460,6 +475,7 @@ step's line was already spoken.${attempt ? `\n\nThe last try at this step did no
     // and reopening the box shows what happened. See STOW_KEY at the top.
     const stowThisRun = stow;
     if (stowThisRun) setOpen(false);
+    setView('chat');
 
     const ac = new AbortController();
     abortRef.current = ac;
@@ -692,12 +708,13 @@ step's line was already spoken.${attempt ? `\n\nThe last try at this step did no
               Jobs{jobCount ? ` · ${jobCount}` : ''}
             </button>
             <button type="button" aria-pressed={view === 'lessons'} onClick={() => setView('lessons')}>Lessons</button>
+            <button type="button" aria-pressed={view === 'log'} onClick={() => setView('log')}>Log</button>
           </div>
 
 
-          {view === 'jobs' ? <GhostJobs /> : view === 'lessons' ? (
+          {view === 'log' ? <GhostFlightLog /> : view === 'jobs' ? <GhostJobs /> : view === 'lessons' ? (
             <GhostLessons tab={tab} onTeachStart={() => setOpen(false)} />
-          ) : (<>
+          ) : (
           <div className="gha-log" ref={logRef}>
             {!msgs.length && (
               <div className="gha-empty">
@@ -762,7 +779,11 @@ step's line was already spoken.${attempt ? `\n\nThe last try at this step did no
 
             {busy && <div className="gha-msg ghost thinking">thinking…</div>}
           </div>
+          )}
 
+          {/* ON EVERY VIEW. Chris lost the Enter button: a job flips the panel
+              to Jobs, and the box only lived under Chat. It sits under every
+              view now, so Ask the Ghost, type, Enter (and Stow) always works. */}
           <form
             className="gha-ask"
             onSubmit={(e) => { e.preventDefault(); send(); }}
@@ -798,12 +819,11 @@ step's line was already spoken.${attempt ? `\n\nThe last try at this step did no
           {/* "on this tab" was wrong: a tab stays mounted once you have opened
               it, so its controls stay reachable while you are looking at
               another one. Say what is true. */}
-          <p className="gha-foot">
+          {view === 'chat' && <p className="gha-foot">
             {canDo
               ? `It can press ${canDo} thing${canDo === 1 ? '' : 's'} right now, in the tabs you have open.`
               : 'It can answer and write. Open a tab and it can press things there too.'}
-          </p>
-          </>)}
+          </p>}
         </aside>
       )}
     </>

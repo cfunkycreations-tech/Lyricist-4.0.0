@@ -179,7 +179,7 @@
   line-height: 1.5; color: hsl(35 92% 76%);
 }
 
-.gha-ask { display: flex; gap: 8px; padding: 12px 15px; border-top: 1px solid rgba(255, 255, 255, .08); }
+.gha-ask { flex-shrink: 0; display: flex; gap: 8px; padding: 12px 15px; border-top: 1px solid rgba(255, 255, 255, .08); }
 .gha-ask input {
   flex: 1 1 auto; min-width: 0; padding: 9px 12px; border-radius: 9px;
   font-family: inherit; font-size: 13px; color: #E6E8EB;
@@ -331,3 +331,28 @@ body.lyricist-mobile .gha-face { font-size: 17px; }
 .vlab-bake > span { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 11px; color: #FFD08A; white-space: nowrap; }
 .vlab-meter { flex: 1 1 auto; height: 6px; border-radius: 3px; background: rgba(8, 9, 10, .7); border: 1px solid #000; overflow: hidden; }
 .vlab-meter > i { display: block; height: 100%; background: linear-gradient(90deg, #b87a22, #FFD08A); box-shadow: 0 0 8px rgba(231, 165, 64, .6); transition: width .2s; }
+
+/* The flight recorder view (GhostFlightLog.jsx). */
+.gha-flight { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.gha-flight-bar { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 15px; }
+.gha-flight-bar button, .gha-flight-noteform button {
+  font-size: .72rem; padding: 5px 10px; border-radius: 6px; cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, .16); background: transparent; color: #e6e8eb;
+}
+.gha-flight-bar button.go { color: #FFD08A; border-color: hsla(36 78% 58% / .6); background: hsla(36 78% 40% / .18); }
+.gha-flight-noteform { display: flex; gap: 6px; padding: 0 15px 8px; }
+.gha-flight-noteform input {
+  flex: 1; min-width: 0; font-size: .74rem; padding: 5px 8px; border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, .16); background: rgba(16, 18, 21, .7); color: #e6e8eb;
+}
+.gha-flight-list {
+  flex: 1; min-height: 60px; max-height: 52vh; overflow: auto; padding: 6px 15px 12px;
+  font: 11px/1.45 ui-monospace, Consolas, monospace; color: rgba(230, 232, 235, .82);
+}
+.gha-flight-row { white-space: pre-wrap; word-break: break-word; padding: 1px 0; }
+.gha-flight-row.is-action { color: #FFD08A; margin-top: 4px; }
+.gha-flight-row.is-error { color: #f87171; }
+.gha-flight-row.is-ai { color: #93c5fd; }
+.gha-flight-row.is-state { color: rgba(155, 161, 170, .8); }
+.gha-flight-row.is-note { color: #86efac; }
+.gha-flight-row.is-field { color: #c4b5fd; }

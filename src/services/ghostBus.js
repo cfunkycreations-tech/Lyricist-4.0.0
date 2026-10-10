@@ -41,6 +41,8 @@ const loadHands = PILOT_ENABLED
   : null;
 let hands = null;
 
+import { record, snapshot, visibleTab, clipText } from './ghostRecorder.js';
+
 const handlers = new Map();
 const watchers = new Set();
 
@@ -132,7 +134,43 @@ const waitFor = async (name, ms) => {
   return fn;
 };
 
+/**
+ * What every tab looks like right now, in its own words (each tab's describe_*
+ * answer). The flight recorder writes it after every action, so a log shows
+ * not just what the Ghost pressed but what the tab held afterwards.
+ */
+const DESCRIBER = { songwriter: 'describe_songwriter', analyzer: 'describe_ghostrider', quantum: 'describe_matrix', songforge: 'describe_songforge', onemanband: 'describe_song' };
+export async function peekTabs(tabIds = null) {
+  const out = [];
+  const wanted = tabIds ? new Set(tabIds.map((id) => DESCRIBER[id]).filter(Boolean)) : null;
+  for (const [name, fn] of handlers) {
+    if (!name.startsWith('describe_') || name === 'describe_controls') continue;
+    if (wanted && !wanted.has(name)) continue;
+    try { out.push(String(await fn({}) || '').trim()); } catch { /* a tab that cannot say is skipped */ }
+  }
+  return out.filter(Boolean).join('\n');
+}
+
+const QUIET = /^(describe_|say$)/;
 export async function runGhostAction(name, args = {}) {
+  if (QUIET.test(name)) {
+    if (name === 'say') record('say', String(args?.text || ''));
+    return runGhostActionInner(name, args);
+  }
+  const started = Date.now();
+  record('action', `${name} ${clipText(args && Object.keys(args).length ? args : '', 300)}`.trim());
+  const r = await runGhostActionInner(name, args);
+  const secs = ((Date.now() - started) / 1000).toFixed(1);
+  record('result', `${r.ok ? '✓' : '✗'} ${clipText(r.said || (r.ok ? 'done' : 'failed'), 400)}${r.warn ? `  ⚠ ${clipText(r.warn, 200)}` : ''} (${secs}s)`);
+  // What the tab it acted on (and the one on screen) holds now.
+  const owner = tabForAction(name);
+  const look = await peekTabs([owner, visibleTab()].filter(Boolean)).catch(() => '');
+  if (look) record('state', `after ${name}`, look);
+  snapshot(name);
+  return r;
+}
+
+async function runGhostActionInner(name, args = {}) {
   // A tab mounts on its first open, and its actions register in an effect a
   // frame or two after that. "open_tab" then "songwriter_write_song" in the
   // same breath used to fail on the second one for no reason a person would

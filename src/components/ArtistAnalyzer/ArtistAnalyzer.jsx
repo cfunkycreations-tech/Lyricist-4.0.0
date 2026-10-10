@@ -12,6 +12,7 @@ import { NO_CLICHES } from '../../services/cliches.js';
 import { Search, Sparkles, BookOpen, AlertTriangle, ShieldCheck, Check, Copy, Save, Heart, Send, TrendingUp, Dna, Grid3x3, Ghost, Tags } from 'lucide-react';
 import { notify } from '../../services/dialog.js';
 import { Icon } from '../common/Glyph.jsx';
+import { useLogged } from '../../services/useLogged.js';
 
 const analysisTabs = [
   { id: 'style', label: 'Lyrical Style' },
@@ -60,6 +61,13 @@ export default function ArtistAnalyzer({ onGhostSend }) {
   const [loadingGhost, setLoadingGhost] = useState(false);
   const [copied, setCopied] = useState('');
   const [ghostSent, setGhostSent] = useState(false);
+  // Every box on this tab, in the Ghost's flight recorder (useLogged.js).
+  useLogged('Ghost Rider · Artist', artist);
+  useLogged('Ghost Rider · Style report', analysis);
+  useLogged('Ghost Rider · Style DNA', styleDNA);
+  useLogged('Ghost Rider · Topic', ghostTopic);
+  useLogged('Ghost Rider · Verse', ghostLyrics);
+  useLogged('Ghost Rider · Suno tags', sunoTags);
 
   // Checks & Intelligence
   const [clichés, setClichés] = useState([]);

@@ -82,6 +82,7 @@ import './OneManBand.css';
 import bhLoop from '../../assets/blackhole/bh_loop.webm';
 import bhStill from '../../assets/blackhole/bh_still.webp';
 import { Dices } from 'lucide-react';
+import { useLogged } from '../../services/useLogged.js';
 
 const REDUCED_MOTION = typeof window !== 'undefined'
   && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -411,6 +412,14 @@ export default function OneManBand() {
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState('');
   const [error, setError] = useState('');
+  // Every box on this tab, in the Ghost's flight recorder (useLogged.js).
+  useLogged('Black Hole Studios · Input Lyrics', lyrics);
+  useLogged('Black Hole Studios · Input Caption', caption);
+  useLogged('Black Hole Studios · Length (s)', seconds);
+  useLogged('Black Hole Studios · Engine', engine);
+  useLogged('Black Hole Studios · Take number', seed);
+  useLogged('Black Hole Studios · Takes', takes.length);
+  useLogged('Black Hole Studios · Status', error || phase, { pause: 300 });
   const [elapsed, setElapsed] = useState(0);
   const abortRef = useRef(null);
 

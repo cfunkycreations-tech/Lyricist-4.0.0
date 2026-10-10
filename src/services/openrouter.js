@@ -13,6 +13,7 @@
  */
 import { OpenRouter, HTTPClient } from '@openrouter/sdk';
 import { noteModelFailure } from './modelFit.js';
+import { record, clipText } from './ghostRecorder.js';
 
 export const APP_URL = 'https://cfunkycreationsllc.com';
 export const APP_TITLE = 'Lyricist Pro';
@@ -68,10 +69,30 @@ async function run(apiKey, call, { body, signal, binary } = {}) {
 
 /** POST /chat/completions with a wire-format body. */
 export async function chatCompletion(body, { apiKey, signal } = {}) {
-  const r = await run(apiKey, (sdk, o) => sdk.chat.send(
-    { chatRequest: { model: body.model, messages: [{ role: 'user', content: '' }] } },
-    { signal: o.signal },
-  ), { body, signal });
+  const started = Date.now();
+  const asked = (body.messages || [])
+    .map((m) => `${String(m.role).toUpperCase()}: ${typeof m.content === 'string' ? m.content : JSON.stringify(m.content)}`)
+    .join('\n\n');
+  let r;
+  try {
+    r = await run(apiKey, (sdk, o) => sdk.chat.send(
+      { chatRequest: { model: body.model, messages: [{ role: 'user', content: '' }] } },
+      { signal: o.signal },
+    ), { body, signal });
+  } catch (e) {
+    record('ai', `${body.model} ✗ ${e?.message || 'aborted'} (${((Date.now() - started) / 1000).toFixed(1)}s)`, `ASKED:\n${asked}`);
+    throw e;
+  }
+  // The flight recorder: every AI call, what was asked and what came back.
+  const reply = r.json?.choices?.[0]?.message?.content;
+  const served = r.json?.model && r.json.model !== body.model ? ` (served by ${r.json.model})` : '';
+  const secs = ((Date.now() - started) / 1000).toFixed(1);
+  const lastAsk = (body.messages || []).filter((m) => m.role === 'user').pop()?.content;
+  record(
+    'ai',
+    `${body.model}${served} ${r.ok ? '✓' : `✗ ${r.status} ${r.message}`} ${secs}s · asked: ${clipText(typeof lastAsk === 'string' ? lastAsk.replace(/\s+/g, ' ') : '', 140)}`,
+    `ASKED:\n${asked}\n\nANSWERED:\n${typeof reply === 'string' ? reply : clipText(reply ?? r.message ?? '', 4000)}`,
+  );
   // A model that can never work here (agent-only, no longer free) is
   // remembered, so the model list says so and the free chains skip it.
   if (!r.ok) noteModelFailure(body.model, r.message);
