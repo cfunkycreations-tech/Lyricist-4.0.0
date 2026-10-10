@@ -15,7 +15,7 @@ import { subscribeTeach, beginTeach, endTeach, teachState, playLesson } from '..
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import {
   speak, hush, loadVoice, voiceState, getVoiceName, setVoiceName, prewarm,
-  getVoiceSpeed, setVoiceSpeed, getVoiceWarmth, setVoiceWarmth, SPEED_MIN, SPEED_MAX,
+  getVoiceSpeed, setVoiceSpeed, getVoiceWarmth, setVoiceWarmth, SPEED_MIN, SPEED_MAX, usingDemoVoice,
 } from '../../services/GhostVoice.js';
 import { Ghost } from 'lucide-react';
 
@@ -658,6 +658,8 @@ spoken line of talk.${attempt ? `\n\nThe last try at this step did not work (${s
                 <button type="button" aria-label="A hundredth faster" onClick={() => tuneVoice('speed', voiceSpeed + 0.01)}>+</button>
                 <output htmlFor="gha-speed">{voiceSpeed.toFixed(2)}×</output>
               </div>
+              {/* Warmth is a Kokoro control. The demo voice plays as the demo does. */}
+              {!usingDemoVoice() && <>
               <label htmlFor="gha-warmth">Warmth</label>
               <div className="gha-tune-row">
                 <input
@@ -673,6 +675,7 @@ spoken line of talk.${attempt ? `\n\nThe last try at this step did not work (${s
                 />
                 <output htmlFor="gha-warmth">{voiceWarmth}</output>
               </div>
+              </>}
             </div>
           )}
 

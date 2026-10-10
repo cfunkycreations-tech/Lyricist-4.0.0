@@ -21,6 +21,8 @@ const RAPPED_GENRES = [
   'Phonk', 'Conscious / Spoken Word', 'Hyperpop / Glitchcore', 'Latin / Reggaeton',
 ];
 
+const TOPIC_FILLER = new Set(('the and for with about from that this into onto over under your you yours our ours are was were have has had not but all any can will would just like what when where who why how its it\'s song songs track tracks lyric lyrics verse chorus hook make made write written being been than then them they their there here out off get got let lets one two who whom she her his him hers also very really some more most much many each every only own same such too way ways thing things feel feels feeling').split(' '));
+
 export default function SongwriterHub({ ghostRiderData }) {
   const store = useLyricStore();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -364,13 +366,15 @@ export default function SongwriterHub({ ghostRiderData }) {
   }), []);
 
   // Keyword check
+  // Only the words that carry the idea. "about", "the", "song" never count, and
+  // a word counts as used in any form: rain / rains / raining, break / breaking.
   const getMissingKeywords = () => {
     if (!store.topic) return [];
+    const root = (w) => (w.length > 5 ? w.replace(/(ing|ed|es|s|ly|er)$/, '') : w.replace(/s$/, ''));
     // Flexible separators: commas, dashes, periods, spaces, or line breaks (any mix).
-    const keywords = store.topic.split(/[,.\-\s]+/).map(w => w.trim().toLowerCase()).filter(w => w.length > 2);
+    const keywords = [...new Set(store.topic.toLowerCase().split(/[^a-z0-9']+/).filter(w => w.length > 2 && !TOPIC_FILLER.has(w)))];
     const lyricsText = store.lyrics.map(s => s.lines.map(l => l.text).join(' ')).join(' ').toLowerCase();
-    
-    return keywords.filter(kw => !lyricsText.includes(kw));
+    return keywords.filter(kw => !lyricsText.includes(root(kw)));
   };
 
   const missingKeywords = getMissingKeywords();
