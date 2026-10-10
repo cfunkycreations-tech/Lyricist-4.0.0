@@ -1,6 +1,8 @@
+import { withFades } from '../../services/clipFade.js';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { getGhostDemo } from './ghostDemoScripts.js';
 import { captureAll, restoreAll } from '../../services/demoSafety.js';
+import { playBed, bedFor } from '../../services/ghostBed.js';
 // The ghost portrait (ghost.demo.png) was stripped 2026-08-27 with the rest of
 // the artwork. Chris, later same day, watching a test recording: *"if you built
 // it right, I don't want the cursor to say remote on it. It needs to look like
@@ -8,6 +10,9 @@ import { captureAll, restoreAll } from '../../services/demoSafety.js';
 // went too. What is left is a plain SVG pointer that looks and moves like any
 // other cursor a viewer might be watching. The .png file is left in src/assets/
 // untouched but no longer imported.
+// Chris, 2026-10-09: the Ghost is back on screen during the demo, with a button
+// to hide it. Same art as the Ask-the-Ghost hand (ghost-sprite.png).
+import ghostSprite from '../../assets/ghost-sprite.png';
 import './GhostDemo.css';
 
 /**
@@ -206,16 +211,77 @@ export default function GhostDemo({ tabId, onClose }) {
    * Slow is roughly half pace for someone reading carefully; Fast is for a
    * second watch when you already know the tab.
    */
-  const SPEEDS = { slow: 1.55, medium: 1.0, fast: 0.62 };
-  const [speed, setSpeed] = useState('medium');
+  // Speed is a knob now: pace 0.5x (slow) to 2x (fast), log scale so the
+  // middle stays 1.0x. The timers want the inverse (bigger = slower).
+  const PACE_MIN = 0.5;
+  const PACE_MAX = 2;
+  const clampPace = (v) => Math.min(PACE_MAX, Math.max(PACE_MIN, v));
+  const [pace, setPace] = useState(() => {
+    try { const v = parseFloat(localStorage.getItem('lyricistGhostPace')); if (v) return clampPace(v); } catch { /* ignore */ }
+    return 1;
+  });
   const speedRef = useRef(1.0);
-  useEffect(() => { speedRef.current = SPEEDS[speed] ?? 1.0; }, [speed]);
+  useEffect(() => {
+    speedRef.current = 1 / pace;
+    try { localStorage.setItem('lyricistGhostPace', String(pace)); } catch { /* ignore */ }
+  }, [pace]);
+  const nudgePace = useCallback((steps) => {
+    setPace((p) => clampPace(Math.pow(2, Math.log2(p) + steps * 0.02)));
+  }, []);
+  const knobRef = useRef(null);
+  useEffect(() => {
+    const el = knobRef.current;
+    if (!el) return undefined;
+    const onWheel = (e) => {
+      e.preventDefault();
+      nudgePace((e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? 5 : 1));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [nudgePace]);
+  const dragRef = useRef(null);
+  const knobAngle = -135 + ((Math.log2(pace) + 1) / 2) * 270;
 
   // Voice on by default, and switchable from the demo bar — a labelled button,
   // not a setting hidden on another tab.
   const [voiceOn, setVoiceOn] = useState(true);
+  const FIGURE_KEY = 'lyricistGhostFigure';
+  const [showGhost, setShowGhost] = useState(() => {
+    try { return localStorage.getItem(FIGURE_KEY) !== 'off'; } catch { return true; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(FIGURE_KEY, showGhost ? 'on' : 'off'); } catch { /* storage blocked */ }
+  }, [showGhost]);
   const voiceOnRef = useRef(true);
   const audioRef = useRef(null);
+
+  // Background music under the narration. Its own button, on by default and
+  // remembered. Ducked while the Ghost is talking, back up between lines.
+  const MUSIC_KEY = 'lyricistGhostMusic';
+  const BED_LEVEL = 0.35;
+  const BED_UNDER_VOICE = 0.15;
+  const [musicOn, setMusicOn] = useState(() => {
+    try { return localStorage.getItem(MUSIC_KEY) !== 'off'; } catch { return true; }
+  });
+  const musicOnRef = useRef(musicOn);
+  const bedRef = useRef(null);
+  const bedWantedRef = useRef(false);     // a walkthrough is running and wants music
+  const startBed = useCallback(() => {
+    if (!musicOnRef.current || !bedWantedRef.current || bedRef.current) return;
+    const a = audioRef.current;
+    const talking = a && !a.paused && !a.ended;
+    bedRef.current = playBed(bedFor(tabAtStartRef.current), { level: talking ? BED_UNDER_VOICE : BED_LEVEL });
+    if (pauseRef.current) bedRef.current.pause();
+  }, []);
+  const stopBed = useCallback((fade) => {
+    bedRef.current?.stop(fade);
+    bedRef.current = null;
+  }, []);
+  useEffect(() => {
+    musicOnRef.current = musicOn;
+    try { localStorage.setItem(MUSIC_KEY, musicOn ? 'on' : 'off'); } catch { /* storage blocked */ }
+    if (musicOn) startBed(); else stopBed(0.6);
+  }, [musicOn, startBed, stopBed]);
 
   const stopVoice = useCallback(() => {
     const a = audioRef.current;
@@ -241,7 +307,14 @@ export default function GhostDemo({ tabId, onClose }) {
   const speak = useCallback((id) => new Promise((resolve) => {
     if (!voiceOnRef.current || !clipFor(id)) return resolve(0);
     let a = audioRef.current;
-    if (!a) { a = new Audio(); audioRef.current = a; }
+    if (!a) {
+      a = withFades(new Audio());
+      a.addEventListener('play', () => bedRef.current?.level(BED_UNDER_VOICE, 0.25));
+      const up = () => bedRef.current?.level(BED_LEVEL, 0.9);
+      a.addEventListener('pause', up);
+      a.addEventListener('ended', up);
+      audioRef.current = a;
+    }
     try { a.pause(); } catch { /* */ }
     a.onloadedmetadata = null;
     a.onerror = null;
@@ -287,7 +360,10 @@ export default function GhostDemo({ tabId, onClose }) {
   const pauseRef = useRef(false);
   const cursorRef = useRef({ x: window.innerWidth * 0.5, y: window.innerHeight * 0.4 });
 
-  useEffect(() => { pauseRef.current = paused; }, [paused]);
+  useEffect(() => {
+    pauseRef.current = paused;
+    if (paused) bedRef.current?.pause(); else bedRef.current?.resume();
+  }, [paused]);
 
   // Hide the real system cursor for the whole app while demo runs
   useEffect(() => {
@@ -332,6 +408,14 @@ export default function GhostDemo({ tabId, onClose }) {
     });
 
   /** Human-ish path with a slight curve */
+  // Hold until the clip has really ended, so the next step never cuts it off.
+  const voiceDone = async (runId) => {
+    const a = audioRef.current;
+    for (let n = 0; a && voiceOnRef.current && !a.ended && !a.paused && n < 600; n += 1) {
+      await wait(50, runId);
+    }
+  };
+
   const animateCursorTo = (x, y, duration = 850, runId) =>
     new Promise((resolve) => {
       const from = { ...cursorRef.current };
@@ -432,6 +516,8 @@ export default function GhostDemo({ tabId, onClose }) {
     // clicks, so without this it overwrites work in progress — it once wiped a
     // Quantum Lab lattice the user had filled in. Restored in finishDemo().
     snapshotRef.current = captureAll();
+    bedWantedRef.current = true;
+    startBed();
 
     setStatusLine(`Running: ${demo.title}`);
     cursorRef.current = { x: window.innerWidth * 0.62, y: window.innerHeight * 0.28 };
@@ -481,7 +567,7 @@ export default function GhostDemo({ tabId, onClose }) {
 
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-        await wait(500 * speedRef.current, runId);
+        await wait(220 * speedRef.current, runId);
         const r = el.getBoundingClientRect();
         tx = r.left + Math.min(r.width * 0.55, r.width - 8);
         ty = r.top + r.height / 2;
@@ -496,7 +582,7 @@ export default function GhostDemo({ tabId, onClose }) {
       }
 
       // Move the visible mouse like a remote session
-      await animateCursorTo(tx, ty, (el ? 900 + Math.random() * 200 : 600) * speedRef.current, runId);
+      await animateCursorTo(tx, ty, (el ? 420 + Math.random() * 80 : 300) * speedRef.current, runId);
 
       const spot = placeBubble(tx, ty);
       setBubble({ text: step.say, x: spot.x, y: spot.y, visible: true });
@@ -506,7 +592,8 @@ export default function GhostDemo({ tabId, onClose }) {
       // the app had already moved on. Now it waits for the sentence — and, when
       // the voice is on, for the ghost to finish saying it, whichever is longer.
       const sayMs = await speak(`${tabId}-${i}-say`);
-      await wait(Math.max(readTimeFor(step.say), sayMs + 450), runId);
+      await wait(sayMs > 0 ? sayMs + 300 : readTimeFor(step.say), runId);
+      await voiceDone(runId);
 
       const action = step.action || (el ? 'click' : 'say');
 
@@ -541,9 +628,10 @@ export default function GhostDemo({ tabId, onClose }) {
         setBubble((b) => ({ ...b, text: step.then }));
         setStatusLine('Showing the result');
         const thenMs = await speak(`${tabId}-${i}-then`);
-        await wait(Math.max(readTimeFor(step.then), thenMs + 450), runId);
+        await wait(thenMs > 0 ? thenMs + 300 : readTimeFor(step.then), runId);
+        await voiceDone(runId);
       } else {
-        await wait((step.wait ?? 2800) * speedRef.current, runId);
+        await wait((sayMs > 0 ? 450 : (step.wait ?? 2800)) * speedRef.current, runId);
       }
     }
 
@@ -560,6 +648,8 @@ export default function GhostDemo({ tabId, onClose }) {
       const endMs = await speak('system-0-finished');
       await wait(Math.max(3500, endMs + 600), runId);
       stopVoice();
+      bedWantedRef.current = false;
+      stopBed();
       closeDemo();
     }
   }, [demo, closeDemo, restoreWork]);
@@ -577,6 +667,8 @@ export default function GhostDemo({ tabId, onClose }) {
     runDemoRef.current(myId);
     return () => {
       cancelRef.current = true;
+      bedWantedRef.current = false;
+      stopBed();
       restoreWork();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -597,6 +689,8 @@ export default function GhostDemo({ tabId, onClose }) {
   const skip = () => {
     cancelRef.current = true;
     stopVoice();
+    bedWantedRef.current = false;
+    stopBed(0.6);
     restoreWork();
     closeDemo();
   };
@@ -628,6 +722,13 @@ export default function GhostDemo({ tabId, onClose }) {
             recording to betray that a canned operator is driving, and a name
             tag hovering next to a pointer is the tell. The cursor stands
             alone now, and looks like any other cursor on screen. */}
+        {showGhost && (
+          <div className="ghost-demo-figure" aria-hidden>
+            <div className="ghost-demo-sprite-wrap">
+              <img className="ghost-demo-sprite" src={ghostSprite} alt="" draggable={false} />
+            </div>
+          </div>
+        )}
         <div className="ghost-demo-cursor" aria-hidden>
           <svg width="32" height="32" viewBox="0 0 24 24">
             <path
@@ -660,17 +761,35 @@ export default function GhostDemo({ tabId, onClose }) {
             Settings. Medium is the default. */}
         <span className="ghost-demo-bar-speed" aria-label="Demo speed">
           <span className="ghost-demo-bar-speed-label">Speed</span>
-          {[['slow', 'Slow'], ['medium', 'Medium'], ['fast', 'Fast']].map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              className={`ghost-demo-bar-btn ghost-demo-bar-speed-btn ${speed === id ? 'is-on' : ''}`}
-              aria-pressed={speed === id}
-              onClick={() => setSpeed(id)}
-            >
-              {label}
-            </button>
-          ))}
+          <span
+            ref={knobRef}
+            className="ghost-demo-knob"
+            role="slider"
+            tabIndex={0}
+            aria-label="Demo speed"
+            aria-valuemin={PACE_MIN}
+            aria-valuemax={PACE_MAX}
+            aria-valuenow={Number(pace.toFixed(2))}
+            title="Scroll the mouse wheel over it (Shift = bigger steps), drag up/down, arrow keys, double-click to reset"
+            onPointerDown={(e) => { dragRef.current = e.clientY; e.currentTarget.setPointerCapture(e.pointerId); }}
+            onPointerMove={(e) => {
+              if (dragRef.current == null) return;
+              nudgePace((dragRef.current - e.clientY) * 0.5);
+              dragRef.current = e.clientY;
+            }}
+            onPointerUp={() => { dragRef.current = null; }}
+            onDoubleClick={() => setPace(1)}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { e.preventDefault(); nudgePace(e.shiftKey ? 5 : 1); }
+              if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { e.preventDefault(); nudgePace(e.shiftKey ? -5 : -1); }
+              if (e.key === 'Home') setPace(1);
+            }}
+          >
+            <span className="ghost-demo-knob-cap" style={{ transform: `rotate(${knobAngle}deg)` }}>
+              <span className="ghost-demo-knob-tick" />
+            </span>
+          </span>
+          <span className="ghost-demo-knob-read">{pace.toFixed(2)}×</span>
         </span>
 
         <button
@@ -681,6 +800,26 @@ export default function GhostDemo({ tabId, onClose }) {
           title={voiceOn ? 'Turn the ghost’s voice off' : 'Turn the ghost’s voice on'}
         >
           {voiceOn ? 'Voice On' : 'Voice Off'}
+        </button>
+
+        <button
+          type="button"
+          className={`ghost-demo-bar-btn ${musicOn ? 'is-on' : ''}`}
+          aria-pressed={musicOn}
+          onClick={() => setMusicOn((v) => !v)}
+          title={musicOn ? 'Turn the background music off' : 'Turn the background music on'}
+        >
+          {musicOn ? 'Music On' : 'Music Off'}
+        </button>
+
+        <button
+          type="button"
+          className={`ghost-demo-bar-btn ${showGhost ? 'is-on' : ''}`}
+          aria-pressed={showGhost}
+          onClick={() => setShowGhost((v) => !v)}
+          title={showGhost ? 'Hide the Ghost on screen' : 'Show the Ghost on screen'}
+        >
+          {showGhost ? 'Ghost On' : 'Ghost Off'}
         </button>
 
         <button type="button" className="ghost-demo-bar-btn" onClick={() => setPaused((p) => !p)}>

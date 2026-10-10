@@ -6,6 +6,7 @@
 
 import { callAI, buildPromptContext, parseSectionsFromText, assertApiKey, normalizeApiKey } from './AIService.js';
 import { blendLabel } from '../utils/blend.js';
+import { chatCompletion } from './openrouter.js';
 
 // OpenRouter image-model slugs (Nano Banana family exposed through OpenRouter).
 // User can change these in Settings; defaults target Nano Banana 2 Lite/class.
@@ -114,22 +115,11 @@ async function openRouterChat({ apiKey, model, messages, temperature = 0.75, max
   // scratchpad reads as lyrics; see stripReasoning.js.
   else body.reasoning = { exclude: true };
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${normalizeApiKey(apiKey)}`,
-      'HTTP-Referer': 'https://lyricist.app',
-      'X-Title': 'Lyricist Song Forge',
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(errData?.error?.message || `OpenRouter error (${model}): status ${response.status}`);
+  const r = await chatCompletion(body, { apiKey: normalizeApiKey(apiKey) });
+  if (!r.ok) {
+    throw new Error(r.status ? r.message || `OpenRouter error (${model}): status ${r.status}` : `Could not reach OpenRouter (${model}).`);
   }
-  return response.json();
+  return r.json || {};
 }
 
 /** Pull base64 / data-URL image from various OpenRouter response shapes. */

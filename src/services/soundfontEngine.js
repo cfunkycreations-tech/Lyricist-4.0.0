@@ -28,6 +28,7 @@
 
 import { SpessaSynthProcessor, SoundBankLoader } from 'spessasynth_core';
 import { isDaw, dawNote } from './midiOut.js';
+import { getBuffer } from './loadBuffer.js';
 
 const NOTES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 const FLAT_TO_SHARP = { Db: 'C#', Eb: 'D#', Gb: 'F#', Ab: 'G#', Bb: 'A#' };
@@ -193,15 +194,11 @@ let bankPromise = null;
 function loadBank() {
   if (!bankPromise) {
     bankPromise = (async () => {
-      const res = await fetch(SF2_URL);
-      if (!res.ok) throw new Error(`Could not load the instrument bank (${res.status})`);
-      const main = SoundBankLoader.fromArrayBuffer(await res.arrayBuffer());
+      const main = SoundBankLoader.fromArrayBuffer(await getBuffer(SF2_URL));
 
       let cfunky = null;
       try {
-        const r2 = await fetch(SF2_CFUNKY_URL);
-        if (r2.ok) cfunky = SoundBankLoader.fromArrayBuffer(await r2.arrayBuffer());
-        else console.warn(`[Lyricist] CFunky Quantum bank missing (${r2.status}); GM instruments still work.`);
+        cfunky = SoundBankLoader.fromArrayBuffer(await getBuffer(SF2_CFUNKY_URL));
       } catch (e) {
         console.warn('[Lyricist] CFunky Quantum bank failed to load; GM instruments still work.', e);
       }

@@ -30,8 +30,8 @@
 import { assertApiKey } from './AIService.js';
 import { stripReasoning } from '../utils/stripReasoning.js';
 import { resolveGhostModel, freeGhostModels } from './GhostService.js';
+import { chatCompletion } from './openrouter.js';
 
-const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 
 /**
  * Stage one and two are choices, not prose, but a free model will often think
@@ -75,30 +75,20 @@ async function askAnyOf({ system, user, models, key, budget, signal }) {
 }
 
 async function askOne({ system, user, model, key, budget, signal }) {
-  const res = await fetch(ENDPOINT, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${key}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://lyricist.app',
-      'X-Title': 'Lyricist Pro',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: budget,
-      // The skill is a writing procedure, not a thinking-out-loud exercise, and
-      // its Output Contract forbids a reasoning trace in the result.
-      reasoning: { exclude: true },
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-    }),
-    signal,
-  });
-  const json = await res.json().catch(() => null);
+  const res = await chatCompletion({
+    model,
+    max_tokens: budget,
+    // The skill is a writing procedure, not a thinking-out-loud exercise, and
+    // its Output Contract forbids a reasoning trace in the result.
+    reasoning: { exclude: true },
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: user },
+    ],
+  }, { apiKey: key, signal });
+  const json = res.json;
   if (!res.ok) {
-    throw new Error(json?.error?.message || `OpenRouter answered ${res.status}.`);
+    throw new Error(res.message || `OpenRouter answered ${res.status}.`);
   }
   const text = stripReasoning(String(json?.choices?.[0]?.message?.content || '')).trim();
   if (!text) throw new Error('The model sent an empty answer back.');

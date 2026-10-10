@@ -7,7 +7,8 @@ import { listSamples, getSampleBuffer } from '../../services/sampleLibrary.js';
 import { createPushLink, hueToPushColor, PUSH_CC } from '../../services/pushMidi.js';
 import { loadButterchurn } from '../../services/butterchurnLoader.js';
 import { getMidiOut, setMidiOut, subscribeMidiOut, clockStart, clockStop, clockTempo } from '../../services/midiOut.js';
-import { vstAvailable, cachedInstruments, listInstruments, loadInstrument as loadVst, vstNote, showEditor as showVstEditor } from '../../services/vstEngine.js';
+import { vstAvailable, cachedInstruments, listInstruments, loadInstrument as loadVst, vstNote, showEditor as showVstEditor, setParamByName, panic as vstPanic } from '../../services/vstEngine.js';
+import PerformanceDeck from './PerformanceDeck.jsx';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Glyph } from '../common/Glyph.jsx';
 
@@ -27,7 +28,7 @@ import { Glyph } from '../common/Glyph.jsx';
  */
 export const TAB_GROUPS = [
   { id: 'pen', name: 'The Pen', hue: 345, tabs: ['songwriter', 'onemanband', 'analyzer', 'songforge', 'quantum'] },
-  { id: 'studio', name: 'The Studio', hue: 215, tabs: ['booth', 'midistudio', 'loopstation', 'stemmer', 'screw', 'mastering'] },
+  { id: 'studio', name: 'The Studio', hue: 215, tabs: ['booth', 'voicelab', 'midistudio', 'loopstation', 'stemmer', 'screw', 'mastering'] },
   { id: 'words', name: 'Word Kit', hue: 142, tabs: ['rhyme', 'thesaurus', 'dictionary', 'scratchpad', 'collab'] },
   { id: 'control', name: 'Control Room', hue: 38, tabs: ['toolshub', 'settings'] },
 ];
@@ -443,13 +444,69 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
   const live = useRef({});
   live.current = { mode, octave, root, scaleIdx, pattern, voice, tempo, samples, chordType };
 
+  // Everything the pads and clips play goes through: high-pass -> low-pass -> master,
+  // with a dotted-eighth echo on the side (the Echo fader). The performance deck drives it.
+  const fxRef = useRef(null);
   useEffect(() => {
-    const g = getAudioContext().createGain();
-    g.connect(getMasterBus());
+    const ctx = getAudioContext();
+    const g = ctx.createGain();
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 20;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 20000; lp.Q.value = 0.7;
+    const dly = ctx.createDelay(2); dly.delayTime.value = (60 / 92) * 0.75;
+    const fb = ctx.createGain(); fb.gain.value = 0.42;
+    const wet = ctx.createGain(); wet.gain.value = 0;
+    g.connect(hp); hp.connect(lp); lp.connect(getMasterBus());
+    lp.connect(dly); dly.connect(fb); fb.connect(dly); dly.connect(wet); wet.connect(getMasterBus());
     outRef.current = g;
-    return () => { try { g.disconnect(); } catch { /* gone */ } };
+    fxRef.current = { hp, lp, dly, wet };
+    return () => { [g, hp, lp, dly, fb, wet].forEach((n) => { try { n.disconnect(); } catch { /* gone */ } }); };
   }, []);
+
   useEffect(() => { if (outRef.current) outRef.current.gain.value = volume; }, [volume]);
+
+  // ── Performance deck: filter, echo, high-pass, stutter ──
+  const [echo, setEchoV] = useState(0);
+  const [hpV, setHpV] = useState(0);
+  const lastHit = useRef(null);          // [x, y] of the last pad played: what the stutter repeats
+  const stut = useRef({ on: false, x: 0.5, y: 0, t0: 0, timer: 0 });
+  const vstLast = useRef(0);
+  const ramp = (param, v, tc = 0.02) => { try { param.setTargetAtTime(v, getAudioContext().currentTime, tc); } catch { /* ctx closed */ } };
+  const setEcho = (v) => { setEchoV(v); const f = fxRef.current; if (f) ramp(f.wet.gain, v * 0.9); };
+  const setHp = (v) => { setHpV(v); const f = fxRef.current; if (f) ramp(f.hp.frequency, 20 * Math.pow(400, v)); };
+  useEffect(() => { const f = fxRef.current; if (f) ramp(f.dly.delayTime, (60 / tempo) * 0.75, 0.05); }, [tempo]);
+  const filter = (x, y) => {
+    const f = fxRef.current;
+    if (f) { ramp(f.lp.frequency, x >= 0.995 ? 20000 : 80 * Math.pow(18000 / 80, x)); ramp(f.lp.Q, 0.7 + y * 14); }
+    // a VST plays outside Web Audio: drive the synth's own cutoff and resonance instead
+    const h = instRef.current?.vst;
+    if (h && performance.now() - vstLast.current > 30) {
+      vstLast.current = performance.now();
+      setParamByName(h, /cut\s*off|filter.*(freq|cut)|^freq/i, x);
+      setParamByName(h, /reso|^q$/i, y);
+    }
+  };
+  const stutter = (x, y, first, end) => {
+    const st = stut.current;
+    if (end) { st.on = false; clearTimeout(st.timer); return; }
+    st.x = x; st.y = y;
+    if (!first || st.on || !lastHit.current) { if (first && !lastHit.current) setDisplay('Hit a pad first, then stutter it.'); return; }
+    st.on = true; st.t0 = performance.now();
+    const fire = () => {
+      if (!st.on || !lastHit.current) return;
+      // Slide up = faster (2 to 24 hits a second); it also speeds up the longer you hold.
+      const held = Math.min(1, (performance.now() - st.t0) / 1800);
+      const hz = (2 + 22 * Math.pow(st.y, 1.5)) * (0.35 + 0.65 * held);
+      const gap = 1000 / hz;
+      const [px, py] = lastHit.current;
+      hitRef.current(px, py, 100);
+      setTimeout(() => releaseRef.current(px, py), gap * (0.15 + 0.7 * st.x));
+      st.timer = setTimeout(fire, gap);
+    };
+    fire();
+  };
+  const hitRef = useRef(() => {});
+  const releaseRef = useRef(() => {});
+  useEffect(() => () => { clearTimeout(stut.current.timer); stut.current.on = false; vstPanic(); }, []);
 
   useEffect(() => {
     let dead = false;
@@ -544,6 +601,7 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
     const info = padInfo(x, y);
     const vel = clamp(velocity / 127, 0.15, 1);
     const key = `${x},${y}`;
+    lastHit.current = [x, y];
     setHeld((h) => new Set(h).add(key));
 
     if (info.kind === 'drum') {
@@ -587,6 +645,9 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
     const stop = stopsRef.current.get(key);
     if (stop) { stop(); stopsRef.current.delete(key); }
   }, []);
+
+  hitRef.current = hit;
+  releaseRef.current = release;
 
   // Step sequencer: lookahead scheduling off refs.
   useEffect(() => {
@@ -845,12 +906,25 @@ function PadInstrument({ cols, onTouch, viz, onClose }) {
   }
 
   return (
-    <div
-      className="push-inst"
-      style={{ gridTemplateColumns: `repeat(${cols}, ${S}px)`, gridTemplateRows: `repeat(8, ${S}px)` }}
-      onContextMenu={(e) => e.preventDefault()}
-    >
-      {cells}
-    </div>
+    <>
+      <div
+        className="push-inst"
+        style={{ gridTemplateColumns: `repeat(${cols}, ${S}px)`, gridTemplateRows: `repeat(8, ${S}px)` }}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        {cells}
+      </div>
+      <PerformanceDeck
+        out={() => outRef.current}
+        tempo={tempo}
+        filter={filter}
+        stutter={stutter}
+        echo={echo}
+        setEcho={setEcho}
+        hp={hpV}
+        setHp={setHp}
+        setDisplay={setDisplay}
+      />
+    </>
   );
 }

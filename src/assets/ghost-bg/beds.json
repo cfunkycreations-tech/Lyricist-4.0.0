@@ -1,0 +1,17 @@
+{
+  "blackhole": {
+    "file": "ghost-bg-blackhole.mp3",
+    "loopStart": 46.61805,
+    "loopEnd": 107.43873
+  },
+  "deep": {
+    "file": "ghost-bg-deep.mp3",
+    "loopStart": 7.96884,
+    "loopEnd": 23.98621
+  },
+  "noir": {
+    "file": "ghost-bg-noir.mp3",
+    "loopStart": 4.27102,
+    "loopEnd": 23.12707
+  }
+}

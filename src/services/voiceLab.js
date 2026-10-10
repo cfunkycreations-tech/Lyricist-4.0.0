@@ -24,6 +24,7 @@
  * where `size` says, so the voice can get deeper without getting muddier, or
  * bigger-chested without changing pitch.
  */
+import { createSpeech } from './openrouter.js';
 
 export const SR = 24000;
 
@@ -56,11 +57,9 @@ const EXPRESSION = [
 export const DEFAULTS = {
   voice: 'g38:Algieba',
   expression: 60,        // 0..100
-  // The exact direction of the audition Chris picked (g38-algieba, 2026-09-27).
-  direction: 'You are the Ghost, the guide inside a music studio app. Speak like a warm, '
-    + 'confident late-night radio host with a little mischief: lively, varied intonation, '
-    + 'real emphasis on the words that matter, natural pauses, a smile in the voice. '
-    + 'Never flat, never robotic, never rushed. Clear enough for a beginner to follow.',
+  // Empty for everyone: Voice Lab is a general tool now, not the Ghost's
+  // (Chris, 2026-10-09). Settings already saved on a machine keep their own.
+  direction: '',
   pace: 1.0,             // 0.60..1.40, time only, pitch untouched
   depth: 0,              // semitones, -12..+6  (pitch). Chris picked Algieba as-is, 2026-09-27: -6 was too low
   size: 0,               // semitones, -6..+6   (formants: minus = bigger chest)
@@ -126,20 +125,12 @@ async function requestTake(s, text, apiKey) {
   if (v.directed) body.instructions = directionFor(s);
   let res;
   for (let attempt = 1; attempt <= 3; attempt++) {
-    res = await fetch('https://openrouter.ai/api/v1/audio/speech', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'X-Title': 'Lyricist Pro Voice Lab' },
-      body: JSON.stringify(body),
-    });
-    if (res.ok || (res.status < 500 && res.status !== 429)) break;
+    res = await createSpeech(body, { apiKey });
+    if (res.ok || (res.status && res.status < 500 && res.status !== 429)) break;
     await new Promise((r) => setTimeout(r, 1200 * attempt));
   }
-  if (!res.ok) {
-    let msg = `${res.status}`;
-    try { msg = (await res.json())?.error?.message || msg; } catch { /* not json */ }
-    throw new Error(`${v.label}: ${msg}`);
-  }
-  const buf = await res.arrayBuffer();
+  if (!res.ok) throw new Error(`${v.label}: ${res.message || res.status}`);
+  const buf = await res.res.arrayBuffer();
   if (v.pcm) {                       // Gemini: raw 16-bit little-endian mono at 24 kHz
     const i16 = new Int16Array(buf, 0, buf.byteLength >> 1);
     const out = new Float32Array(i16.length);

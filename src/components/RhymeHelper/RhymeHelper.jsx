@@ -4,6 +4,7 @@ import { useLyricStore } from '../../context/LyricStore.jsx';
 import { Sparkles, Search, Clipboard, Check, BookOpen, Layers } from 'lucide-react';
 import { assertApiKey } from '../../services/AIService.js';
 import { stripReasoning } from '../../utils/stripReasoning.js';
+import { chatCompletion } from '../../services/openrouter.js';
 import { Icon } from '../common/Glyph.jsx';
 
 export default function RhymeHelper() {
@@ -70,32 +71,23 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
       // had no key check at all, so a bad key reached OpenRouter raw.
       const rhymeKey = assertApiKey(store.config);
 
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${rhymeKey}`,
-          "HTTP-Referer": "https://lyricist.app",
-          "X-Title": "Lyricist 4.0.2"
-        },
-        body: JSON.stringify({
-          model: store.config.model,
-          temperature: store.config.temperature,
-          max_tokens: 800,
-          // A reasoning model would otherwise spend this whole budget planning,
-          // and hand back its notes instead of the rhymes.
-          reasoning: { exclude: true },
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt }
-          ]
-        })
-      });
+      const response = await chatCompletion({
+        model: store.config.model,
+        temperature: store.config.temperature,
+        max_tokens: 800,
+        // A reasoning model would otherwise spend this whole budget planning,
+        // and hand back its notes instead of the rhymes.
+        reasoning: { exclude: true },
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ]
+      }, { apiKey: rhymeKey });
 
       if (!response.ok) {
-        throw new Error(`API Status: ${response.status}`);
+        throw new Error(response.message || `API Status: ${response.status}`);
       }
-      const data = await response.json();
+      const data = response.json || {};
       setAiSuggestions(stripReasoning(data.choices?.[0]?.message?.content || ''));
     } catch (e) {
       setErrorMsg(e.message);

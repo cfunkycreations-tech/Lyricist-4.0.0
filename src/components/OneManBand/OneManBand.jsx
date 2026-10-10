@@ -79,7 +79,12 @@ import {
 import { blendLabel } from '../../utils/blend.js';
 import { saveRecording, listRecordings } from '../../services/RecordingsStore.js';
 import './OneManBand.css';
+import bhLoop from '../../assets/blackhole/bh_loop.webm';
+import bhStill from '../../assets/blackhole/bh_still.webp';
 import { Dices } from 'lucide-react';
+
+const REDUCED_MOTION = typeof window !== 'undefined'
+  && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 /**
  * BLACK HOLE STUDIOS — your words, sung by a full band.
@@ -1107,27 +1112,43 @@ export default function OneManBand() {
 
         <header className="omb-top">
           <div className="omb-id">
-            {/* THE BLACK HOLE.
-                Drawn, not photographed: an event horizon with a lit accretion
-                disc leaning behind the wordmark, turning slowly. SVG and CSS
-                rather than an image file, so it is sharp on any screen, adds
-                nothing to the download, and re-colours itself with Prism like
-                the rest of the app. Swapping in real artwork later means
-                replacing this one block with an <img>; nothing else knows. */}
-            <div className="omb-hole" aria-hidden="true">
-              <span className="omb-hole-disc" />
-              <span className="omb-hole-horizon" />
-              <span className="omb-hole-glow" />
-            </div>
             <div className="omb-brand">Lyricist Pro 4.2.0</div>
             <h1 className="omb-title">Black Hole Studios</h1>
             <p className="omb-tag">
               Your words, sung by a full band. <b>Free forever.</b> Faster if you have the hardware.
             </p>
           </div>
+          <div className="omb-side">
+          {/* THE BLACK HOLE.
+              A rendered loop, not CSS: scripts/blackhole_textures.py makes the
+              disc and lensed-halo images and scripts/blackhole_render.py spins them
+              for 10 seconds (the same rig as scripts/blackhole_c4d.py). The round
+              shadow is cut along the disc's inner rim and the arc runs over the top
+              only, ending on the rim: Gargantua / Grok-logo style, not Saturn
+              (Chris, 2026-10-10). The last frame flows into the first.
+              VP9 WebM with alpha, so it sits on the header with no box around it.
+              Its own column beside the wordmark, as wide as the row allows, with
+              Simple / Full Control under it. Chris, 2026-10-10: behind the title
+              the text covered it, and squeezed beside the toggle it was tiny.
+              "Make it as big as you can without covering anything up."
+              Reduced motion gets the still. */}
+          <div className="omb-hole" aria-hidden="true">
+            <video
+              className="omb-hole-video"
+              src={bhLoop}
+              poster={bhStill}
+              autoPlay={!REDUCED_MOTION}
+              loop
+              muted
+              playsInline
+              disablePictureInPicture
+            />
+            <span className="omb-hole-glow" />
+          </div>
           <div className="omb-tier">
             <button type="button" aria-pressed={!showAll} onClick={() => setShowAll(false)}>Simple</button>
             <button type="button" aria-pressed={showAll} onClick={() => setShowAll(true)}>Full Control</button>
+          </div>
           </div>
         </header>
 

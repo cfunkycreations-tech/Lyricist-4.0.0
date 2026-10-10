@@ -5,6 +5,7 @@ import { cleanRefineOutput } from '../utils/refineClean.js';
 import { inspectGenerated, truncateAtCollapse } from '../utils/lyricSanity.js';
 import { stripReasoning, isMostlyReasoning } from '../utils/stripReasoning.js';
 import { blendPhrase } from '../utils/blend.js';
+import { chatCompletion, listModels, noEndpointsHelp } from './openrouter.js';
 
 export const lastGeneration = { model: null, provider: null, ok: true, reasons: [], dropped: 0, at: null, unfiltered: false };
 
@@ -129,15 +130,12 @@ function rankFreeModel(id) {
   return 7;
 }
 
-async function discoverFreeModels() {
+export async function discoverFreeModels() {
   if (freeModelCache) return freeModelCache;
   try {
     // Public catalogue: no auth, no cost, and it is the only source of truth
     // for what is free today.
-    const r = await fetch('https://openrouter.ai/api/v1/models');
-    if (!r.ok) return [];
-    const d = await r.json();
-    freeModelCache = (d?.data || [])
+    freeModelCache = (await listModels())
       .filter((m) => String(m?.pricing?.prompt) === '0'
                   && String(m?.pricing?.completion) === '0')
       // Verse needs room to breathe.
@@ -196,22 +194,9 @@ export function normalizeApiKey(raw) {
 }
 
 async function postCompletion(body, config) {
-  const key = normalizeApiKey(config?.openRouterApiKey);
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${key}`,
-      "HTTP-Referer": "https://fafoaudio.com",
-      "X-Title": "Lyricist Pro"
-    },
-    body: JSON.stringify(body)
-  });
-
-  if (response.ok) return { ok: true, result: await response.json() };
-  const errData = await response.json().catch(() => ({}));
-  const msg = errData?.error?.message || response.statusText || 'Unknown Provider Error';
-  return { ok: false, status: response.status, message: msg };
+  const r = await chatCompletion(body, { apiKey: normalizeApiKey(config?.openRouterApiKey) });
+  if (r.ok) return { ok: true, result: r.json || {} };
+  return { ok: false, status: r.status, message: r.message || 'Unknown Provider Error' };
 }
 
 /**
@@ -248,6 +233,9 @@ async function singleCall(messages, config, modelId, customTemp, customMax, room
   if (!attempt.ok) {
     if (isDataPolicyBlock(attempt.status, attempt.message)) {
       throw new Error(DATA_POLICY_HELP);
+    }
+    if (isNoEndpointsError(attempt.status, attempt.message)) {
+      throw new Error(await noEndpointsHelp(targetModel, normalizeApiKey(config?.openRouterApiKey)));
     }
     throw new Error(attempt.message || `API Error (${targetModel}): status ${attempt.status}`);
   }

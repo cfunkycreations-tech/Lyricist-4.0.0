@@ -1,3 +1,4 @@
+import { withFades } from '../../services/clipFade.js';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { WIZARD_CARDS } from './wizardCards.js';
 import { Pause, Play, RotateCcw, VolumeX, Volume2 } from 'lucide-react';
@@ -52,7 +53,7 @@ export default function OnboardingWizard({ onClose, onNavigate }) {
 
   // On each card: point the <audio> at its clip and (unless muted) play it.
   useEffect(() => {
-    const a = audioRef.current;
+    const a = withFades(audioRef.current);
     if (!a) return;
     setHasAudio(false);
     setPlaying(false);

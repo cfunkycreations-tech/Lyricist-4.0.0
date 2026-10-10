@@ -4,6 +4,7 @@ import { useLyricStore, DEFAULT_CONFIG } from '../../context/LyricStore.jsx';
 import { Save, RefreshCw, Key, Shield, HelpCircle, Hammer, FolderOpen } from 'lucide-react';
 import { notify, ask } from '../../services/dialog.js';
 import { normalizeApiKey } from '../../services/AIService.js';
+import { listModels, verifyModel, probeModel } from '../../services/openrouter.js';
 import { IMAGE_MODELS, DEFAULT_IMAGE_MODEL } from '../../services/GeminiService.js';
 import { PRISM_NAMES, ACCENT_PRESETS, accentHex, getPrism } from '../../services/prismTheme.js';
 import { isEnabled as analyticsEnabled, optIn, optOut } from '../../services/analytics.js';
@@ -16,8 +17,11 @@ import VstPlugins from './VstPlugins.jsx';
    they had already drifted apart, so the label under the slider was naming a
    colour pair the slider had stopped producing. One source, one truth. */
 
-const MODELS_CACHE_KEY = 'openrouter-models-cache';
-const MODELS_CACHE_TTL = 60 * 60 * 1000; // refresh from OpenRouter at most hourly
+const MODELS_CACHE_KEY = 'openrouter-models-cache-v3';   // v2 still held a dead pinned stealth model
+const STEALTH_IDS = ['stealth/space-bunny-alpha'];
+const MODELS_CACHE_TTL = 15 * 60 * 1000; // new/stealth models show up within 15 min
+
+try { localStorage.removeItem('openrouter-models-cache-v2'); } catch { /* storage blocked */ }
 
 function readModelsCache() {
   try {
@@ -27,16 +31,23 @@ function readModelsCache() {
   return null;
 }
 
-async function fetchOpenRouterModels(forceRefresh = false) {
+async function fetchOpenRouterModels(forceRefresh = false, apiKey = '') {
   const cached = readModelsCache();
   if (!forceRefresh && cached && Date.now() - cached.fetchedAt < MODELS_CACHE_TTL) {
     return cached.models;
   }
   try {
-    const res = await fetch("https://openrouter.ai/api/v1/models");
-    if (!res.ok) throw new Error(`OpenRouter answered HTTP ${res.status}`);
-    const data = await res.json();
-    const models = data.data || [];
+    // The SDK's catalogue, plus the account's own list when there is a key.
+    // Nothing is pinned by hand: a model shows up here only if OpenRouter
+    // lists it right now.
+    const models = await listModels(apiKey);
+    // Stealth models often sit outside every catalogue list. These are added
+    // when OpenRouter confirms they exist, never on trust.
+    const have = new Set(models.map((m) => m.id));
+    for (const id of STEALTH_IDS.filter((x) => !have.has(x))) {
+      const v = await verifyModel(id, apiKey);
+      if (v.state !== 'dead') models.push({ id, name: `${v.name && v.name !== id ? v.name : id} (stealth)` });
+    }
     try {
       localStorage.setItem(MODELS_CACHE_KEY, JSON.stringify({ fetchedAt: Date.now(), models }));
     } catch { /* storage full — cache is best-effort */ }
@@ -49,7 +60,12 @@ async function fetchOpenRouterModels(forceRefresh = false) {
 }
 
 function ModelSelector({ value, onChange }) {
+  const { config: selCfg } = useLyricStore();
+  const apiKey = normalizeApiKey(selCfg?.openRouterApiKey || '');
   const [models, setModels] = useState([]);
+  // Live check of the chosen model against OpenRouter, shown under the picker.
+  const [check, setCheck] = useState(null);
+  const [checkingId, setCheckingId] = useState('');
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -60,7 +76,7 @@ function ModelSelector({ value, onChange }) {
   const loadModels = (forceRefresh = false) => {
     setLoading(true);
     setErrorMsg('');
-    fetchOpenRouterModels(forceRefresh)
+    fetchOpenRouterModels(forceRefresh, apiKey)
       .then(res => {
         // Sort models: free first, then alphabetical
         const sorted = [...res].sort((a, b) => {
@@ -78,7 +94,29 @@ function ModelSelector({ value, onChange }) {
 
   useEffect(() => {
     loadModels();
-  }, []);
+  }, [apiKey]);
+
+  useEffect(() => {
+    if (!value) { setCheck(null); return undefined; }
+    let live = true;
+    setCheck({ state: 'checking' });
+    verifyModel(value, apiKey).then((r) => { if (live) setCheck(r); });
+    return () => { live = false; };
+  }, [value, apiKey]);
+
+  // A typed id is checked before it is saved. Dead is refused; offline is let
+  // through, since the next call will say so anyway.
+  const pickExactId = async (id) => {
+    setCheckingId(id);
+    const r = await verifyModel(id, apiKey);
+    const answers = r.state === 'dead' && (await probeModel(id, apiKey)) === 'answers';
+    setCheckingId('');
+    if (r.state === 'dead' && !answers) {
+      setErrorMsg(`${id} can't be used: ${r.reason}.`);
+      return;
+    }
+    onChange(id); setIsOpen(false); setSearch('');
+  };
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -129,6 +167,23 @@ function ModelSelector({ value, onChange }) {
           {isOpen ? '▲' : '▼'}
         </span>
       </button>
+
+      {check && check.state !== 'checking' && (
+        <div
+          role="status"
+          style={{
+            marginTop: 4,
+            fontSize: '0.72rem',
+            color: check.state === 'live' ? '#4ade80' : check.state === 'dead' ? '#f87171' : 'rgba(155,161,170,0.7)',
+          }}
+        >
+          {check.state === 'live' && (check.providers
+            ? `Live on OpenRouter · ${check.providers} provider${check.providers === 1 ? '' : 's'}`
+            : 'Listed on OpenRouter')}
+          {check.state === 'dead' && `Not usable: ${check.reason}. Pick another model.`}
+          {check.state === 'unknown' && `Couldn't check OpenRouter right now (${check.reason}).`}
+        </div>
+      )}
 
       {isOpen && (
         <div
@@ -235,6 +290,16 @@ function ModelSelector({ value, onChange }) {
                   Retry
                 </button>
               </div>
+            )}
+            {search.trim() && /^[\w.-]+\/[\w.:-]+$/.test(search.trim()) && !models.some(m => m.id === search.trim()) && (
+              <button
+                type="button"
+                onClick={() => pickExactId(search.trim())}
+                disabled={checkingId === search.trim()}
+                style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'rgba(155,161,170,0.15)', border: 'none', cursor: 'pointer', color: '#e6e8eb', fontSize: '0.8rem' }}
+              >
+                {checkingId === search.trim() ? 'Checking OpenRouter for ' : 'Use exact model ID: '}<b>{search.trim()}</b>
+              </button>
             )}
             {!loading && filtered.length === 0 && (
               <div style={{ padding: 10, color: 'rgba(155,161,170,0.4)', fontSize: '0.78rem', textAlign: 'center' }}>
