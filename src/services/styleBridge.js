@@ -91,7 +91,7 @@ const SUBGENRE_TO_BH = {
   'Bro-Country': 'Country rock', 'Outlaw Country': 'Outlaw country', 'Bluegrass': 'Bluegrass',
   'Country Pop': 'Country', 'Traditional Country': 'Honky tonk',
   // Rock
-  'Classic Rock': 'Classic rock', 'Hard Rock': 'Hard rock', 'Psychedelic Rock': 'Psychedelic rock',
+  'Classic Rock': 'Classic rock', 'Hard Rock': 'Hard rock', 'Stoner Rock': 'Stoner rock', 'Southern Rock': 'Southern rock', 'Blues Rock': 'Blues rock', 'Psychedelic Rock': 'Psychedelic rock',
   'Arena Rock': 'Classic rock', 'Progressive Rock': 'Progressive rock',
   // Gospel
   'Contemporary Gospel': 'Gospel', 'Urban Contemporary': 'Contemporary R&B',

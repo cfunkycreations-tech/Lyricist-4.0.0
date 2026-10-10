@@ -186,7 +186,7 @@ Type any word for perfect rhymes, slant rhymes, surprises. Paste lyrics and high
     id: 16, icon: 'library', title: 'Thesaurus: find a better word', tab: 'thesaurus', audio: 'card-11.mp3',
     script: `Thesaurus. Find a better word.
 
-Stuck on something flat? Get synonyms, opposites, and related sparks. Free. No AI key needed. You are welcome.`
+Stuck on something flat? Get synonyms, opposites, and related ideas. Free. No AI key needed. You are welcome.`
   },
   {
     id: 17, icon: 'book-a', title: 'Dictionary: what does it mean?', tab: 'dictionary', audio: 'card-12.mp3',

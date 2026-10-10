@@ -793,7 +793,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                   value={ghostTopic}
                   onChange={(e) => setGhostTopic(e.target.value)}
                   data-help="Optional. Give the ghostwriter a subject for the new song. Leave it blank and it'll pick a topic that fits the artist's usual vibe."
-                  placeholder="Optional Topic: e.g. childhood memories, neon rain..."
+                  placeholder="Optional Topic: e.g. childhood memories, a pawn shop guitar..."
                   style={{
                     flex: 1,
                     background: 'rgba(16,18,21,0.7)',

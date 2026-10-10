@@ -105,8 +105,8 @@ export default function GhostPilotLayer() {
              * data-demo attribute of its own, so type targets that directly.
              */
             const SEEDS = [
-              'neon signs', 'midnight drive', 'empty cup', 'cold rain', 'static',
-              'gravity', 'amber', 'river', 'fever', 'lattice',
+              'pawn shop', 'county line', 'empty cup', 'borrowed truck', 'static',
+              'gravel', 'amber', 'river', 'fever', 'lattice',
               'drums', 'glows', 'flows', 'symbol', 'number',
               'frantic', 'shiver', 'ember', 'hums', 'never',
             ].join(', ');

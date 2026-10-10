@@ -24,7 +24,7 @@ const SURPRISE_TOPICS = [
   'a stranger who looked like someone you used to know',
   'the space between two people at the same dinner table',
   'a promise made in a parking lot',
-  'the smell of rain on a sidewalk you grew up on'
+  'the smell of hot asphalt on a sidewalk you grew up on'
 ];
 
 function deriveTitle(sections) {
@@ -553,7 +553,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                 <textarea
                   value={seedPrompt}
                   onChange={(e) => setSeedPrompt(e.target.value)}
-                  placeholder="e.g. an empty diner at 3am, neon sign flickering in the window..."
+                  placeholder="e.g. an empty diner at 3am, a busted jukebox in the corner..."
                   rows={3}
                   style={{ width: '100%', background: 'rgba(16,18,21,0.7)', border: '1px solid rgba(231,165,64,0.22)', borderRadius: 8, padding: '7px 10px', fontSize: '0.78rem', color: '#e6e8eb', outline: 'none', resize: 'vertical' }}
                 />
