@@ -257,6 +257,15 @@ export const DEFAULT_CONFIG = {
   replicateApiKey: '',
 };
 
+const PICKS_KEY = 'lyricistPicks';
+/** One saved pick, or the fallback when there is none or it is the wrong shape. */
+function savedPick(key, fallback) {
+  try {
+    const v = JSON.parse(localStorage.getItem(PICKS_KEY) || '{}')[key];
+    return Array.isArray(fallback) ? (Array.isArray(v) ? v : fallback) : (typeof v === 'string' ? v : fallback);
+  } catch { return fallback; }
+}
+
 export const LyricStoreProvider = ({ children }) => {
   const [config, setConfigState] = useState(() => {
     const saved = localStorage.getItem('lyricistConfig');
@@ -385,9 +394,9 @@ export const LyricStoreProvider = ({ children }) => {
   // tell which of those three words was theirs. Empty reads as a question, which
   // is what it is. The pickers show the word Genre, Subgenre and Mood until they
   // are answered, and every prompt builder already copes with an unset one.
-  const [genreList, setGenreListRaw] = useState([]);
-  const [subgenreList, setSubgenreListRaw] = useState([]);
-  const [moodList, setMoodListRaw] = useState([]);
+  const [genreList, setGenreListRaw] = useState(() => savedPick('genreList', []));
+  const [subgenreList, setSubgenreListRaw] = useState(() => savedPick('subgenreList', []));
+  const [moodList, setMoodListRaw] = useState(() => savedPick('moodList', []));
 
   /**
    * THE SAME CHOICES, IN BLACK HOLE STUDIOS' VOCABULARY.
@@ -400,11 +409,11 @@ export const LyricStoreProvider = ({ children }) => {
    * side moves. Setting one writes the other; nothing polls and nothing loops,
    * because the translation happens in the setter rather than in an effect.
    */
-  const [bhGenreList, setBhGenreListRaw] = useState([]);
-  const [bhMoodList, setBhMoodListRaw] = useState([]);
+  const [bhGenreList, setBhGenreListRaw] = useState(() => savedPick('bhGenreList', []));
+  const [bhMoodList, setBhMoodListRaw] = useState(() => savedPick('bhMoodList', []));
   // Voice has no Songwriter counterpart — it only means something once a machine
   // is singing — so it is stored, not translated.
-  const [voiceList, setVoiceList] = useState([]);
+  const [voiceList, setVoiceList] = useState(() => savedPick('voiceList', []));
 
   const asList = (next, prev) => (typeof next === 'function' ? next(prev) : next) || [];
 
@@ -482,8 +491,8 @@ export const LyricStoreProvider = ({ children }) => {
   const setMood = (m) => setMoodList(m ? [m] : []);
   const [structureTemplate, setStructureTemplate] = useState(prebuiltTemplates[0].id);
   const [customStructure, setCustomStructure] = useState(prebuiltTemplates[0].structure);
-  const [topic, setTopic] = useState('');
-  const [artistRef, setArtistRef] = useState('');
+  const [topic, setTopic] = useState(() => savedPick('topic', ''));
+  const [artistRef, setArtistRef] = useState(() => savedPick('artistRef', ''));
   const [notes, setNotes] = useState('');
 
   // Rhyme configurations
@@ -554,6 +563,17 @@ export const LyricStoreProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('lyricistLyrics', JSON.stringify(lyrics));
   }, [lyrics]);
+
+  // The song's tags live as long as its words do. Lyrics were saved and the
+  // genre, mood, topic and artist picks were not, so a reopened song came
+  // back untagged in every tab.
+  useEffect(() => {
+    try {
+      localStorage.setItem(PICKS_KEY, JSON.stringify({
+        genreList, subgenreList, moodList, bhGenreList, bhMoodList, voiceList, topic, artistRef,
+      }));
+    } catch { /* storage full or blocked: the picks still work this session */ }
+  }, [genreList, subgenreList, moodList, bhGenreList, bhMoodList, voiceList, topic, artistRef]);
 
   useEffect(() => {
     localStorage.setItem('lyricistTipsEnabled', String(tipsEnabled));
