@@ -1114,8 +1114,10 @@ export default function OneManBand() {
           <div className="omb-id">
             {/* THE BLACK HOLE.
                 A rendered loop, not CSS: scripts/blackhole_textures.py makes the
-                disc and lensed-halo images, the same rig as scripts/blackhole_c4d.py
-                spins them for 10 seconds, and the last frame flows into the first.
+                disc and lensed-halo images, scripts/blackhole_c4d.py spins them for
+                10 seconds, and Chris rendered it in Cinema 4D (2026-10-10). The last
+                frame flows into the first. scripts/blackhole_render.py makes the
+                same loop without C4D if it ever needs re-rendering here.
                 VP9 WebM with alpha, so it sits on the header with no box around it.
                 Reduced motion gets the still. */}
             <div className="omb-hole" aria-hidden="true">
