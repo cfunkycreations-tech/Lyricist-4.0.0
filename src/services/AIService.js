@@ -2,6 +2,7 @@
 // Enforces: Law of Subtext, Law of Human Paradox, Conversational Cadence
 
 import { cleanRefineOutput } from '../utils/refineClean.js';
+import { NO_CLICHES } from './cliches.js';
 import { inspectGenerated, truncateAtCollapse } from '../utils/lyricSanity.js';
 import { stripReasoning, isMostlyReasoning } from '../utils/stripReasoning.js';
 import { blendPhrase } from '../utils/blend.js';
@@ -470,13 +471,13 @@ SONGWRITING CONFIGURATION:
 - Cadence Notes: ${store.cadenceNotes || "none"}
 - Topic / Concept: ${store.topic || "generic human tension"}
 - Artist Reference: ${store.artistRef || "none"}
-`;
+${store.sunoTags ? `- Style Tags (the exact sound of this song, these win over the genre and mood above): ${store.sunoTags}\n` : ''}`;
 }
 
 const HUMAN_LYRICIST_RULES = `
 You are the AI Writing Assistant inside Lyricist Pro.
 Focus on subtext, physical friction, sensory details, and conversational cadence.
-Do not use cheap clichés (neon, shadows, whispers, echoes, sparks, cage, gravity, chains, storm).
+${NO_CLICHES}
 `;
 
 export async function generateFullSong(store) {
@@ -484,7 +485,7 @@ export async function generateFullSong(store) {
   const context = buildPromptContext(store);
   const structureSequence = (store.customStructure || ['verse', 'chorus', 'verse', 'chorus']).map(s => s.toUpperCase()).join(" -> ");
 
-  const systemPrompt = `You are a professional lyricist and songwriter. Output lyrics only. Clear section markers like [Verse 1], [Chorus], etc.`;
+  const systemPrompt = `You are a professional lyricist and songwriter. Output lyrics only. Clear section markers like [Verse 1], [Chorus], etc.\n${NO_CLICHES}`;
   const userPrompt = `Write the full song lyrics based on this context:\n${context}\n\nSTRUCTURE:\n${structureSequence}`;
 
   const messages = [
@@ -818,7 +819,7 @@ After the lyrics, on a new line write exactly this separator and nothing else:
 Then on the very next line write 10-14 comma-separated Suno AI style keywords. STRICT RULES for the tags: NO artist names, NO real person names, NO celebrity names whatsoever. Only include: genre, subgenre, production style, mood, tempo, instruments, vocal style, era. One line only.`;
 
   const rawResult = await callAI([
-    { role: 'system', content: 'You are an elite ghostwriter who captures the raw, authentic artistic voice, flow, cadence, vocabulary, and stylistic nuances of specific musical artists. You despise generic AI-sounding imitations. Focus on subtext, friction, and rhythm.' },
+    { role: 'system', content: 'You are an elite ghostwriter who captures the raw, authentic artistic voice, flow, cadence, vocabulary, and stylistic nuances of specific musical artists. You despise generic AI-sounding imitations. Focus on subtext, friction, and rhythm.\n' + NO_CLICHES },
     { role: 'user', content: prompt }
   ], store.config);
 

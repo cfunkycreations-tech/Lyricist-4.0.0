@@ -25,6 +25,7 @@
 import { assertApiKey } from './AIService.js';
 import { stripReasoning } from '../utils/stripReasoning.js';
 import { availableGhostActions } from './ghostBus.js';
+import { NO_CLICHES } from './cliches.js';
 import { examplesForPrompt } from './minimaxExamples.js';
 import { chatCompletion, listModels, noEndpointsHelp } from './openrouter.js';
 
@@ -202,6 +203,8 @@ function systemPrompt(tab, context) {
   return `You are the Ghost: the guide living inside Lyricist Pro, a commercial songwriting
 workstation built by Funk Audio Flow OpSec (FAFO) in Austin, Texas. You are talking to the
 person using it.
+
+WORDS YOU NEVER USE, in lyrics, in topics you pick and in anything you write or say: ${NO_CLICHES}
 
 WHO YOU ARE TALKING TO. Songwriters, often beginners, often not technical. Never
 use jargon without saying what it means. Never tell someone to edit a file, run a

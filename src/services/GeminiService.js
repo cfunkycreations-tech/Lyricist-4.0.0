@@ -6,6 +6,7 @@
 
 import { callAI, buildPromptContext, parseSectionsFromText, assertApiKey, normalizeApiKey } from './AIService.js';
 import { blendLabel } from '../utils/blend.js';
+import { NO_CLICHES } from './cliches.js';
 import { chatCompletion, listModels } from './openrouter.js';
 import { stripReasoning, isMostlyReasoning } from '../utils/stripReasoning.js';
 import { modelFit } from './modelFit.js';
@@ -84,7 +85,7 @@ STRICT WRITING LAWS:
 1. RHYTHMIC CADENCE: Write lines with a natural, performable vocal groove and consistent metric structure per line.
 2. ORGANIC RHYMES: Avoid predictable, infantile perfect rhymes (cat/hat, day/play). Favor slant rhymes, near-rhymes, and multi-syllabic rhymes.
 3. THE LAW OF SUBTEXT: Never state an emotion directly (no "I am sad", "my broken heart"). Show it through physical friction, micro-actions, sensory detail.
-4. ZERO COSMIC CLICHES: Never use neon, shadows, whispers, echoes, sparks, cage, gravity, chains, storm.
+4. ZERO CLICHES: ${NO_CLICHES}
 5. HUMAN PARADOX & DEPTH: Raw human conflict and contradiction. Avoid clean, preachy endings.
 6. SECTION COMPOSITION: Label each section clearly (e.g. [Intro], [Verse 1], [Chorus], [Bridge], [Outro]). Output only the raw lyrics — no commentary.`;
 

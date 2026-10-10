@@ -494,6 +494,10 @@ export const LyricStoreProvider = ({ children }) => {
   const [topic, setTopic] = useState(() => savedPick('topic', ''));
   const [artistRef, setArtistRef] = useState(() => savedPick('artistRef', ''));
   const [notes, setNotes] = useState('');
+  // The song's own Suno tags, word for word, as Ghost Rider wrote them. The
+  // pickers can only name what is on their lists (Clutch came out "R&B / Soul");
+  // these say exactly what the song is, and go into every prompt.
+  const [sunoTags, setSunoTags] = useState(() => savedPick('sunoTags', ''));
 
   // Rhyme configurations
   const [rhymeScheme, setRhymeScheme] = useState(rhymeSchemes[0]);
@@ -570,10 +574,10 @@ export const LyricStoreProvider = ({ children }) => {
   useEffect(() => {
     try {
       localStorage.setItem(PICKS_KEY, JSON.stringify({
-        genreList, subgenreList, moodList, bhGenreList, bhMoodList, voiceList, topic, artistRef,
+        genreList, subgenreList, moodList, bhGenreList, bhMoodList, voiceList, topic, artistRef, sunoTags,
       }));
     } catch { /* storage full or blocked: the picks still work this session */ }
-  }, [genreList, subgenreList, moodList, bhGenreList, bhMoodList, voiceList, topic, artistRef]);
+  }, [genreList, subgenreList, moodList, bhGenreList, bhMoodList, voiceList, topic, artistRef, sunoTags]);
 
   useEffect(() => {
     localStorage.setItem('lyricistTipsEnabled', String(tipsEnabled));
@@ -650,7 +654,7 @@ export const LyricStoreProvider = ({ children }) => {
   const clearSong = () => {
     cleared.current = {
       depth: undoStack.length + 1,
-      song: { genreList, subgenreList, moodList, bhGenreList, bhMoodList, voiceList, topic, artistRef, notes },
+      song: { genreList, subgenreList, moodList, bhGenreList, bhMoodList, voiceList, topic, artistRef, notes, sunoTags },
     };
     pushState([]);
     setStylePicks({ genres: [], subgenres: [], moods: [] });
@@ -658,6 +662,7 @@ export const LyricStoreProvider = ({ children }) => {
     setTopic('');
     setArtistRef('');
     setNotes('');
+    setSunoTags('');
   };
 
   const undo = () => {
@@ -674,6 +679,7 @@ export const LyricStoreProvider = ({ children }) => {
       setTopic(s.topic);
       setArtistRef(s.artistRef);
       setNotes(s.notes);
+      setSunoTags(s.sunoTags || '');
     }
     const prev = undoStack[undoStack.length - 1];
     setUndoStack(prevStack => prevStack.slice(0, -1));
@@ -834,6 +840,7 @@ export const LyricStoreProvider = ({ children }) => {
       topic, setTopic,
       artistRef, setArtistRef,
       notes, setNotes,
+      sunoTags, setSunoTags,
       
       // Rhymes
       rhymeScheme, setRhymeScheme,
