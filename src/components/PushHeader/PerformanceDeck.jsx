@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { getAudioContext, resumeAudio } from '../../services/audioEngine.js';
-import { triggerSample } from '../../services/drumEngine.js';
 import { listPacks, createPack, addSample, getSampleBuffer } from '../../services/sampleLibrary.js';
 
 /**
@@ -8,8 +7,12 @@ import { listPacks, createPack, addSample, getSampleBuffer } from '../../service
  *
  * GarageBand Live Loops style. Top: clip grid (tap = launch on the next bar,
  * column buttons launch a whole column). Bottom FX panel: Filter XY | Echo and
- * High-pass pills around RESET, Reverse, Scratch (press = fast loop-skip, drag
- * = scrub speed) and Stop | Repeater XY (slow to fast the longer you slide).
+ * High-pass pills around RESET, Reverse, Scratch (hold = the record rocked
+ * back and forth under the needle, drag sideways = faster hand), Stop (the
+ * needle ripped across the record) | Repeater XY (Y = slow to fast, and faster
+ * the longer you hold; X = gate). Scratch, Stop and Repeater cut up the clips'
+ * own audio; the clips keep running silently underneath so they come back in
+ * time on release.
  * Pointer events, so mouse, pen and touch all work.
  */
 
@@ -26,7 +29,7 @@ const reversed = (buf) => {
 const read = () => { try { return JSON.parse(localStorage.getItem(CLIPS_KEY)) || {}; } catch { return {}; } };
 const write = (v) => { try { localStorage.setItem(CLIPS_KEY, JSON.stringify(v)); } catch { /* storage blocked */ } };
 
-function XYPad({ label, hint, x, y, active, onChange, onEnd, color }) {
+function XYPad({ label, hint, x, y, on, onChange, onEnd, color }) {
   const ref = useRef(null);
   const pos = (e) => {
     const r = ref.current.getBoundingClientRect();
@@ -35,10 +38,12 @@ function XYPad({ label, hint, x, y, active, onChange, onEnd, color }) {
   return (
     <div
       ref={ref}
-      className={`pd-xy${active ? ' is-active' : ''}`}
+      className={`pd-xy${on ? ' is-active' : ''}`}
       style={{ '--c': color }}
       onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); onChange(...pos(e), true); }}
-      onPointerMove={(e) => { if (active) onChange(...pos(e), false); }}
+      // Follows the drag while this pad holds the pointer. It used to wait for an
+      // `active` prop nobody passed (the state is `on`), so a slide did nothing.
+      onPointerMove={(e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) onChange(...pos(e), false); }}
       onPointerUp={onEnd}
       onPointerCancel={onEnd}
       role="application"
@@ -93,7 +98,9 @@ export default function PerformanceDeck({ out, tempo, filter, stutter, echo, set
   const fileFor = useRef(0);
   const input = useRef(null);
   const timers = useRef([]);
-  const drag = useRef(null);
+  const gains = useRef(new Map());                           // cell -> the clip's GainNode
+  const rep = useRef(null);                                  // Repeater in progress
+  const scratch = useRef(null);                              // Scratch in progress
 
   const bar = () => (60 / tempo) * 4;
   const nextBar = () => {
@@ -122,6 +129,8 @@ export default function PerformanceDeck({ out, tempo, filter, stutter, echo, set
     const running = runs.current;
     return () => {
       pending.forEach(clearTimeout);
+      clearInterval(rep.current?.timer);
+      clearInterval(scratch.current?.timer);
       running.forEach((src) => { try { src.stop(); } catch { /* ended */ } });
       running.clear();
     };
@@ -144,15 +153,28 @@ export default function PerformanceDeck({ out, tempo, filter, stutter, echo, set
     if (!src) return;
     try { src.stop(when); } catch { /* ended */ }
     runs.current.delete(cell);
+    gains.current.delete(cell);
     const ms = Math.max(0, (when - getAudioContext().currentTime) * 1000);
     timers.current.push(setTimeout(() => setState((s) => { const n = { ...s }; if (n[cell] === 'stopping') delete n[cell]; return n; }), ms));
     setState((s) => ({ ...s, [cell]: 'stopping' }));
   };
 
+  // Start a clip looping at `when`, `offset` seconds into `buf`.
+  const startClip = (cell, buf, when, offset = 0) => {
+    const ctx = getAudioContext();
+    const src = ctx.createBufferSource();
+    src.buffer = buf; src.loop = true;
+    const g = ctx.createGain(); g.gain.value = 0.9;
+    src.connect(g).connect(out());
+    src.start(when, offset);
+    runs.current.set(cell, src);
+    gains.current.set(cell, g);
+    began.current.set(cell, when - offset);
+  };
+
   const launch = (cell, when) => {
     const ctx = getAudioContext();
-    runs.current.set(cell, triggerSample(ctx, out(), bufFor(cell), when, { loop: true, velocity: 0.9 }));
-    began.current.set(cell, when);
+    startClip(cell, bufFor(cell), when);
     setState((s) => ({ ...s, [cell]: 'queued' }));
     timers.current.push(setTimeout(() => setState((s) => (runs.current.has(cell) ? { ...s, [cell]: 'playing' } : s)), Math.max(0, (when - ctx.currentTime) * 1000)));
   };
@@ -183,9 +205,70 @@ export default function PerformanceDeck({ out, tempo, filter, stutter, echo, set
     write(next); setClips(next);
   };
 
-  const stopAll = () => {
+  // Where a clip's loop is right now, on the bar grid, in the buffer it plays.
+  const gridPos = (c) => {
+    const dur = bufs.current.get(c).duration;
+    return ((getAudioContext().currentTime - began.current.get(c)) % dur + dur) % dur;
+  };
+  // A clip launched on the next bar has not started yet: the FX leave it alone.
+  const sounding = () => [...runs.current.keys()].filter((c) => bufs.current.get(c) && began.current.get(c) <= getAudioContext().currentTime);
+  // Fade a clip's own output (it keeps running underneath, so it stays in time).
+  const level = (c, v, tc = 0.006) => {
+    const g = gains.current.get(c);
+    try { g?.gain.setTargetAtTime(v, getAudioContext().currentTime, tc); } catch { /* ctx closed */ }
+  };
+  // One slice of a buffer at `when`, `len` seconds long, with an optional
+  // playback-rate curve: the building block of Repeater, Scratch and Stop.
+  const grain = (buf, offset, len, when, rates, lvl = 0.9) => {
+    const ctx = getAudioContext();
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const g = ctx.createGain();
+    const fade = Math.min(0.006, len / 4);
+    g.gain.setValueAtTime(0, when);
+    g.gain.linearRampToValueAtTime(lvl, when + fade);
+    g.gain.setValueAtTime(lvl, when + len - fade);
+    g.gain.linearRampToValueAtTime(0, when + len);
+    if (rates) src.playbackRate.setValueCurveAtTime(Float32Array.from(rates), when, len);
+    src.connect(g).connect(out());
+    const dur = buf.duration;
+    src.start(when, ((offset % dur) + dur) % dur);
+    src.stop(when + len + 0.01);
+  };
+  // Swap a running clip onto a fresh source playing `buf` from `offset`, now.
+  const replay = (c, buf, offset) => {
+    try { runs.current.get(c).stop(); } catch { /* ended */ }
+    startClip(c, buf, getAudioContext().currentTime, offset);
+  };
+
+  // STOP: the needle dragged across the record. The clips' own sound yanked
+  // backwards, fast and dying, over a burst of needle noise, then silence.
+  const needle = (when) => {
+    const ctx = getAudioContext();
+    const n = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.42), ctx.sampleRate);
+    const d = n.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource(); src.buffer = n;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 2.2;
+    bp.frequency.setValueCurveAtTime(Float32Array.from([700, 4200, 1300, 2800, 350]), when, 0.38);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, when);
+    g.gain.linearRampToValueAtTime(0.5, when + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.001, when + 0.4);
+    src.connect(bp).connect(g).connect(out());
+    src.start(when); src.stop(when + 0.42);
+  };
+  const stopAll = async () => {
+    await resumeAudio();
+    endRepeat(); endScratch();
     const now = getAudioContext().currentTime;
-    [...runs.current.keys()].forEach((c) => stopCell(c, now));
+    sounding().forEach((c) => {
+      const back = bufFor(c, !rev);
+      grain(back, back.duration - gridPos(c), 0.34, now, [3.4, 1.6, 0.12]);
+      level(c, 0, 0.004);
+    });
+    needle(now);
+    [...runs.current.keys()].forEach((c) => stopCell(c, now + 0.03));
     setDisplay('Stopped');
   };
 
@@ -193,46 +276,89 @@ export default function PerformanceDeck({ out, tempo, filter, stutter, echo, set
   const flip = () => {
     const r = !rev;
     setRev(r);
-    const ctx = getAudioContext();
-    [...runs.current.keys()].forEach((c) => {
-      try { runs.current.get(c).stop(); } catch { /* ended */ }
-      const dur = bufs.current.get(c).duration;
-      const pos = ((ctx.currentTime - began.current.get(c)) % dur + dur) % dur;
-      const again = ctx.createBufferSource();
-      again.buffer = bufFor(c, r); again.loop = true;
-      const g = ctx.createGain(); g.gain.value = 0.9;
-      again.connect(g).connect(out());
-      again.start(ctx.currentTime, dur - pos);
-      began.current.set(c, ctx.currentTime - (dur - pos));
-      runs.current.set(c, again);
-    });
+    sounding().forEach((c) => replay(c, bufFor(c, r), bufs.current.get(c).duration - gridPos(c)));
     setDisplay(r ? 'Reverse' : 'Forward');
   };
 
-  // Scratch: press = fast loop-skip on the playing clips, drag sideways = speed.
-  const scratchDown = (e) => {
+  // REPEATER: beat-repeat. Grabs the slice each playing clip is on and fires
+  // it again and again. Y = rate, one beat up to a 32nd, and it speeds up the
+  // longer you hold; X = gate, how much of each repeat sounds.
+  const repeatClips = (x, y, first) => {
+    if (!first) { if (rep.current) { rep.current.x = x; rep.current.y = y; } return !!rep.current; }
+    endRepeat();
+    const cells = sounding();
+    if (!cells.length) return false;
+    const st = { cells, at: new Map(cells.map((c) => [c, gridPos(c)])), x, y, t0: performance.now(), next: getAudioContext().currentTime + 0.01 };
+    cells.forEach((c) => level(c, 0));
+    const pump = () => {
+      const now = getAudioContext().currentTime;
+      while (st.next < now + 0.08) {
+        const held = Math.min(1, (performance.now() - st.t0) / 1800);
+        const period = bar() / (4 * Math.pow(8, Math.min(1, st.y * (0.6 + 0.4 * held))));
+        const len = Math.max(0.012, period * (0.2 + 0.8 * st.x));
+        st.cells.forEach((c) => { const b = bufFor(c); if (b) grain(b, st.at.get(c), len, st.next); });
+        st.next += period;
+      }
+    };
+    pump();
+    st.timer = setInterval(pump, 25);
+    rep.current = st;
+    return true;
+  };
+  const endRepeat = () => {
+    const st = rep.current;
+    if (!st) return;
+    clearInterval(st.timer);
+    rep.current = null;
+    st.cells.forEach((c) => level(c, 0.9));
+  };
+
+  // SCRATCH: hold and the record rocks back and forth under the needle on the
+  // slice it was on, forwards then backwards, each stroke speeding up and
+  // easing off like a hand. Drag right = faster hand, left = slower.
+  const scratchDown = async (e) => {
     e.currentTarget.setPointerCapture(e.pointerId);
-    const ctx = getAudioContext();
-    const slice = bar() / 16;
-    drag.current = { x: e.clientX };
-    runs.current.forEach((src, c) => {
-      const dur = bufs.current.get(c).duration;
-      const pos = ((ctx.currentTime - began.current.get(c)) % dur + dur) % dur;
-      src.loopStart = pos; src.loopEnd = Math.min(dur, pos + slice);
-    });
+    await resumeAudio();
+    endScratch();
+    const cells = sounding();
+    if (!cells.length) { setDisplay('Launch a clip, then scratch it.'); return; }
+    const st = { cells, at: new Map(cells.map((c) => [c, gridPos(c)])), x: e.clientX, speed: 1, fwd: true, next: getAudioContext().currentTime + 0.005 };
+    cells.forEach((c) => level(c, 0));
+    const pump = () => {
+      const now = getAudioContext().currentTime;
+      while (st.next < now + 0.06) {
+        const stroke = 0.13 / st.speed;
+        const travel = bar() / 16;
+        const r = travel / stroke;
+        const curve = [0.05, 2 * r, 0.05];
+        st.cells.forEach((c) => {
+          const b = bufFor(c);
+          if (!b) return;
+          const p = st.at.get(c);
+          if (st.fwd) grain(b, p, stroke, st.next, curve);
+          else grain(bufFor(c, !rev), b.duration - p - travel, stroke, st.next, curve);
+        });
+        st.fwd = !st.fwd;
+        st.next += stroke;
+      }
+    };
+    pump();
+    st.timer = setInterval(pump, 20);
+    scratch.current = st;
     setScr(true);
   };
   const scratchMove = (e) => {
-    if (!drag.current) return;
-    const rate = Math.min(3, Math.max(0.05, 1 + (e.clientX - drag.current.x) / 70));
-    runs.current.forEach((src) => { src.playbackRate.value = rate; });
+    const st = scratch.current;
+    if (st) st.speed = Math.min(3, Math.max(0.4, 1 + (e.clientX - st.x) / 70));
   };
-  const scratchUp = () => {
-    if (!drag.current) return;
-    drag.current = null;
-    runs.current.forEach((src) => { src.loopStart = 0; src.loopEnd = 0; src.playbackRate.value = 1; });
-    setScr(false);
+  const endScratch = () => {
+    const st = scratch.current;
+    if (!st) return;
+    clearInterval(st.timer);
+    scratch.current = null;
+    st.cells.forEach((c) => level(c, 0.9));
   };
+  const scratchUp = () => { endScratch(); setScr(false); };
 
   const reset = () => {
     setEcho(0); setHp(0);
@@ -284,17 +410,17 @@ export default function PerformanceDeck({ out, tempo, filter, stutter, echo, set
             <button type="button" className="pd-b pd-reset" onClick={reset}>Reset</button>
             <button type="button" className={`pd-b${rev ? ' on' : ''}`} onClick={flip} title="Reverse">◀</button>
             <button
-              type="button" className={`pd-b${scr ? ' on' : ''}`} title="Scratch: press = skip-loop, drag = speed"
+              type="button" className={`pd-b${scr ? ' on' : ''}`} title="Scratch: hold = scratch the playing clips, drag sideways = speed"
               onPointerDown={scratchDown} onPointerMove={scratchMove} onPointerUp={scratchUp} onPointerCancel={scratchUp}
             >◉</button>
-            <button type="button" className="pd-b" onClick={stopAll} title="Stop">■</button>
+            <button type="button" className="pd-b" onClick={stopAll} title="Stop: needle scratch, the record stops">■</button>
           </div>
           <VSlider label="High-pass" value={hp} onChange={setHp} color="#7ee06a" />
         </div>
         <XYPad
-          label="Repeater" hint="slide: slow → fast · X gate" color="#ff4f8b" {...right}
-          onChange={(x, y, first) => { setRight({ x, y, on: true }); stutter(x, y, first); }}
-          onEnd={() => { setRight((r) => ({ ...r, on: false })); stutter(0, 0, false, true); }}
+          label="Repeater" hint="up: slow → fast · X gate" color="#ff4f8b" {...right}
+          onChange={(x, y, first) => { setRight({ x, y, on: true }); stutter(x, y, first, false, repeatClips(x, y, first)); }}
+          onEnd={() => { setRight((r) => ({ ...r, on: false })); endRepeat(); stutter(0, 0, false, true); }}
         />
       </div>
     </div>

@@ -188,7 +188,9 @@ function TabPane({ id, active, opened, children }) {
 
   if (!opened.has(id)) return null;
   return (
-    <div ref={ref} data-tab-pane={id} style={{ display: isActive ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}>
+    // overflowY auto: a tab with no scroller of its own still scrolls, inside
+    // its pane, now that the window no longer grows to fit it.
+    <div ref={ref} data-tab-pane={id} style={{ display: isActive ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column', overflowY: 'auto' }}>
       {children}
     </div>
   );
@@ -326,7 +328,11 @@ function MainLayout() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ color: '#e6e8eb', position: 'relative', overflow: 'hidden' }}>
+    // The window is the frame: exactly 100vh, never taller. With only a
+    // min-height the whole app grew to the tallest tab and the PAGE scrolled,
+    // header and all, so the tab's own scroller never moved and anything below
+    // the fold (Ghost Rider's Write section under Style DNA) was out of reach.
+    <div className="min-h-screen flex flex-col" style={{ color: '#e6e8eb', position: 'relative', overflow: 'hidden', height: '100vh' }}>
       {/* Phone navigation. An overlay, not a wrapper - see MobileShell.jsx. */}
       {isMobile && (
         <MobileShell
