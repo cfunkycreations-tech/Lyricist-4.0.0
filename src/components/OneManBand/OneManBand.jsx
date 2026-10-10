@@ -1112,32 +1112,34 @@ export default function OneManBand() {
 
         <header className="omb-top">
           <div className="omb-id">
-            {/* THE BLACK HOLE.
-                A rendered loop, not CSS: scripts/blackhole_textures.py makes the
-                disc and lensed-halo images, scripts/blackhole_c4d.py spins them for
-                10 seconds, and Chris rendered it in Cinema 4D (2026-10-10). The last
-                frame flows into the first. scripts/blackhole_render.py makes the
-                same loop without C4D if it ever needs re-rendering here.
-                VP9 WebM with alpha, so it sits on the header with no box around it.
-                Reduced motion gets the still. */}
-            <div className="omb-hole" aria-hidden="true">
-              <video
-                className="omb-hole-video"
-                src={bhLoop}
-                poster={bhStill}
-                autoPlay={!REDUCED_MOTION}
-                loop
-                muted
-                playsInline
-                disablePictureInPicture
-              />
-              <span className="omb-hole-glow" />
-            </div>
             <div className="omb-brand">Lyricist Pro 4.2.0</div>
             <h1 className="omb-title">Black Hole Studios</h1>
             <p className="omb-tag">
               Your words, sung by a full band. <b>Free forever.</b> Faster if you have the hardware.
             </p>
+          </div>
+          {/* THE BLACK HOLE.
+              A rendered loop, not CSS: scripts/blackhole_textures.py makes the
+              disc and lensed-halo images, scripts/blackhole_c4d.py spins them for
+              10 seconds, and Chris rendered it in Cinema 4D (2026-10-10). The last
+              frame flows into the first. scripts/blackhole_render.py makes the
+              same loop without C4D if it ever needs re-rendering here.
+              VP9 WebM with alpha, so it sits on the header with no box around it.
+              Its own slot in the header, in the open space between the wordmark
+              and Simple / Full Control: behind the title, the text covered it.
+              Reduced motion gets the still. */}
+          <div className="omb-hole" aria-hidden="true">
+            <video
+              className="omb-hole-video"
+              src={bhLoop}
+              poster={bhStill}
+              autoPlay={!REDUCED_MOTION}
+              loop
+              muted
+              playsInline
+              disablePictureInPicture
+            />
+            <span className="omb-hole-glow" />
           </div>
           <div className="omb-tier">
             <button type="button" aria-pressed={!showAll} onClick={() => setShowAll(false)}>Simple</button>
