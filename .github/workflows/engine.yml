@@ -7,13 +7,12 @@
 # it travels with the repo and release:creator ships it without Visual Studio.
 name: Build audio engine
 
+# Run by hand (Actions → Build audio engine → Run workflow). Not on push: the
+# account's Actions are locked over billing (2026-10-10), so every push would
+# show a red check that says nothing about the code. The committed prebuilt/
+# copy is what ships either way.
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'juce-backend/src/**'
-      - 'juce-backend/CMakeLists.txt'
-      - '.github/workflows/engine.yml'
 
 permissions:
   contents: write
@@ -66,7 +65,6 @@ jobs:
           path: juce-backend/prebuilt/
 
       - name: Commit the engine to this branch
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
