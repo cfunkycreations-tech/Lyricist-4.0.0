@@ -1118,6 +1118,7 @@ export default function OneManBand() {
               Your words, sung by a full band. <b>Free forever.</b> Faster if you have the hardware.
             </p>
           </div>
+          <div className="omb-side">
           {/* THE BLACK HOLE.
               A rendered loop, not CSS: scripts/blackhole_textures.py makes the
               disc and lensed-halo images, scripts/blackhole_c4d.py spins them for
@@ -1125,8 +1126,10 @@ export default function OneManBand() {
               frame flows into the first. scripts/blackhole_render.py makes the
               same loop without C4D if it ever needs re-rendering here.
               VP9 WebM with alpha, so it sits on the header with no box around it.
-              Its own slot in the header, in the open space between the wordmark
-              and Simple / Full Control: behind the title, the text covered it.
+              Its own column beside the wordmark, as wide as the row allows, with
+              Simple / Full Control under it. Chris, 2026-10-10: behind the title
+              the text covered it, and squeezed beside the toggle it was tiny.
+              "Make it as big as you can without covering anything up."
               Reduced motion gets the still. */}
           <div className="omb-hole" aria-hidden="true">
             <video
@@ -1144,6 +1147,7 @@ export default function OneManBand() {
           <div className="omb-tier">
             <button type="button" aria-pressed={!showAll} onClick={() => setShowAll(false)}>Simple</button>
             <button type="button" aria-pressed={showAll} onClick={() => setShowAll(true)}>Full Control</button>
+          </div>
           </div>
         </header>
 
