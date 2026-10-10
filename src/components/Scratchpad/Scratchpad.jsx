@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Trash2, Check } from 'lucide-react';
-import { ask } from '../../services/dialog.js';
+import { Copy, Trash2, Check, Save } from 'lucide-react';
+import { ask, notify } from '../../services/dialog.js';
+import { saveText } from '../../services/saveText.js';
 
 /* ── Legal pad geometry ──────────────────────────────────────────────
    RULE_H is the single source of truth: the ruled lines are drawn every
@@ -123,7 +124,7 @@ export default function Scratchpad() {
               textOverflow: 'ellipsis'
             }}
           >
-            Jot lines, hooks, ideas — saves automatically as you type
+            Jot lines, hooks, ideas. Kept until you close the app, so press Save to keep them
           </p>
         </div>
 
@@ -137,6 +138,17 @@ export default function Scratchpad() {
           >
             {copied ? <Check size={12} /> : <Copy size={12} />}
             {copied ? 'Copied!' : 'Copy All'}
+          </button>
+
+          <button
+            onClick={async () => { const r = await saveText('Scratchpad', text); notify(r.said, { tone: r.ok ? 'success' : 'error' }); }}
+            disabled={!text}
+            data-help="Saves the notepad as a text file in Documents\Lyricist Lyrics. Closing the app clears the notepad."
+            className="btn-neon-cyan"
+            style={padBtn(false)}
+          >
+            <Save size={12} />
+            Save
           </button>
 
           <button
@@ -159,7 +171,7 @@ export default function Scratchpad() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           data-help="Your big blank writing space. Just click in and type — it works like any notes app, and it saves as you go."
-          placeholder={"Start writing...\n\nDrop lines, hooks, verses, ideas — anything. It saves automatically so nothing gets lost.\n\nPerfect for capturing that bar that just hit you."}
+          placeholder={"Start writing...\n\nDrop lines, hooks, verses, ideas — anything. Press Save to keep it: closing the app clears this page.\n\nPerfect for capturing that bar that just hit you."}
           spellCheck={false}
           style={{
             flex: 1,

@@ -10,6 +10,7 @@ import { normalizeLineEndings, hasLineStructure, splitProseIntoLines, groupIntoS
 import { applySongTags, tagsFromText } from '../../services/songTags.js';
 import { saveSunoTags } from '../../services/ghostMemory.js';
 import { notify } from '../../services/dialog.js';
+import { saveText } from '../../services/saveText.js';
 import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, AlertCircle, Upload, PenLine, GitBranch, X } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
 // The logo and the founder photo were imported here but never rendered — a
@@ -949,6 +950,31 @@ export default function SongwriterHub({ ghostRiderData }) {
                   {copied ? 'Copied!' : 'Copy Full Song'}
                 </button>
 
+                {/* Closing the app wipes the song (freshStart.js), so it gets a Save. */}
+                <button
+                  onClick={async () => {
+                    const name = [store.artistRef, store.topic].filter(Boolean).join(' - ') || 'Song';
+                    const r = await saveText(name, store.getFullText());
+                    notify(r.said, { tone: r.ok ? 'success' : 'error' });
+                  }}
+                  data-help="Saves the whole song as a text file in Documents\Lyricist Lyrics. Closing the app clears the page, so save anything you want to keep."
+                  style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    padding: '4px 12px',
+                    borderRadius: 6,
+                    border: '1px solid rgba(52,211,153,0.4)',
+                    background: 'transparent',
+                    color: '#34d399',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Save Lyrics
+                </button>
+              </>
+            )}
+
+                {/* Always there: tags, topic and notes can need clearing with no words on the page. */}
                 <button
                   onClick={store.clearSong}
                   data-help="Starts a new song: erases the lyrics, the genre, subgenre and mood tags, the topic, the artist and the notes. Undo brings all of it back."
@@ -965,8 +991,6 @@ export default function SongwriterHub({ ghostRiderData }) {
                 >
                   Clear All
                 </button>
-              </>
-            )}
           </div>
         </div>
 

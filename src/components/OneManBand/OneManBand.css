@@ -314,6 +314,8 @@
   text-decoration: none; display: inline-block;
 }
 .omb-mini:hover { border-color: var(--omb-emerald); color: var(--omb-emerald-lit); }
+.omb-mini.omb-clear { color: rgba(248, 113, 113, .85); border-color: rgba(239, 68, 68, .35); }
+.omb-mini.omb-clear:hover { color: #f87171; border-color: #f87171; }
 
 /* controls */
 .omb-grp { margin-top: 16px; }

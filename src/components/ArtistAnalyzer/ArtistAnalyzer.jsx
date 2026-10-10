@@ -274,6 +274,13 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
     }
   };
 
+  const clearGhostRider = () => {
+    setArtist(''); setFocus(''); setAnalysis(''); setStyleDNA(null);
+    setGhostTopic(''); setGhostLyrics(''); setSunoTags(''); setGhostSent(false);
+    setClichés([]); setPlagiarismRisk(null); setThemeCheck(null);
+    setErrorMsg(''); setSaveNote(''); setSongSaveNote('');
+  };
+
   const handleSaveReport = () => {
     if (!analysis) return;
     saveReportToDisk(analysis);
@@ -585,6 +592,30 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
           data-demo="gr-analyze"
         >
           <Icon i={Search} />{loadingAnalysis ? 'Analyzing style...' : 'Analyze Artist'}
+        </button>
+
+        {/* CLEAR. A new artist starts from nothing: no old report, DNA, topic,
+            song or tags left for the Ghost to read as this one's. Saved
+            reports and songs on disk are not touched. */}
+        <button
+          type="button"
+          onClick={clearGhostRider}
+          disabled={loadingAnalysis || loadingGhost}
+          data-help="Clears the artist, the report, the Style DNA, the topic, the song and the Suno tags on this tab. Anything you saved stays saved."
+          style={{
+            width: '100%',
+            marginTop: 8,
+            padding: '7px',
+            borderRadius: 8,
+            border: '1px solid rgba(239,68,68,0.3)',
+            background: 'transparent',
+            color: 'rgba(248,113,113,0.8)',
+            fontSize: '0.76rem',
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          Clear
         </button>
 
         {/* Auto-save setting (replaces the old in-app saved-reports list) */}

@@ -661,6 +661,26 @@ ipcMain.handle('ghost-log-open', async () => {
   try { return { ok: !(await shell.openPath(ghostLogFolder())) }; } catch (e) { return { ok: false, error: e.message }; }
 });
 
+// One id per time the app is opened. The renderer wipes unsaved work when it
+// sees a new one (src/services/freshStart.js); a reload keeps the same id.
+const LAUNCH_ID = `${Date.now()}-${process.pid}`;
+ipcMain.on('launch-id', (event) => { event.returnValue = LAUNCH_ID; });
+
+// Save the lyrics from Songwriter, Ghost Rider or the Scratchpad as a .txt in
+// Documents\Lyricist Lyrics. Called via window.lyricistAPI.saveLyrics.
+ipcMain.handle('save-lyrics', async (event, { filename, content }) => {
+  try {
+    const dir = path.join(app.getPath('documents'), 'Lyricist Lyrics');
+    fs.mkdirSync(dir, { recursive: true });
+    const safe = String(filename).replace(/[\\/:*?"<>|]/g, '-').slice(0, 180);
+    const full = path.join(dir, safe);
+    fs.writeFileSync(full, content, 'utf8');
+    return { ok: true, path: full };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
 ipcMain.handle('save-report', async (event, { filename, content }) => {
   try {
     const dir = path.join(app.getPath('documents'), 'Lyricist Style Reports');

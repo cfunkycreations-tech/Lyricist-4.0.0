@@ -7,6 +7,10 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   // Save a Ghost Rider style report into the user's Documents folder.
   // Returns { ok: true, path } or { ok: false, error }.
   saveReport: (filename, content) => ipcRenderer.invoke('save-report', { filename, content }),
+  // Lyrics as a .txt in Documents\Lyricist Lyrics. Returns { ok, path } or { ok: false, error }.
+  saveLyrics: (filename, content) => ipcRenderer.invoke('save-lyrics', { filename, content }),
+  // Which time the app was opened. A new one means unsaved work from last time is wiped.
+  launchId: (() => { try { return ipcRenderer.sendSync('launch-id'); } catch { return ''; } })(),
   // The Ghost's flight recorder (src/services/ghostRecorder.js).
   ghostLogAppend: (line) => ipcRenderer.invoke('ghost-log-append', line),
   ghostLogShot: (label) => ipcRenderer.invoke('ghost-log-shot', label),

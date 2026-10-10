@@ -1,3 +1,5 @@
+// First, before anything reads storage: last launch's unsaved work is wiped.
+import './services/freshStart.js';
 import React from 'react';
 import { startPrism } from './services/prismTheme.js';
 import { startSurface } from './services/surfaceTheme.js';
