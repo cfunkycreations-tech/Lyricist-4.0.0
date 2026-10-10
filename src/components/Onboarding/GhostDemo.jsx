@@ -2,6 +2,7 @@ import { withFades } from '../../services/clipFade.js';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { getGhostDemo } from './ghostDemoScripts.js';
 import { captureAll, restoreAll } from '../../services/demoSafety.js';
+import { playBed, bedFor } from '../../services/ghostBed.js';
 // The ghost portrait (ghost.demo.png) was stripped 2026-08-27 with the rest of
 // the artwork. Chris, later same day, watching a test recording: *"if you built
 // it right, I don't want the cursor to say remote on it. It needs to look like
@@ -254,6 +255,34 @@ export default function GhostDemo({ tabId, onClose }) {
   const voiceOnRef = useRef(true);
   const audioRef = useRef(null);
 
+  // Background music under the narration. Its own button, on by default and
+  // remembered. Ducked while the Ghost is talking, back up between lines.
+  const MUSIC_KEY = 'lyricistGhostMusic';
+  const BED_LEVEL = 0.35;
+  const BED_UNDER_VOICE = 0.15;
+  const [musicOn, setMusicOn] = useState(() => {
+    try { return localStorage.getItem(MUSIC_KEY) !== 'off'; } catch { return true; }
+  });
+  const musicOnRef = useRef(musicOn);
+  const bedRef = useRef(null);
+  const bedWantedRef = useRef(false);     // a walkthrough is running and wants music
+  const startBed = useCallback(() => {
+    if (!musicOnRef.current || !bedWantedRef.current || bedRef.current) return;
+    const a = audioRef.current;
+    const talking = a && !a.paused && !a.ended;
+    bedRef.current = playBed(bedFor(tabAtStartRef.current), { level: talking ? BED_UNDER_VOICE : BED_LEVEL });
+    if (pauseRef.current) bedRef.current.pause();
+  }, []);
+  const stopBed = useCallback((fade) => {
+    bedRef.current?.stop(fade);
+    bedRef.current = null;
+  }, []);
+  useEffect(() => {
+    musicOnRef.current = musicOn;
+    try { localStorage.setItem(MUSIC_KEY, musicOn ? 'on' : 'off'); } catch { /* storage blocked */ }
+    if (musicOn) startBed(); else stopBed(0.6);
+  }, [musicOn, startBed, stopBed]);
+
   const stopVoice = useCallback(() => {
     const a = audioRef.current;
     if (a) { try { a.pause(); a.currentTime = 0; } catch { /* */ } }
@@ -278,7 +307,14 @@ export default function GhostDemo({ tabId, onClose }) {
   const speak = useCallback((id) => new Promise((resolve) => {
     if (!voiceOnRef.current || !clipFor(id)) return resolve(0);
     let a = audioRef.current;
-    if (!a) { a = withFades(new Audio()); audioRef.current = a; }
+    if (!a) {
+      a = withFades(new Audio());
+      a.addEventListener('play', () => bedRef.current?.level(BED_UNDER_VOICE, 0.25));
+      const up = () => bedRef.current?.level(BED_LEVEL, 0.9);
+      a.addEventListener('pause', up);
+      a.addEventListener('ended', up);
+      audioRef.current = a;
+    }
     try { a.pause(); } catch { /* */ }
     a.onloadedmetadata = null;
     a.onerror = null;
@@ -324,7 +360,10 @@ export default function GhostDemo({ tabId, onClose }) {
   const pauseRef = useRef(false);
   const cursorRef = useRef({ x: window.innerWidth * 0.5, y: window.innerHeight * 0.4 });
 
-  useEffect(() => { pauseRef.current = paused; }, [paused]);
+  useEffect(() => {
+    pauseRef.current = paused;
+    if (paused) bedRef.current?.pause(); else bedRef.current?.resume();
+  }, [paused]);
 
   // Hide the real system cursor for the whole app while demo runs
   useEffect(() => {
@@ -477,6 +516,8 @@ export default function GhostDemo({ tabId, onClose }) {
     // clicks, so without this it overwrites work in progress — it once wiped a
     // Quantum Lab lattice the user had filled in. Restored in finishDemo().
     snapshotRef.current = captureAll();
+    bedWantedRef.current = true;
+    startBed();
 
     setStatusLine(`Running: ${demo.title}`);
     cursorRef.current = { x: window.innerWidth * 0.62, y: window.innerHeight * 0.28 };
@@ -607,6 +648,8 @@ export default function GhostDemo({ tabId, onClose }) {
       const endMs = await speak('system-0-finished');
       await wait(Math.max(3500, endMs + 600), runId);
       stopVoice();
+      bedWantedRef.current = false;
+      stopBed();
       closeDemo();
     }
   }, [demo, closeDemo, restoreWork]);
@@ -624,6 +667,8 @@ export default function GhostDemo({ tabId, onClose }) {
     runDemoRef.current(myId);
     return () => {
       cancelRef.current = true;
+      bedWantedRef.current = false;
+      stopBed();
       restoreWork();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -644,6 +689,8 @@ export default function GhostDemo({ tabId, onClose }) {
   const skip = () => {
     cancelRef.current = true;
     stopVoice();
+    bedWantedRef.current = false;
+    stopBed(0.6);
     restoreWork();
     closeDemo();
   };
@@ -753,6 +800,16 @@ export default function GhostDemo({ tabId, onClose }) {
           title={voiceOn ? 'Turn the ghost’s voice off' : 'Turn the ghost’s voice on'}
         >
           {voiceOn ? 'Voice On' : 'Voice Off'}
+        </button>
+
+        <button
+          type="button"
+          className={`ghost-demo-bar-btn ${musicOn ? 'is-on' : ''}`}
+          aria-pressed={musicOn}
+          onClick={() => setMusicOn((v) => !v)}
+          title={musicOn ? 'Turn the background music off' : 'Turn the background music on'}
+        >
+          {musicOn ? 'Music On' : 'Music Off'}
         </button>
 
         <button

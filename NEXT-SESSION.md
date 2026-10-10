@@ -9,42 +9,31 @@ npm install
 npm run release
 ```
 
-## Start here: background music under the Ghost Demo
+## Ghost Demo background music (wired)
 
-Three beds, all prepared as seamless loops, **not wired into GhostDemo yet**:
+Three beds play under the Ghost Demo as seamless loops:
 
 | bed | loop | what it is |
 |---|---|---|
-| `ghost-bg-blackhole.mp3` | 46.6 to 107.4 s (60.8 s), intro plays once | Chris's 2-min Suno song `blackhole.flac` |
-| `ghost-bg-deep.mp3` | 8.0 to 24.0 s (16.0 s) | dark sub-bass drone |
-| `ghost-bg-noir.mp3` | 4.3 to 23.1 s (18.9 s) | noir trip-hop |
+| `ghost-bg-blackhole.mp3` | 46.6 to 107.4 s, intro plays once | Chris's 2-min Suno song (Black Hole Studios) |
+| `ghost-bg-deep.mp3` | 8.0 to 24.0 s | dark sub-bass drone |
+| `ghost-bg-noir.mp3` | 4.3 to 23.1 s | noir trip-hop |
 
-All in `src/assets/ghost-bg/`, loop points in `beds.json`. Made by
-`scripts/prepare-ghost-bed.py <file> <name> [--usable-end SEC] [--xfade SEC]`:
-it finds the longest loop whose ends match in spectrum, rhythm and level
-(within 1 dB), aligns transients to the sample, bakes a correlation-compensated
-crossfade before loopEnd (plus a 60 ms guard after it), levels the intro to the
-loop, and matches the loop to -20 LUFS. **More tracks are coming from Chris:
-run the script on each, nothing else to do for the files.** deep/noir were
-re-made from their earlier committed mp3s (usable to 35.2 / 24.4 s).
-
-Chris's answers: any bed on any tab is fine, loop them, use as much of each
-file as needed. (blackhole on Black Hole Studios is the natural pick.)
-
-Still open:
-- Play through Web Audio: `AudioBufferSourceNode` with `loop`, `loopStart`,
-  `loopEnd` from `beds.json`, `start(0, 0)`. Load with the fetch-then-XHR
-  fallback (`getBuffer()` in `soundfontEngine.js`), since the packaged app is
-  on `file://`. Import the mp3s through Vite, never `public/`.
-- Duck under the voice (`audioRef` play: ~0.15, pause/ended: ~0.35, ramped,
-  `cancelScheduledValues` first). Pause holds the bed. Voice Off = silent.
-  Fade out from the unmount cleanup; guard the async decode against
-  StrictMode's double mount (check the run id before starting).
-- Verify the seams in Chromium (playwright 1.56.x): render two cycles through
-  OfflineAudioContext and check for clicks or level steps at loopEnd. This
-  also shows whether Chromium strips the MP3 encoder delay (the guard covers
-  up to 60 ms either way). Not done yet.
-- Nobody has listened to the loops. blackhole wasn't checked for vocals.
+- `src/services/ghostBed.js` plays them through Web Audio (`loopStart` /
+  `loopEnd` from `beds.json`), loaded with the file://-safe `getBuffer()`
+  (now in `src/services/loadBuffer.js`). Black Hole Studios gets blackhole;
+  every other tab gets a fixed pick by tab id (Chris: any bed on any tab).
+- GhostDemo: starts with a real walkthrough, ducks to 0.15 while the Ghost
+  talks and 0.35 between lines, Pause holds it, its own **Music On/Off**
+  button (remembered), fades out on finish, Stop, tab change or close.
+- **New tracks from Chris:** `python scripts/prepare-ghost-bed.py <file> <name>
+  [--usable-end SEC] [--xfade SEC]`. It writes the mp3 and the `beds.json`
+  entry; the next build picks it up. Add it to `BED_FOR_TAB` in `ghostBed.js`
+  only if it belongs to one tab.
+- Checked in Chromium: seams render with no clicks at 48 kHz, Chromium trims
+  the MP3 padding exactly, and the demo run shows the loop points, the ducking
+  and the toggles working. Nobody has listened yet; blackhole wasn't checked
+  for vocals.
 
 ## OpenRouter: official SDK, live model check, app attribution
 

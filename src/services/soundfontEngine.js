@@ -28,6 +28,7 @@
 
 import { SpessaSynthProcessor, SoundBankLoader } from 'spessasynth_core';
 import { isDaw, dawNote } from './midiOut.js';
+import { getBuffer } from './loadBuffer.js';
 
 const NOTES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 const FLAT_TO_SHARP = { Db: 'C#', Eb: 'D#', Gb: 'F#', Ab: 'G#', Bb: 'A#' };
@@ -190,21 +191,6 @@ let bankPromise = null;
  * the app keeps every GM instrument working and only Chris's textures go
  * missing. A decorative bank must never be able to take the piano roll down.
  */
-// fetch() can't read file:// in the packaged app; XHR can.
-function getBuffer(url) {
-  return fetch(url).then(
-    (r) => { if (!r.ok) throw new Error(`Could not load ${url} (${r.status})`); return r.arrayBuffer(); },
-    () => new Promise((resolve, reject) => {
-      const x = new XMLHttpRequest();
-      x.open('GET', url);
-      x.responseType = 'arraybuffer';
-      x.onload = () => ((x.status === 200 || x.status === 0) && x.response && x.response.byteLength ? resolve(x.response) : reject(new Error(`Could not load ${url} (${x.status})`)));
-      x.onerror = () => reject(new Error(`Could not load ${url}`));
-      x.send();
-    }),
-  );
-}
-
 function loadBank() {
   if (!bankPromise) {
     bankPromise = (async () => {
