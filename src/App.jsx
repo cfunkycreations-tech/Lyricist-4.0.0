@@ -587,7 +587,15 @@ function MainLayout() {
             second, until the key exists. It used to be fourteen separate
             "you need a key" errors behind fourteen buttons, plus a tour card
             titled "set this up first" sitting at nineteen of twenty. */}
-        <StartHere onGoToSettings={() => setActiveTab('settings')} />
+        <StartHere onGoToSettings={() => {
+          setActiveTab('settings');
+          // Land in the key box, ready to paste, not just somewhere on Settings.
+          setTimeout(() => {
+            const box = document.querySelector('[data-tab-pane="settings"] [data-demo="settings-key"]');
+            box?.scrollIntoView({ block: 'center' });
+            box?.focus();
+          }, 150);
+        }} />
 
         {/* Tab Workspace content.
 
