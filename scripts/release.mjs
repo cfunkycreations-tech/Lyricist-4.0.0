@@ -139,38 +139,44 @@ const creatorStage = path.join(ROOT, 'build-creator');
 fs.rmSync(creatorStage, { recursive: true, force: true });
 fs.mkdirSync(creatorStage, { recursive: true });
 if (creator) {
+  // Each piece is optional: a missing one is left out with a warning and the
+  // build carries on. The Ghost panel itself needs none of them.
+  const skipped = [];
   const libnutSrc = path.join(ROOT, 'node_modules', '@nut-tree-fork', 'libnut-win32', 'build', 'Release');
-  if (!fs.existsSync(path.join(libnutSrc, 'libnut.node'))) {
-    console.error(`Creator build needs ${libnutSrc}\\libnut.node (npm install).`);
-    process.exit(1);
+  if (fs.existsSync(path.join(libnutSrc, 'libnut.node'))) {
+    fs.cpSync(libnutSrc, path.join(creatorStage, 'libnut'), {
+      recursive: true,
+      filter: (p) => !/\.(exp|lib)$/i.test(p),
+    });
+  } else {
+    skipped.push(`Ghost Pilot (real mouse): no ${libnutSrc}\\libnut.node. Run npm install.`);
   }
-  fs.cpSync(libnutSrc, path.join(creatorStage, 'libnut'), {
-    recursive: true,
-    filter: (p) => !/\.(exp|lib)$/i.test(p),
-  });
 
-  // The native audio engine (ASIO + VST3), Creator only, with the three VC++
-  // runtime DLLs it links against beside it, so it runs on a PC without the
-  // redistributable. main.js getJuceEnginePath() looks in resources/creator/engine.
+  // The native audio engine (ASIO + VST3), with the three VC++ runtime DLLs it
+  // links against beside it, so it runs on a PC without the redistributable.
+  // main.js getJuceEnginePath() looks in resources/creator/engine and copes
+  // with it missing, as every customer build does.
   const engineExe = path.join(ROOT, 'juce-backend', 'build', 'Release', 'LyricistEngine.exe');
-  if (!fs.existsSync(engineExe)) {
-    console.error(`Creator build needs ${engineExe} (cmake --build juce-backend/build --config Release).`);
-    process.exit(1);
-  }
-  const engineStage = path.join(creatorStage, 'engine');
-  fs.mkdirSync(engineStage, { recursive: true });
-  fs.copyFileSync(engineExe, path.join(engineStage, 'LyricistEngine.exe'));
   const redistRoot = 'C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Redist\\MSVC';
   const crt = fs.existsSync(redistRoot) && fs.readdirSync(redistRoot)
     .map((v) => path.join(redistRoot, v, 'x64', 'Microsoft.VC143.CRT'))
     .find((p) => fs.existsSync(path.join(p, 'msvcp140.dll')));
-  if (!crt) {
-    console.error('Creator build needs the VC++ runtime DLLs from Visual Studio Build Tools (VC\\Redist\\MSVC\\*\\x64\\Microsoft.VC143.CRT).');
-    process.exit(1);
+  if (!fs.existsSync(engineExe)) {
+    skipped.push(`Native audio engine (ASIO + VST3): not built. Build it with: cmake --build juce-backend/build --config Release`);
+  } else if (!crt) {
+    skipped.push('Native audio engine: the VC++ runtime DLLs were not found (Visual Studio Build Tools, VC\\Redist\\MSVC\\*\\x64\\Microsoft.VC143.CRT).');
+  } else {
+    const engineStage = path.join(creatorStage, 'engine');
+    fs.mkdirSync(engineStage, { recursive: true });
+    fs.copyFileSync(engineExe, path.join(engineStage, 'LyricistEngine.exe'));
+    for (const dll of ['msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll']) {
+      fs.copyFileSync(path.join(crt, dll), path.join(engineStage, dll));
+    }
   }
-  for (const dll of ['msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll']) {
-    fs.copyFileSync(path.join(crt, dll), path.join(engineStage, dll));
-  }
+  for (const s of skipped) console.warn(`\n  LEFT OUT  ${s}`);
+  if (skipped.length) console.warn('  Everything else, Ask the Ghost included, is in this build.\n');
+  // electron-builder wants something in the folder it ships as resources/creator.
+  if (!fs.readdirSync(creatorStage).length) fs.writeFileSync(path.join(creatorStage, 'creator.txt'), 'Creator build.\n', 'utf8');
 } else {
   fs.writeFileSync(path.join(creatorStage, 'customer.txt'), 'Customer build: no Ghost Pilot.\n', 'utf8');
 }
