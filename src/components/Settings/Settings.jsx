@@ -7,6 +7,7 @@ import { normalizeApiKey } from '../../services/AIService.js';
 import { listModels, verifyModel, probeModel } from '../../services/openrouter.js';
 import { IMAGE_MODELS, DEFAULT_IMAGE_MODEL } from '../../services/GeminiService.js';
 import { PRISM_NAMES, ACCENT_PRESETS, accentHex, getPrism } from '../../services/prismTheme.js';
+import { SURFACES, getSurface, setSurface } from '../../services/surfaceTheme.js';
 import { isEnabled as analyticsEnabled, optIn, optOut } from '../../services/analytics.js';
 import { Icon } from '../common/Glyph.jsx';
 import PlayThrough from './PlayThrough.jsx';
@@ -57,6 +58,47 @@ async function fetchOpenRouterModels(forceRefresh = false, apiKey = '') {
     if (cached) return cached.models;
     throw e;
   }
+}
+
+function SurfaceSlider() {
+  const [i, setI] = useState(getSurface);
+  const pick = (n) => { setI(n); setSurface(n); };
+  const label = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--faf-text-2)', marginBottom: 5, display: 'block' };
+  return (
+    <div style={{ marginBottom: 18 }} data-help="The colour of the whole app: Red, Blue, Dark Blue, Black, Gray, or a light app in Light Gray or White. Remembered between sessions.">
+      <label style={label}>Surface</label>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <input
+          type="range"
+          min="0"
+          max={SURFACES.length - 1}
+          step="1"
+          value={i}
+          onChange={(e) => pick(Number(e.target.value))}
+          aria-valuetext={SURFACES[i].name}
+          style={{ flex: 1, accentColor: SURFACES[i].swatch }}
+        />
+        <span style={{ minWidth: 76, fontSize: '0.72rem', color: 'var(--text-secondary)', textAlign: 'right' }}>{SURFACES[i].name}</span>
+      </div>
+      <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+        {SURFACES.map((s, n) => (
+          <button
+            key={s.name}
+            type="button"
+            onClick={() => pick(n)}
+            title={s.name}
+            aria-label={s.name}
+            aria-pressed={n === i}
+            style={{
+              width: 22, height: 22, borderRadius: 6, cursor: 'pointer', padding: 0,
+              background: s.swatch,
+              border: n === i ? '2px solid rgb(var(--accent-rgb))' : '1px solid rgba(255,255,255,0.18)',
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function ModelSelector({ value, onChange }) {
@@ -606,6 +648,12 @@ export default function Settings() {
           the first song after a quiet spell takes a minute or so longer while it wakes up.
         </p>
       </div>
+
+      {/* ---- SURFACE -------------------------------------------------------
+          The colour of the glass itself: Red (the original) through Blue,
+          Dark Blue, Black and Gray, then Light Gray and White for a light app.
+          See services/surfaceTheme.js. */}
+      <SurfaceSlider />
 
       {/* ---- PRISM ---------------------------------------------------------
           One control, every colour in the app. It has to reach a WebGL canvas
