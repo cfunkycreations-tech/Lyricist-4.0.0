@@ -195,6 +195,12 @@ export const DEFAULT_CONFIG = {
   // "Authenticate with a Hugging Face token for more quota". A free account is
   // enough. Entirely optional — songs still get made without it, just fewer.
   huggingFaceToken: '',
+  // Black Hole Studios on the user's own Modal GPU. Both stay empty until they
+  // deploy modal/lyricist_comfy.py and paste in what it prints; the Modal engine
+  // button stays disabled until the URL is here. The token is what stops a
+  // stranger running graphs on their GPU, so it is never baked into the build.
+  modalUrl: '',
+  modalToken: '',
   // Where songs get made: 'cloud' | 'local'. Cloud is the default because it is
   // both the fastest AND the free one, which is not the usual trade.
   musicEngine: 'cloud',
