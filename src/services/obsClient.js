@@ -1,7 +1,8 @@
 import OBSWebSocket from 'obs-websocket-js';
 
-const URL = 'ws://localhost:4455';
 const PASSWORD_KEY = 'lyricist.obs.password';
+const PORT_KEY = 'lyricist.obs.port';
+const url = () => { try { return `ws://localhost:${Number(localStorage.getItem(PORT_KEY)) || 4455}`; } catch { return 'ws://localhost:4455'; } };
 
 // A fresh client per attempt. A connect that timed out while OBS was still
 // loading left the old shared client in a state where later attempts never
@@ -47,7 +48,7 @@ async function tryConnect() {
   const client = new OBSWebSocket();
   const password = localStorage.getItem(PASSWORD_KEY) || undefined;
   try {
-    await capped(client.connect(URL, password), 4000, 'connecting to OBS');
+    await capped(client.connect(url(), password), 4000, 'connecting to OBS');
   } catch (e) {
     try { await client.disconnect(); } catch { /* not connected */ }
     throw e;
@@ -104,6 +105,14 @@ export async function startRecord() {
     if (!launcher) throw first;
     const opened = await capped(launcher({ record: true }), 8000, 'opening OBS').catch((e) => ({ ok: false, error: e?.message }));
     if (!opened?.ok) throw new Error(opened?.error || first.message);
+    // The password OBS set for its websocket, read from its config by the app.
+    try {
+      if (opened.password) localStorage.setItem(PASSWORD_KEY, opened.password);
+      if (opened.port) localStorage.setItem(PORT_KEY, String(opened.port));
+    } catch { /* session only */ }
+    if (opened.already && opened.wsOn === false) {
+      throw new Error('OBS is open with its WebSocket server off, so the app could not stop the recording. Close OBS and run it again: the app turns the server on when it opens OBS.');
+    }
     if (!opened.already) {
       // OBS is starting and recording by itself. Connect when it is ready.
       client = await waitForObs(60000).catch(() => null);

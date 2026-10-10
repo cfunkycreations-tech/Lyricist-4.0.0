@@ -641,8 +641,40 @@ export const LyricStoreProvider = ({ children }) => {
     setLyricsState(newLyrics);
   };
 
+  /**
+   * CLEAR ALL MEANS THE WHOLE SONG. Chris pressed it and the words went while
+   * the tags, the topic from two songs back and the artist stayed on the left.
+   * Undo straight after brings every one of them back, not just the words.
+   */
+  const cleared = useRef(null);
+  const clearSong = () => {
+    cleared.current = {
+      depth: undoStack.length + 1,
+      song: { genreList, subgenreList, moodList, bhGenreList, bhMoodList, voiceList, topic, artistRef, notes },
+    };
+    pushState([]);
+    setStylePicks({ genres: [], subgenres: [], moods: [] });
+    setVoiceList([]);
+    setTopic('');
+    setArtistRef('');
+    setNotes('');
+  };
+
   const undo = () => {
     if (undoStack.length === 0) return;
+    if (cleared.current?.depth === undoStack.length) {
+      const s = cleared.current.song;
+      cleared.current = null;
+      setGenreListRaw(s.genreList);
+      setSubgenreListRaw(s.subgenreList);
+      setMoodListRaw(s.moodList);
+      setBhGenreListRaw(s.bhGenreList);
+      setBhMoodListRaw(s.bhMoodList);
+      setVoiceList(s.voiceList);
+      setTopic(s.topic);
+      setArtistRef(s.artistRef);
+      setNotes(s.notes);
+    }
     const prev = undoStack[undoStack.length - 1];
     setUndoStack(prevStack => prevStack.slice(0, -1));
     setRedoStack(prevStack => [...prevStack, lyrics]);
@@ -767,6 +799,7 @@ export const LyricStoreProvider = ({ children }) => {
       lyrics,
       setFullLyrics,
       clearLyrics,
+      clearSong,
       addSection,
       removeSection,
       reorderSections,

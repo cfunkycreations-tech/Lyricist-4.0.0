@@ -129,6 +129,14 @@ export default function SongwriterHub({ ghostRiderData }) {
     if (ghostRiderData.artist && ghostRiderData.source !== 'quantum') {
       store.setArtistRef(ghostRiderData.artist);
     }
+    // A NEW SONG BRINGS ITS OWN TOPIC. Chris's Weeknd song landed under the
+    // topic from two songs back ("tech bros invading Austin"), and Missing
+    // Ideas flagged the new words for not matching it. Ghost Rider's song
+    // replaces the topic, with nothing when it was written with none.
+    if (ghostRiderData.lyrics && (ghostRiderData.source !== 'quantum' || ghostRiderData.topic !== undefined)) {
+      store.setTopic(String(ghostRiderData.topic || ''));
+      if (ghostRiderData.source !== 'quantum') store.setNotes?.('');
+    }
     /**
      * THE ATTRIBUTES COME WITH THE WORDS.
      *
@@ -140,11 +148,12 @@ export default function SongwriterHub({ ghostRiderData }) {
      * the artist and the notes and threw the tags away. So a verse written in
      * an artist's style landed here untagged, and stayed untagged all the way
      * into Black Hole Studios. They are picks now, which also fills in the
-     * Black Hole side through styleBridge. Anything already picked is his and
-     * is left alone.
+     * Black Hole side through styleBridge. A new song's tags replace the last
+     * song's: Chris found a new song under the old song's picks.
      */
     if (ghostRiderData.sunoTags) {
-      applySongTags(store, { text: ghostRiderData.sunoTags });
+      // A new song's own tags replace the last song's.
+      applySongTags(store, { text: ghostRiderData.sunoTags, force: Boolean(ghostRiderData.lyrics) });
     }
     if (ghostRiderData.source === 'quantum' && ghostRiderData.notes && store.setNotes) {
       store.setNotes(ghostRiderData.notes);
@@ -354,8 +363,10 @@ export default function SongwriterHub({ ghostRiderData }) {
       return { said: 'put the lyrics on Songwriter', undo: had ? undoWords : null };
     },
     songwriter_fill_blanks: async () => {
+      // Nothing to fill is a finished step, not a failure: a job that asked for
+      // it used to die here, twice, on camera.
       if (!ghost.current.store.getFullText().includes('[blank]')) {
-        throw new Error("There are no [blank] spots in the lyrics to fill.");
+        return { said: 'checked for [blank] spots: none, every line is written' };
       }
       await ghost.current.handleFillBlanks();
       await ghostSettle();
@@ -925,8 +936,8 @@ export default function SongwriterHub({ ghostRiderData }) {
                 </button>
 
                 <button
-                  onClick={store.clearLyrics}
-                  data-help="Erases all the lyrics in the workspace to start fresh. Don't worry — if you click it by accident, the Undo button brings everything back."
+                  onClick={store.clearSong}
+                  data-help="Starts a new song: erases the lyrics, the genre, subgenre and mood tags, the topic, the artist and the notes. Undo brings all of it back."
                   style={{
                     fontSize: '0.72rem',
                     fontWeight: 600,
