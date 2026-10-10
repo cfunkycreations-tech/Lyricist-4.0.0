@@ -1,5 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { registerDemoSnapshot } from '../services/demoSafety.js';
+import { verifyModel } from '../services/openrouter.js';
+import { notify } from '../services/dialog.js';
 import {
   toBlackHoleGenres, toSongwriterGenres, toBlackHoleMoods, toSongwriterMoods,
 } from '../services/styleBridge.js';
@@ -510,6 +512,22 @@ export const LyricStoreProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('lyricistConfig', JSON.stringify(config));
   }, [config]);
+
+  // The saved model can vanish from OpenRouter (stealth models are pulled
+  // without notice), and then every call dies with "No endpoints found". Each
+  // model is checked once per launch; only a confirmed-dead one is replaced,
+  // never one that merely couldn't be checked.
+  const modelCheckedRef = useRef('');
+  useEffect(() => {
+    const id = config.model;
+    if (!id || modelCheckedRef.current === id) return;
+    modelCheckedRef.current = id;
+    verifyModel(id, String(config.openRouterApiKey || '').trim()).then((r) => {
+      if (r.state !== 'dead' || id === DEFAULT_CONFIG.model) return;
+      setConfigState((c) => (c.model === id ? { ...c, model: DEFAULT_CONFIG.model } : c));
+      notify(`${id} isn't on OpenRouter any more (${r.reason}). Switched to ${DEFAULT_CONFIG.model}. Pick another in Settings any time.`, { tone: 'error' });
+    });
+  }, [config.model]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     localStorage.setItem('lyricistLyrics', JSON.stringify(lyrics));

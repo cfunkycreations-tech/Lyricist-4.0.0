@@ -46,6 +46,31 @@ Still open:
   up to 60 ms either way). Not done yet.
 - Nobody has listened to the loops. blackhole wasn't checked for vocals.
 
+## OpenRouter: official SDK, live model check, app attribution
+
+- Every OpenRouter call goes through `src/services/openrouter.js`, built on
+  `@openrouter/sdk`. Callers still write the wire-format body; it's sent through
+  the SDK's beforeRequest hook as-is, because the SDK's typed request drops
+  `reasoning.exclude` and its parsed result drops `provider`. Callers get
+  OpenRouter's raw JSON and status back. SDK retries are off (the Ghost needs
+  a fast 429).
+- Attribution on every request: `HTTP-Referer: https://cfunkycreationsllc.com`,
+  `X-OpenRouter-Title` and `X-Title: Lyricist Pro`. Before this it was split
+  across lyricist.app / fafoaudio.com and five names. Change both in one place.
+- The hand-pinned `stealth/space-bunny-alpha` in the Settings picker is gone
+  (it caused "No endpoints found for stealth/space-bunny-alpha"). Cache key
+  bumped to v3 so the old list with the pin is never served.
+- `verifyModel(id)`: SDK `models.get`, then `endpoints.list`, then the
+  catalogue. Dead = 404 everywhere or zero endpoints; offline = unknown and
+  changes nothing. Settings shows "Live on OpenRouter · N providers" or "Not
+  usable" under the picker, and a typed exact ID is refused if dead. At launch
+  `LyricStore` checks the saved model and swaps a dead one for the default,
+  with a toast.
+- Tested against a stub (Node and real Chromium): exact wire body, headers,
+  404/429/400 status and message, abort, TTS bytes. **Not tested against the
+  real openrouter.ai** (blocked from the sandbox), so the first real run on
+  Chris's machine is the CORS check for `X-OpenRouter-Title`.
+
 ## What else landed this session
 
 - **Ghost Demo, Black Hole Studios:** back to the original Ghost voice (the

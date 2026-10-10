@@ -26,10 +26,9 @@ import { assertApiKey } from './AIService.js';
 import { stripReasoning } from '../utils/stripReasoning.js';
 import { availableGhostActions } from './ghostBus.js';
 import { examplesForPrompt } from './minimaxExamples.js';
+import { chatCompletion, listModels } from './openrouter.js';
 
 
-const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
-const MODELS_URL = 'https://openrouter.ai/api/v1/models';
 
 /**
  * How much room the Ghost gets to answer in.
@@ -68,8 +67,7 @@ let cachedModel = null;
  */
 export async function freeGhostModels(limit = 5) {
   try {
-    const res = await fetch(MODELS_URL, { headers: { 'HTTP-Referer': 'https://lyricist.app' } });
-    const list = (await res.json())?.data || [];
+    const list = await listModels();
     const alive = new Set(list.map((m) => m.id));
     const out = WANTED.filter((id) => alive.has(id));
     const rest = list
@@ -90,8 +88,7 @@ export async function freeGhostModels(limit = 5) {
 export async function resolveGhostModel() {
   if (cachedModel) return cachedModel;
   try {
-    const res = await fetch(MODELS_URL, { headers: { 'HTTP-Referer': 'https://lyricist.app' } });
-    const list = (await res.json())?.data || [];
+    const list = await listModels();
     const alive = new Set(list.map((m) => m.id));
     const found = WANTED.find((id) => alive.has(id));
     if (found) { cachedModel = found; return found; }
@@ -706,32 +703,22 @@ export async function askGhost({ history = [], question, config, tab = 'songwrit
     { role: 'user', content: question },
   ];
 
-  const post = (id, budget) => fetch(ENDPOINT, {
-    method: 'POST',
-    signal,
-    headers: {
-      Authorization: `Bearer ${key}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://lyricist.app',
-      'X-Title': 'Lyricist Pro',
-    },
-    body: JSON.stringify({
-      model: id,
-      messages,
-      temperature: 0.7,
-      // THE REPLY BUDGET, not the context window. The models here carry 256k of
-      // context; what ran out was room to WRITE. 1200 truncated a caption
-      // mid-tag, which is how Chris ended up looking at a half written block
-      // instead of a filled in song, and he called 4000 too tight for a five
-      // minute song with nine full sections plus a caption. He is right that it
-      // is close: that is roughly 4000 by itself. Costs nothing to raise,
-      // because only what actually gets generated is ever paid for.
-      max_tokens: budget,
-      // The scratchpad has to stay out of the answer at the source. Asking for
-      // it to be excluded is cheaper and safer than filtering it afterwards.
-      reasoning: { exclude: true },
-    }),
-  });
+  const post = (id, budget) => chatCompletion({
+    model: id,
+    messages,
+    temperature: 0.7,
+    // THE REPLY BUDGET, not the context window. The models here carry 256k of
+    // context; what ran out was room to WRITE. 1200 truncated a caption
+    // mid-tag, which is how Chris ended up looking at a half written block
+    // instead of a filled in song, and he called 4000 too tight for a five
+    // minute song with nine full sections plus a caption. He is right that it
+    // is close: that is roughly 4000 by itself. Costs nothing to raise,
+    // because only what actually gets generated is ever paid for.
+    max_tokens: budget,
+    // The scratchpad has to stay out of the answer at the source. Asking for
+    // it to be excluded is cheaper and safer than filtering it afterwards.
+    reasoning: { exclude: true },
+  }, { apiKey: key, signal });
 
   let res = await post(model, MAX_REPLY);
 
@@ -747,6 +734,9 @@ export async function askGhost({ history = [], question, config, tab = 'songwrit
     res = await post(model, SAFE_REPLY);
   }
 
+  if (res.status === 0) {
+    throw new Error('I could not reach OpenRouter. Check the internet and try again.');
+  }
   if (res.status === 401 || res.status === 403) {
     throw new Error('OpenRouter would not accept the key. Check it in Settings.');
   }
@@ -757,7 +747,7 @@ export async function askGhost({ history = [], question, config, tab = 'songwrit
     throw new Error(`OpenRouter answered ${res.status}. Try again in a moment.`);
   }
 
-  const json = await res.json();
+  const json = res.json;
   const raw = json?.choices?.[0]?.message?.content || '';
   // Explicit tags only. See the note at the top of this file for why the
   // aggressive pass would eat the middle out of a perfectly good answer.

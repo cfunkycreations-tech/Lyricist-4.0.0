@@ -4,6 +4,7 @@ import { useLyricStore, DEFAULT_CONFIG } from '../../context/LyricStore.jsx';
 import { Save, RefreshCw, Key, Shield, HelpCircle, Hammer, FolderOpen } from 'lucide-react';
 import { notify, ask } from '../../services/dialog.js';
 import { normalizeApiKey } from '../../services/AIService.js';
+import { listModels, verifyModel } from '../../services/openrouter.js';
 import { IMAGE_MODELS, DEFAULT_IMAGE_MODEL } from '../../services/GeminiService.js';
 import { PRISM_NAMES, ACCENT_PRESETS, accentHex, getPrism } from '../../services/prismTheme.js';
 import { isEnabled as analyticsEnabled, optIn, optOut } from '../../services/analytics.js';
@@ -16,8 +17,10 @@ import VstPlugins from './VstPlugins.jsx';
    they had already drifted apart, so the label under the slider was naming a
    colour pair the slider had stopped producing. One source, one truth. */
 
-const MODELS_CACHE_KEY = 'openrouter-models-cache-v2';
+const MODELS_CACHE_KEY = 'openrouter-models-cache-v3';   // v2 still held a dead pinned stealth model
 const MODELS_CACHE_TTL = 15 * 60 * 1000; // new/stealth models show up within 15 min
+
+try { localStorage.removeItem('openrouter-models-cache-v2'); } catch { /* storage blocked */ }
 
 function readModelsCache() {
   try {
@@ -33,25 +36,10 @@ async function fetchOpenRouterModels(forceRefresh = false, apiKey = '') {
     return cached.models;
   }
   try {
-    const get = async (url, key) => {
-      const r = await fetch(url, key ? { headers: { Authorization: `Bearer ${key}` } } : undefined);
-      if (!r.ok) throw new Error(`OpenRouter answered HTTP ${r.status}`);
-      return (await r.json()).data || [];
-    };
-    // With a key the list includes account-visible models (stealth/cloaked ones
-    // are often missing from the anonymous catalogue). Merge, never replace.
-    const byId = new Map();
-    const lists = await Promise.allSettled([
-      get('https://openrouter.ai/api/v1/models'),
-      ...(apiKey ? [get('https://openrouter.ai/api/v1/models', apiKey), get('https://openrouter.ai/api/v1/models/user', apiKey)] : []),
-    ]);
-    lists.forEach((l) => { if (l.status === 'fulfilled') l.value.forEach((m) => byId.set(m.id, m)); });
-    if (!byId.size) throw new Error('OpenRouter returned no models');
-    // Stealth models are often absent from every catalogue endpoint; pin known ones.
-    if (!byId.has('stealth/space-bunny-alpha')) {
-      byId.set('stealth/space-bunny-alpha', { id: 'stealth/space-bunny-alpha', name: 'Space Bunny Alpha (stealth)' });
-    }
-    const models = [...byId.values()];
+    // The SDK's catalogue, plus the account's own list when there is a key.
+    // Nothing is pinned by hand: a model shows up here only if OpenRouter
+    // lists it right now.
+    const models = await listModels(apiKey);
     try {
       localStorage.setItem(MODELS_CACHE_KEY, JSON.stringify({ fetchedAt: Date.now(), models }));
     } catch { /* storage full — cache is best-effort */ }
@@ -65,8 +53,11 @@ async function fetchOpenRouterModels(forceRefresh = false, apiKey = '') {
 
 function ModelSelector({ value, onChange }) {
   const { config: selCfg } = useLyricStore();
-  const apiKey = selCfg?.openRouterApiKey || '';
+  const apiKey = normalizeApiKey(selCfg?.openRouterApiKey || '');
   const [models, setModels] = useState([]);
+  // Live check of the chosen model against OpenRouter, shown under the picker.
+  const [check, setCheck] = useState(null);
+  const [checkingId, setCheckingId] = useState('');
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -96,6 +87,27 @@ function ModelSelector({ value, onChange }) {
   useEffect(() => {
     loadModels();
   }, [apiKey]);
+
+  useEffect(() => {
+    if (!value) { setCheck(null); return undefined; }
+    let live = true;
+    setCheck({ state: 'checking' });
+    verifyModel(value, apiKey).then((r) => { if (live) setCheck(r); });
+    return () => { live = false; };
+  }, [value, apiKey]);
+
+  // A typed id is checked before it is saved. Dead is refused; offline is let
+  // through, since the next call will say so anyway.
+  const useExactId = async (id) => {
+    setCheckingId(id);
+    const r = await verifyModel(id, apiKey);
+    setCheckingId('');
+    if (r.state === 'dead') {
+      setErrorMsg(`${id} can't be used: ${r.reason}.`);
+      return;
+    }
+    onChange(id); setIsOpen(false); setSearch('');
+  };
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -146,6 +158,23 @@ function ModelSelector({ value, onChange }) {
           {isOpen ? '▲' : '▼'}
         </span>
       </button>
+
+      {check && check.state !== 'checking' && (
+        <div
+          role="status"
+          style={{
+            marginTop: 4,
+            fontSize: '0.72rem',
+            color: check.state === 'live' ? '#4ade80' : check.state === 'dead' ? '#f87171' : 'rgba(155,161,170,0.7)',
+          }}
+        >
+          {check.state === 'live' && (check.providers
+            ? `Live on OpenRouter · ${check.providers} provider${check.providers === 1 ? '' : 's'}`
+            : 'Listed on OpenRouter')}
+          {check.state === 'dead' && `Not usable: ${check.reason}. Pick another model.`}
+          {check.state === 'unknown' && `Couldn't check OpenRouter right now (${check.reason}).`}
+        </div>
+      )}
 
       {isOpen && (
         <div
@@ -256,10 +285,11 @@ function ModelSelector({ value, onChange }) {
             {search.trim() && /^[\w.-]+\/[\w.:-]+$/.test(search.trim()) && !models.some(m => m.id === search.trim()) && (
               <button
                 type="button"
-                onClick={() => { onChange(search.trim()); setIsOpen(false); setSearch(''); }}
+                onClick={() => useExactId(search.trim())}
+                disabled={checkingId === search.trim()}
                 style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'rgba(155,161,170,0.15)', border: 'none', cursor: 'pointer', color: '#e6e8eb', fontSize: '0.8rem' }}
               >
-                Use exact model ID: <b>{search.trim()}</b>
+                {checkingId === search.trim() ? 'Checking OpenRouter for ' : 'Use exact model ID: '}<b>{search.trim()}</b>
               </button>
             )}
             {!loading && filtered.length === 0 && (

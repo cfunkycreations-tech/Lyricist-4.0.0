@@ -24,6 +24,7 @@
  * where `size` says, so the voice can get deeper without getting muddier, or
  * bigger-chested without changing pitch.
  */
+import { createSpeech } from './openrouter.js';
 
 export const SR = 24000;
 
@@ -124,20 +125,12 @@ async function requestTake(s, text, apiKey) {
   if (v.directed) body.instructions = directionFor(s);
   let res;
   for (let attempt = 1; attempt <= 3; attempt++) {
-    res = await fetch('https://openrouter.ai/api/v1/audio/speech', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'X-Title': 'Lyricist Pro Voice Lab' },
-      body: JSON.stringify(body),
-    });
-    if (res.ok || (res.status < 500 && res.status !== 429)) break;
+    res = await createSpeech(body, { apiKey });
+    if (res.ok || (res.status && res.status < 500 && res.status !== 429)) break;
     await new Promise((r) => setTimeout(r, 1200 * attempt));
   }
-  if (!res.ok) {
-    let msg = `${res.status}`;
-    try { msg = (await res.json())?.error?.message || msg; } catch { /* not json */ }
-    throw new Error(`${v.label}: ${msg}`);
-  }
-  const buf = await res.arrayBuffer();
+  if (!res.ok) throw new Error(`${v.label}: ${res.message || res.status}`);
+  const buf = await res.res.arrayBuffer();
   if (v.pcm) {                       // Gemini: raw 16-bit little-endian mono at 24 kHz
     const i16 = new Int16Array(buf, 0, buf.byteLength >> 1);
     const out = new Float32Array(i16.length);
