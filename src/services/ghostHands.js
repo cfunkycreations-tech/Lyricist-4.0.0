@@ -335,6 +335,62 @@ export async function ghostBefore(name, args = {}) {
   }
 }
 
+/**
+ * WHERE TO LOOK WHILE IT TALKS.
+ *
+ * A job says a step's line first and only then asks the model what to press,
+ * so for the whole sentence the hand used to sit where it started, over the
+ * Ask the Ghost button. This reads the step for the tab and the control it is
+ * about and glides there as the line starts. Move only, nothing is pressed.
+ */
+const STEP_AIMS = [
+  [/caption/i, '[data-demo="omb-rewrite"]'],
+  [/make the song|generate|render|record (it|the song)/i, '[data-demo="omb-make"], [data-demo="sw-generate"], [data-demo="sf-forge"]'],
+  [/lyric|words/i, '[data-demo="omb-lyrics"]'],
+  [/topic/i, '[placeholder^="e.g. city lights"]'],
+  [/length|long|seconds|minutes/i, '[data-demo="omb-length"]'],
+  [/engine|cloud|kaggle/i, '[data-demo="omb-engine"]'],
+  [/takes?\b/i, '[data-demo="omb-takes"]'],
+  [/keywords?/i, '#ql-kw-input'],
+  [/artist/i, '[data-demo="gr-artist"]'],
+];
+
+/** Every tab on the tab bar by the name on it, read off the group buttons. */
+function tabsByName() {
+  const out = [];
+  for (const g of document.querySelectorAll('[data-tab-ids]')) {
+    const ids = g.dataset.tabIds.split(' ');
+    const names = String(g.dataset.help || '').replace(/^[^:]*:/, '').replace(/\.$/, '').split(',').map((t) => t.trim());
+    names.forEach((label, i) => { if (label && ids[i]) out.push({ label, id: ids[i] }); });
+  }
+  return out;
+}
+
+export async function aimForStep(text = '') {
+  if (getHandSpeed() === 'off' || handStopped()) return;
+  const t = String(text);
+  try {
+    // A tab named in the step that is not the one showing: point at its tab.
+    const named = tabsByName()
+      .map((tab) => ({ ...tab, at: t.toLowerCase().indexOf(tab.label.toLowerCase()) }))
+      .filter((tab) => tab.at >= 0)
+      .sort((a, b) => a.at - b.at)[0];
+    const pane = activePane();
+    if (named && pane?.dataset?.tabPane !== named.id) {
+      const el = tabButton(named.id);
+      if (el) { await moveHandTo(el); return; }
+    }
+    if (pane === document.body) return;
+    for (const [re, sel] of STEP_AIMS) {
+      if (!re.test(t)) continue;
+      const el = [...pane.querySelectorAll(sel)].find(visible);
+      if (el) { await moveHandTo(el); return; }
+    }
+    const land = paneLandmark(pane);
+    if (land) await moveHandTo(land);
+  } catch { /* stopped, or nothing to aim at */ }
+}
+
 /** What can be pressed and filled on the tab that is showing, for the Ghost to read. */
 export function describeControls() {
   const pane = activePane();
