@@ -105,6 +105,12 @@ const desktopOut =
 
 fs.mkdirSync(desktopOut, { recursive: true });
 
+// The installer step (makensis) maps the whole ~430 MB payload through a file
+// in TEMP, and C: is nearly full on Chris's machine ("error creating mmap").
+// Keep that temp file on the same drive as the output.
+const buildTemp = path.join(desktopOut, '.build-temp');
+fs.mkdirSync(buildTemp, { recursive: true });
+
 function run(cmd, cmdArgs, opts = {}) {
   console.log(`> ${cmd} ${cmdArgs.join(' ')}`);
   const r = spawnSync(cmd, cmdArgs, {
@@ -113,6 +119,8 @@ function run(cmd, cmdArgs, opts = {}) {
     shell: true,
     env: {
       ...process.env,
+      TEMP: buildTemp,
+      TMP: buildTemp,
       LYRICIST_FULL_VERSION: fullVersion,
       LYRICIST_BUILD: buildPad,
       // Vite never overrides a variable already in the process, so this wins
