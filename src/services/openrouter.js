@@ -149,3 +149,39 @@ async function check(model, apiKey) {
   }
   return { state: 'unknown', reason: r.message || got.message || 'OpenRouter did not answer' };
 }
+
+/**
+ * What to tell someone whose call came back "No endpoints found for <model>".
+ *
+ * That error does NOT mean the model is gone. Stealth models (e.g.
+ * stealth/space-bunny-alpha) log every prompt, so an account whose privacy
+ * settings refuse logging or training providers, or that has Zero Data
+ * Retention on, has no endpoint it is allowed to use. Only if the model
+ * itself is gone from OpenRouter is "pick another" the answer.
+ */
+/** " (reason)", unless the reason just repeats "not on OpenRouter". */
+export const why = (v) => (v.reason && v.reason !== 'not on OpenRouter' ? ` (${v.reason})` : '');
+
+export async function noEndpointsHelp(model, apiKey) {
+  const v = await verifyModel(model, apiKey);
+  if (v.state === 'dead') return `${model} isn't on OpenRouter any more${why(v)}. Pick another model in Settings.`;
+  return [
+    `OpenRouter has ${model}, but your account's settings rule out every provider serving it ("No endpoints found").`,
+    '',
+    'Stealth models log every prompt. At https://openrouter.ai/settings/privacy:',
+    '  1. Allow providers that may log or train on your prompts.',
+    '  2. Turn Zero Data Retention (ZDR) off.',
+    'Then run it again here.',
+  ].join('\n');
+}
+
+/**
+ * The one real test: a tiny call. Only a 404 counts against the model; any
+ * other answer (even a 400 over the 1-token budget) means OpenRouter routed it.
+ */
+export async function probeModel(model, apiKey) {
+  if (!apiKey) return 'unknown';
+  const r = await chatCompletion({ model, max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] }, { apiKey });
+  if (r.ok || (r.status && r.status !== 404)) return 'answers';
+  return r.status === 404 ? 'no-endpoints' : 'unknown';
+}

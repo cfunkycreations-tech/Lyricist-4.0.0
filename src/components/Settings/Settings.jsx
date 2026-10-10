@@ -4,7 +4,7 @@ import { useLyricStore, DEFAULT_CONFIG } from '../../context/LyricStore.jsx';
 import { Save, RefreshCw, Key, Shield, HelpCircle, Hammer, FolderOpen } from 'lucide-react';
 import { notify, ask } from '../../services/dialog.js';
 import { normalizeApiKey } from '../../services/AIService.js';
-import { listModels, verifyModel } from '../../services/openrouter.js';
+import { listModels, verifyModel, probeModel } from '../../services/openrouter.js';
 import { IMAGE_MODELS, DEFAULT_IMAGE_MODEL } from '../../services/GeminiService.js';
 import { PRISM_NAMES, ACCENT_PRESETS, accentHex, getPrism } from '../../services/prismTheme.js';
 import { isEnabled as analyticsEnabled, optIn, optOut } from '../../services/analytics.js';
@@ -18,6 +18,7 @@ import VstPlugins from './VstPlugins.jsx';
    colour pair the slider had stopped producing. One source, one truth. */
 
 const MODELS_CACHE_KEY = 'openrouter-models-cache-v3';   // v2 still held a dead pinned stealth model
+const STEALTH_IDS = ['stealth/space-bunny-alpha'];
 const MODELS_CACHE_TTL = 15 * 60 * 1000; // new/stealth models show up within 15 min
 
 try { localStorage.removeItem('openrouter-models-cache-v2'); } catch { /* storage blocked */ }
@@ -40,6 +41,13 @@ async function fetchOpenRouterModels(forceRefresh = false, apiKey = '') {
     // Nothing is pinned by hand: a model shows up here only if OpenRouter
     // lists it right now.
     const models = await listModels(apiKey);
+    // Stealth models often sit outside every catalogue list. These are added
+    // when OpenRouter confirms they exist, never on trust.
+    const have = new Set(models.map((m) => m.id));
+    for (const id of STEALTH_IDS.filter((x) => !have.has(x))) {
+      const v = await verifyModel(id, apiKey);
+      if (v.state !== 'dead') models.push({ id, name: `${v.name && v.name !== id ? v.name : id} (stealth)` });
+    }
     try {
       localStorage.setItem(MODELS_CACHE_KEY, JSON.stringify({ fetchedAt: Date.now(), models }));
     } catch { /* storage full — cache is best-effort */ }
@@ -101,8 +109,9 @@ function ModelSelector({ value, onChange }) {
   const pickExactId = async (id) => {
     setCheckingId(id);
     const r = await verifyModel(id, apiKey);
+    const answers = r.state === 'dead' && (await probeModel(id, apiKey)) === 'answers';
     setCheckingId('');
-    if (r.state === 'dead') {
+    if (r.state === 'dead' && !answers) {
       setErrorMsg(`${id} can't be used: ${r.reason}.`);
       return;
     }

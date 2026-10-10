@@ -5,7 +5,7 @@ import { cleanRefineOutput } from '../utils/refineClean.js';
 import { inspectGenerated, truncateAtCollapse } from '../utils/lyricSanity.js';
 import { stripReasoning, isMostlyReasoning } from '../utils/stripReasoning.js';
 import { blendPhrase } from '../utils/blend.js';
-import { chatCompletion, listModels } from './openrouter.js';
+import { chatCompletion, listModels, noEndpointsHelp } from './openrouter.js';
 
 export const lastGeneration = { model: null, provider: null, ok: true, reasons: [], dropped: 0, at: null, unfiltered: false };
 
@@ -235,7 +235,7 @@ async function singleCall(messages, config, modelId, customTemp, customMax, room
       throw new Error(DATA_POLICY_HELP);
     }
     if (isNoEndpointsError(attempt.status, attempt.message)) {
-      throw new Error(`${targetModel} isn't on OpenRouter right now: no provider is serving it. Pick another model in Settings, the list there only shows live ones.`);
+      throw new Error(await noEndpointsHelp(targetModel, normalizeApiKey(config?.openRouterApiKey)));
     }
     throw new Error(attempt.message || `API Error (${targetModel}): status ${attempt.status}`);
   }

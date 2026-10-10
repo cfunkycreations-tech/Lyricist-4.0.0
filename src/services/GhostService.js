@@ -26,7 +26,7 @@ import { assertApiKey } from './AIService.js';
 import { stripReasoning } from '../utils/stripReasoning.js';
 import { availableGhostActions } from './ghostBus.js';
 import { examplesForPrompt } from './minimaxExamples.js';
-import { chatCompletion, listModels } from './openrouter.js';
+import { chatCompletion, listModels, noEndpointsHelp } from './openrouter.js';
 
 
 
@@ -742,6 +742,9 @@ export async function askGhost({ history = [], question, config, tab = 'songwrit
   }
   if (res.status === 429) {
     throw new Error('Every model I tried is busy right now. Give it a minute and ask again.');
+  }
+  if (res.status === 404 && /no endpoints found/i.test(res.message)) {
+    throw new Error(await noEndpointsHelp(model, key));
   }
   if (!res.ok) {
     throw new Error(`OpenRouter answered ${res.status}. Try again in a moment.`);

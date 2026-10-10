@@ -46,9 +46,13 @@ Three beds play under the Ghost Demo as seamless loops:
 - Attribution on every request: `HTTP-Referer: https://cfunkycreationsllc.com`
   and `X-Title: Lyricist Pro`. Before this it was split
   across lyricist.app / fafoaudio.com and five names. Change both in one place.
-- The hand-pinned `stealth/space-bunny-alpha` in the Settings picker is gone
-  (it caused "No endpoints found for stealth/space-bunny-alpha"). Cache key
-  bumped to v3 so the old list with the pin is never served.
+- `stealth/space-bunny-alpha` is real (OpenRouter's stealth page, listed
+  2026-09-23, free). "No endpoints found" for it means the account's privacy
+  settings exclude its only provider (stealth models log prompts; ZDR or
+  "no logging/training" blocks it), not that it's gone. The app now says so
+  (`noEndpointsHelp()`), the picker adds stealth ids only once OpenRouter
+  confirms them, and nothing is auto-swapped unless a 1-token probe also gets
+  "No endpoints found". Cache key v3.
 - `verifyModel(id)`: SDK `models.get`, then `endpoints.list`, then the
   catalogue. Dead = 404 everywhere or zero endpoints; offline = unknown and
   changes nothing. Settings shows "Live on OpenRouter · N providers" or "Not
