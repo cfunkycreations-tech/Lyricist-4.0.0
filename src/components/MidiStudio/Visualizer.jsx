@@ -18,6 +18,8 @@ export default function Visualizer() {
   const presetsRef = useRef({ names: [], map: {} });
 
   const [running, setRunning] = useState(true);
+  const [ready, setReady] = useState(false);       // butterchurn built
+  const [onScreen, setOnScreen] = useState(true);  // canvas in view
   const [presetName, setPresetName] = useState('');
   const [presetIndex, setPresetIndex] = useState(0);
   const [allNames, setAllNames] = useState([]);
@@ -219,11 +221,7 @@ export default function Visualizer() {
         window.addEventListener('resize', resize);
         removeResize = () => window.removeEventListener('resize', resize);
 
-        const render = () => {
-          if (vizRef.current) vizRef.current.render();
-          rafRef.current = requestAnimationFrame(render);
-        };
-        rafRef.current = requestAnimationFrame(render);
+        setReady(true);
 
         cycleTimer = setInterval(() => {
           if (autoCycleRef.current) loadRandomPreset();
@@ -239,15 +237,26 @@ export default function Visualizer() {
       if (cycleTimer) clearInterval(cycleTimer);
       removeResize();
       vizRef.current = null;
+      setReady(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadRandomPreset]);
+
+  // Scrolled down to the sequencer? Stop drawing — WebGL every frame off-screen
+  // was dragging the whole MIDI Studio down to ~15 fps.
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   // While it's on another screen the inline canvas stops drawing — no reason to
   // run two WebGL visualizers when only one is being looked at.
   useEffect(() => {
     cancelAnimationFrame(rafRef.current);
-    if (running && !poppedTo) {
+    if (ready && running && !poppedTo && onScreen) {
       const render = () => {
         if (vizRef.current) vizRef.current.render();
         rafRef.current = requestAnimationFrame(render);
@@ -255,7 +264,7 @@ export default function Visualizer() {
       rafRef.current = requestAnimationFrame(render);
     }
     return () => cancelAnimationFrame(rafRef.current);
-  }, [running, poppedTo]);
+  }, [ready, running, poppedTo, onScreen]);
 
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
