@@ -488,7 +488,7 @@ export default function LoopStation() {
           data-help="Sends this BPM as a groove target to The Matrix (syllable budget + stress bias). No audio upload — just the pocket."
         >
           <span className="rc-round-icon"><Grid3x3 size={18} strokeWidth={1.8} /></span>
-          <span className="rc-round-label">Quantum</span>
+          <span className="rc-round-label">Matrix</span>
         </button>
         <button
           onClick={saveLoops}

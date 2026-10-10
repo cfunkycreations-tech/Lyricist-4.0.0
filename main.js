@@ -1486,6 +1486,9 @@ function getJuceEnginePath() {
   const p2 = path.join(__dirname, 'juce-backend', 'build', 'Release', 'LyricistEngine.exe');
   if (fs.existsSync(p1)) return p1;
   if (fs.existsSync(p2)) return p2;
+  // JUCE's own output folder, for a build that skipped the POST_BUILD copy.
+  const p3 = path.join(__dirname, 'juce-backend', 'build', 'LyricistEngine_artefacts', 'Release', 'Lyricist Engine.exe');
+  if (fs.existsSync(p3)) return p3;
   return null;
 }
 

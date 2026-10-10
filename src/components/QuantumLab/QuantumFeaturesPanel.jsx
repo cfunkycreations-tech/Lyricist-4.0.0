@@ -288,7 +288,7 @@ export default function QuantumFeaturesPanel({
     if (!hs) {
       setStatus({
         lead: 'No loop handshake yet.',
-        rest: ' Open RC-Funk 5000, set BPM, hit “Send groove to Quantum”. Then pull here.',
+        rest: ' Open RC-Funk 5000, set BPM, hit the round “Matrix” button. Then pull here.',
       });
       return;
     }
@@ -309,7 +309,7 @@ export default function QuantumFeaturesPanel({
     if (!s) {
       setStatus({
         lead: 'No Style DNA in chamber.',
-        rest: ' Run Ghost Rider → analyze an artist → “Send Style DNA to Quantum”.',
+        rest: ' Run Ghost Rider → analyze an artist → “Send Style DNA to The Matrix”.',
       });
       return;
     }
@@ -676,7 +676,7 @@ export default function QuantumFeaturesPanel({
               {loopInfo.updatedAt ? ` · ${new Date(loopInfo.updatedAt).toLocaleTimeString()}` : ''}
             </div>
           ) : (
-            <div className="ql-adv-empty">No handshake yet. On RC-Funk: set BPM → “Send groove to Quantum”.</div>
+            <div className="ql-adv-empty">No handshake yet. On RC-Funk: set BPM → the round “Matrix” button.</div>
           )}
         </div>
       )}
@@ -716,7 +716,7 @@ export default function QuantumFeaturesPanel({
               </div>
             </div>
           ) : (
-            <div className="ql-adv-empty">No Style DNA loaded. Ghost Rider → analyze → Send to Quantum.</div>
+            <div className="ql-adv-empty">No Style DNA loaded. Ghost Rider → analyze → Send Style DNA to The Matrix.</div>
           )}
         </div>
       )}

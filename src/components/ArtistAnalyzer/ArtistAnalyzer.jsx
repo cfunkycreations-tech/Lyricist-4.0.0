@@ -177,10 +177,8 @@ export default function ArtistAnalyzer({ onGhostSend }) {
         setStyleDNA(parsed);
         // Persist for Quantum Lab pressure chamber (feature 8)
         try {
-          localStorage.setItem(
-            'lyricistStyleDNAPressure',
-            JSON.stringify({ ...parsed, artist: artistName, savedAt: Date.now() })
-          );
+          writeStylePressure(parsed, artistName);
+          window.dispatchEvent(new CustomEvent('lyricist:style-dna', { detail: parsed }));
         } catch { /* */ }
       }
     } catch {
@@ -726,10 +724,8 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                       type="button"
                       onClick={() => {
                         try {
-                          localStorage.setItem(
-                            'lyricistStyleDNAPressure',
-                            JSON.stringify({ ...styleDNA, artist: artist.trim(), savedAt: Date.now() })
-                          );
+                          writeStylePressure(styleDNA, artist.trim());
+                          window.dispatchEvent(new CustomEvent('lyricist:style-dna', { detail: styleDNA }));
                           notify('Style DNA sent to The Matrix.\nOpen The Matrix → Advanced Studio → 8 Style → Load Style DNA pressure.', { tone: 'ok' });
                         } catch (e) {
                           notify('Could not save Style DNA: ' + (e?.message || e), { tone: 'error' });
@@ -747,7 +743,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
                         cursor: 'pointer',
                       }}
                     >
-                      <Icon i={Grid3x3} />Send Style DNA to Quantum
+                      <Icon i={Grid3x3} />Send Style DNA to The Matrix
                     </button>
                   </div>
                 </div>
