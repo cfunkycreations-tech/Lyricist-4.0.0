@@ -164,6 +164,8 @@ export async function runGhostAction(name, args = {}) {
   record('result', `${r.ok ? '✓' : '✗'} ${clipText(r.said || (r.ok ? 'done' : 'failed'), 400)}${r.warn ? `  ⚠ ${clipText(r.warn, 200)}` : ''} (${secs}s)`);
   // What the tab it acted on (and the one on screen) holds now.
   const owner = tabForAction(name);
+  // Let React commit what the action set, or the tab reads back its old state.
+  await new Promise((ok) => setTimeout(ok, 250));
   const look = await peekTabs([owner, visibleTab()].filter(Boolean)).catch(() => '');
   if (look) record('state', `after ${name}`, look);
   snapshot(name);

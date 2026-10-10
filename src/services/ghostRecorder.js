@@ -34,7 +34,8 @@ let saveTimer = null;
 function keep() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    try { localStorage.setItem(KEEP_KEY, JSON.stringify(events.slice(-1500))); } catch { /* full: memory and disk still have it */ }
+    // Clipped: the full prompts and replies are on disk; this must not eat the space his key and picks live in.
+    try { localStorage.setItem(KEEP_KEY, JSON.stringify(events.slice(-1500).map((e) => (e.full ? { ...e, full: clip(e.full, 700) } : e)))); } catch { /* full: memory and disk still have it */ }
   }, 800);
 }
 

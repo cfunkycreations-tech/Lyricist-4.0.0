@@ -629,7 +629,7 @@ step's line was already spoken.${attempt ? `\n\nThe last try at this step did no
                 onClick={() => {
                   const next = !stow;
                   setStow(next);
-                  localStorage.setItem(STOW_KEY, next ? '1' : '0');
+                  try { localStorage.setItem(STOW_KEY, next ? '1' : '0'); } catch { /* storage blocked */ }
                 }}
                 title={stow
                   ? 'Panel closes on Enter so the recording captures the app, not this box. Voice is a separate toggle.'
