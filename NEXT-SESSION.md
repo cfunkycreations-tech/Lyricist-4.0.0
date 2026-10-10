@@ -11,33 +11,40 @@ npm run release
 
 ## Start here: background music under the Ghost Demo
 
-Chris made two beds in Suno for the Ghost's narration. They are prepared and in
-the repo, **not wired up yet**:
+Three beds, all prepared as seamless loops, **not wired into GhostDemo yet**:
 
-| file | length | what it is |
+| bed | loop | what it is |
 |---|---|---|
-| `src/assets/ghost-bg/ghost-bg-deep.mp3` | 39.4 s | dark sub-bass drone, slow swells every ~15 s |
-| `src/assets/ghost-bg/ghost-bg-noir.mp3` | 27.4 s | noir trip-hop: soft drums, bass, keys |
+| `ghost-bg-blackhole.mp3` | 46.6 to 107.4 s (60.8 s), intro plays once | Chris's 2-min Suno song `blackhole.flac` |
+| `ghost-bg-deep.mp3` | 8.0 to 24.0 s (16.0 s) | dark sub-bass drone |
+| `ghost-bg-noir.mp3` | 4.3 to 23.1 s (18.9 s) | noir trip-hop |
 
-Already done to them: the Suno hard cuts are trimmed off (deep stopped dead at
-full volume mid-swell; noir had a clipped fragment of the next bar after a
-gap), each fades out over its last natural decay (deep 35.2 to 39.4 s, noir
-24.4 to 27.4 s, linear) to digital silence, 30 ms fade-in, and both are matched
-to -20 LUFS (the originals were mastered to 0 dB and clipping). Sources are
-Chris's uploads `deep.sub2.flac` and `noir.flac`, not in the repo.
+All in `src/assets/ghost-bg/`, loop points in `beds.json`. Made by
+`scripts/prepare-ghost-bed.py <file> <name> [--usable-end SEC] [--xfade SEC]`:
+it finds the longest loop whose ends match in spectrum, rhythm and level
+(within 1 dB), aligns transients to the sample, bakes a correlation-compensated
+crossfade before loopEnd (plus a 60 ms guard after it), levels the intro to the
+loop, and matches the loop to -20 LUFS. **More tracks are coming from Chris:
+run the script on each, nothing else to do for the files.** deep/noir were
+re-made from their earlier committed mp3s (usable to 35.2 / 24.4 s).
 
-To wire it, in `src/components/Onboarding/GhostDemo.jsx`:
-- Import through Vite (`import.meta.glob` or a direct import), never `public/`.
-  `public/` assets don't resolve in the packaged app (build 063's black panels).
-- Start the bed when a demo starts and fade it out when the demo ends or stops.
-- Duck it under the voice: the clip plays through `speak()` (`audioRef`), so
-  drop the bed's gain while a clip is playing (roughly 0.15) and bring it back
-  between lines (roughly 0.35). Ramp it, don't step it.
-- Respect the existing voice/Ghost Demo toggles. Off means silent.
-- **Ask Chris** which bed goes with which tab (deep for Black Hole Studios is
-  the obvious guess) and what happens when a demo outlasts the track. The fades
-  are baked in, so a plain `loop` dips to silence every 27 to 39 s. Either play
-  it once, or crossfade two copies into each other. Don't decide silently.
+Chris's answers: any bed on any tab is fine, loop them, use as much of each
+file as needed. (blackhole on Black Hole Studios is the natural pick.)
+
+Still open:
+- Play through Web Audio: `AudioBufferSourceNode` with `loop`, `loopStart`,
+  `loopEnd` from `beds.json`, `start(0, 0)`. Load with the fetch-then-XHR
+  fallback (`getBuffer()` in `soundfontEngine.js`), since the packaged app is
+  on `file://`. Import the mp3s through Vite, never `public/`.
+- Duck under the voice (`audioRef` play: ~0.15, pause/ended: ~0.35, ramped,
+  `cancelScheduledValues` first). Pause holds the bed. Voice Off = silent.
+  Fade out from the unmount cleanup; guard the async decode against
+  StrictMode's double mount (check the run id before starting).
+- Verify the seams in Chromium (playwright 1.56.x): render two cycles through
+  OfflineAudioContext and check for clicks or level steps at loopEnd. This
+  also shows whether Chromium strips the MP3 encoder delay (the guard covers
+  up to 60 ms either way). Not done yet.
+- Nobody has listened to the loops. blackhole wasn't checked for vocals.
 
 ## What else landed this session
 
