@@ -235,6 +235,7 @@ export default function PushHeader({ tabs, activeTab, onSelect }) {
               aria-expanded={openGroup === g.id}
               className={`pc pc-group${on ? ' is-on' : ''}${openGroup === g.id ? ' is-open' : ''}`}
               style={{ '--g': g.hue }}
+              data-tab-ids={g.tabs.join(' ')}
               onClick={() => { wake(); setOpenGroup((o) => (o === g.id ? null : g.id)); }}
               data-help={`${g.name}: ${g.tabs.map((id) => byId.get(id)?.label).filter(Boolean).join(', ')}.`}
             >
@@ -256,6 +257,7 @@ export default function PushHeader({ tabs, activeTab, onSelect }) {
               aria-selected={activeTab === id}
               className={`pc pc-tab${activeTab === id ? ' is-on' : ''}`}
               style={{ '--g': shown.hue }}
+              data-tab-id={id}
               onClick={() => { wake(); onSelect(id); }}
               data-help={t.help}
             >

@@ -220,6 +220,7 @@ function draftCaption({ genres, moods, voices, seconds }) {
   const genre = blendLabel(gs);
   const mood = blendLabel(ms);
   const voice = blendLabel(vs);
+  const style = genre || 'the style';
 
   /**
    * NOTHING PICKED MEANS NOTHING WRITTEN.
@@ -257,10 +258,12 @@ function draftCaption({ genres, moods, voices, seconds }) {
           ? `Global Emotional Progression: ${mood.toLowerCase()} from the opening bar, holding that `
             + `character through to the end. `
           : '')
-      + `Application Scenarios & Imagery: a small room, a worn instrument, someone playing for `
-      + `the sake of it. `
-      + `Sonics & Production Profile: dark and earthy, close-miked, analog warmth, sharp `
-      + `percussion transients, room sound rather than plate reverb.`,
+      // Production follows the genre. This used to say "a small room, a worn
+      // instrument ... close-miked, analog warmth" for every pick, left over
+      // from when the tab opened on Blues rock, and it made grunge come out
+      // sounding like a bar band.
+      + `Sonics & Production Profile: produced and mixed the way a ${style} record is, `
+      + `nothing borrowed from other styles.`,
     vocals: instrumental
       ? 'This piece is instrumental with no vocals. The lead melodic role is carried by the '
         + 'main instrument of the arrangement.'
@@ -270,15 +273,13 @@ function draftCaption({ genres, moods, voices, seconds }) {
         // dropping the vocal, and so the heading the validator looks for is here.
         ? 'Vocal Gender & Timbre: no particular singer specified — choose a voice that suits the '
           + 'style and keep it consistent. '
-          + 'Vocal Style: conversational phrasing, sung slightly ahead of the beat. '
+          + `Vocal Style: phrasing true to ${style}. `
           + 'Harmony/Backing Vocals: sparse, only where the song lifts.'
         : `Vocal Gender & Timbre: ${vs.length > 1
           ? `${vs[0]} on lead, with ${vs.slice(1).join(' and ')} in support and in harmony`
-          : voice}, weathered and full-throated with real grain. `
-          + `Vocal Style: sung slightly ahead of the beat, conversational phrasing, a falling `
-          + `motif at the end of each line. `
-          + `Harmony/Backing Vocals: sparse, only where the song lifts. `
-          + `Vocal FX: light slapback delay, dry otherwise.`,
+          : voice}. `
+          + `Vocal Style: delivered the way ${style} is sung. `
+          + `Harmony/Backing Vocals: sparse, only where the song lifts.`,
     // The genre's own instruments, not a generic band. This is the single
     // biggest thing that makes a world-music pick sound like that music
     // instead of like pop with a different label on it.
@@ -286,11 +287,27 @@ function draftCaption({ genres, moods, voices, seconds }) {
       `Instrument Lifecycle Description (Primary/Secondary Layering): Primary: ${mergedKit(gs)} `
       + `carry the song from the first bar. Secondary: supporting parts join early and stay; a `
       + `lead line answers the vocal only where the song opens up. `
-      + `Groove & Foundation Progression: thumping kick with snare on 2 and 4, brushes where it `
-      + `is quiet and sticks where it is not. `
-      + `Embellishments, Textures & Spatial FX: string noise and room tone left in, ending on a `
-      + `ringing open chord.`,
+      + `Groove & Foundation Progression: drums and bass played the way ${style} plays them.`,
   };
+}
+
+/**
+ * The picks, as the skill's "Additional constraints" input.
+ *
+ * Without these the skill only saw the caption text, routed on whatever words
+ * were in it, and could hand a grunge pick a country template.
+ */
+function picksForSkill({ genres = [], moods = [], voices = [], instrumental = false }) {
+  const gs = genres.filter(Boolean);
+  const out = [];
+  if (gs.length) {
+    out.push(`Genre, which must stay the genre: ${gs.map((g) => `${g} (${kitFor(g)})`).join('; ')}. `
+      + 'Do not add instruments, vocal treatments or production from other styles.');
+  }
+  if (moods.length) out.push(`Mood: ${moods.join(', ')}.`);
+  if (instrumental) out.push('Instrumental, no vocals.');
+  else if (voices.length) out.push(`Lead voice: ${voices.join(', ')}.`);
+  return out.join(' ');
 }
 
 export default function OneManBand() {
@@ -590,6 +607,7 @@ export default function OneManBand() {
       const r = await runCaptionSkill({
         caption,
         lyrics,
+        constraints: picksForSkill({ genres, moods, voices, instrumental }),
         config: store.config,
         onStage: (msg) => setPhase(msg),
       });
@@ -1036,7 +1054,8 @@ export default function OneManBand() {
       const r = await runCaptionSkill({
         caption: seed,
         lyrics,
-        constraints: String(instruction || ''),
+        constraints: [String(instruction || ''), picksForSkill({ genres, moods, voices, instrumental })]
+          .filter((t) => t.trim()).join(' '),
         config: store.config,
         onStage: (msg) => setPhase(msg),
       });
@@ -1163,7 +1182,7 @@ export default function OneManBand() {
           />
         )}
 
-        <div className="omb-engine">
+        <div className="omb-engine" data-demo="omb-engine">
           <span className="omb-lbl">Where it runs</span>
           <button type="button" className="omb-eng" aria-pressed={engine === 'cloud'}
                   onClick={() => setEngine('cloud')}>
@@ -1216,7 +1235,7 @@ export default function OneManBand() {
                   Example: {ex.genre.split('/')[0].trim()}
                 </button>
               ))}
-              <button type="button" className="omb-mini" onClick={pullFromSongwriter}>
+              <button type="button" className="omb-mini" data-demo="omb-pull" onClick={pullFromSongwriter}>
                 Pull from Songwriter
               </button>
             </div>
@@ -1250,7 +1269,7 @@ export default function OneManBand() {
               ))}
             </div>
 
-            <button type="button" className="omb-shape" onClick={addWholeShape}>
+            <button type="button" className="omb-shape" data-demo="omb-shape" onClick={addWholeShape}>
               <b>Lay out a whole song</b>
               <span>{SONG_SHAPE.join(' · ').toLowerCase()}</span>
             </button>
@@ -1262,7 +1281,7 @@ export default function OneManBand() {
               </p>
             )}
 
-            <GrowBox className="omb-sheet" minRows={18} value={lyrics} spellCheck
+            <GrowBox className="omb-sheet" data-demo="omb-lyrics" minRows={18} value={lyrics} spellCheck
                      placeholder={'[Verse]\nWrite your words here, or pull them in from Songwriter.'}
                      onChange={(e) => setLyrics(e.target.value)} />
           </div>
@@ -1313,7 +1332,7 @@ export default function OneManBand() {
                 <div className="omb-cap">
                   <span>Input Caption, written for you, edit freely</span>
                   <span style={{ display: 'flex', gap: 6 }}>
-                    <button type="button" className="omb-mini" disabled={rewriting}
+                    <button type="button" className="omb-mini" disabled={rewriting} data-demo="omb-rewrite"
                             onClick={rewriteWithAI}>
                       {rewriting ? (phase || 'Writing…') : "Rewrite with MiniMax's caption skill"}
                     </button>
@@ -1334,6 +1353,7 @@ export default function OneManBand() {
                     put an answer that belongs in one. The headings live inside
                     the text, which is how MiniMax reads it anyway. */}
                 <GrowBox
+                  data-demo="omb-caption"
                   minRows={12}
                   value={caption}
                   spellCheck={false}
@@ -1373,7 +1393,7 @@ export default function OneManBand() {
 
               <div className="omb-grp">
                 <h3>The basics</h3>
-                <div className="omb-knob">
+                <div className="omb-knob" data-demo="omb-length">
                   {/* IT IS A CEILING, NOT A LENGTH, AND SAYING OTHERWISE COST HIM
                       A TWO HOUR RUN. Chris set this to 5 minutes and got 2:26
                       back. The notebook wires this to MiniMax's `max_duration`,
@@ -1472,11 +1492,11 @@ export default function OneManBand() {
                   typo costs you the whole run.
                 </p>
                 {busy ? (
-                  <button type="button" className="omb-make busy" onClick={stop}>
+                  <button type="button" className="omb-make busy" data-demo="omb-make" onClick={stop}>
                     {phase || 'working'} &nbsp;{Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')} &nbsp;— stop
                   </button>
                 ) : (
-                  <button type="button" className="omb-make" onClick={make}>Make the song</button>
+                  <button type="button" className="omb-make" data-demo="omb-make" onClick={make}>Make the song</button>
                 )}
                 {error && <p className="omb-error">{error}</p>}
                 {!error && phase === 'saved to Recordings' && <p className="omb-ok">Saved to Recordings</p>}

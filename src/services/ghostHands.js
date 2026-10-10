@@ -21,7 +21,7 @@
  * calls run instantly.
  */
 import {
-  pressHand, typeWithHand, handStopped, getHandSpeed,
+  pressHand, moveHandTo, typeWithHand, handStopped, getHandSpeed,
 } from './ghostCursor.js';
 
 const BUTTONS = [
@@ -239,15 +239,76 @@ const BEFORE = {
   ],
   matrix_send_to_songwriter: [{ point: '[data-demo="ql-send-songwriter"]' }],
   matrix_send_to_forge: [{ point: '[data-demo="ql-send-forge"]' }],
+
+  // Black Hole Studios. None of these had an entry, so on that tab the Ghost
+  // talked about writing the caption and making the song from wherever it
+  // was last parked, usually over its own Ask the Ghost button.
+  set_lyrics: [{ point: '[data-demo="omb-lyrics"]' }],
+  append_lyrics: [{ point: '[data-demo="omb-lyrics"]' }],
+  restore_lyrics: [{ point: '[data-demo="omb-lyrics"]' }],
+  blackhole_pull_from_songwriter: [{ point: '[data-demo="omb-pull"]' }],
+  lay_out_song: [{ point: '[data-demo="omb-shape"]' }],
+  write_caption: [{ point: '[data-demo="omb-rewrite"]' }],
+  set_caption: [{ point: '[data-demo="omb-caption"]' }],
+  restore_caption: [{ point: '[data-demo="omb-caption"]' }],
+  set_length: [{ point: '[data-demo="omb-length"]' }],
+  set_takes: [{ point: '[data-demo="omb-takes"]' }],
+  roll_take_number: [{ point: '[data-demo="omb-takes"]' }],
+  set_engine: [{ point: '[data-demo="omb-engine"]' }],
+  make_the_song: [{ point: '[data-demo="omb-make"]' }],
+  stop: [{ point: '[data-demo="omb-make"]' }],
 };
+
+/** Actions that are not a control being used, so the hand stays put. */
+const NO_SHOW = /^(describe_|say$|set_voice$|play_lesson$|press$|fill$|choose$|obs_)/;
+
+const bare = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/**
+ * The tab button for a tab, by id or by the name on it. The tab bar groups
+ * tabs, so when the tab's own square is not showing, its group button is.
+ */
+function tabButton(tab) {
+  const want = bare(tab);
+  if (!want) return null;
+  const squares = [...document.querySelectorAll('[data-tab-id]')].filter(visible);
+  const hit = squares.find((b) => bare(b.dataset.tabId) === want || bare(b.innerText) === want)
+    || squares.find((b) => want.length > 3 && bare(b.innerText).includes(want));
+  if (hit) return hit;
+  return [...document.querySelectorAll('[data-tab-ids]')].filter(visible).find((b) => (
+    b.dataset.tabIds.split(' ').some((id) => bare(id) === want)
+    || (want.length > 3 && bare(b.dataset.help).includes(want))
+  )) || null;
+}
+
+/** Somewhere on the tab worth hovering over when an action has no control of its own. */
+function paneLandmark(pane) {
+  return [...pane.querySelectorAll('h1, h2, h3, header, [role="heading"]')].find(visible) || null;
+}
 
 const asText = (v) => (Array.isArray(v) ? v.join(', ') : v == null ? '' : String(v));
 
 export async function ghostBefore(name, args = {}) {
-  const steps = BEFORE[name];
-  if (!steps || getHandSpeed() === 'off') return;
+  if (getHandSpeed() === 'off' || NO_SHOW.test(name)) return;
+  // Opening a tab is a press on the tab bar, which sits outside every pane.
+  if (name === 'open_tab') {
+    const el = tabButton(args.tab);
+    if (el && !handStopped()) {
+      try { glow(el); await pressHand(el); } catch { /* stopped */ }
+    }
+    return;
+  }
   const pane = activePane();
   if (pane === document.body) return;
+  const steps = BEFORE[name];
+  // No entry: still go to the tab it is working on, never hover in a corner.
+  if (!steps) {
+    const el = paneLandmark(pane);
+    if (el && !handStopped()) {
+      try { await moveHandTo(el); } catch { /* stopped */ }
+    }
+    return;
+  }
   for (const step of steps) {
     if (handStopped()) return;
     try {
