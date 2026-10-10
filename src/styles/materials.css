@@ -35,15 +35,27 @@
   --amber: rgb(var(--accent-rgb));
   --amber-hot: #FFD08A;
 
+  /* The light's colour comes from the Surface slider (services/surfaceTheme.js).
+     These defaults are the original red swatch. */
+  --surface-light: 225, 28, 44;
+  --surface-floor: 210, 24, 40;
+  --surface-gloss: 255, 120, 130;
+  --surface-gloss2: 255, 90, 100;
+  --surface-streak: 255, 110, 120;
+  --surface-key: 255, 140, 150;
+  /* a grey wash over the black glass (r, g, b, alpha); none by default */
+  --surface-lift: 0, 0, 0, 0;
+  --surface-wash: linear-gradient(rgba(var(--surface-lift)), rgba(var(--surface-lift)));
+
   /* ── obsidian glass, exactly the swatch ── */
   /* the red light, reflected (fixed: one light for the whole window) */
-  --obs-light: radial-gradient(60% 75% at 14% 0%, rgba(225, 28, 44, 0.34), rgba(225, 28, 44, 0.10) 42%, rgba(225, 28, 44, 0) 72%) fixed;
+  --obs-light: radial-gradient(60% 75% at 14% 0%, rgba(var(--surface-light), 0.34), rgba(var(--surface-light), 0.10) 42%, rgba(var(--surface-light), 0) 72%) fixed;
   /* the gloss: a hard-edged reflection across the top third, the tell of polished glass */
-  --obs-gloss: linear-gradient(174deg, rgba(255, 120, 130, 0.14) 0%, rgba(255, 90, 100, 0.05) 38%, rgba(255, 90, 100, 0) 38.4%);
+  --obs-gloss: linear-gradient(174deg, rgba(var(--surface-gloss), 0.14) 0%, rgba(var(--surface-gloss2), 0.05) 38%, rgba(var(--surface-gloss2), 0) 38.4%);
   /* two thin diagonal reflections across the face */
-  --obs-streaks: linear-gradient(115deg, rgba(255, 255, 255, 0) 60%, rgba(255, 110, 120, 0.05) 60.4%, rgba(255, 110, 120, 0.05) 66%, rgba(255, 255, 255, 0) 66.4%,
-    rgba(255, 255, 255, 0) 69%, rgba(255, 110, 120, 0.035) 69.4%, rgba(255, 110, 120, 0.035) 71%, rgba(255, 255, 255, 0) 71.4%);
-  --obs-body: linear-gradient(180deg, rgba(20, 20, 23, 0.80) 0%, rgba(9, 9, 11, 0.90) 50%, rgba(4, 4, 5, 0.95) 100%);
+  --obs-streaks: linear-gradient(115deg, rgba(255, 255, 255, 0) 60%, rgba(var(--surface-streak), 0.05) 60.4%, rgba(var(--surface-streak), 0.05) 66%, rgba(255, 255, 255, 0) 66.4%,
+    rgba(255, 255, 255, 0) 69%, rgba(var(--surface-streak), 0.035) 69.4%, rgba(var(--surface-streak), 0.035) 71%, rgba(255, 255, 255, 0) 71.4%);
+  --obs-body: var(--surface-wash), linear-gradient(180deg, rgba(20, 20, 23, 0.80) 0%, rgba(9, 9, 11, 0.90) 50%, rgba(4, 4, 5, 0.95) 100%);
   /* The swatch also had backdrop-filter: blur(16px) saturate(160%). It is left
      out on purpose: measured pixel for pixel, over this floor it changes nothing
      on the glass (only text anti-aliasing), and backdrop-filter turns every
@@ -53,7 +65,8 @@
   --mat-floor:
     linear-gradient(112deg, rgba(255, 255, 255, 0) 28%, rgba(255, 255, 255, 0.05) 45%, rgba(255, 255, 255, 0) 58%) fixed,
     linear-gradient(112deg, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, 0.025) 74%, rgba(255, 255, 255, 0) 78%) fixed,
-    radial-gradient(55% 60% at 14% 0%, rgba(210, 24, 40, 0.20), rgba(210, 24, 40, 0.06) 45%, rgba(210, 24, 40, 0) 75%) fixed,
+    radial-gradient(55% 60% at 14% 0%, rgba(var(--surface-floor), 0.20), rgba(var(--surface-floor), 0.06) 45%, rgba(var(--surface-floor), 0) 75%) fixed,
+    var(--surface-wash) fixed,
     radial-gradient(140% 110% at 50% 0%, #121214 0%, #0a0a0b 45%, #050506 80%, #020203 100%) fixed;
   --mat-floor-color: #020203;
   /* in the swatch the gloss and streaks are ::before / ::after at z-index -1,
@@ -66,10 +79,10 @@
 
   /* keys: the same black glass, domed. The swatch's ::before gloss sits 1px in,
      over the top 48%. */
-  --obs-key-gloss: linear-gradient(180deg, rgba(255, 140, 150, 0.16), rgba(255, 110, 120, 0.03)) 1px 1px / calc(100% - 2px) 48% no-repeat;
-  --obs-key-light: radial-gradient(60% 75% at 14% 0%, rgba(225, 28, 44, 0.30), rgba(225, 28, 44, 0.08) 42%, rgba(225, 28, 44, 0) 72%) fixed;
-  --mat-key: var(--obs-key-gloss), var(--obs-key-light), linear-gradient(180deg, #202024 0%, #0f0f11 55%, #050506 100%);
-  --mat-key-hover: var(--obs-key-gloss), var(--obs-key-light), linear-gradient(180deg, #2a2a2f 0%, #141417 55%, #08080a 100%);
+  --obs-key-gloss: linear-gradient(180deg, rgba(var(--surface-key), 0.16), rgba(var(--surface-streak), 0.03)) 1px 1px / calc(100% - 2px) 48% no-repeat;
+  --obs-key-light: radial-gradient(60% 75% at 14% 0%, rgba(var(--surface-light), 0.30), rgba(var(--surface-light), 0.08) 42%, rgba(var(--surface-light), 0) 72%) fixed;
+  --mat-key: var(--obs-key-gloss), var(--obs-key-light), var(--surface-wash), linear-gradient(180deg, #202024 0%, #0f0f11 55%, #050506 100%);
+  --mat-key-hover: var(--obs-key-gloss), var(--obs-key-light), var(--surface-wash), linear-gradient(180deg, #2a2a2f 0%, #141417 55%, #08080a 100%);
   --mat-key-edge: #000;
   --mat-key-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 2px 6px rgba(0, 0, 0, 0.85);
   --mat-key-lit: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 0 0 1px rgba(231, 165, 64, 0.5), 0 0 14px -3px rgba(231, 165, 64, 0.6), 0 2px 6px rgba(0, 0, 0, 0.85);
@@ -422,4 +435,17 @@ button.pill-purple {
   background: hsla(36 78% 40% / .18) !important;
   border: 1px solid hsla(36 78% 58% / .6) !important;
   border-radius: 9999px;
+}
+
+/* ── Surface: Light Gray / White ────────────────────────────────────────────
+   The whole interface inverted (hue kept), so every contrast it was designed
+   with survives. Pictures and video are flipped back so they look like
+   themselves. See services/surfaceTheme.js. */
+html.surface-light {
+  filter: invert(1) hue-rotate(180deg) brightness(var(--surface-brightness, 1));
+}
+html.surface-light img,
+html.surface-light video,
+html.surface-light picture {
+  filter: invert(1) hue-rotate(180deg);
 }

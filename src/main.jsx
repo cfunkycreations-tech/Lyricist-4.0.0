@@ -1,5 +1,6 @@
 import React from 'react';
 import { startPrism } from './services/prismTheme.js';
+import { startSurface } from './services/surfaceTheme.js';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
@@ -56,6 +57,7 @@ class BootErrorBoundary extends React.Component {
 }
 
 startPrism();
+startSurface();
 startWheelControls();
 
 const rootEl = document.getElementById('root');
