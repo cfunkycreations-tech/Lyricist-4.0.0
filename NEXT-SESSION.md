@@ -6,8 +6,11 @@ NOT merged into `main`. Chris gets it with:
 ```
 git pull origin claude/push-performance
 npm install
-npm run release
+npm run release:creator
 ```
+
+`release:creator`, not `release`: the plain build is the customer build and
+has no Ask the Ghost panel by design.
 
 ## Ghost Demo background music (wired)
 
