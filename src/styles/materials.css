@@ -437,7 +437,7 @@ button.pill-purple {
   border-radius: 9999px;
 }
 
-/* ── Surface: Light Gray / White ────────────────────────────────────────────
+/* ── Surface: Light Gray ───────────────────────────────────────────────────
    The whole interface inverted (hue kept), so every contrast it was designed
    with survives. Pictures and video are flipped back so they look like
    themselves. See services/surfaceTheme.js. */

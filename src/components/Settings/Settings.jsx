@@ -65,7 +65,7 @@ function SurfaceSlider() {
   const pick = (n) => { setI(n); setSurface(n); };
   const label = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--faf-text-2)', marginBottom: 5, display: 'block' };
   return (
-    <div style={{ marginBottom: 18 }} data-help="The colour of the whole app: Red, Blue, Dark Blue, Black, Gray, or a light app in Light Gray or White. Remembered between sessions.">
+    <div style={{ marginBottom: 18 }} data-help="The colour of the whole app: Red, Blue, Dark Blue, Dark Green, Emerald, Black, Gray, or a lighter app in Light Gray. Remembered between sessions.">
       <label style={label}>Surface</label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <input
