@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import './GhostAssistant.css';
 import { askGhost, planJob, looksLikeWorkflow } from '../../services/GhostService.js';
 import { registerGhostAction, registerGhostActions, runGhostAction, watchGhostActions, availableGhostActions } from '../../services/ghostBus.js';
-import { pressControl, fillControl, chooseControl, describeControls } from '../../services/ghostHands.js';
+import { pressControl, fillControl, chooseControl, describeControls, aimForStep } from '../../services/ghostHands.js';
 import {
   captionHand, clearCaption, stopHand, resetHandStop, handStopped, getHandSpeed, setHandSpeed, HAND_SPEED_NAMES,
   setHandSpeedOverride,
@@ -415,7 +415,9 @@ spoken line of talk.${attempt ? `\n\nThe last try at this step did not work (${s
       // caption shows either way; the voice needs Voice on, and a voice that
       // fails says why in the panel instead of going quiet.
       prewarm: (lines) => { if (voiceOnRef.current) prewarm(lines); },
-      narrate: async (line) => {
+      narrate: async (line, about = '') => {
+        // Fly to what the step is about while saying it, not after.
+        aimForStep(`${about} ${line}`);
         const r = await runGhostAction('say', { text: line });
         if (r.warn || (!r.ok && r.said)) setVoiceNote(`The voice did not play: ${r.warn || r.said}`);
         return r;

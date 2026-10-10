@@ -139,7 +139,17 @@ export async function runGhostAction(name, args = {}) {
   // see, so give a freshly opened tab a moment to hand its controls over.
   let fn = await waitFor(name, handlers.has(name) ? 0 : 600);
   const owner = tabForAction(name);
-  if (!fn && owner && handlers.get('open_tab')) {
+  // With the hand showing, the Ghost works where it can be seen: an action for
+  // a tab that is mounted but hidden used to run there unseen while the hand
+  // hovered over whatever tab was in front. A run with the hand off (a batch
+  // nobody is watching) still works in the background.
+  if (loadHands) hands ||= await loadHands().catch(() => null);
+  const watched = Boolean(hands) && hands[1].getHandSpeed() !== 'off';
+  const pane = owner && typeof document !== 'undefined' && document.querySelector(`[data-tab-pane="${owner}"]`);
+  const hidden = !pane || pane.style.display === 'none';
+  if (owner && handlers.get('open_tab') && (!fn || (watched && hidden))) {
+    // Seen going there, not just teleported: the hand presses the tab first.
+    try { if (watched) await hands[0].ghostBefore('open_tab', { tab: owner }); } catch { /* the show never blocks the work */ }
     try { await handlers.get('open_tab')({ tab: owner }); } catch { /* reported below */ }
     fn = await waitFor(name, 4000);
   }

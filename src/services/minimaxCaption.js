@@ -173,8 +173,11 @@ export function captionBrief({ seconds, tags = [], genres = [], moods = [], voic
  * box now, exactly as MiniMax reads it, so these are things to find INSIDE it.
  */
 const SECTIONS = [
-  { name: 'the style and tempo', wants: [/basic attributes/i, /global emotional progression/i] },
-  { name: 'the singer', wants: [/vocal (gender|style|timbre)/i, /vocal details/i] },
+  // The skill writes a "Global Metadata" heading, and a plain-prose caption
+  // still counts if it names a tempo. Requiring the template's sub-labels
+  // flagged every real caption.
+  { name: 'the style and tempo', wants: [/basic attributes/i, /global emotional progression/i, /global metadata/i, /\b(tempo|bpm)\b/i] },
+  { name: 'the singer', wants: [/vocal (gender|style|timbre)/i, /vocal details/i, /\b(singer|vocalist|lead vocals?)\b/i] },
   { name: 'the band', wants: [/instrument lifecycle/i, /groove/i, /arrangement/i] },
 ];
 

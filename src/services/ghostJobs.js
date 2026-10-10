@@ -226,7 +226,7 @@ async function runOne(id) {
       // SAY IT, THEN DO IT. The line plays in full before the hand moves, the
       // way a person talks a viewer through what they are about to press.
       if (step.line && deps.narrate) {
-        await limit(deps.narrate(step.line), 30000, 'narration took too long');
+        await limit(deps.narrate(step.line, step.text), 30000, 'narration took too long');
         if (stopped()) return;
       }
 

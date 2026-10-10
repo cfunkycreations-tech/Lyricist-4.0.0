@@ -21,7 +21,7 @@
  * calls run instantly.
  */
 import {
-  pressHand, typeWithHand, handStopped, getHandSpeed,
+  pressHand, moveHandTo, typeWithHand, handStopped, getHandSpeed,
 } from './ghostCursor.js';
 
 const BUTTONS = [
@@ -239,15 +239,76 @@ const BEFORE = {
   ],
   matrix_send_to_songwriter: [{ point: '[data-demo="ql-send-songwriter"]' }],
   matrix_send_to_forge: [{ point: '[data-demo="ql-send-forge"]' }],
+
+  // Black Hole Studios. None of these had an entry, so on that tab the Ghost
+  // talked about writing the caption and making the song from wherever it
+  // was last parked, usually over its own Ask the Ghost button.
+  set_lyrics: [{ point: '[data-demo="omb-lyrics"]' }],
+  append_lyrics: [{ point: '[data-demo="omb-lyrics"]' }],
+  restore_lyrics: [{ point: '[data-demo="omb-lyrics"]' }],
+  blackhole_pull_from_songwriter: [{ point: '[data-demo="omb-pull"]' }],
+  lay_out_song: [{ point: '[data-demo="omb-shape"]' }],
+  write_caption: [{ point: '[data-demo="omb-rewrite"]' }],
+  set_caption: [{ point: '[data-demo="omb-caption"]' }],
+  restore_caption: [{ point: '[data-demo="omb-caption"]' }],
+  set_length: [{ point: '[data-demo="omb-length"]' }],
+  set_takes: [{ point: '[data-demo="omb-takes"]' }],
+  roll_take_number: [{ point: '[data-demo="omb-takes"]' }],
+  set_engine: [{ point: '[data-demo="omb-engine"]' }],
+  make_the_song: [{ point: '[data-demo="omb-make"]' }],
+  stop: [{ point: '[data-demo="omb-make"]' }],
 };
+
+/** Actions that are not a control being used, so the hand stays put. */
+const NO_SHOW = /^(describe_|say$|set_voice$|play_lesson$|press$|fill$|choose$|obs_)/;
+
+const bare = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/**
+ * The tab button for a tab, by id or by the name on it. The tab bar groups
+ * tabs, so when the tab's own square is not showing, its group button is.
+ */
+function tabButton(tab) {
+  const want = bare(tab);
+  if (!want) return null;
+  const squares = [...document.querySelectorAll('[data-tab-id]')].filter(visible);
+  const hit = squares.find((b) => bare(b.dataset.tabId) === want || bare(b.innerText) === want)
+    || squares.find((b) => want.length > 3 && bare(b.innerText).includes(want));
+  if (hit) return hit;
+  return [...document.querySelectorAll('[data-tab-ids]')].filter(visible).find((b) => (
+    b.dataset.tabIds.split(' ').some((id) => bare(id) === want)
+    || (want.length > 3 && bare(b.dataset.help).includes(want))
+  )) || null;
+}
+
+/** Somewhere on the tab worth hovering over when an action has no control of its own. */
+function paneLandmark(pane) {
+  return [...pane.querySelectorAll('h1, h2, h3, header, [role="heading"]')].find(visible) || null;
+}
 
 const asText = (v) => (Array.isArray(v) ? v.join(', ') : v == null ? '' : String(v));
 
 export async function ghostBefore(name, args = {}) {
-  const steps = BEFORE[name];
-  if (!steps || getHandSpeed() === 'off') return;
+  if (getHandSpeed() === 'off' || NO_SHOW.test(name)) return;
+  // Opening a tab is a press on the tab bar, which sits outside every pane.
+  if (name === 'open_tab') {
+    const el = tabButton(args.tab);
+    if (el && !handStopped()) {
+      try { glow(el); await pressHand(el); } catch { /* stopped */ }
+    }
+    return;
+  }
   const pane = activePane();
   if (pane === document.body) return;
+  const steps = BEFORE[name];
+  // No entry: still go to the tab it is working on, never hover in a corner.
+  if (!steps) {
+    const el = paneLandmark(pane);
+    if (el && !handStopped()) {
+      try { await moveHandTo(el); } catch { /* stopped */ }
+    }
+    return;
+  }
   for (const step of steps) {
     if (handStopped()) return;
     try {
@@ -272,6 +333,62 @@ export async function ghostBefore(name, args = {}) {
       return;   // stopped, or the control moved: the action itself still decides
     }
   }
+}
+
+/**
+ * WHERE TO LOOK WHILE IT TALKS.
+ *
+ * A job says a step's line first and only then asks the model what to press,
+ * so for the whole sentence the hand used to sit where it started, over the
+ * Ask the Ghost button. This reads the step for the tab and the control it is
+ * about and glides there as the line starts. Move only, nothing is pressed.
+ */
+const STEP_AIMS = [
+  [/caption/i, '[data-demo="omb-rewrite"]'],
+  [/make the song|generate|render|record (it|the song)/i, '[data-demo="omb-make"], [data-demo="sw-generate"], [data-demo="sf-forge"]'],
+  [/lyric|words/i, '[data-demo="omb-lyrics"]'],
+  [/topic/i, '[placeholder^="e.g. city lights"]'],
+  [/length|long|seconds|minutes/i, '[data-demo="omb-length"]'],
+  [/engine|cloud|kaggle/i, '[data-demo="omb-engine"]'],
+  [/takes?\b/i, '[data-demo="omb-takes"]'],
+  [/keywords?/i, '#ql-kw-input'],
+  [/artist/i, '[data-demo="gr-artist"]'],
+];
+
+/** Every tab on the tab bar by the name on it, read off the group buttons. */
+function tabsByName() {
+  const out = [];
+  for (const g of document.querySelectorAll('[data-tab-ids]')) {
+    const ids = g.dataset.tabIds.split(' ');
+    const names = String(g.dataset.help || '').replace(/^[^:]*:/, '').replace(/\.$/, '').split(',').map((t) => t.trim());
+    names.forEach((label, i) => { if (label && ids[i]) out.push({ label, id: ids[i] }); });
+  }
+  return out;
+}
+
+export async function aimForStep(text = '') {
+  if (getHandSpeed() === 'off' || handStopped()) return;
+  const t = String(text);
+  try {
+    // A tab named in the step that is not the one showing: point at its tab.
+    const named = tabsByName()
+      .map((tab) => ({ ...tab, at: t.toLowerCase().indexOf(tab.label.toLowerCase()) }))
+      .filter((tab) => tab.at >= 0)
+      .sort((a, b) => a.at - b.at)[0];
+    const pane = activePane();
+    if (named && pane?.dataset?.tabPane !== named.id) {
+      const el = tabButton(named.id);
+      if (el) { await moveHandTo(el); return; }
+    }
+    if (pane === document.body) return;
+    for (const [re, sel] of STEP_AIMS) {
+      if (!re.test(t)) continue;
+      const el = [...pane.querySelectorAll(sel)].find(visible);
+      if (el) { await moveHandTo(el); return; }
+    }
+    const land = paneLandmark(pane);
+    if (land) await moveHandTo(land);
+  } catch { /* stopped, or nothing to aim at */ }
 }
 
 /** What can be pressed and filled on the tab that is showing, for the Ghost to read. */

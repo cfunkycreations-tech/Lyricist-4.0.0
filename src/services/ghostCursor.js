@@ -129,7 +129,17 @@ export async function moveHandTo(el) {
   if (!fullyOnScreen(r)) {
     try { el.scrollIntoView({ block: 'center', behavior: sp.smooth ? 'smooth' : 'auto' }); } catch { /* old engines */ }
     await sleep(sp.scroll);
-    checkStop();
+    // A long smooth scroll is still moving after that wait, and the hand
+    // used to land where the control was halfway through it. Wait until it
+    // stops moving, up to a second more.
+    let last = el.getBoundingClientRect().top;
+    for (let i = 0; i < 20; i++) {
+      await sleep(50);
+      checkStop();
+      const now = el.getBoundingClientRect().top;
+      if (Math.abs(now - last) < 1) break;
+      last = now;
+    }
     r = el.getBoundingClientRect();
   }
   // Never off the edge of the window. A control inside a clipped or
