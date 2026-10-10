@@ -6,6 +6,7 @@ import { inspectGenerated, truncateAtCollapse } from '../utils/lyricSanity.js';
 import { stripReasoning, isMostlyReasoning } from '../utils/stripReasoning.js';
 import { blendPhrase } from '../utils/blend.js';
 import { chatCompletion, listModels, noEndpointsHelp } from './openrouter.js';
+import { modelFit } from './modelFit.js';
 
 export const lastGeneration = { model: null, provider: null, ok: true, reasons: [], dropped: 0, at: null, unfiltered: false };
 
@@ -147,6 +148,7 @@ export async function discoverFreeModels() {
       // would hand the retry to whatever free model it liked, coding agents
       // included. Only real models belong here.
       .filter((m) => !isRouterSlug(m?.id))
+      .filter((m) => !modelFit(m).cannot)
       .map((m) => m.id)
       .sort((a, b) => rankFreeModel(a) - rankFreeModel(b));
     return freeModelCache;

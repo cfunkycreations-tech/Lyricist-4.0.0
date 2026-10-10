@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { modelFit, fitRank } from '../../services/modelFit.js';
 import TabBackground from '../common/TabBackground.jsx';
 import { useLyricStore, DEFAULT_CONFIG } from '../../context/LyricStore.jsx';
 import { Save, RefreshCw, Key, Shield, HelpCircle, Hammer, FolderOpen } from 'lucide-react';
@@ -120,8 +121,10 @@ function ModelSelector({ value, onChange }) {
     setErrorMsg('');
     fetchOpenRouterModels(forceRefresh, apiKey)
       .then(res => {
-        // Sort models: free first, then alphabetical
+        // Usable before unusable, lyric writers first, then free first, then A-Z.
         const sorted = [...res].sort((a, b) => {
+          const r = fitRank(a) - fitRank(b);
+          if (r) return r;
           const aFree = a.id.endsWith(':free');
           const bFree = b.id.endsWith(':free');
           if (aFree && !bFree) return -1;
@@ -351,11 +354,14 @@ function ModelSelector({ value, onChange }) {
             {filtered.map(m => {
               const isFree = m.id.endsWith(':free');
               const isSelected = m.id === value;
+              const fit = modelFit(m);
               return (
                 <button
                   key={m.id}
                   type="button"
+                  title={fit.cannot ? `Won't work in Lyricist: ${fit.cannot}` : fit.can.join(' · ')}
                   onClick={() => {
+                    if (fit.cannot) { setErrorMsg(`${m.id} won't work in Lyricist: ${fit.cannot}. Pick one marked Writes lyrics.`); return; }
                     onChange(m.id);
                     setIsOpen(false);
                     setSearch('');
@@ -385,6 +391,17 @@ function ModelSelector({ value, onChange }) {
                         {m.name}
                       </div>
                     )}
+                    <div style={{ fontSize: '0.62rem', marginTop: 2, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {fit.cannot
+                        ? <span style={{ color: '#f87171' }}>Won&apos;t work in Lyricist: {fit.cannot}</span>
+                        : <>
+                            {fit.router && <span style={{ color: '#fbbf24' }}>Picks a model for you</span>}
+                            {fit.can.map((c) => (
+                              <span key={c} style={{ color: c === 'Writes lyrics' ? '#4ade80' : c === 'Sees pictures' ? '#7dd3fc' : '#f0abfc' }}>{c}</span>
+                            ))}
+                            {fit.thinks && <span style={{ color: 'rgba(155,161,170,0.6)' }}>thinks first, slower</span>}
+                          </>}
+                    </div>
                   </div>
                   <div style={{ fontSize: '0.65rem', flexShrink: 0 }}>
                     {isFree ? (
@@ -869,6 +886,14 @@ export default function Settings() {
           value={store.config.model}
           onChange={(modelId) => handleUpdate('model', modelId)}
         />
+        <div style={{ marginTop: 8, fontSize: '0.7rem', lineHeight: 1.55, color: 'rgba(230,232,235,0.75)', background: 'rgba(16,18,21,0.6)', border: '1px solid rgba(155,161,170,0.18)', borderRadius: 8, padding: '8px 10px' }}>
+          <b>Which model?</b> Every model in the list says what it can do here.
+          <br /><span style={{ color: '#4ade80' }}>Writes lyrics</span>: Songwriter, Ghost Rider, The Matrix, Song Forge Song First, Rhyme Helper. Any FREE one of these works.
+          <br /><span style={{ color: '#7dd3fc' }}>Sees pictures</span>: Song Forge Art First, writing a song from a picture. If yours can&apos;t, Lyricist uses a free one that can.
+          <br /><span style={{ color: '#f0abfc' }}>Draws pictures</span>: cover art and Generate Image. None are free; they need OpenRouter credits.
+          <br /><span style={{ color: '#f87171' }}>Won&apos;t work in Lyricist</span>: coding agents, safety filters, audio and video models, and ones OpenRouter only serves to coding apps. They can&apos;t be picked.
+          <br />A free model can be busy (&quot;Provider returned error&quot;): Lyricist moves to another free one on its own.
+        </div>
       </div>
 
       {/* Multi-Model Fusion */}

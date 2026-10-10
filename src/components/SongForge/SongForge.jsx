@@ -155,13 +155,20 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
       const title = deriveTitle(song.sections) || store.topic || store.genre;
       setStage('art');
       // Image-to-image when a reference is loaded; plain text-to-image otherwise.
-      const art = refImage
-        ? await generateCoverArtFromReference(store, {
-            referenceBase64: refImage.base64,
-            referenceMimeType: refImage.mimeType,
-            title, topic: store.topic, styleOverride: artStyleOverride
-          })
-        : await generateCoverArt(store, { title, topic: store.topic, styleOverride: artStyleOverride });
+      // The song is kept when the art fails (no credits for an image model):
+      // throwing it away with the art is how a written song used to vanish.
+      let art = null;
+      try {
+        art = refImage
+          ? await generateCoverArtFromReference(store, {
+              referenceBase64: refImage.base64,
+              referenceMimeType: refImage.mimeType,
+              title, topic: store.topic, styleOverride: artStyleOverride
+            })
+          : await generateCoverArt(store, { title, topic: store.topic, styleOverride: artStyleOverride });
+      } catch (artErr) {
+        setErrorMsg(`Song written. Cover art did not come back: ${artErr.message}`);
+      }
       setResult({ song, art, title });
       setTitleDraft(title);
       autoSaveResult(song, art, title);
@@ -667,7 +674,9 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
               {/* Cover art medallion */}
               <div className="songforge-medallion-wrap">
                 <div className="songforge-medallion">
-                  <img src={result.art.dataUrl} alt={`Cover art for ${titleDraft}`} />
+                  {result.art?.dataUrl
+                    ? <img src={result.art.dataUrl} alt={`Cover art for ${titleDraft}`} />
+                    : <span style={{ display: 'grid', placeItems: 'center', height: '100%', fontSize: '0.75rem', color: 'rgba(230,232,235,0.6)', textAlign: 'center', padding: 16 }}>No cover art yet. Try Remix Art.</span>}
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
                   <button onClick={handleDownloadArt} className="btn-neon-cyan" style={{ border: 'none', color: '#fff', padding: '8px 16px', borderRadius: 8, fontSize: '0.76rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>

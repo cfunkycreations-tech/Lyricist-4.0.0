@@ -12,6 +12,7 @@
  * with the status, whatever the SDK's own parser thought of it.
  */
 import { OpenRouter, HTTPClient } from '@openrouter/sdk';
+import { noteModelFailure } from './modelFit.js';
 
 export const APP_URL = 'https://cfunkycreationsllc.com';
 export const APP_TITLE = 'Lyricist Pro';
@@ -66,11 +67,15 @@ async function run(apiKey, call, { body, signal, binary } = {}) {
 }
 
 /** POST /chat/completions with a wire-format body. */
-export function chatCompletion(body, { apiKey, signal } = {}) {
-  return run(apiKey, (sdk, o) => sdk.chat.send(
+export async function chatCompletion(body, { apiKey, signal } = {}) {
+  const r = await run(apiKey, (sdk, o) => sdk.chat.send(
     { chatRequest: { model: body.model, messages: [{ role: 'user', content: '' }] } },
     { signal: o.signal },
   ), { body, signal });
+  // A model that can never work here (agent-only, no longer free) is
+  // remembered, so the model list says so and the free chains skip it.
+  if (!r.ok) noteModelFailure(body.model, r.message);
+  return r;
 }
 
 /** POST /audio/speech. On success `res` holds the audio. */
