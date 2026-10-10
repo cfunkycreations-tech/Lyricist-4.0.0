@@ -21,7 +21,12 @@ export const vstAvailable = () => CREATOR && !!api()?.sendJuceCommand;
 
 async function cmd(method, params = {}) {
   const r = await api().sendJuceCommand(method, params);
-  if (!r?.ok) throw new Error(r?.error || `${method} failed`);
+  if (!r?.ok) {
+    // A new engine starts with no audio device open and nothing loaded, so
+    // forget both, or the next load would skip opening the driver.
+    if (r?.engineExited) { opened = null; current = null; }
+    throw new Error(r?.error || `${method} failed`);
+  }
   return r.result;
 }
 

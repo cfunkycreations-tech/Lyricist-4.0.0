@@ -1473,7 +1473,7 @@ function createWindow() {
 }
 
 // --- Native JUCE Engine Management ---
-const { spawn } = require('child_process');
+const { spawn, execFileSync } = require('child_process');
 const readline = require('readline');
 
 let juceProcess = null;
@@ -1507,17 +1507,44 @@ function getJuceEnginePath() {
 const jucePending = new Map();
 let juceReqId = 0;
 
+// The engine allows one copy of itself. A copy left over from a run that did
+// not close cleanly keeps that lock, and then every engine this run starts
+// quits at once with code 0 ("engine exited") and no plugin ever loads. So
+// once per run, before the first start, end any leftover copy. It is only
+// ever this app's own helper.
+let juceStrayCleared = false;
+function clearStrayJuceEngines() {
+  if (juceStrayCleared || process.platform !== 'win32') return;
+  juceStrayCleared = true;
+  try {
+    execFileSync('taskkill', ['/F', '/IM', 'LyricistEngine.exe'], { stdio: 'ignore', timeout: 5000, windowsHide: true });
+    bootLog('juce: ended a leftover LyricistEngine.exe');
+  } catch (_) { /* none running */ }
+}
+
+// Why the engine stopped, meaning first: the pad's screen shows one short line.
+function juceExitReason(code, answered) {
+  if (code === 0 && !answered) return 'engine would not start (an old copy was still running). Press again';
+  if (code === 0) return 'engine closed. Press again';
+  if (code == null) return 'engine was stopped. Press again';
+  const hex = `0x${(code >>> 0).toString(16).toUpperCase()}`;
+  return `crashed the audio engine (${hex})`;
+}
+
 function ensureJuceEngine(webContents) {
   if (juceProcess) return { ok: true };
+  clearStrayJuceEngines();
 
   const exePath = getJuceEnginePath();
   if (!exePath) return { ok: false, error: 'LyricistEngine.exe not found' };
 
   try {
     juceProcess = spawn(exePath, [], { stdio: ['pipe', 'pipe', 'pipe'] });
+    let answered = false;
 
     const rl = readline.createInterface({ input: juceProcess.stdout });
     rl.on('line', (line) => {
+      answered = true;
       let msg;
       try {
         msg = JSON.parse(line);
@@ -1550,9 +1577,10 @@ function ensureJuceEngine(webContents) {
       bootLog(`juce process exited with code ${code}`);
       juceProcess = null;
       // Never leave a caller hanging on a dead engine.
+      const reason = juceExitReason(code, answered);
       for (const [, { resolve, timer }] of jucePending) {
         clearTimeout(timer);
-        resolve({ ok: false, error: `engine exited (code ${code})` });
+        resolve({ ok: false, error: reason, engineExited: true });
       }
       jucePending.clear();
     });
