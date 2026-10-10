@@ -89,6 +89,13 @@ export default function SongwriterHub({ ghostRiderData }) {
   };
   const [bridgeVars, setBridgeVars] = useState(null);
   const [showBridgeModal, setShowBridgeModal] = useState(false);
+  // Esc closes the bridge popup (it covers the whole Songwriter tab).
+  useEffect(() => {
+    if (!showBridgeModal) return;
+    const onKey = (e) => { if (e.key === 'Escape') setShowBridgeModal(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showBridgeModal]);
 
   // Sync Ghost Rider OR Quantum Lab handoff if it came in
   React.useEffect(() => {
@@ -998,6 +1005,7 @@ export default function SongwriterHub({ ghostRiderData }) {
       {/* Bridge Alternatives Modal */}
       {showBridgeModal && bridgeVars && (
         <div
+          onClick={(e) => { if (e.target === e.currentTarget) setShowBridgeModal(false); }}
           style={{
             position: 'fixed',
             inset: 0,
@@ -1029,6 +1037,8 @@ export default function SongwriterHub({ ghostRiderData }) {
               </h3>
               <button
                 onClick={() => setShowBridgeModal(false)}
+                title="Close"
+                aria-label="Close"
                 style={{
                   background: 'transparent',
                   border: 'none',
