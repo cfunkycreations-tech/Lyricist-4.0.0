@@ -12,6 +12,7 @@ shaders, which rendered a solid orange planet on the first try.
 import numpy as np, sys
 from scipy.ndimage import map_coordinates
 from PIL import Image
+rng = np.random.default_rng(7)
 OUT = sys.argv[1]
 N = 1024
 
@@ -51,13 +52,13 @@ s = np.clip((r - r_in) / (1 - r_in), 0, 1)               # 0 at inner edge, 1 at
 n1 = sample_polar(polar_noise(512, 1024, 16, 140, 1), r, th, 1.0)
 n2 = sample_polar(polar_noise(512, 1024, 40, 60, 2), r, th, 1.0)
 streak = 1 + 0.20 * n1 + 0.12 * n2
-heat = np.clip(s ** 0.75 + 0.06 * n2, 0, 1)
+heat = np.clip(s ** 1.15 + 0.05 * n2, 0, 1)
 rgb = ramp(heat, FIRE)
-glow = (1 - s) ** 1.8 * 1.25 + 0.55                       # hottest at the inner edge
+glow = (1 - s) ** 1.4 * 1.9 + 0.75                       # hottest at the inner edge
 rgb = rgb * (glow * streak)[..., None]
 a_in = np.clip((r - r_in) / 0.035, 0, 1) ** 1.5          # crisp-ish inner edge
 a_out = np.clip(1 - s, 0, 1) ** 1.1
-a = a_in * a_out * np.clip(0.85 + 0.3 * n1, 0.45, 1.0)
+a = a_in * a_out ** 0.8 * np.clip(0.92 + 0.25 * n1, 0.55, 1.0)
 a[r > 1] = 0
 save(rgb, a, 'bh_disc.png')
 

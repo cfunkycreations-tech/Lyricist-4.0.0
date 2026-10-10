@@ -1121,10 +1121,11 @@ export default function OneManBand() {
           <div className="omb-side">
           {/* THE BLACK HOLE.
               A rendered loop, not CSS: scripts/blackhole_textures.py makes the
-              disc and lensed-halo images, scripts/blackhole_c4d.py spins them for
-              10 seconds, and Chris rendered it in Cinema 4D (2026-10-10). The last
-              frame flows into the first. scripts/blackhole_render.py makes the
-              same loop without C4D if it ever needs re-rendering here.
+              disc and lensed-halo images and scripts/blackhole_render.py spins them
+              for 10 seconds (the same rig as scripts/blackhole_c4d.py). The round
+              shadow is cut along the disc's inner rim and the arc runs over the top
+              only, ending on the rim: Gargantua / Grok-logo style, not Saturn
+              (Chris, 2026-10-10). The last frame flows into the first.
               VP9 WebM with alpha, so it sits on the header with no box around it.
               Its own column beside the wordmark, as wide as the row allows, with
               Simple / Full Control under it. Chris, 2026-10-10: behind the title
