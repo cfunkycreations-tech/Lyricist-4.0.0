@@ -80,6 +80,7 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
 
   const [instrumentId, setInstrumentId] = useState(DEFAULT_INSTRUMENT);
   const [instrumentState, setInstrumentState] = useState('loading'); // loading | ready | error
+  const [instrumentError, setInstrumentError] = useState('');
   const instrumentRef = useRef(null);
   // Creator build: your VST3 instruments, from the engine's last scan.
   const [vsts, setVsts] = useState(() => (vstAvailable() ? cachedInstruments() : []));
@@ -156,13 +157,14 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
   useEffect(() => {
     let cancelled = false;
     setInstrumentState('loading');
+    setInstrumentError('');
     instrumentRef.current = null;
     const ctx = getAudioContext();
 
     const vstName = instrumentId.startsWith('vst3:') ? instrumentId.slice(5) : null;
     const vstInst = vstName && (vstsRef.current.find((v) => v.name === vstName) || cachedInstruments().find((v) => v.name === vstName));
     const load = vstName
-      ? (vstInst ? loadVst(vstInst).then((h) => ({ vst: h })) : Promise.reject(new Error('not found')))
+      ? (vstInst ? loadVst(vstInst).then((h) => ({ vst: h })) : Promise.reject(new Error(`${vstName} isn't in the last VST3 scan. Settings → VST3 Instruments → Rescan.`)))
       : instrumentId.startsWith('user:')
       ? (async () => {
           const [, sampleId, root] = instrumentId.split(':');
@@ -177,8 +179,10 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
         instrumentRef.current = inst;
         setInstrumentState('ready');
       })
-      .catch(() => {
-        if (!cancelled) setInstrumentState('error');
+      .catch((e) => {
+        if (cancelled) return;
+        setInstrumentState('error');
+        setInstrumentError(e?.message || String(e));
       });
     return () => { cancelled = true; };
   }, [instrumentId]);
@@ -533,14 +537,15 @@ export default function Sequencer({ midi, setMidi, onPlayStateChange, userSample
               </optgroup>
             ))}
           </select>
-          <span style={{
+          <span title={instrumentError || undefined} style={{
             fontSize: '0.6rem',
             minWidth: 52,
+            maxWidth: 260,
             color: instrumentState === 'ready' ? 'rgba(52,211,153,0.9)'
               : instrumentState === 'error' ? '#f87171' : 'rgba(230,232,235,0.7)',
           }}>
             {instrumentState === 'ready' ? 'loaded'
-              : instrumentState === 'error' ? 'failed' : 'loading…'}
+              : instrumentState === 'error' ? `failed${instrumentError ? `: ${instrumentError}` : ''}` : 'loading…'}
           </span>
         </label>
 
