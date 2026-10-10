@@ -89,6 +89,28 @@ const NEEDS_A_TAP = {};
 
 // Setup runs before anything speaks; OBS starts before anything is done.
 const SETUP_ACTIONS = new Set(['set_voice']);
+/**
+ * Writes that replace work, with the words a job step uses when it means them.
+ * A job step only repeats one of these, once an earlier step made it, when the
+ * step itself asks for it. See runStep.
+ */
+const REDO_NAMES = {
+  write_caption: /caption/i,
+  set_caption: /caption/i,
+  set_lyrics: /lyric|words|verse|chorus|hook/i,
+  append_lyrics: /lyric|words|verse|chorus|hook|add/i,
+  ghostrider_write: /\b(re)?writ\w*\b.*\b(song|lyrics|verse|words)\b|\blyrics\b/i,
+  ghostrider_study: /stud|analy/i,
+  ghostrider_send_to_songwriter: /songwriter/i,
+  matrix_send_to_songwriter: /songwriter/i,
+  blackhole_pull_from_songwriter: /pull|bring|black hole/i,
+  lay_out_song: /lay|shape|structure|sections/i,
+  matrix_autocraft: /craft/i,
+  songwriter_set_style: /tag|genre|mood|style/i,
+  set_length: /length|minute|second|long/i,
+  make_the_song: /make|generate|render|create/i,
+};
+
 // Actions that narrate on their own, so the reply text is not read over them.
 const NARRATING_ACTIONS = new Set(['run_matrix_walkthrough', 'pilot_run', 'say']);
 
@@ -418,13 +440,37 @@ step's line was already spoken.${attempt ? `\n\nThe last try at this step did no
         // The step's line was spoken before it started. A `say` from the model
         // on top of it was the Ghost saying everything twice on the recording,
         // and a step that only talked used to pass as done.
-        const acts = r.actions.filter((a) => !/^obs_record_/.test(a.name) && a.name !== 'say');
+        const wanted = r.actions.filter((a) => !/^obs_record_/.test(a.name) && a.name !== 'say');
+        /**
+         * NO REDOING EARLIER STEPS. Chris: "it did shit like two and three
+         * times... and overwrote itself." A model that sees the whole job
+         * re-sends the caption, pulls the song again, rewrites the lyrics. Here
+         * the same thing twice in one reply runs once, and a write an earlier
+         * step already made is left alone unless this step names it.
+         */
+        const doneBefore = new Map();
+        job.steps.slice(0, i).forEach((s, k) => (s.did || []).forEach((d) => { if (d.ok && !doneBefore.has(d.name)) doneBefore.set(d.name, k + 1); }));
+        const seen = new Set();
+        const acts = [];
+        const left = [];
+        for (const a of wanted) {
+          const key = `${a.name}${JSON.stringify(a.args || {})}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          const names = REDO_NAMES[a.name];
+          if (names && doneBefore.has(a.name) && !names.test(step.text)) {
+            left.push({ name: a.name, ok: true, said: `left ${a.name.replace(/_/g, ' ')} alone, step ${doneBefore.get(a.name)} already did it` });
+            continue;
+          }
+          acts.push(a);
+        }
+        if (!acts.length && left.length) return { ok: true, said: left.map((d) => d.said).join('; '), did: left };
         if (!acts.length) {
           return { ok: false, said: r.text ? `it only talked: "${r.text.slice(0, 140)}"` : 'it did nothing for this step', did: [] };
         }
         // The step's own line was already spoken before it started; the model's
         // reply text is not read over the top of the work.
-        const did = await runActions(r.text, acts, { quiet: true });
+        const did = [...await runActions(r.text, acts, { quiet: true }), ...left];
         const bad = did.find((d) => !d.ok);
         return { ok: !bad, said: bad ? bad.said : (r.text || did.map((d) => d.said).filter(Boolean).join('; ')), did };
       },

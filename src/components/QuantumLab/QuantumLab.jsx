@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import TabBackground from '../common/TabBackground.jsx';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { callAI } from '../../services/AIService.js';
-import { NO_CLICHES } from '../../services/cliches.js';
+import { NO_CLICHES, clicheFree } from '../../services/cliches.js';
 import { useLogged } from '../../services/useLogged.js';
 import EnergyField from './EnergyField.jsx';
 import {
@@ -589,7 +589,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     const secCells = sec.lines.flatMap((l) => l.cells);
     const secDna = srcSection ? dnaOf(sec, gen + 12) : dna;
     const endWords = sec.lines.map((l) => l.cells[l.cells.length - 1].text);
-    const palette = [...new Set(secCells.map((c) => c.text))].join(', ');
+    const palette = clicheFree([...new Set(secCells.map((c) => c.text))]).join(', ');
     const spin = variant === 'B'
       ? 'Variant B: lean more abstract/image-heavy, slightly different angle on the same end-words.'
       : 'Variant A: lean more direct and emotional, plain language.';
@@ -838,7 +838,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       if (!dna) throw new Error('No Style DNA has been sent yet. Study an artist on Ghost Rider first.');
       setStylePressure(dna);
       await ghostSettle();
-      const motifs = Array.isArray(dna.imageClusters) ? dna.imageClusters.join(', ') : '';
+      const motifs = Array.isArray(dna.imageClusters) ? clicheFree(dna.imageClusters).join(', ') : '';
       const words = keywords || motifs;
       if (craft && words) {
         await loadForGhost(words);
@@ -935,7 +935,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           id="ql-kw-input"
           className="ql-keywords-input"
           rows={3}
-          placeholder={'Example:\nheartbreak, neon signs, cold rain\nmidnight drive, empty cup, fire\n\nComma or new line between phrases. As many as you want.'}
+          placeholder={'Example:\npawn shop, borrowed truck, last paycheck\ncounty line, empty cup, fire\n\nComma or new line between phrases. As many as you want.'}
           value={keywordDraft}
           onChange={(e) => setKeywordDraft(e.target.value)}
           onKeyDown={(e) => {
@@ -1471,7 +1471,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           <label
             className="ql-edit-label"
             htmlFor="ql-cell-edit"
-            data-help="Type ANY word or short phrase for the selected tile. This is how you override the computer. Multi-word phrases are fine (e.g. cold rain)."
+            data-help="Type ANY word or short phrase for the selected tile. This is how you override the computer. Multi-word phrases are fine (e.g. county line)."
           >
             Your word (edit this tile)
           </label>

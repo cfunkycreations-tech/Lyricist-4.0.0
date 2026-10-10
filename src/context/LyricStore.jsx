@@ -48,7 +48,7 @@ export const subgenres = {
   'Trap': ['Melodic Trap', 'Rage', 'Dark Trap', 'Plugg', 'Ethereal Trap'],
   'Drill': ['UK Drill', 'Brooklyn Drill', 'Chicago Drill', 'Sample Drill'],
   'Country': ['Bro-Country', 'Outlaw Country', 'Bluegrass', 'Country Pop', 'Traditional Country'],
-  'Rock': ['Classic Rock', 'Hard Rock', 'Psychedelic Rock', 'Arena Rock', 'Progressive Rock'],
+  'Rock': ['Classic Rock', 'Hard Rock', 'Stoner Rock', 'Southern Rock', 'Blues Rock', 'Psychedelic Rock', 'Arena Rock', 'Progressive Rock'],
   'Gospel / Gospel Rap': ['Contemporary Gospel', 'Urban Contemporary', 'Gospel Rap', 'Traditional Gospel'],
   'Afrobeats': ['Afro-fusion', 'Amapiano', 'Alté', 'Afrobeats Pop'],
   'Reggae / Dancehall': ['Roots Reggae', 'Lovers Rock', 'Dancehall', 'Dub', 'Reggae Fusion'],
@@ -805,8 +805,12 @@ export const LyricStoreProvider = ({ children }) => {
     pushState(newLyricsArray);
   };
 
+  // Read through a ref: the Ghost's actions on other tabs hold an older copy
+  // of this function, and it read "Songwriter is empty" with the song right there.
+  const latestLyrics = useRef(lyrics);
+  latestLyrics.current = lyrics;
   const getFullText = () => {
-    return lyrics.map(s => {
+    return latestLyrics.current.map(s => {
       const secLines = s.lines.map(l => l.text || '').join('\n');
       return `[${s.name.toUpperCase()}]\n${secLines}`;
     }).join('\n\n');

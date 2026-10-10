@@ -363,7 +363,7 @@ ACTION NOTES:
       songforge_remix_art {"style":"..."}  songforge_set_title {"title":"..."}
       songforge_surprise {}  songforge_send_to_songwriter {}
     The Matrix (tab "quantum"):
-      matrix_load_keywords {"keywords":"rain, parking lot, promise"}
+      matrix_load_keywords {"keywords":"pawn shop, parking lot, promise"}
       matrix_autocraft {"keywords":"..."} loads them, spreads, locks and writes verses A and B.
       matrix_pick {"state":"A"|"B"}  matrix_send_to_songwriter {"state":"A"}
       matrix_load_dna {} loads the Style DNA Ghost Rider sent and writes verses
@@ -642,7 +642,9 @@ ONE EXCEPTION to adding nothing: if this job writes a song, it MUST have a step
 that tags it, setting the genre, the subgenre and the mood on Songwriter. Put it
 before the step that writes the words. An untagged song reaches Black Hole
 Studios describing nothing, so that step is part of making a song whether or not
-they said it out loud.
+they said it out loud. If Ghost Rider writes the words, its Suno tags tag the
+song when it goes to Songwriter, so add no separate tag step: tagging it twice
+reads on camera as the Ghost changing its mind.
 
 This is being filmed. After each step put " || " and ONE short line you say out
 loud while doing it, in the voice described above: talking to the viewers, like

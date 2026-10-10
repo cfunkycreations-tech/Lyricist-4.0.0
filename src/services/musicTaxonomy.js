@@ -145,7 +145,7 @@ export const GENRE_GROUPS = {
     { name: 'Ambient', kit: 'slow evolving pads, no drums, deep space and air' },
     { name: 'Downtempo / trip hop', kit: 'slow heavy drums, dusty samples, smoky vocal' },
     { name: 'IDM', kit: 'intricate glitched drums, odd melodic synths' },
-    { name: 'Synthwave', kit: 'arpeggiated bass, gated reverb drums, neon leads' },
+    { name: 'Synthwave', kit: 'arpeggiated bass, gated reverb drums, bright analog leads' },
     { name: 'Vaporwave', kit: 'slowed sample, chorus-drenched keys, tape wobble' },
     { name: 'EDM / big room', kit: 'huge drop, sidechained supersaws, festival kick' },
     { name: 'Future bass', kit: 'pitched vocal chops, detuned saw swells, trap drums' },

@@ -144,6 +144,15 @@ const SECTIONS = [
  */
 const SECTION_WORDS = /^(intro|verses?|pre-?chorus|post-?chorus|chorus|hook|bridge|breakdown|solos?|instrumental|outro|refrain|interlude|drop|guitar solo)\b/i;
 
+/** Do two lyric sheets share enough lines to be the same song, revised? */
+function sameSong(a, b) {
+  const words = (t) => String(t).split('\n').map((l) => l.replace(/\[[^\]]*\]/g, '').trim().toLowerCase()).filter((l) => l.length > 3);
+  const old = new Set(words(a));
+  const now = words(b);
+  if (!old.size || !now.length) return false;
+  return now.filter((l) => old.has(l)).length / now.length >= 0.3;
+}
+
 function readSections(lyrics) {
   const out = [];
   for (const line of String(lyrics).split('\n')) {
@@ -315,7 +324,7 @@ export default function OneManBand() {
   const store = useLyricStore();
   const [lyrics, setLyrics] = useState(
     '[Verse]\nSteel in my hands and the sun going down\n'
-    + 'Sparks on the deck of a nameless town\n\n[Chorus]\nSo I sing it loud, I sing it free\n'
+    + 'Dust on the dash of a borrowed-truck town\n\n[Chorus]\nSo I sing it loud, I sing it free\n'
     + 'Every road out here belongs to me\n'
   );
   /**
@@ -792,8 +801,10 @@ export default function OneManBand() {
         },
       });
       setPhase('');
+      return { ok: true };
     } catch (e) {
       setError(e.message || 'Something went wrong.');
+      return { ok: false, error: e.message || 'Something went wrong.' };
     } finally {
       setBusy(false);
       abortRef.current = null;
@@ -1004,9 +1015,22 @@ export default function OneManBand() {
       setLyrics(t);
       fitLength(t);
       const lines = t.split('\n').filter((l) => l.trim()).length;
+      /**
+       * A NEW SONG GETS A NEW CAPTION. The journey run pulled a Clutch song in
+       * and the caption skill then rewrote the caption left from two songs
+       * back. A different song puts the caption back on this song's picks; the
+       * same song, revised, keeps the caption he worked on.
+       */
+      let fresh = '';
+      if (before.trim() && !sameSong(before, t) && caption.trim()) {
+        undoCaption.current = caption;
+        setCaptionEdited(false);
+        setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds })));
+        fresh = ', and started the Input Caption over for this song';
+      }
       return before.trim() && before.trim() !== t
-        ? { said: `brought the song from Songwriter into the Input Lyrics, ${lines} lines`, undo: { action: 'restore_lyrics', label: 'Put my words back' } }
-        : `brought the song from Songwriter into the Input Lyrics, ${lines} lines`;
+        ? { said: `brought the song from Songwriter into the Input Lyrics, ${lines} lines${fresh}`, undo: { action: 'restore_lyrics', label: 'Put my words back' } }
+        : `brought the song from Songwriter into the Input Lyrics, ${lines} lines${fresh}`;
     },
     append_lyrics: ({ text }) => {
       const add = String(text ?? '').trim();
@@ -1113,11 +1137,31 @@ export default function OneManBand() {
       setEngine(want);
       return `switched it to ${want === 'cloud' ? 'the free cloud' : want === 'kaggle' ? 'Kaggle' : want === 'modal' ? 'Modal' : 'this computer'}`;
     },
-    lay_out_song: () => { addWholeShape(); return 'laid out a whole song and made it long enough to hold it'; },
-    make_the_song: () => {
+    /**
+     * A SONG THAT HAS ITS SHAPE KEEPS IT. The journey run pulled a finished
+     * Verse 1 / Chorus / Verse 2 from Songwriter, then this stacked nine empty
+     * section tags under it and stretched the length to fit twelve parts.
+     */
+    lay_out_song: () => {
+      const have = readSections(lyrics);
+      if (have.length >= 2 && lyrics.replace(/\[[^\]]*\]/g, '').trim()) {
+        return `the song already has its shape (${have.join(', ')}), so I left it as it is`;
+      }
+      addWholeShape();
+      return 'laid out a whole song and made it long enough to hold it';
+    },
+    make_the_song: async () => {
       if (busy) throw new Error('it is already making one');
-      make();
-      const said = 'started it. The Stop button is in the tab if you change your mind';
+      /**
+       * IT SAID "STARTED" AND THE JOB SAID FINISHED, WHILE THE SONG HAD FAILED.
+       * A song takes minutes, but an engine that cannot start says so in
+       * seconds, so wait that long and report what actually happened.
+       */
+      const early = await Promise.race([make(), new Promise((ok) => setTimeout(() => ok(null), 45000))]);
+      if (early && !early.ok) throw new Error(`the song did not get made: ${early.error}`);
+      const said = early?.ok
+        ? 'made the song, the take is in the rack'
+        : 'started it. The Stop button is in the tab if you change your mind';
       // LAST CHANCE TO NOTICE AN UNTAGGED SONG. It still runs — stopping a song
       // at the engine over a missing pick would be worse than the pick being
       // missing — but nothing after this point can tell him the sound was never

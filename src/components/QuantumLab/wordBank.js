@@ -15,9 +15,9 @@
 // glows·flows (B) → an AABB scheme, exactly like the render.
 export const SEED_GRID = [
   ['static', 'signal', 'fever', 'lattice', 'hums'],
-  ['midnight', 'amber', 'ember', 'ember', 'drums'],
-  ['midnight', 'signal', 'static', 'river', 'glows'],
-  ['gravity', 'fever', 'static', 'amber', 'flows'],
+  ['lamplight', 'amber', 'ember', 'ember', 'drums'],
+  ['lamplight', 'signal', 'static', 'river', 'glows'],
+  ['gravel', 'fever', 'static', 'amber', 'flows'],
 ];
 
 // Per-cell stress bits (1 = strong). Chosen so extractDNA's signature
@@ -39,13 +39,13 @@ export const WORD_SEED = {
   fever:    { stress: 1, rhymeClass: 'EE_VER', energy: 0.82 },
   lattice:  { stress: 1, rhymeClass: 'AT_IS',  energy: 0.34 },
   hums:     { stress: 1, rhymeClass: 'UH_MZ',  energy: 0.44 },
-  midnight: { stress: 1, rhymeClass: 'AY_T',   energy: 0.24 },
+  lamplight: { stress: 1, rhymeClass: 'AY_T',  energy: 0.24 },
   amber:    { stress: 1, rhymeClass: 'AM_BER', energy: 0.30 },
   ember:    { stress: 1, rhymeClass: 'EM_BER', energy: 0.36 },
   drums:    { stress: 1, rhymeClass: 'UH_MZ',  energy: 0.52 },
   river:    { stress: 1, rhymeClass: 'IH_VER', energy: 0.30 },
   glows:    { stress: 1, rhymeClass: 'OW_ZZ',  energy: 0.74 },
-  gravity:  { stress: 1, rhymeClass: 'AV_ITY', energy: 0.22 },
+  gravel:   { stress: 1, rhymeClass: 'AV_EL',  energy: 0.22 },
   flows:    { stress: 1, rhymeClass: 'OW_ZZ',  energy: 0.60 },
   // extra rhyming stock so Crystallize / Mutate have somewhere to go
   numbs:    { stress: 1, rhymeClass: 'UH_MZ',  energy: 0.30 },

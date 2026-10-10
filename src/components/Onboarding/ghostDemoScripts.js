@@ -144,7 +144,7 @@ export const GHOST_DEMOS = {
         target: '[data-demo="ql-keywords"]',
         say: 'Step 1, click the keyword box and type your own words. Anything you want in the song.',
         action: 'type',
-        typeText: 'neon rain, midnight, heartbreak, empty highway, static, fever',
+        typeText: 'pawn shop, borrowed truck, last paycheck, empty highway, static, fever',
         wait: 2600,
       },
       {

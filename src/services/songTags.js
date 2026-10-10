@@ -83,8 +83,19 @@ const tokenize = (text) => {
   const whole = norm(text);
   if (!whole) return [];
   const parts = String(text).split(/[,;\n|]+/).map(norm).filter(Boolean);
-  return [...new Set([...parts, whole])];
+  // A real list is read item by item. The whole line only stands in for a
+  // sentence somebody typed, or "heavy blues riffs" makes the song a blues.
+  return parts.length > 1 ? [...new Set(parts)] : [...new Set([...parts, whole])];
 };
+
+/**
+ * "heavy blues riffs", "fuzz guitar", "soul vocals": a tag that ends on an
+ * instrument or a part is describing a sound inside the song, not naming its
+ * genre. Clutch came out Blues / Soul Blues off "heavy blues riffs". Those
+ * still count for the mood ("gritty male vocals" is Gritty), never the genre.
+ */
+const PART = /\b(riffs?|guitars?|vocals?|voice|singer|drums?|bass|basslines?|piano|keys|organ|synths?|licks?|solos?|groove|grooves|tones?|harmonica|horns?|strings|samples?|production|mix|influences?|feel|vibes?|chords?|bends?|slide)$/;
+const naming = (tokens) => tokens.filter((t) => !PART.test(t));
 
 /**
  * Which entries of a list this text is naming.
@@ -124,8 +135,8 @@ export function tagsFromText(text) {
   if (!tokens.length) return { genres: [], subgenres: [], moods: [] };
 
   const moods = matchPool(tokens, SW_MOODS);
-  const subHits = matchPool(tokens, ALL_SUBGENRES, (s) => s.name);
-  const genreHits = matchPool(tokens, SW_GENRES);
+  const subHits = matchPool(naming(tokens), ALL_SUBGENRES, (s) => s.name);
+  const genreHits = matchPool(naming(tokens), SW_GENRES);
 
   const genres = cap([...genreHits, ...subHits.map((s) => s.genre)]);
   // Only the subgenres whose genre survived the cap, so the two always agree.
