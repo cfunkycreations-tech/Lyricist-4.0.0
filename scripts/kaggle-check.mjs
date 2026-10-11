@@ -58,6 +58,19 @@ const four = nbText({
 ok('every seed goes into ONE notebook', /SEEDS\s+= \[222, 777, 3, 4\]/.test(four), 'a fifth is capped away');
 ok('a lone seed still works', /SEEDS\s+= \[9\]/.test(nbText({ caption: 'x', lyrics: 'y', seconds: 60, seed: 9 })));
 ok('a triple quote cannot break the python', four.includes('\\"\\"\\"'));
+
+console.log('\n--- the 12 GB model comes down once ---');
+const model = kaggle.__test_model_files();
+ok('the model list is read from the song notebook', model.files.length === 3 && model.repo === 'Comfy-Org/MiniMax-Music-3', model.files.join(', '));
+const cacheSrc = String(JSON.parse(kaggle.__test_cache_build('hf_abcdefgh12345')).cells[0].source);
+ok('the cache notebook fetches every model file', model.files.every((f) => cacheSrc.includes(f)));
+ok('the cache notebook keeps them as its output', cacheSrc.includes('local_dir=WORK') && cacheSrc.includes('"/kaggle/working"'));
+ok('the cache notebook carries the HF token', cacheSrc.includes('HF_TOKEN = "hf_abcdefgh12345"'));
+ok('a junk token is left out of the cache notebook', String(JSON.parse(kaggle.__test_cache_build('x"; rm -rf')).cells[0].source).includes('HF_TOKEN = ""'));
+const fetchCell = JSON.parse(build({ caption: 'x', lyrics: 'y', seconds: 60, seed: 1 }))
+  .cells.map((c) => String(c.source)).find((s) => s.includes('hf_hub_download('));
+ok('the song notebook looks for the saved copy before downloading',
+  fetchCell.indexOf('saved_copy(name)') > 0 && fetchCell.indexOf('saved_copy(name)') < fetchCell.lastIndexOf('hf_hub_download('));
 ok('nor can a backslash', four.includes('back\\\\slash'));
 ok('the length goes in', /DURATION = 75/.test(four));
 ok('every cell is one string, as Kaggle wants',

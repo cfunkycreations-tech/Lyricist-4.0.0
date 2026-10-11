@@ -189,9 +189,10 @@ export default function EngineSetup({ onKaggleReady, onLocalReady }) {
                   never have to find that out by reading a notebook. */}
               <p className="es-fine">
                 If you have a <b>Hugging Face token</b> saved in Settings, it is sent with your
-                notebook so the 12 GB of music files are not downloaded throttled. It goes only
-                into your own private notebook on Kaggle. Clear that field in Settings if you would
-                rather it stayed on this computer.
+                notebook so the 12 GB of music files are not downloaded throttled. They come down
+                once and are saved in your Kaggle account, so later songs skip the download. The token
+                goes only into your own private notebooks on Kaggle. Clear that field in Settings if
+                you would rather it stayed on this computer.
               </p>
               <button type="button" className="es-plain" onClick={async () => { await api.kaggleDisconnect(); refresh(); }}>
                 Disconnect

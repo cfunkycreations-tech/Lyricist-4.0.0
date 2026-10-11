@@ -62,6 +62,21 @@ const OAUTH_SERVICE = 'security.OAuthService';
 /** The slug we own inside the user's own account. Same notebook, updated each run. */
 const SLUG = 'lyricist-one-man-band';
 const TITLE = 'Lyricist One Man Band';
+/**
+ * THE 12 GB MODEL, SAVED ONCE IN THEIR OWN ACCOUNT.
+ *
+ * Chris, 2026-10-11, on every song fetching the whole model again: *"I don't
+ * want to download it every fucking time. Why would I?"* Right.
+ *
+ * A second private notebook downloads the model once, on a plain CPU machine
+ * (no graphics card hours), and keeps it as its output. Every song notebook
+ * attaches that output, Kaggle mounts it under /kaggle/input, and the song
+ * notebook links it in instead of downloading. Each account fetches its own
+ * copy from Hugging Face, so nothing is re-hosted. Kaggle wants the slug to be
+ * the title lowercased with dashes.
+ */
+const CACHE_SLUG = 'lyricist-model-cache';
+const CACHE_TITLE = 'Lyricist Model Cache';
 
 function credDir() {
   const dir = path.join(app.getPath('userData'), 'kaggle');
@@ -389,6 +404,117 @@ function buildNotebook({ caption, lyrics, seconds, seed, seeds, steps, guidance,
 const TERMINAL = { COMPLETE: true, ERROR: true, CANCEL_ACKNOWLEDGED: true };
 
 /**
+ * Which files the song notebook needs, read out of the shipped notebook itself,
+ * so the cache can never drift from what the song notebook asks for.
+ */
+function modelFiles() {
+  const nb = JSON.parse(fs.readFileSync(notebookPath(), 'utf8'));
+  const all = nb.cells.map((c) => (Array.isArray(c.source) ? c.source.join('') : String(c.source || ''))).join('\n');
+  const repo = /REPO\s*=\s*"([^"]+)"/.exec(all)?.[1];
+  const files = [...all.matchAll(/\(\s*"([\w./-]+\.safetensors)"\s*,/g)].map((m) => m[1]);
+  if (!repo || !files.length) throw new Error('The shipped notebook lists no model files. This is a bug in Lyricist.');
+  return { repo, files };
+}
+
+/** The notebook that downloads the model once and keeps it as its output. */
+function buildCacheNotebook(hfToken) {
+  const { repo, files } = modelFiles();
+  const token = String(hfToken || '').trim();
+  const code = [
+    '# Lyricist Model Cache. Downloads the music model ONCE and keeps it as this',
+    '# notebook\'s output, so every song notebook attaches it instead of fetching',
+    '# 12 GB again. Runs on a CPU machine: it uses no graphics card hours.',
+    'import os, shutil',
+    'from huggingface_hub import hf_hub_download, login',
+    '',
+    `HF_TOKEN = "${/^[A-Za-z0-9_-]{8,200}$/.test(token) ? token : ''}"`,
+    'if HF_TOKEN:',
+    '    try:',
+    '        login(HF_TOKEN)',
+    '    except Exception:',
+    '        print("Hugging Face token not accepted, downloading without it.")',
+    '',
+    `REPO = ${JSON.stringify(repo)}`,
+    `FILES = ${JSON.stringify(files)}`,
+    'WORK = "/kaggle/working"',
+    '',
+    'for remote in FILES:',
+    '    print("downloading", remote, "...")',
+    '    p = hf_hub_download(repo_id=REPO, filename=remote, local_dir=WORK)',
+    '    print("  ->", p, f"{os.path.getsize(p)/1e9:.2f} GB")',
+    '',
+    '# Only the model files are kept, not the download bookkeeping.',
+    'shutil.rmtree(os.path.join(WORK, ".cache"), ignore_errors=True)',
+    'print("\\nSaved. Every song from now on skips this download.")',
+    '',
+  ].join('\n');
+  return JSON.stringify({
+    cells: [{ cell_type: 'code', metadata: {}, execution_count: null, outputs: [], source: code }],
+    metadata: {
+      kernelspec: { display_name: 'Python 3', language: 'python', name: 'python3' },
+      language_info: { name: 'python' },
+    },
+    nbformat: 4,
+    nbformat_minor: 5,
+  });
+}
+
+function cacheStatePath() { return path.join(credDir(), 'model-cache.json'); }
+function cachePushedAt() {
+  try { return Number(JSON.parse(fs.readFileSync(cacheStatePath(), 'utf8')).pushedAt) || 0; } catch { return 0; }
+}
+
+/**
+ * IS THE MODEL SAVED IN THEIR ACCOUNT? IF NOT, SAVE IT. NEVER HOLDS UP A SONG.
+ *
+ * Saved and complete: attach it. Still saving: this song downloads like before
+ * and the next one uses it. Never made, failed, or missing a file: start the
+ * save now on a CPU machine, alongside the song. A save that failed is only
+ * tried again once a day, so a broken one cannot be re-run on every song.
+ *
+ * -> { attach: true } | { attach: false, saving?: true }
+ */
+async function modelCache(cred, hfToken) {
+  try {
+    const want = modelFiles().files.map((f) => path.posix.basename(f));
+    const st = await call('GetKernelSessionStatus', { userName: cred.username, kernelSlug: CACHE_SLUG }, cred, 20000);
+    const status = st.status === 200 ? String(st.json?.status || '') : '';
+    if (status === 'COMPLETE') {
+      const out = await call('ListKernelSessionOutput', { userName: cred.username, kernelSlug: CACHE_SLUG, pageSize: 50 }, cred, 30000);
+      const have = new Set((out.json?.files || []).map((f) => path.posix.basename(String(f.fileName || ''))));
+      if (want.every((n) => have.has(n))) return { attach: true };
+    } else if (status && !TERMINAL[status]) {
+      return { attach: false, saving: true };
+    }
+    const since = Date.now() - cachePushedAt();
+    // A save Kaggle has not listed yet, or one that failed today: leave it.
+    if (since < (status ? 24 : 0.5) * 60 * 60 * 1000) return { attach: false };
+
+    const push = await call('SaveKernel', {
+      slug: `${cred.username}/${CACHE_SLUG}`,
+      newTitle: CACHE_TITLE,
+      text: buildCacheNotebook(hfToken),
+      language: 'python',
+      kernelType: 'notebook',
+      isPrivate: true,
+      enableGpu: false,
+      enableInternet: true,
+      datasetDataSources: [],
+      competitionDataSources: [],
+      kernelDataSources: [],
+      modelDataSources: [],
+      categoryIds: [],
+    }, cred, 120000);
+    if (push.status !== 200 || push.json?.error) return { attach: false };
+    fs.writeFileSync(cacheStatePath(), JSON.stringify({ pushedAt: Date.now() }));
+    return { attach: false, saving: true };
+  } catch {
+    // The cache is a speed-up. Nothing about it is allowed to stop a song.
+    return { attach: false };
+  }
+}
+
+/**
  * WHY IT FAILED, IN WORDS THAT HELP.
  *
  * 2026-08-21. Chris pressed Make the song, waited, and got: "Kaggle ran it and
@@ -549,6 +675,10 @@ async function render(song, onProgress, shouldStop = () => false) {
   say(0.02, n === 1 ? 'Packing your song into the notebook' : `Packing ${n} takes into the notebook`);
   const text = buildNotebook(song);
 
+  const cache = await modelCache(cred, song?.hfToken);
+  if (cache.attach) say(0.04, 'Using the model saved in your Kaggle account, no 12 GB download');
+  else if (cache.saving) say(0.04, 'Saving the model to your Kaggle account, so the next song skips the 12 GB download');
+
   say(0.06, 'Uploading it to your Kaggle account');
   const push = await call('SaveKernel', {
     slug: `${cred.username}/${SLUG}`,
@@ -566,7 +696,7 @@ async function render(song, onProgress, shouldStop = () => false) {
     machineShape: 'NvidiaTeslaT4',
     datasetDataSources: [],
     competitionDataSources: [],
-    kernelDataSources: [],
+    kernelDataSources: cache.attach ? [`${cred.username}/${CACHE_SLUG}`] : [],
     modelDataSources: [],
     categoryIds: [],
   }, cred, 120000);
@@ -689,4 +819,6 @@ module.exports = {
   __test_parse: parseToken,
   __test_explain: readFailure,
   __test_build: buildNotebook,
+  __test_cache_build: buildCacheNotebook,
+  __test_model_files: modelFiles,
 };
