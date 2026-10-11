@@ -83,7 +83,7 @@ export default function GhostJobs({ mode, setMode, record, setRecord }) {
                       {!!s.did?.length && (
                         <span className="ghj-did">
                           {s.did.map((d, k) => (
-                            <span key={k} className={d.ok ? 'ok' : 'no'}>{d.ok ? '✓' : '✗'} {d.said || d.name}</span>
+                            <span key={k} className={d.warn ? 'warn' : d.ok ? 'ok' : 'no'}>{d.warn ? '⚠' : d.ok ? '✓' : '✗'} {d.said || d.name}</span>
                           ))}
                         </span>
                       )}
