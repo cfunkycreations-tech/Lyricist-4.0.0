@@ -101,7 +101,7 @@ registerGhostAction('t_nothing', async () => undefined);
 
 console.log('\n--- Sly Ghost: checks every job step, never breaks a job ---');
 {
-  const { slyCheck, prepTab, newBanned, readVerdict } = await import('../src/services/slyGhost.js');
+  const { slyCheck, prepTab, newBanned, readVerdict, captionFlags } = await import('../src/services/slyGhost.js');
   const { setJobDeps, addJob, subscribeJobs } = await import('../src/services/ghostJobs.js');
   const GR = (words) => [`GHOST RIDER TAB: artist "Sly".\nLyrics it wrote in that style:\n[Verse]\n${words}\nSuno tags: Funk`];
 
@@ -184,6 +184,27 @@ console.log('\n--- Sly Ghost: checks every job step, never breaks a job ---');
       ask: async () => { throw new Error('No OpenRouter key'); },
     });
     ok('no key is a pass, not a failed step', r.ok && r.entry === null);
+  }
+  {
+    // The orange box Chris photographed: the caption step is sent back once.
+    const shows = ['BLACK HOLE STUDIOS\nTHE CAPTION CHECK SAYS:\n- Nothing in there says how fast the song is.\n- The timeline never mentions your verse, hook.'];
+    let asked = 0;
+    const r = await slyCheck({
+      job: { prompt: 'x', steps: [{ text: 'Write the Input Caption' }] }, index: 0, attempt: 0, after: shows,
+      did: [{ name: 'write_caption', ok: true, said: 'wrote it' }], ask: async () => { asked += 1; return 'DONE'; },
+    });
+    ok('a caption the check still flags goes back to the Ghost', !r.ok && /how fast/.test(r.entry.said) && /verse, hook/.test(r.entry.said) && asked === 0, r.entry?.said);
+    const again = await slyCheck({
+      job: { prompt: 'x', steps: [{ text: 'Write the Input Caption' }] }, index: 0, attempt: 1, after: shows,
+      did: [{ name: 'write_caption', ok: true }], ask: async () => 'DONE',
+    });
+    ok('a second miss is only noted', again.ok && again.entry.warn);
+    const lyricStep = await slyCheck({
+      job: { prompt: 'x', steps: [{ text: 'Pull the song into Black Hole Studios' }] }, index: 0, attempt: 0, after: shows,
+      did: [{ name: 'blackhole_pull_from_songwriter', ok: true }], ask: async () => 'DONE',
+    });
+    ok('a step that never touched the caption is not blamed for it', lyricStep.ok);
+    ok('a clean caption has no flags', captionFlags(['BLACK HOLE STUDIOS\nTHE INPUT CAPTION RIGHT NOW:\nwarm']).length === 0);
   }
   ok('his own topic word is his', newBanned([], GR('midnight train'), 'a song about midnight').length === 0);
   ok('a banned word already there before the step is not blamed on it', newBanned(GR('rain'), GR('rain and more'), '').length === 0);

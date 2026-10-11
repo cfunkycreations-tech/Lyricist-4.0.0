@@ -516,7 +516,14 @@ export default function OneManBand() {
       captionEdited && caption.trim()
         ? `THE INPUT CAPTION RIGHT NOW:\n${caption.slice(0, 1500)}`
         : 'THE INPUT CAPTION is still the automatic draft, so replacing it is safe.',
-    ].join('\n\n'),
+      // The orange box under the caption, word for word. Sly Ghost reads it
+      // after a caption step and sends the Ghost back while it still says
+      // anything. Read fresh here: the memo for the box is declared below.
+      (() => {
+        const flags = validateCaption(caption, { lyrics, instrumental, tags });
+        return flags.length ? `THE CAPTION CHECK SAYS:\n${flags.map((f) => `- ${f}`).join('\n')}` : '';
+      })(),
+    ].filter(Boolean).join('\n\n'),
   }), [seconds, tags, genres, moods, voices, lyrics, caption, captionEdited]);
 
   const wholePrompt = useMemo(() => {

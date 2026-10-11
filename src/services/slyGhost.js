@@ -84,6 +84,27 @@ export function lyricText(parts = []) {
   return out.join('\n');
 }
 
+/**
+ * WHAT THE CAPTION CHECK STILL FLAGS.
+ *
+ * Chris, 2026-10-11, on a screenshot of Black Hole Studios: the orange box said
+ * "Nothing in there says how fast the song is" and "The timeline never
+ * mentions your verse, hook", and the Ghost sailed on past it. The tab already
+ * knows; describe_song now says it under this mark, and this reads it back.
+ */
+const CAPTION_MARK = 'THE CAPTION CHECK SAYS:\n';
+export function captionFlags(parts = []) {
+  const s = parts.map((p) => String(p || '')).find((p) => p.includes(CAPTION_MARK));
+  if (!s) return [];
+  const out = [];
+  for (const line of s.slice(s.indexOf(CAPTION_MARK) + CAPTION_MARK.length).split('\n')) {
+    if (!line.startsWith('- ')) break;
+    out.push(line.slice(2).trim());
+  }
+  return out;
+}
+const CAPTION_ACTS = /^(write_caption|set_caption|restore_caption)$/;
+
 const BANNED_G = new RegExp(CLICHE_RE.source, 'gi');
 const bannedWords = (text) => new Set([...String(text || '').matchAll(BANNED_G)].map((m) => m[0].toLowerCase()));
 
@@ -161,8 +182,13 @@ export async function slyCheck({
 
   let note = '';
   const banned = newBanned(before, after, job?.prompt || '');
+  const touchedCaption = did.some((d) => CAPTION_ACTS.test(d.name || '')) || /caption/i.test(step);
+  const flags = touchedCaption ? captionFlags(after) : [];
   if (banned.length) {
     note = `banned words in the lyrics (${banned.join(', ')}). Rewrite those lines without them`;
+  } else if (flags.length) {
+    note = `the caption check on Black Hole Studios still says: ${flags.join(' ')} `
+      + 'Run write_caption again with an instruction that fixes exactly that';
   } else if (did.length && did.every((d) => UNCHECKABLE.test(d.name || ''))) {
     return pass(`${SLY}: started, nothing to check yet`);
   } else {
