@@ -132,6 +132,13 @@ export default function SunoPlayer() {
 
   const track = current >= 0 ? tracks[current] : null;
 
+  // Tells the logo banner what's on (its Song info side).
+  useEffect(() => {
+    const detail = { name: track?.name || '', playing };
+    window.__lyricistNowPlaying = detail;
+    window.dispatchEvent(new CustomEvent('lyricist:now-playing', { detail }));
+  }, [track?.name, playing]);
+
   // Wire the element into the shared master bus exactly once.
   useEffect(() => {
     if (audioRef.current) connectMediaElement(audioRef.current);
