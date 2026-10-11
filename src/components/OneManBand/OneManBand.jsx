@@ -1346,7 +1346,8 @@ export default function OneManBand() {
               icon (Chris, 2026-10-11: "make it look just like that one"):
               scripts/blackhole_gargantua.py. A full round shadow, a thin gold
               ring, the hot disc crossing in front of it, the lensed underside
-              glowing below. 10 seconds; the last frame flows into the first.
+              glowing below, hot clumps spinning round it. 10 seconds; the last frame
+              flows into the first.
               VP9 WebM with alpha, so it sits on the header with no box around it.
               Its own column beside the wordmark, as wide as the row allows, with
               Simple / Full Control under it. Chris, 2026-10-10: behind the title
