@@ -38,7 +38,7 @@ Gumroad → **Products** → **New product** → **Digital product**.
 | Platform | Windows 10 / 11 |
 | Tools | 18 |
 | Writing tools | Free OpenRouter key, no card |
-| Black Hole Studios | Free cloud engine, no key |
+| Black Hole Studios | Free cloud engine for short songs; full length on a free Kaggle account |
 | Subscription | None. Pay once. |
 | Updates | New versions land in your Gumroad library |
 
