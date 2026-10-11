@@ -23,6 +23,7 @@
 import {
   pressHand, moveHandTo, typeWithHand, handStopped, getHandSpeed,
 } from './ghostCursor.js';
+import { record } from './ghostRecorder.js';
 
 const BUTTONS = [
   'button', '[role="button"]', '[role="tab"]', '[role="option"]', '[role="checkbox"]',
@@ -129,6 +130,106 @@ async function find(selector, namesOf, label, index = 0, patience = 1500) {
   return null;
 }
 
+/**
+ * WHEN THE NAME IS NOT QUITE THE NAME. Chris, 2026-10-11, watching a job in
+ * Settings: the Ghost asked for the "Razor Neon accent slider", the slider says
+ * "Accent colour", and it stood there blinking: there is no such thing. "Sly
+ * Ghost needs to come behind him and help him scroll."
+ *
+ * So a miss is not the end. Sly Ghost takes the words of the name instead of
+ * the whole string, against each control's names and the help text around it,
+ * and takes a clear single winner that shares at least one word with the
+ * control's own name. Still nothing: he scrolls the tab top to bottom on camera
+ * and looks again. Still nothing: the Ghost is told the closest names there
+ * are, so its retry asks for one that exists.
+ */
+const FILLER = new Set(('the a an to of and or on in for with this that it its my your tab page '
+  + 'button box field slider control toggle switch input menu dropdown picker bar '
+  + 'make set use turn click press hit change move pick choose select').split(' '));
+function wordsOf(s) {
+  return new Set(norm(s).split(/[^a-z0-9]+/)
+    .filter((w) => w.length > 2 && !FILLER.has(w))
+    .map((w) => (w.length > 3 && w.endsWith('s') ? w.slice(0, -1) : w)));
+}
+
+/** The help text on a control or on the small block it sits in. */
+function helpOf(el) {
+  for (let n = el, i = 0; n && i < 4; n = n.parentElement, i++) {
+    if (n.dataset?.help) return n.dataset.help;
+  }
+  return '';
+}
+
+function closest(selector, namesOf, label) {
+  const want = wordsOf(label);
+  if (!want.size) return { el: null, near: [] };
+  const rows = [...activePane().querySelectorAll(selector)].filter(visible).map((el) => {
+    const names = [].concat(namesOf(el)).filter(Boolean);
+    const own = wordsOf(names.join(' '));
+    const help = wordsOf(helpOf(el));
+    let byName = 0; let byHelp = 0;
+    for (const w of want) {
+      if (own.has(w)) byName += 1;
+      else if (help.has(w)) byHelp += 1;
+    }
+    return { el, name: names[0] || '', byName, cover: (byName + byHelp) / want.size, s: byName * 2 + byHelp };
+  });
+  const fits = rows.filter((r) => r.byName > 0 && r.cover >= 2 / 3).sort((a, b) => b.s - a.s);
+  const el = fits.length && (fits.length === 1 || fits[0].s > fits[1].s) ? fits[0].el : null;
+  const near = rows.filter((r) => r.byName > 0 && r.name).sort((a, b) => b.s - a.s).map((r) => r.name);
+  return { el, near: [...new Set(near)].slice(0, 4) };
+}
+
+/** The box the tab scrolls in: the pane, the biggest scroller in it, or the page. */
+function scrollerOf(pane) {
+  const can = (el) => el.scrollHeight > el.clientHeight + 8 && /auto|scroll/.test(getComputedStyle(el).overflowY);
+  if (can(pane)) return pane;
+  let best = null;
+  for (const el of pane.querySelectorAll('*')) {
+    if (el.scrollHeight > el.clientHeight + 8 && (!best || el.clientHeight > best.clientHeight) && can(el)) best = el;
+  }
+  if (best) return best;
+  for (let n = pane.parentElement; n; n = n.parentElement) if (can(n)) return n;
+  return null;
+}
+
+/** Sly Ghost scrolls the whole tab, top to bottom, where the camera sees it. */
+async function slySweep(pane) {
+  if (getHandSpeed() === 'off' || handStopped()) return false;
+  const box = scrollerOf(pane);
+  if (!box) return false;
+  record('job', 'Sly Ghost is scrolling the tab to find it');
+  try { await moveHandTo(box); } catch { return false; }
+  box.scrollTo({ top: 0, behavior: 'smooth' });
+  await wait(400);
+  const step = Math.max(200, box.clientHeight * 0.8);
+  for (let i = 0; i < 12 && box.scrollTop + box.clientHeight < box.scrollHeight - 4; i++) {
+    if (handStopped()) return true;
+    box.scrollBy({ top: step, behavior: 'smooth' });
+    await wait(420);
+  }
+  return true;
+}
+
+/** find(), and when it misses, Sly Ghost's word match, sweep and closest names. */
+async function locate(selector, namesOf, label, index, what) {
+  const el = await find(selector, namesOf, label, index);
+  if (el) return el;
+  let near = closest(selector, namesOf, label);
+  const took = (hit) => {
+    record('job', `Sly Ghost: no "${label}", took "${clip([].concat(namesOf(hit))[0] || '')}"`);
+    return hit;
+  };
+  if (near.el) return took(near.el);
+  const swept = await slySweep(activePane());
+  const again = await find(selector, namesOf, label, index, 0);
+  if (again) return again;
+  near = closest(selector, namesOf, label);
+  if (near.el) return took(near.el);
+  throw new Error(`There is no "${label}" ${what} on this tab${swept ? ' (Sly Ghost scrolled all of it)' : ''}.`
+    + (near.near.length ? ` Closest names here: ${near.near.map((n) => `"${clip(n, 40)}"`).join(', ')}.` : ' Use a name from the controls list.'));
+}
+
 /** A glow on the control as it is used. Kept with the hand off too, so a fast run still leaves a trail. */
 function glow(el) {
   const { outline, outlineOffset } = el.style;
@@ -158,8 +259,7 @@ function notStopped() {
 
 export async function pressControl({ label, index } = {}) {
   notStopped();
-  const el = await find(BUTTONS, buttonName, label, index);
-  if (!el) throw new Error(`There is no "${label}" button on this tab.`);
+  const el = await locate(BUTTONS, buttonName, label, index, 'button');
   glow(el);
   await pressHand(el);
   notStopped();
@@ -172,10 +272,20 @@ export async function pressControl({ label, index } = {}) {
 
 export async function fillControl({ field, text = '' } = {}) {
   notStopped();
-  const el = await find(FIELDS, fieldNames, field);
-  if (!el) throw new Error(`There is no "${field}" box on this tab.`);
+  const el = await locate(FIELDS, fieldNames, field, 0, 'box');
   if (el instanceof HTMLSelectElement) return chooseControl({ field, option: text });
   glow(el);
+  // A slider takes a number, not typing: "70%" or "to 70" lands on 70.
+  if (el.type === 'range') {
+    const lo = Number(el.min || 0); const hi = Number(el.max || 100);
+    const n = Number((/-?\d+(\.\d+)?/.exec(String(text)) || [])[0]);
+    if (!Number.isFinite(n)) throw new Error(`"${clip(fieldName(el) || field)}" is a slider from ${lo} to ${hi}: give it a number.`);
+    const v = Math.min(hi, Math.max(lo, n));
+    await pressHand(el);
+    notStopped();
+    setNativeValue(el, String(v));
+    return `set "${clip(fieldName(el) || field)}" to ${v}`;
+  }
   await typeWithHand(el, String(text), (v) => setNativeValue(el, v));
   return `filled "${clip(fieldName(el) || field)}"`;
 }
@@ -185,7 +295,7 @@ export async function chooseControl({ field, option } = {}) {
   const want = norm(option);
   if (!want) throw new Error('Say which option to pick.');
   if (field) {
-    const sel = await find('select', fieldNames, field);
+    const sel = (await find('select', fieldNames, field)) || closest('select', fieldNames, field).el;
     if (sel) {
       const opts = [...sel.options];
       const hit = opts.find((o) => norm(o.text) === want || norm(o.value) === want)
@@ -423,7 +533,8 @@ export function describeControls() {
     if (!n) continue;
     const v = el instanceof HTMLSelectElement ? el.options[el.selectedIndex]?.text || ''
       : el.isContentEditable ? el.textContent : el.value;
-    fields.push(`"${clip(n, 40)}" = "${clip(norm(v), 40)}"`);
+    const slider = el.type === 'range' ? ` (slider ${el.min || 0} to ${el.max || 100})` : '';
+    fields.push(`"${clip(n, 40)}" = "${clip(norm(v), 40)}"${slider}`);
     if (fields.length >= 30) break;
   }
   return [
