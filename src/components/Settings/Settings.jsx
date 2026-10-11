@@ -535,7 +535,7 @@ export default function Settings() {
         <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
           OpenRouter API Key
         </label>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8 }} data-ghost-keep-out>
           <input
             type={showKey ? 'text' : 'password'}
             value={store.config.openRouterApiKey}
@@ -589,6 +589,7 @@ export default function Settings() {
           Black Hole Studios — Hugging Face token (optional, free)
         </label>
         <input
+          data-ghost-keep-out
           type={showGoogleKey ? 'text' : 'password'}
           value={store.config.huggingFaceToken || ''}
           onChange={(e) => handleUpdate('huggingFaceToken', e.target.value)}
@@ -643,6 +644,7 @@ export default function Settings() {
           }}
         />
         <input
+          data-ghost-keep-out
           type={showGoogleKey ? 'text' : 'password'}
           value={store.config.modalToken || ''}
           onChange={(e) => handleUpdate('modalToken', e.target.value)}
@@ -817,6 +819,7 @@ export default function Settings() {
         </label>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
+            data-ghost-keep-out
             type={showGoogleKey ? 'text' : 'password'}
             value={store.config.replicateApiKey || ''}
             onChange={(e) => handleUpdate('replicateApiKey', e.target.value)}

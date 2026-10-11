@@ -218,6 +218,7 @@ export default function EngineSetup({ onKaggleReady, onLocalReady }) {
                   <span>Paste it here.</span>
                   <div className="es-paste">
                     <input
+                      data-ghost-keep-out
                       type="text"
                       className="es-input"
                       value={code}

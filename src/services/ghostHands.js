@@ -41,8 +41,19 @@ export function activePane() {
   return panes.find((p) => p.style.display !== 'none') || document.body;
 }
 
+/**
+ * KEYS ARE NOT THE GHOST'S. Chris, 2026-10-11, watching a tour job open
+ * Settings: "what is this ghost doing trying to get the API key?" Worse than it
+ * looked: the controls list the Ghost reads carried every box's VALUE, key
+ * boxes included, straight into a model prompt. Secret boxes, and anything
+ * marked data-ghost-keep-out (a key and its Show button), are invisible to it:
+ * never listed, never read, never pressed, never typed into.
+ */
+const KEEP_OUT = '[data-ghost-keep-out], input[type="password"]';
+export const keptOut = (el) => !!el && (el.matches(KEEP_OUT) || !!el.closest('[data-ghost-keep-out]'));
+
 function visible(el) {
-  if (!el || el.closest('.gha, .gha-launch')) return false;
+  if (!el || el.closest('.gha, .gha-launch') || keptOut(el)) return false;
   if (!(el.offsetWidth || el.offsetHeight || el.getClientRects().length)) {
     // A styled checkbox is often hidden behind its label. Still operable.
     return el.matches('input[type="checkbox"], input[type="radio"]') && !!el.closest('label');
