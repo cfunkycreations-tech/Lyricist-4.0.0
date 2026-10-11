@@ -3,6 +3,7 @@ import brandLogo from '../../assets/brand-logo.webp';
 import bhLoop from '../../assets/blackhole/bh_loop.webm';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { getAudioContext, getMasterBus } from '../../services/audioEngine.js';
+import { buildSkyline, drawSkyline } from './skyline.js';
 import './BrandBanner.css';
 
 /**
@@ -17,9 +18,10 @@ import './BrandBanner.css';
  *             playing: stars drifting in towards the logo.
  *   disc    — the Black Hole Studios loop stretched wide behind the logo, so
  *             the logo sits in the middle of the spinning disc.
- *   skyline — the Austin skyline from the logo carried out to both edges:
- *             Capitol and UT Tower on the left, Frost, the Independent and
- *             the Austonian on the right, the lake below, the bats at dusk.
+ *   skyline — Austin across Lady Bird Lake, drawn like the logo's skyline
+ *             (skyline.js): the real towers, the Capitol, UT, Frost,
+ *             Pennybacker, moonlight towers, SRV and Willie, the bats, the
+ *             grackles, a kayaker and an armadillo.
  *   info    — what's playing on the left, the song's genre, mood and topic
  *             on the right.
  * Auto moves through all four, twenty seconds each. The pill in the corner
@@ -43,7 +45,7 @@ function savedMode() {
   } catch { return 'auto'; }
 }
 
-// Small seeded random so the skyline is the same every time it's drawn.
+// Small seeded random so the stars start in the same places.
 function seeded(seed) {
   let s = seed >>> 0;
   return () => {
@@ -140,234 +142,6 @@ function drawBars(g, st, W, H, dt, t) {
       g.fillRect(x, cy - h / 2, bw, h);
     }
   }
-  g.globalAlpha = 1;
-}
-
-/* ── skyline ──────────────────────────────────────────────────────────── */
-
-// Landmarks as paths in a 0..1 box (x across, y up), drawn into w × h px.
-const LANDMARKS = {
-  capitol(g, x, base, w, h) {          // wings, drum, dome, lantern, the Goddess
-    g.rect(x, base - h * 0.22, w, h * 0.22);
-    g.rect(x + w * 0.38, base - h * 0.34, w * 0.24, h * 0.12);
-    g.moveTo(x + w * 0.36, base - h * 0.34);
-    g.quadraticCurveTo(x + w * 0.5, base - h * 0.78, x + w * 0.64, base - h * 0.34);
-    g.rect(x + w * 0.48, base - h * 0.88, w * 0.04, h * 0.14);
-    g.rect(x + w * 0.495, base - h, w * 0.01, h * 0.12);
-  },
-  utTower(g, x, base, w, h) {          // the shaft, the temple, the little dome
-    g.rect(x + w * 0.3, base - h * 0.84, w * 0.4, h * 0.84);
-    g.rect(x + w * 0.24, base - h * 0.9, w * 0.52, h * 0.06);
-    g.rect(x + w * 0.34, base - h * 0.95, w * 0.32, h * 0.05);
-    g.moveTo(x + w * 0.38, base - h * 0.95);
-    g.quadraticCurveTo(x + w * 0.5, base - h * 1.04, x + w * 0.62, base - h * 0.95);
-    g.rect(x, base - h * 0.22, w, h * 0.22);
-  },
-  frost(g, x, base, w, h) {            // stepped crown up to the spire
-    g.moveTo(x, base);
-    g.lineTo(x, base - h * 0.72);
-    g.lineTo(x + w * 0.12, base - h * 0.72);
-    g.lineTo(x + w * 0.12, base - h * 0.8);
-    g.lineTo(x + w * 0.24, base - h * 0.8);
-    g.lineTo(x + w * 0.24, base - h * 0.87);
-    g.lineTo(x + w * 0.46, base - h * 0.97);
-    g.lineTo(x + w * 0.5, base - h);
-    g.lineTo(x + w * 0.54, base - h * 0.97);
-    g.lineTo(x + w * 0.76, base - h * 0.87);
-    g.lineTo(x + w * 0.76, base - h * 0.8);
-    g.lineTo(x + w * 0.88, base - h * 0.8);
-    g.lineTo(x + w * 0.88, base - h * 0.72);
-    g.lineTo(x + w, base - h * 0.72);
-    g.lineTo(x + w, base);
-    g.closePath();
-  },
-  independent(g, x, base, w, h) {      // the Jenga: stacked blocks, each one shifted
-    const shifts = [0, 0.12, -0.06, 0.1, -0.1, 0.04];
-    const step = h / shifts.length;
-    shifts.forEach((s, i) => g.rect(x + w * (0.12 + s), base - step * (i + 1), w * 0.76, step + 0.5));
-  },
-  austonian(g, x, base, w, h) {        // tall and slim, rounded crown
-    g.moveTo(x, base);
-    g.lineTo(x, base - h * 0.9);
-    g.quadraticCurveTo(x + w * 0.5, base - h * 1.04, x + w, base - h * 0.9);
-    g.lineTo(x + w, base);
-    g.closePath();
-  },
-  fins(g, x, base, w, h) {             // 360 Condos: a stack of fins
-    g.rect(x + w * 0.15, base - h * 0.92, w * 0.7, h * 0.92);
-    for (let i = 0; i < 9; i++) {
-      const y = base - h * (0.12 + i * 0.09);
-      g.rect(x + (i % 2 ? 0 : w * 0.05), y, w * (i % 2 ? 0.95 : 0.9), h * 0.025);
-    }
-  },
-};
-
-function buildSkyline(W, H, dpr) {
-  const cv = document.createElement('canvas');
-  cv.width = Math.max(1, Math.round(W * dpr));
-  cv.height = Math.max(1, Math.round(H * dpr));
-  const g = cv.getContext('2d');
-  g.scale(dpr, dpr);
-  const cx = W / 2;
-  const base = H * 0.8;
-  const unit = H / 248;
-  const rand = seeded(4242);
-
-  // Dusk behind the city, hottest behind the logo.
-  const sky = g.createRadialGradient(cx, base, 0, cx, base, W * 0.62);
-  sky.addColorStop(0, 'rgba(255, 150, 50, .62)');
-  sky.addColorStop(0.35, 'rgba(230, 90, 30, .34)');
-  sky.addColorStop(0.7, 'rgba(140, 30, 30, .14)');
-  sky.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  g.fillStyle = sky;
-  g.fillRect(0, 0, W, base);
-  const fadeUp = g.createLinearGradient(0, 0, 0, base);
-  fadeUp.addColorStop(0, 'rgba(0,0,0,1)');
-  fadeUp.addColorStop(0.55, 'rgba(0,0,0,.35)');
-  fadeUp.addColorStop(1, 'rgba(0,0,0,0)');
-  g.fillStyle = fadeUp;
-  g.fillRect(0, 0, W, base);
-
-  // Buildings, out from the middle to both edges: tall downtown by the logo,
-  // lower towards the edges. Landmarks dropped in at set distances.
-  const shapes = [];
-  const marks = { '-1': [[0.2, 'utTower', 30, 0.7], [0.55, 'capitol', 74, 0.42]], 1: [[0.1, 'frost', 30, 0.8], [0.3, 'independent', 30, 0.74], [0.42, 'austonian', 20, 0.86], [0.62, 'fins', 26, 0.6]] };
-  for (const sgn of [-1, 1]) {
-    const todo = [...marks[sgn]];
-    let d = H * LOGO_ASPECT * 0.3;      // start tucked behind the logo
-    while (d < cx + 10) {
-      const f = d / cx;                  // 0 by the logo, 1 at the edge
-      const next = todo[0];
-      if (next && f >= next[0]) {
-        todo.shift();
-        const w = next[2] * unit;
-        const h = next[3] * base * (1 - f * 0.25);
-        shapes.push({ kind: next[1], x: sgn > 0 ? cx + d : cx - d - w, w, h, f });
-        d += w + 2 * unit;
-        continue;
-      }
-      const w = (12 + rand() * 26) * unit;
-      const tall = Math.pow(1 - f, 1.6) * 0.62 + 0.1;
-      const h = base * tall * (0.55 + rand() * 0.6);
-      shapes.push({ kind: 'box', x: sgn > 0 ? cx + d : cx - d - w, w, h, f, top: rand() });
-      d += w + rand() * 3 * unit;
-    }
-  }
-  // Back row first: shorter boxes behind, then the rest.
-  shapes.sort((a, b) => (a.kind === 'box' ? a.h : base) - (b.kind === 'box' ? b.h : base));
-
-  const lit = [];
-  for (const s of shapes) {
-    g.beginPath();
-    if (s.kind === 'box') {
-      g.rect(s.x, base - s.h, s.w, s.h);
-      if (s.top > 0.75) g.rect(s.x + s.w * 0.4, base - s.h - 10 * unit, 1.2 * unit, 10 * unit);   // antenna
-      else if (s.top > 0.55) g.rect(s.x + s.w * 0.15, base - s.h - 4 * unit, s.w * 0.7, 4 * unit);  // penthouse
-    } else {
-      LANDMARKS[s.kind](g, s.x, base, s.w, s.h);
-    }
-    g.fillStyle = '#070302';
-    g.fill();
-    // Rim light on the side that faces the glow.
-    g.save();
-    g.clip();
-    const rim = g.createLinearGradient(s.x, 0, s.x + s.w, 0);
-    const toward = s.x + s.w / 2 < cx;
-    const hot = `rgba(255, 140, 60, ${0.38 * (1 - s.f * 0.6)})`;
-    rim.addColorStop(toward ? 0.8 : 0, toward ? 'rgba(0,0,0,0)' : hot);
-    rim.addColorStop(toward ? 1 : 0.2, toward ? hot : 'rgba(0,0,0,0)');
-    g.fillStyle = rim;
-    g.fillRect(s.x, 0, s.w, base);
-    g.restore();
-    // Windows.
-    if (s.kind === 'box' || s.kind === 'austonian' || s.kind === 'frost') {
-      const ws = 2 * unit, gap = 5 * unit;
-      for (let y = base - s.h + 6 * unit; y < base - 4 * unit; y += gap) {
-        for (let x = s.x + 3 * unit; x < s.x + s.w - 3 * unit; x += gap * 0.9) {
-          const r = rand();
-          if (r < 0.16) {
-            g.fillStyle = r < 0.05 ? 'rgba(255, 236, 190, .85)' : 'rgba(255, 190, 110, .55)';
-            g.fillRect(x, y, ws, ws * 1.2);
-          } else if (r < 0.2) lit.push([x, y, ws, rand() * 6.28]);    // these blink on and off
-        }
-      }
-    }
-  }
-
-  // Lady Bird Lake: the glow and the skyline mirrored, darker.
-  const lake = g.createLinearGradient(0, base, 0, H);
-  lake.addColorStop(0, 'rgba(255, 130, 50, .22)');
-  lake.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  g.fillStyle = lake;
-  g.fillRect(0, base, W, H - base);
-  g.save();
-  g.globalAlpha = 0.28;
-  g.translate(0, base * 2);
-  g.scale(1, -1);
-  g.drawImage(cv, 0, 0, cv.width, base * dpr, 0, 0, W, base);
-  g.restore();
-
-  const stars = Array.from({ length: Math.round(W / 9) }, () => [rand() * W, rand() * base * 0.55, rand() * 6.28, 0.5 + rand()]);
-  return { cv, lit, stars, base };
-}
-
-function drawSkyline(g, st, W, H, dt, t) {
-  const S = st.skyline;
-  g.clearRect(0, 0, W, H);
-  if (!S) return;
-  g.drawImage(S.cv, 0, 0, W, H);
-  const unit = H / 248;
-
-  for (const [x, y, ph, sz] of S.stars) {
-    g.globalAlpha = 0.25 + 0.55 * Math.max(0, Math.sin(t * 1.3 + ph));
-    g.fillStyle = '#FFF2DC';
-    g.fillRect(x, y, sz * unit, sz * unit);
-  }
-  for (const [x, y, ws, ph] of S.lit) {
-    const on = Math.sin(t * 0.35 + ph * 3) > 0.2;
-    if (!on) continue;
-    g.globalAlpha = 0.8;
-    g.fillStyle = '#FFE7B0';
-    g.fillRect(x, y, ws, ws * 1.2);
-  }
-
-  // The lake shimmers.
-  g.globalAlpha = 1;
-  g.fillStyle = 'rgba(255, 170, 90, .16)';
-  for (let i = 0; i < 14; i++) {
-    const y = S.base + 4 * unit + i * ((H - S.base) / 14);
-    const x = ((i * 137 + t * (12 + i * 3) * unit) % (W + 200)) - 100;
-    g.fillRect(x, y, (40 + (i * 53) % 70) * unit, 1);
-    g.fillRect(W - x - 60 * unit, y + 2, (30 + (i * 31) % 60) * unit, 1);
-  }
-
-  // The bats: every so often a flock comes up off the lake and out to the edge.
-  st.batClock = (st.batClock || 0) + dt;
-  if (!st.bats.length && st.batClock > 9) {
-    st.batClock = 0;
-    const sgn = Math.random() < 0.5 ? -1 : 1;
-    const n = 14 + Math.floor(Math.random() * 14);
-    st.bats = Array.from({ length: n }, (_, i) => ({
-      x: W / 2 + sgn * (H * LOGO_ASPECT * 0.5 + Math.random() * 80 * unit),
-      y: S.base + Math.random() * 10 * unit,
-      vx: sgn * (40 + Math.random() * 40) * unit,
-      vy: -(10 + Math.random() * 18) * unit,
-      ph: Math.random() * 6.28, delay: i * 0.12 + Math.random() * 0.3,
-    }));
-  }
-  g.strokeStyle = '#0d0603';
-  g.lineWidth = 1.3 * unit;
-  for (const b of st.bats) {
-    if ((b.delay -= dt) > 0) continue;
-    b.x += b.vx * dt; b.y += b.vy * dt; b.vy *= 0.995;
-    const s = 3.2 * unit, f = Math.sin(t * 18 + b.ph);
-    g.beginPath();
-    g.moveTo(b.x - s, b.y - s * f * 0.8);
-    g.quadraticCurveTo(b.x - s * 0.4, b.y - s * 0.2, b.x, b.y);
-    g.quadraticCurveTo(b.x + s * 0.4, b.y - s * 0.2, b.x + s, b.y - s * f * 0.8);
-    g.stroke();
-  }
-  st.bats = st.bats.filter((b) => b.x > -20 && b.x < W + 20 && b.y > -20);
   g.globalAlpha = 1;
 }
 
