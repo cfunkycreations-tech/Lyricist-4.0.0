@@ -136,8 +136,8 @@ def frame(i):
 
     # Photon ring: thin, gold, all the way round, strongest underneath.
     shimmer = 0.75 + 0.25 * np.cos(3 * th - 5 * turn) * np.cos(5 * th + 4 * turn)
-    ring = np.exp(-((rr - 1.025 * RS) / (0.018 * RS)) ** 2) * (0.55 + 0.9 * np.clip(sin_th, 0, 1)) * shimmer
-    ring_c = colour(0.55 + 0.35 * np.clip(sin_th, 0, 1)) * (1.1 * ring)[..., None]
+    ring = np.exp(-((rr - 1.025 * RS) / (0.018 * RS)) ** 2) * (0.55 + 0.9 * np.abs(sin_th)) * shimmer
+    ring_c = colour(0.55 + 0.35 * np.abs(sin_th)) * (1.1 * ring)[..., None]
 
     # Lensed arcs: the disc's far side bent over the top, its underside below.
     out_of = np.clip(rr - 1.05 * RS, 0, None)
@@ -145,10 +145,12 @@ def frame(i):
     up_w = smooth((0.35 - sin_th) / 0.7)
     low_w = 1 - up_w
     side = 1 + 0.35 * (-np.cos(th))
-    upper = 0.45 * np.exp(-out_of / (0.06 * RS)) * up_w * side * (0.6 + 0.4 * arc_tex)
+    # Top as bright as the bottom (Chris, 2026-10-11: "the same amount of light
+    # on the top of the circle").
+    upper = 2.6 * np.exp(-out_of / (0.2 * RS)) * up_w * (0.4 + 0.6 * np.clip(-sin_th, 0, 1)) * side * (0.65 + 0.35 * arc_tex)
     lower = 2.6 * np.exp(-out_of / (0.2 * RS)) * low_w * (0.4 + 0.6 * np.clip(sin_th, 0, 1)) * side * (0.65 + 0.35 * arc_tex)
     outside = smooth((rr - RS) * SS / 1.5 + 0.5)
-    t_up = 0.45 * np.exp(-out_of / (0.18 * RS)) + 0.2
+    t_up = 0.75 * np.exp(-out_of / (0.35 * RS)) + 0.2
     t_low = 0.75 * np.exp(-out_of / (0.35 * RS)) + 0.2
     arcs = (colour(t_up) * upper[..., None] + colour(t_low) * lower[..., None]) * outside[..., None]
 

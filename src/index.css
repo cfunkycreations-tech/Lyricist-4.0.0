@@ -354,11 +354,14 @@ h1.gradient-title {
   border-bottom: var(--border-hairline);
 }
 
-/* The logo banner over the pads (App.jsx). Off on short windows: the pads,
-   tabs and player come first. The tab workspace's min-height takes
+/* The logo banner over the pads (App.jsx). Chris runs Windows at 150%, so
+   his full-screen window is about 690px tall to the page: the banner has to
+   show there (it was hidden under 800 and he saw no logo). It never takes
+   more than the window minus 560px (pads 96, player and footer 104, the tab's
+   own 360), so nothing gets pushed off screen; off below 620. The tab workspace's min-height takes
    --brand-banner-h off too, so the player and footer stay on screen. */
-:root { --brand-banner-h: clamp(120px, 20vh, 220px); }
-@media (max-height: 800px) { :root { --brand-banner-h: 0px; } }
+:root { --brand-banner-h: clamp(0px, min(18vh, 100vh - 560px), 220px); }
+@media (max-height: 620px) { :root { --brand-banner-h: 0px; } }
 .brand-banner {
   flex-shrink: 0;
   height: var(--brand-banner-h);
@@ -368,7 +371,7 @@ h1.gradient-title {
   overflow: hidden;
 }
 .brand-banner img { height: 100%; width: auto; user-select: none; pointer-events: none; }
-@media (max-height: 800px) { .brand-banner { display: none; } }
+@media (max-height: 620px) { .brand-banner { display: none; } }
 
 .output-cosmic {
   background: rgba(19,20,22,0.6);
