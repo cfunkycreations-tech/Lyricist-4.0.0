@@ -23,6 +23,8 @@ import { applySongTags } from '../../services/songTags.js';
  * It APPENDS rather than replaces, always. Anything that can silently eat a
  * verse somebody already wrote is not worth the convenience.
  */
+/** How many of the newest songs on disk come back to the rack on launch. */
+const RACK_FROM_DISK = 6;
 const SONG_SHAPE = ['Intro', 'Verse', 'Chorus', 'Verse', 'Chorus', 'Bridge', 'Verse', 'Chorus', 'Outro'];
 
 
@@ -418,6 +420,9 @@ export default function OneManBand() {
   const [rewriting, setRewriting] = useState(false);
 
   const [takes, setTakes] = useState([]);
+  // Read by bringInFromDisk, which runs from closures older than the rack.
+  const takesRef = useRef(takes);
+  takesRef.current = takes;
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState('');
   const [error, setError] = useState('');
@@ -769,6 +774,7 @@ export default function OneManBand() {
           const take = {
             id: `${res.seed}-${res.fileName || ''}-${res.blob.size}`,
             seed: res.seed,
+            at: Date.now(),
             url,
             blob: res.blob,
             seconds,
@@ -778,7 +784,7 @@ export default function OneManBand() {
             // The seed alone does NOT reproduce a take. Keep the whole recipe.
             recipe: { lyrics, caption, genres, moods, voices, genre, mood, voice, seconds, steps, guidance, engine },
           };
-          setTakes((prev) => [take, ...prev]);
+          setTakes((prev) => [take, ...prev.filter((t) => !take.fileName || t.fileName !== take.fileName)]);
           if (res.folder) setSongsFolder(res.folder);
           // Kept next to the file, so the take keeps its own words when it is
           // brought back in later: its lyric video has to show THESE lyrics.
@@ -803,8 +809,12 @@ export default function OneManBand() {
            * It saves quietly, and Keep it stays exactly where it is: it costs
            * nothing to press twice and it is the button people look for.
            */
+          // Filed under its file's name, the name bringInFromDisk looks for, so
+          // the next launch neither files it twice nor mistakes it for missing.
           saveRecording({
-            name: `Black Hole Studios ${new Date().toLocaleString()} (take ${res.seed})`,
+            name: res.fileName
+              ? `Black Hole Studios ${res.fileName.replace(/\.[^.]+$/, '')}`
+              : `Black Hole Studios ${new Date().toLocaleString()} (take ${res.seed})`,
             blob: res.blob,
             duration: seconds,
           }).then(() => {
@@ -825,6 +835,9 @@ export default function OneManBand() {
       setBusy(false);
       abortRef.current = null;
       videoAfterSong.current = false;   // no take came: no video waits on a later song
+      // A song the last run left on Kaggle came down before this push (see
+      // render in kaggleCloud.js): it goes in the rack and Recordings now.
+      bringInFromDisk({ quiet: true });
     }
   };
 
@@ -958,21 +971,40 @@ export default function OneManBand() {
       const listed = await window.lyricistAPI?.songsList?.();
       if (!listed?.ok) throw new Error(listed?.error || 'Could not read your songs folder.');
       const already = new Set((await listRecordings()).map((r) => r.name));
+      /**
+       * THE RACK SHOWS THE LATEST SONGS, WHETHER OR NOT RECORDINGS HAS THEM.
+       *
+       * Chris: "where my music keeps disappearing to." A song filed in
+       * Recordings was skipped here, so after a restart the rack came up empty
+       * and every Kaggle song looked gone. Recordings now only decides whether
+       * a song gets filed; the newest few on disk always come back to the rack.
+       */
+      const inRack = new Set(takesRef.current.map((t) => t.fileName).filter(Boolean));
+      const add = [];
       let brought = 0;
-      for (const f of listed.files || []) {
+      // songs-list comes newest first.
+      for (const [i, f] of (listed.files || []).entries()) {
         const name = `Black Hole Studios ${f.fileName.replace(/\.[^.]+$/, '')}`;
-        if (already.has(name)) continue;
+        // A take already in the rack was filed when it landed (onTake).
+        const toFile = !already.has(name) && !inRack.has(f.fileName);
+        const toRack = i < RACK_FROM_DISK && !inRack.has(f.fileName);
+        if (!toFile && !toRack) continue;
         const got = await window.lyricistAPI.songBytes(f.filePath);
         if (!got?.ok) continue;
         const bytes = got.bytes instanceof Uint8Array ? got.bytes : new Uint8Array(got.bytes);
         const blob = new Blob([bytes], { type: /\.wav$/i.test(f.fileName) ? 'audio/wav' : 'audio/flac' });
-        await saveRecording({ name, blob });
-        setTakes((prev) => (prev.some((t) => t.fileName === f.fileName) ? prev : [{
+        if (toFile) {
+          await saveRecording({ name, blob });
+          brought += 1;
+        }
+        if (!toRack) continue;
+        add.push({
           id: `disk-${f.fileName}`,
           seed: Number((/seed(\d+)/i.exec(f.fileName) || [])[1]) || 0,
+          at: f.mtimeMs || 0,
           url: URL.createObjectURL(blob),
           blob,
-          seconds,
+          seconds: f.recipe?.seconds || seconds,
           ms: 0,
           fileName: f.fileName,
           filePath: f.filePath,
@@ -981,8 +1013,13 @@ export default function OneManBand() {
           // their video uses the lyrics on screen when the button is pressed.
           recipe: f.recipe || { lyrics, caption, genres, moods, voices, genre, mood, voice, seconds, steps, guidance, engine },
           recipeGuessed: !f.recipe,
-        }, ...prev]));
-        brought += 1;
+        });
+      }
+      if (add.length) {
+        setTakes((prev) => {
+          const have = new Set(prev.map((t) => t.fileName).filter(Boolean));
+          return [...prev, ...add.filter((t) => !have.has(t.fileName))].sort((a, b) => (b.at || 0) - (a.at || 0));
+        });
       }
       // Silence when it ran on its own and there was nothing to do. Saying
       // "already in the app" every single time you open the tab is noise.
