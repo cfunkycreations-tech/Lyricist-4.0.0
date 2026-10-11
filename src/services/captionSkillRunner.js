@@ -38,9 +38,17 @@ import { chatCompletion } from './openrouter.js';
  * out loud on its way to one. 400 tokens cut a model off mid-sentence before it
  * ever named a template, so the room is for its working, not for its answer.
  */
-const PICK_BUDGET = 1500;
+/*
+ * Chris's own model is DeepSeek, which thinks before it answers, and the
+ * thinking comes out of the same budget: 1500 could be spent before a word of
+ * the answer. Only what is generated is paid for, so the room costs nothing.
+ */
+const PICK_BUDGET = 6000;
 /** The skill asks for roughly 250 to 450 English words across three headings. */
-const WRITE_BUDGET = 3000;
+const WRITE_BUDGET = 10000;
+
+/** Free models that refused for good this session ("only available on agentic harnesses"). */
+const refused = new Set();
 
 const api = () => (typeof window !== 'undefined' ? window.lyricistAPI : null);
 
@@ -62,16 +70,28 @@ export async function captionSkillReady() {
  * one that answered.
  */
 async function askAnyOf({ system, user, models, key, budget, signal }) {
-  let last = null;
+  const errors = [];
   for (const model of models) {
+    if (refused.has(model)) continue;
     try {
       return { text: await askOne({ system, user, model, key, budget, signal }), model };
     } catch (e) {
       if (signal?.aborted) throw e;
-      last = e;
+      errors.push({ model, message: e.message });
+      if (/only available on|no endpoints found|not a valid model/i.test(e.message)) refused.add(model);
     }
   }
-  throw last || new Error('No model would answer.');
+  /*
+   * THE REASON THAT MATTERS IS THE FIRST ONE. Chris, paying for DeepSeek, got
+   * "thinkingmachines/inkling-small:free is only available on agentic
+   * harnesses": the complaint of the LAST free stand-in, which says nothing
+   * about why the model he picked did not answer. His model is tried first,
+   * so its reason is what he sees.
+   */
+  const first = errors[0];
+  if (!first) throw new Error('No model would answer.');
+  const rest = errors.length > 1 ? ' The free stand-ins did not answer either.' : '';
+  throw new Error(`${first.model} did not answer: ${first.message}${rest}`);
 }
 
 async function askOne({ system, user, model, key, budget, signal }) {
@@ -91,7 +111,11 @@ async function askOne({ system, user, model, key, budget, signal }) {
     throw new Error(res.message || `OpenRouter answered ${res.status}.`);
   }
   const text = stripReasoning(String(json?.choices?.[0]?.message?.content || '')).trim();
-  if (!text) throw new Error('The model sent an empty answer back.');
+  if (!text) {
+    throw new Error(json?.choices?.[0]?.finish_reason === 'length'
+      ? 'it ran out of room while thinking and never wrote the answer.'
+      : 'it sent an empty answer back.');
+  }
   return text;
 }
 
