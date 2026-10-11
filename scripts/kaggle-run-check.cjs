@@ -74,12 +74,18 @@ const ok = (name, cond, extra = '') => { console.log(`${cond ? 'PASS' : 'FAIL'} 
 (async () => {
   {
     // Old run still says COMPLETE for a while, its 30 second takes still listed alongside the new ones.
-    statuses = ['COMPLETE', 'COMPLETE', 'QUEUED', 'RUNNING', 'RUNNING', 'COMPLETE'];
+    // The first COMPLETE is read before the push, by the collect that brings those old takes home.
+    statuses = ['COMPLETE', 'COMPLETE', 'COMPLETE', 'QUEUED', 'RUNNING', 'RUNNING', 'COMPLETE'];
     files = ['take1_seed5_00001_.flac', 'take2_seed6_00001_.flac', 'take1_seed5_runRUN_00001_.flac', 'take2_seed6_runRUN_00001_.flac'];
+    V.calls = [];
     const start = clock;
     const r = await k.render({ caption: 'c', lyrics: 'l', seconds: 180, seeds: [5, 6] }, () => {}, () => false);
     ok('a stale COMPLETE right after the upload is not taken as done', r.ok && clock - start > 50000, `${Math.round((clock - start) / 1000)}s`);
     ok('only this run\'s two takes come home', r.ok && r.takes.length === 2 && r.takes.every((t) => t.fileName.includes(`_run${pushedRun}`)), (r.takes || []).map((t) => t.fileName).join(', '));
+    const songs = path.join(UD, 'songs');
+    ok('the last run\'s songs come home BEFORE the push that would replace them',
+      V.calls.indexOf('ListKernelSessionOutput') >= 0 && V.calls.indexOf('ListKernelSessionOutput') < V.calls.indexOf('SaveKernel')
+      && fs.existsSync(path.join(songs, 'take1_seed5_00001_.flac')) && fs.existsSync(path.join(songs, 'take2_seed6_00001_.flac')), V.calls.join(' '));
   }
   {
     // A stale ERROR from the last run must not fail this one either.

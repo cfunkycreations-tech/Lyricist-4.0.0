@@ -1032,8 +1032,10 @@ ipcMain.handle('songs-list', async () => {
         const filePath = path.join(dir, f);
         let recipe = null;
         try { recipe = JSON.parse(fs.readFileSync(recipePath(filePath), 'utf8')); } catch { /* made before recipes were kept */ }
-        return { fileName: f, filePath, size: fs.statSync(filePath).size, recipe };
-      });
+        const st = fs.statSync(filePath);
+        return { fileName: f, filePath, size: st.size, mtimeMs: st.mtimeMs, recipe };
+      })
+      .sort((a, b) => b.mtimeMs - a.mtimeMs);   // newest first: the rack shows the latest
     return { ok: true, folder: dir, files };
   } catch (e) {
     return { ok: false, error: e.message };

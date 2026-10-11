@@ -941,6 +941,25 @@ async function render(song, onProgress, shouldStop = () => false) {
   const n = Array.isArray(song?.seeds) && song.seeds.length ? song.seeds.length : 1;
   const takeWord = n === 1 ? 'the song' : n === 2 ? 'both takes' : `all ${n} takes`;
 
+  /**
+   * THE LAST SONG COMES HOME BEFORE THIS ONE REPLACES IT.
+   *
+   * Chris: "find out where my music keeps disappearing to. From Kaggle." The
+   * app only ever reads the newest run's output. A run nobody finished watching
+   * (Stop, the app closed, the six hour limit) kept going on Kaggle, and the next
+   * Make pushed a new version over it before anything collected it: done, paid
+   * for in graphics card hours, and never seen. Collect runs once a launch, when
+   * the tab first opens, so within one session it never got a second chance.
+   * Now every push collects first.
+   */
+  let collected = [];
+  try {
+    const last = await collectSongs(cred);
+    collected = last.collected || [];
+    if (collected.length) say(0.01, `Brought in ${collected.length} finished song${collected.length === 1 ? '' : 's'} from your last Kaggle run first`);
+    else if (last.status && !TERMINAL[last.status]) say(0.01, 'Your last Kaggle song was still going. If it never comes in, look under that version\'s Output on the notebook page');
+  } catch { /* never stop a song over the last one */ }
+
   say(0.02, n === 1 ? 'Packing your song into the notebook' : `Packing ${n} takes into the notebook`);
   const run = Date.now().toString(36);
   const text = buildNotebook({ ...song, run });
