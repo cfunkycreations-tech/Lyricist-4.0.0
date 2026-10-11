@@ -627,7 +627,7 @@ function MainLayout() {
             and artwork loaded at once was enough to run the renderer out of
             memory and leave a black window. Now you pay for a tab when you
             actually open it. */}
-        <div style={{ flex: 1, minHeight: 'max(360px, calc(100vh - 200px - var(--brand-banner-h, 0px)))', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, minHeight: 'max(240px, calc(100vh - 200px - var(--brand-banner-h, 0px)))', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <TabPane id="songwriter" active={activeTab} opened={openedTabs}>
             <SongwriterHub ghostRiderData={ghostRiderData} />
           </TabPane>
