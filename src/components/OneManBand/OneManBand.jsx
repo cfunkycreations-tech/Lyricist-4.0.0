@@ -813,6 +813,17 @@ export default function OneManBand() {
 
   const stop = () => { abortRef.current?.abort(); setBusy(false); setPhase(''); };
 
+  const clearStudio = () => {
+    undoLyrics.current = lyrics;
+    undoCaption.current = caption;
+    setLyrics('');
+    setSeconds(30);
+    setCaptionEdited(false);
+    setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds: 30 })));
+    setError('');
+    setPhase('');
+  };
+
   /**
    * BRING IN A SONG THAT NEVER MADE IT INTO THE APP.
    *
@@ -1288,6 +1299,13 @@ export default function OneManBand() {
                   Example: {ex.genre.split('/')[0].trim()}
                 </button>
               ))}
+              {/* CLEAR. The words, the caption and the length go back to a
+                  blank song. The takes are saved already and stay. */}
+              <button type="button" className="omb-mini omb-clear" disabled={busy}
+                      title="Clears the Input Lyrics and the Input Caption and puts the length back to 30 seconds. Your takes stay."
+                      onClick={clearStudio}>
+                Clear
+              </button>
               <button type="button" className="omb-mini" data-demo="omb-pull" onClick={pullFromSongwriter}>
                 Pull from Songwriter
               </button>

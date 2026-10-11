@@ -869,6 +869,11 @@ step's line was already spoken.${attempt ? `\n\nThe last try at this step did no
             {canDo
               ? `It can press ${canDo} thing${canDo === 1 ? '' : 's'} right now, in the tabs you have open.`
               : 'It can answer and write. Open a tab and it can press things there too.'}
+            {/* The chat goes to the model as history every time, so an old
+                conversation is old context. Clear starts it fresh. */}
+            {msgs.length > 0 && !busy && (
+              <button type="button" className="gha-clearchat" onClick={() => { setMsgs([]); record('note', 'chat cleared'); }}>Clear chat</button>
+            )}
           </p>}
         </aside>
       )}

@@ -356,3 +356,9 @@ body.lyricist-mobile .gha-face { font-size: 17px; }
 .gha-flight-row.is-state { color: rgba(155, 161, 170, .8); }
 .gha-flight-row.is-note { color: #86efac; }
 .gha-flight-row.is-field { color: #c4b5fd; }
+
+.gha-clearchat {
+  margin-left: 8px; padding: 1px 8px; border-radius: 6px; font: inherit; font-size: 10.5px; cursor: pointer;
+  border: 1px solid rgba(239, 68, 68, .35); background: transparent; color: rgba(248, 113, 113, .85);
+}
+.gha-clearchat:hover { color: #f87171; border-color: #f87171; }
