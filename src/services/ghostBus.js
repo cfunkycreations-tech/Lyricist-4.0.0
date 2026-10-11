@@ -169,6 +169,8 @@ export async function runGhostAction(name, args = {}) {
   const look = await peekTabs([owner, visibleTab()].filter(Boolean)).catch(() => '');
   if (look) record('state', `after ${name}`, look);
   snapshot(name);
+  // Let it be seen before the next one (the hand speed's hold; none with hands off).
+  try { if (hands) await hands[1].holdAfterAction(); } catch { /* the show never blocks the work */ }
   return r;
 }
 

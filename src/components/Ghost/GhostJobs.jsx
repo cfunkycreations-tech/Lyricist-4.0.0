@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  subscribeJobs, addJob, stopJob, decide, resumeJob, removeJob, clearFinished,
+  subscribeJobs, stopJob, decide, resumeJob, removeJob, clearFinished,
 } from '../../services/ghostJobs.js';
 
 /**
@@ -21,35 +21,24 @@ const STATUS = {
 
 const MARK = { pending: '○', running: '◐', done: '✓', failed: '✗', skipped: '–' };
 
-export default function GhostJobs({ draft = '', onDraftUsed }) {
+/**
+ * ONE BOX. Chris, 2026-10-11: "the enter button I couldn't click... the stow
+ * button doesn't work either." A job flips the panel to Jobs, and Jobs had its
+ * own big job box with Run now. He typed there, so the Ask the Ghost box stayed
+ * empty, Enter stayed greyed out, and Stow (which fires on Enter) never did.
+ * The job is typed in Ask the Ghost now; this view only says how to run it.
+ */
+export default function GhostJobs({ mode, setMode, record, setRecord }) {
   const [jobs, setJobs] = useState([]);
-  const [prompt, setPrompt] = useState(draft);
-  const [mode, setMode] = useState('full');
-  const [record, setRecord] = useState(false);
   const [openLog, setOpenLog] = useState(null);
 
   useEffect(() => subscribeJobs((list) => setJobs(list)), []);
-  useEffect(() => { if (draft) { setPrompt(draft); onDraftUsed?.(); } }, [draft]);   // eslint-disable-line react-hooks/exhaustive-deps
-
-  const add = (start) => {
-    if (!prompt.trim()) return;
-    addJob({ prompt, mode, record, start });
-    setPrompt('');
-  };
 
   const hasFinished = jobs.some((j) => ['done', 'failed', 'stopped'].includes(j.status));
 
   return (
     <div className="ghj">
       <div className="ghj-new">
-        <textarea
-          id="ghj-prompt"
-          rows={4}
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Tell the Ghost the whole job. Pick an artist, study them, write in their style, save the Suno tags, send it to Songwriter…"
-          aria-label="The job"
-        />
         <div className="ghj-modes" role="radiogroup" aria-label="How to run it">
           {MODES.map((m) => (
             <button
@@ -70,10 +59,7 @@ export default function GhostJobs({ draft = '', onDraftUsed }) {
           <input type="checkbox" checked={record} onChange={(e) => setRecord(e.target.checked)} />
           Record it in OBS (starts before the first step, stops after the last)
         </label>
-        <div className="ghj-go">
-          <button type="button" className="go" disabled={!prompt.trim()} onClick={() => add(true)}>Run now</button>
-          <button type="button" disabled={!prompt.trim()} onClick={() => add(false)}>Add to queue</button>
-        </div>
+        <p className="ghj-hint">Type the whole job in Ask the Ghost below and press Enter. A job sent while one runs waits its turn.</p>
       </div>
 
       <div className="ghj-list">
