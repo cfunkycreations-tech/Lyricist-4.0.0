@@ -341,6 +341,9 @@ export default function GhostAssistant({ tab, config, getContext }) {
   }), []);
 
   const [view, setView] = useState('chat');
+  // How a job typed in the Jobs view runs. The job itself is typed in Ask the Ghost.
+  const [jobMode, setJobMode] = useState('full');
+  const [jobRecord, setJobRecord] = useState(false);
   const [jobCount, setJobCount] = useState(0);
   useEffect(() => subscribeJobs((list) => {
     setJobCount(list.filter((j) => ['queued', 'planning', 'running', 'awaiting'].includes(j.status)).length);
@@ -507,7 +510,10 @@ step's line was already spoken.${attempt ? `\n\nThe last try at this step did no
 
   const send = async (question) => {
     const q = String(question ?? input).trim();
+    // Enter with nothing typed and Stow on just stows the panel.
+    if (!q && stow && !busy) { setOpen(false); return; }
     if (!q || busy) return;
+    const inJobs = view === 'jobs';
     setInput('');
     hush();
     setMsgs((m) => [...m, { who: 'you', text: q }]);
@@ -564,9 +570,10 @@ step's line was already spoken.${attempt ? `\n\nThe last try at this step did no
 
       // A whole workflow in one message runs as a job, one step at a time, so
       // nothing is skipped and OBS starts before the first step. ghostJobs.js.
-      if (looksLikeWorkflow(q)) {
-        const record = /\b(obs|record(ed|ing)?)\b/i.test(q);
-        addJob({ prompt: q, mode: 'full', record });
+      // Anything typed while Jobs is showing is a job, run the way picked there.
+      if (inJobs || looksLikeWorkflow(q)) {
+        const record = (inJobs && jobRecord) || /\b(obs|record(ed|ing)?)\b/i.test(q);
+        addJob({ prompt: q, mode: inJobs ? jobMode : 'full', record });
         setMsgs((m) => [...m, {
           who: 'ghost',
           text: `That's a whole job, so I'm running it step by step${record ? ' and recording it in OBS' : ''}. It ticks off in Jobs.`,
@@ -693,9 +700,9 @@ step's line was already spoken.${attempt ? `\n\nThe last try at this step did no
                 type="button"
                 className={`gha-voice${handSpeed !== 'off' ? ' on' : ''}`}
                 onClick={cycleHandSpeed}
-                title="How the Ghost's hand moves on screen while it works. Tap to switch between normal, fast and off."
+                title="How the Ghost's hand moves on screen while it works. Tap to switch between slow, normal, fast and off. Slow waits after each step so you can see it."
               >
-                {handSpeed === 'off' ? 'Hands off' : handSpeed === 'fast' ? 'Hands fast' : 'Hands on'}
+                {`Hands ${handSpeed}`}
               </button>
               <button
                 type="button"
@@ -762,7 +769,7 @@ step's line was already spoken.${attempt ? `\n\nThe last try at this step did no
           </div>
 
 
-          {view === 'log' ? <GhostFlightLog /> : view === 'jobs' ? <GhostJobs /> : view === 'lessons' ? (
+          {view === 'log' ? <GhostFlightLog /> : view === 'jobs' ? <GhostJobs mode={jobMode} setMode={setJobMode} record={jobRecord} setRecord={setJobRecord} /> : view === 'lessons' ? (
             <GhostLessons tab={tab} onTeachStart={() => setOpen(false)} />
           ) : (
           <div className="gha-log" ref={logRef}>
@@ -842,7 +849,7 @@ step's line was already spoken.${attempt ? `\n\nThe last try at this step did no
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask the Ghost…"
+              placeholder={view === 'jobs' ? 'Type the whole job here, then Enter…' : 'Ask the Ghost…'}
               aria-label="Ask the Ghost"
               disabled={busy}
             />
@@ -862,7 +869,7 @@ step's line was already spoken.${attempt ? `\n\nThe last try at this step did no
                 Stop
               </button>
             ) : (
-              <button type="submit" disabled={!input.trim()}>Enter</button>
+              <button type="submit" disabled={!input.trim() && !stow}>Enter</button>
             )}
           </form>
 

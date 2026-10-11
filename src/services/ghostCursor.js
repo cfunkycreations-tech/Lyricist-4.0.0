@@ -17,17 +17,25 @@
  * subscribes and draws it.
  */
 
-const HANDS_KEY = 'lyricist.ghost.hands';
+// v2: the old key held 'normal' on his machine, which would have kept him off Slow.
+const HANDS_KEY = 'lyricist.ghost.hands.v2';
 
 /**
  * How it moves. "off" means no hand at all: actions run instantly, which is
  * what an overnight batch nobody is watching wants.
  */
+/**
+ * `hold` is the pause after each action so the result can be seen before the
+ * next one starts. Chris, 2026-10-11: "it's a little bit too fast doing
+ * things... I need to turn down that speed." Slow is the default.
+ */
 const SPEEDS = {
-  normal: { moveMin: 280, moveMax: 750, perPx: 0.9, scroll: 450, press: 170, perChar: 28, typeMax: 2200, smooth: true },
-  fast:   { moveMin: 90,  moveMax: 220, perPx: 0.3, scroll: 250, press: 70,  perChar: 12, typeMax: 450,  smooth: true },
+  slow:   { moveMin: 550, moveMax: 1400, perPx: 1.6, scroll: 700, press: 320, perChar: 45, typeMax: 4500, hold: 1600, smooth: true },
+  normal: { moveMin: 280, moveMax: 750,  perPx: 0.9, scroll: 450, press: 170, perChar: 28, typeMax: 2200, hold: 500,  smooth: true },
+  fast:   { moveMin: 90,  moveMax: 220,  perPx: 0.3, scroll: 250, press: 70,  perChar: 12, typeMax: 450,  hold: 0,    smooth: true },
   off:    null,
 };
+const DEFAULT_SPEED = 'slow';
 export const HAND_SPEED_NAMES = Object.keys(SPEEDS);
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -66,18 +74,24 @@ export function getHandSpeed() {
   if (override) return override;
   try {
     const v = localStorage.getItem(HANDS_KEY);
-    return v && v in SPEEDS ? v : 'normal';
+    return v && v in SPEEDS ? v : DEFAULT_SPEED;
   } catch {
-    return 'normal';
+    return DEFAULT_SPEED;
   }
 }
 export function setHandSpeed(name) {
-  const v = name in SPEEDS ? name : 'normal';
+  const v = name in SPEEDS ? name : DEFAULT_SPEED;
   try { localStorage.setItem(HANDS_KEY, v); } catch { /* storage blocked: session only */ }
   if (v === 'off') { state.visible = false; emit(); }
   return v;
 }
 const speed = () => SPEEDS[getHandSpeed()];
+
+/** Wait after an action so it can be seen. Stop cuts it short. */
+export async function holdAfterAction() {
+  const sp = speed();
+  for (let left = sp?.hold || 0; left > 0 && !stopped; left -= 100) await sleep(Math.min(100, left));
+}
 
 /**
  * STOP MEANS STOP. The Stop button sets this, and every step of motion and
