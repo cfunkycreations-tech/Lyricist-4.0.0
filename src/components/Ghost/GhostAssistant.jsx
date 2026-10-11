@@ -109,7 +109,9 @@ const REDO_NAMES = {
   matrix_autocraft: /craft/i,
   songwriter_set_style: /tag|genre|mood|style/i,
   set_length: /length|minute|second|long/i,
-  make_the_song: /make|generate|render|create/i,
+  // Not on a video step: "make the video" must never make the song again.
+  make_the_song: /^(?!.*\bvideo).*\b(make|generate|render|create)/i,
+  make_the_video: /video/i,
 };
 
 // Actions that narrate on their own, so the reply text is not read over them.

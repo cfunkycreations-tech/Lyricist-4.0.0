@@ -36,6 +36,23 @@ models (like the music model cache):
 3. A button on the take in Black Hole Studios. Videos land next to the songs.
 4. A Ghost action, `make_the_video`, so a job can finish a song all the way.
 
+Where it stands (PR #36): built, not yet run on Kaggle for real.
+- Notebook `resources/kaggle-lyric-video.ipynb` (from `scripts/make-video-notebook.py`),
+  checked offline by `npm run check:kaggle-video` on a 120 BPM click track.
+- `kaggleCloud.js` `renderVideo`: the song goes up as the private dataset
+  `lyricist-video-song` (blob upload, then create or version), waits until it
+  is listed ready, runs `lyricist-lyric-video` on the T4s, and brings back only
+  this run's mp4/lrc/srt into the songs folder. The models are saved once in
+  `lyricist-video-models`. `collect()` also picks up a video that finished
+  while nobody was watching. Stubbed end to end in `npm run check:kaggle-run`.
+- Each take in Black Hole Studios has a **Make the video** button. The Ghost
+  has a `make_the_video` action, and a "make the video" job step can never
+  make the song again.
+- Chris, first: run the live upload check once in PowerShell (it uses his own
+  token): `$env:KAGGLE_CODE="KGAT_..."; node scripts/kaggle-check.mjs`. Then
+  press Make the video on a take. The first video is slower because the models
+  are being saved.
+
 ## 3. Getting it in front of people (after 2, one at a time)
 
 1. **Gumroad** listing: page copy, price, screenshots, a demo video. Ghost jobs

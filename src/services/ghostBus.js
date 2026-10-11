@@ -121,7 +121,7 @@ const ACTION_TAB = [
   [/^ghostrider_/, 'analyzer'],
   [/^songforge_/, 'songforge'],
   [/^matrix_/, 'quantum'],
-  [/^(blackhole_|set_lyrics$|append_lyrics$|write_caption$|set_caption$|set_length$|set_takes$|roll_take_number$|set_engine$|lay_out_song$|make_the_song$|stop$)/, 'onemanband'],
+  [/^(blackhole_|set_lyrics$|append_lyrics$|write_caption$|set_caption$|set_length$|set_takes$|roll_take_number$|set_engine$|lay_out_song$|make_the_song$|make_the_video$|stop$)/, 'onemanband'],
 ];
 export const tabForAction = (name) => ACTION_TAB.find(([re]) => re.test(name))?.[1] || null;
 

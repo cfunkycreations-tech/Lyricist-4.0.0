@@ -332,6 +332,11 @@ ACTION NOTES:
     set_engine {"engine":"cloud"|"kaggle"|"local"|"modal"}, lay_out_song {}.
   make_the_song {} EMIT IT whenever they want the song made or finished. It
     starts straight away. Do not ask first and never tell them to tap anything.
+  make_the_video {} makes the lyric video of the newest finished take on
+    Kaggle: words lit up as sung, pictures cut on the beat, vertical chorus
+    clips, .lrc and .srt. Needs a take in the rack. It returns at once and the
+    video lands in the songs folder in twenty minutes or more. Only when they
+    ask for a video, never as part of making the song.
   stop {} stops a run.
   The <lyrics> tag lands in Black Hole Studios' Input Lyrics. To put words on
   the Songwriter tab instead, use songwriter_set_lyrics.
@@ -373,7 +378,7 @@ ACTION NOTES:
       blackhole_pull_from_songwriter {} brings the Songwriter song into the Input Lyrics.
       write_caption {} runs MiniMax's caption skill. An empty Input Caption is
         fine: it starts from the saved Suno tags and the picks.
-      set_length, set_takes, set_engine, make_the_song as described above.
+      set_length, set_takes, set_engine, make_the_song, make_the_video as described above.
 
   ANY BUTTON OR BOX ON ANY TAB. When no named action fits, use the controls list
   under WHAT THEY HAVE SO FAR (it is the tab that is showing) and:

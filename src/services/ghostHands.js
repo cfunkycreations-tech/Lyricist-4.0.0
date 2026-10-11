@@ -256,6 +256,7 @@ const BEFORE = {
   roll_take_number: [{ point: '[data-demo="omb-takes"]' }],
   set_engine: [{ point: '[data-demo="omb-engine"]' }],
   make_the_song: [{ point: '[data-demo="omb-make"]' }],
+  make_the_video: [{ point: '[data-demo="omb-video"]' }],
   stop: [{ point: '[data-demo="omb-make"]' }],
 };
 
