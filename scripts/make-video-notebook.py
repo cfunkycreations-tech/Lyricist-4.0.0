@@ -120,7 +120,7 @@ print("ffmpeg:", FFMPEG)
 
 def find_input(name):
     """Anything attached to this run, wherever Kaggle mounted it."""
-    for root, _, files in os.walk(INPUT):
+    for root, _, files in os.walk(INPUT, followlinks=True):
         if name in files:
             path = os.path.join(root, name)
             if os.path.exists(path):

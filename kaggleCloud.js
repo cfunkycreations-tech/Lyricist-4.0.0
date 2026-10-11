@@ -77,6 +77,20 @@ const TITLE = 'Lyricist One Man Band';
  */
 const CACHE_SLUG = 'lyricist-model-cache';
 const CACHE_TITLE = 'Lyricist Model Cache';
+/**
+ * THE LYRIC VIDEO (PLAN.md step 2): its own notebook and its own saved models.
+ * The finished song goes up as a private dataset, the only way a Kaggle
+ * notebook can read a file from this machine. Each song is a new version of
+ * the same dataset and the old versions are dropped, so it never piles up.
+ */
+const VIDEO_SLUG = 'lyricist-lyric-video';
+const VIDEO_TITLE = 'Lyricist Lyric Video';
+const VIDEO_CACHE_SLUG = 'lyricist-video-models';
+const VIDEO_CACHE_TITLE = 'Lyricist Video Models';
+const SONG_DATASET = 'lyricist-video-song';
+const SONG_DATASET_TITLE = 'Lyricist Video Song';
+const DATASETS = 'datasets.DatasetApiService';
+const BLOBS = 'blobs.BlobApiService';
 
 function credDir() {
   const dir = path.join(app.getPath('userData'), 'kaggle');
@@ -187,6 +201,78 @@ function download(url, timeoutMs = 300000, hops = 0) {
     req.on('error', reject);
   });
 }
+
+/**
+ * Same as download(), straight to disk. A three minute 1080p video is a few
+ * hundred megabytes, which has no business sitting in memory on its way to a
+ * file. Written to .part first, so a cut-off download never looks finished.
+ * Resolves the size in bytes.
+ */
+function downloadTo(url, filePath, timeoutMs = 600000, hops = 0) {
+  return new Promise((resolve, reject) => {
+    if (hops > 5) { reject(new Error('Too many redirects fetching the video.')); return; }
+    const part = `${filePath}.part`;
+    let out = null;
+    const fail = (e) => {
+      if (out) out.destroy();
+      fs.rm(part, { force: true }, () => reject(e));
+    };
+    const req = https.get(url, { headers: { 'User-Agent': 'Lyricist/4.2.0' }, timeout: timeoutMs }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.resume();
+        resolve(downloadTo(new URL(res.headers.location, url).toString(), filePath, timeoutMs, hops + 1));
+        return;
+      }
+      if (res.statusCode !== 200) { res.resume(); reject(new Error(`Download failed (${res.statusCode}).`)); return; }
+      let size = 0;
+      out = fs.createWriteStream(part);
+      res.on('data', (d) => { size += d.length; });
+      res.on('error', fail);
+      out.on('error', fail);
+      out.on('finish', () => {
+        try { fs.renameSync(part, filePath); resolve(size); } catch (e) { reject(e); }
+      });
+      res.pipe(out);
+    });
+    req.on('timeout', () => req.destroy(new Error('The download stalled.')));
+    req.on('error', fail);
+  });
+}
+
+/**
+ * PUT a file's bytes to the upload address Kaggle hands out. No Content-Type:
+ * the address is signed and Kaggle's own uploader sends none, so adding one can
+ * get it refused. Content-Length is set so it never goes out in chunks.
+ */
+function putBytes(url, bytes, timeoutMs = 600000) {
+  return new Promise((resolve, reject) => {
+    const req = https.request(url, {
+      method: 'PUT',
+      headers: { 'Content-Length': bytes.length, 'User-Agent': 'Lyricist/4.2.0' },
+      timeout: timeoutMs,
+    }, (res) => {
+      const chunks = [];
+      res.on('data', (d) => chunks.push(d));
+      res.on('end', () => resolve({ status: res.statusCode, json: null, text: Buffer.concat(chunks).toString('utf8') }));
+    });
+    req.on('timeout', () => req.destroy(new Error('The upload to Kaggle stalled.')));
+    req.on('error', reject);
+    req.end(bytes);
+  });
+}
+
+/** What Kaggle actually said, short, so a failure names the field that was wrong. */
+const said = (r) => `(${r?.status}: ${String(r?.json?.error || r?.json?.message || r?.text || '').replace(/\s+/g, ' ').slice(0, 200)})`;
+
+/**
+ * Text into a Python triple-quoted string. Every backslash and every quote is
+ * escaped, so nothing in the words can end the string early: not a triple
+ * quote, and not a line that ends on a quote right before the closing three.
+ */
+const pyText = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
+/** A cell's text, whether the notebook keeps it as one string or a list of lines. */
+const cellText = (c) => (Array.isArray(c.source) ? c.source.join('') : String(c.source || ''));
 
 /**
  * Turn whatever they pasted or picked into credentials.
@@ -343,7 +429,6 @@ function notebookPath() {
  */
 function buildNotebook({ caption, lyrics, seconds, seed, seeds, steps, guidance, hfToken, run }) {
   const nb = JSON.parse(fs.readFileSync(notebookPath(), 'utf8'));
-  const safe = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/"""/g, '\\"\\"\\"');
   // Last line of defence on the take number. Every engine behind this app reads
   // the seed as a signed 32 bit integer, and Chris hit the wall from the other
   // side: "Value 143159582127780 is greater than maximum value 2147483647".
@@ -352,9 +437,9 @@ function buildNotebook({ caption, lyrics, seconds, seed, seeds, steps, guidance,
     .slice(0, 4)
     .map((n) => Math.floor(Math.abs(Number(n) || 0)) % (SEED_MAX + 1));
   const cell = [
-    `CAPTION = """${safe(caption)}"""\n`,
+    `CAPTION = """${pyText(caption)}"""\n`,
     '\n',
-    `LYRICS = """${safe(lyrics)}"""\n`,
+    `LYRICS = """${pyText(lyrics)}"""\n`,
     '\n',
     `DURATION = ${Math.max(10, Math.min(300, Math.round(seconds || 60)))}\n`,
     `SEEDS    = [${list.join(', ')}]\n`,
@@ -366,7 +451,7 @@ function buildNotebook({ caption, lyrics, seconds, seed, seeds, steps, guidance,
   // A cell's source is a list of lines in some notebooks and one string in
   // others, and the shipped one has been both. Read it either way rather than
   // assuming: guessing wrong here throws before a single note is made.
-  const text = (c) => (Array.isArray(c.source) ? c.source.join('') : String(c.source || ''));
+  const text = cellText;
   const songCell = nb.cells.findIndex((c) => c.cell_type === 'code' && text(c).includes('CAPTION ='));
   if (songCell < 0) throw new Error('The shipped notebook has no CAPTION cell. This is a bug in Lyricist, not in your song.');
   nb.cells[songCell].source = cell;
@@ -461,9 +546,97 @@ function buildCacheNotebook(hfToken) {
   });
 }
 
-function cacheStatePath() { return path.join(credDir(), 'model-cache.json'); }
-function cachePushedAt() {
-  try { return Number(JSON.parse(fs.readFileSync(cacheStatePath(), 'utf8')).pushedAt) || 0; } catch { return 0; }
+/** Where the shipped lyric video notebook lives, packaged or in the repo. */
+function videoNotebookPath() {
+  const packed = path.join(process.resourcesPath || '', 'kaggle-lyric-video.ipynb');
+  if (fs.existsSync(packed)) return packed;
+  return path.join(__dirname, 'resources', 'kaggle-lyric-video.ipynb');
+}
+
+/** The picture and timing models, read out of the video notebook itself. */
+function videoModels() {
+  const nb = JSON.parse(fs.readFileSync(videoNotebookPath(), 'utf8'));
+  const all = nb.cells.map(cellText).join('\n');
+  const pick = (name) => new RegExp(`${name}\\s*=\\s*"([^"]+)"`).exec(all)?.[1];
+  const repo = pick('SDXL_REPO');
+  const file = pick('SDXL_FILE');
+  const whisper = pick('WHISPER_URL');
+  if (!repo || !file || !whisper) throw new Error('The shipped video notebook lists no models. This is a bug in Lyricist.');
+  return { repo, file, whisper };
+}
+
+/** The notebook that saves the picture and timing models once, on a CPU machine. */
+function buildVideoCacheNotebook(hfToken) {
+  const { repo, file, whisper } = videoModels();
+  const token = String(hfToken || '').trim();
+  const code = [
+    '# Lyricist Video Models. Downloads the picture and timing models ONCE and keeps',
+    '# them as this notebook\'s output, so every lyric video attaches them instead of',
+    '# fetching 8 GB again. Runs on a CPU machine: it uses no graphics card hours.',
+    'import os, shutil, hashlib, urllib.request',
+    'from huggingface_hub import hf_hub_download, login',
+    '',
+    `HF_TOKEN = "${/^[A-Za-z0-9_-]{8,200}$/.test(token) ? token : ''}"`,
+    'if HF_TOKEN:',
+    '    try:',
+    '        login(HF_TOKEN)',
+    '    except Exception:',
+    '        print("Hugging Face token not accepted, downloading without it.")',
+    '',
+    `SDXL_REPO = ${JSON.stringify(repo)}`,
+    `SDXL_FILE = ${JSON.stringify(file)}`,
+    `WHISPER_URL = ${JSON.stringify(whisper)}`,
+    'WORK = "/kaggle/working"',
+    '',
+    'print("downloading the picture model ...")',
+    'p = hf_hub_download(repo_id=SDXL_REPO, filename=SDXL_FILE, local_dir=WORK)',
+    'print("  ->", p, f"{os.path.getsize(p)/1e9:.2f} GB")',
+    '',
+    '# The timing model\'s address carries its own checksum: a damaged download',
+    '# fails here instead of in the middle of a video.',
+    'print("downloading the timing model ...")',
+    'dest = os.path.join(WORK, os.path.basename(WHISPER_URL))',
+    'urllib.request.urlretrieve(WHISPER_URL, dest + ".part")',
+    'h = hashlib.sha256()',
+    'with open(dest + ".part", "rb") as f:',
+    '    for chunk in iter(lambda: f.read(1 << 20), b""):',
+    '        h.update(chunk)',
+    'want = WHISPER_URL.rstrip("/").split("/")[-2]',
+    'if h.hexdigest() != want:',
+    '    os.remove(dest + ".part")',
+    '    raise RuntimeError("The timing model came down damaged. It is fetched again next time.")',
+    'os.replace(dest + ".part", dest)',
+    'print("  ->", dest, f"{os.path.getsize(dest)/1e9:.2f} GB")',
+    '',
+    '# Only the model files are kept, not the download bookkeeping.',
+    'shutil.rmtree(os.path.join(WORK, ".cache"), ignore_errors=True)',
+    'print("\\nSaved. Every lyric video from now on skips these downloads.")',
+    '',
+  ].join('\n');
+  return JSON.stringify({
+    cells: [{ cell_type: 'code', metadata: {}, execution_count: null, outputs: [], source: code }],
+    metadata: {
+      kernelspec: { display_name: 'Python 3', language: 'python', name: 'python3' },
+      language_info: { name: 'python' },
+    },
+    nbformat: 4,
+    nbformat_minor: 5,
+  });
+}
+
+/** Each saved-model notebook: where it lives, what it must hold, how it is made. */
+const MUSIC_CACHE = {
+  slug: CACHE_SLUG, title: CACHE_TITLE, state: 'model-cache.json',
+  files: () => modelFiles().files, build: buildCacheNotebook,
+};
+const VIDEO_CACHE = {
+  slug: VIDEO_CACHE_SLUG, title: VIDEO_CACHE_TITLE, state: 'video-model-cache.json',
+  files: () => { const m = videoModels(); return [m.file, m.whisper]; }, build: buildVideoCacheNotebook,
+};
+
+function cacheStatePath(spec = MUSIC_CACHE) { return path.join(credDir(), spec.state); }
+function cachePushedAt(spec = MUSIC_CACHE) {
+  try { return Number(JSON.parse(fs.readFileSync(cacheStatePath(spec), 'utf8')).pushedAt) || 0; } catch { return 0; }
 }
 
 /**
@@ -476,26 +649,26 @@ function cachePushedAt() {
  *
  * -> { attach: true } | { attach: false, saving?: true }
  */
-async function modelCache(cred, hfToken) {
+async function modelCache(cred, hfToken, spec = MUSIC_CACHE) {
   try {
-    const want = modelFiles().files.map((f) => path.posix.basename(f));
-    const st = await call('GetKernelSessionStatus', { userName: cred.username, kernelSlug: CACHE_SLUG }, cred, 20000);
+    const want = spec.files().map((f) => path.posix.basename(f));
+    const st = await call('GetKernelSessionStatus', { userName: cred.username, kernelSlug: spec.slug }, cred, 20000);
     const status = st.status === 200 ? String(st.json?.status || '') : '';
     if (status === 'COMPLETE') {
-      const out = await call('ListKernelSessionOutput', { userName: cred.username, kernelSlug: CACHE_SLUG, pageSize: 50 }, cred, 30000);
+      const out = await call('ListKernelSessionOutput', { userName: cred.username, kernelSlug: spec.slug, pageSize: 50 }, cred, 30000);
       const have = new Set((out.json?.files || []).map((f) => path.posix.basename(String(f.fileName || ''))));
       if (want.every((n) => have.has(n))) return { attach: true };
     } else if (status && !TERMINAL[status]) {
       return { attach: false, saving: true };
     }
-    const since = Date.now() - cachePushedAt();
+    const since = Date.now() - cachePushedAt(spec);
     // A save Kaggle has not listed yet, or one that failed today: leave it.
     if (since < (status ? 24 : 0.5) * 60 * 60 * 1000) return { attach: false };
 
     const push = await call('SaveKernel', {
-      slug: `${cred.username}/${CACHE_SLUG}`,
-      newTitle: CACHE_TITLE,
-      text: buildCacheNotebook(hfToken),
+      slug: `${cred.username}/${spec.slug}`,
+      newTitle: spec.title,
+      text: spec.build(hfToken),
       language: 'python',
       kernelType: 'notebook',
       isPrivate: true,
@@ -508,7 +681,7 @@ async function modelCache(cred, hfToken) {
       categoryIds: [],
     }, cred, 120000);
     if (push.status !== 200 || push.json?.error) return { attach: false };
-    fs.writeFileSync(cacheStatePath(), JSON.stringify({ pushedAt: Date.now() }));
+    fs.writeFileSync(cacheStatePath(spec), JSON.stringify({ pushedAt: Date.now() }));
     return { attach: false, saving: true };
   } catch {
     // The cache is a speed-up. Nothing about it is allowed to stop a song.
@@ -590,16 +763,75 @@ function readFailure(raw, fallback) {
   return lastError ? `Kaggle stopped with: ${lastError.slice(0, 300)}` : fallback;
 }
 
-async function explainFailure(cred, fallback) {
+async function explainFailure(cred, fallback, slug = SLUG) {
   try {
     const out = await call('ListKernelSessionOutput', {
-      userName: cred.username, kernelSlug: SLUG, pageSize: 5,
+      userName: cred.username, kernelSlug: slug, pageSize: 5,
     }, cred, 30000);
     return readFailure(out.json?.log, fallback);
   } catch {
     // Failing to read the log must never replace the failure it explains.
     return fallback;
   }
+}
+
+/** A notebook upload Kaggle turned down, in words that say what to do. */
+function assertPushed(push) {
+  if (push.status === 401) {
+    throw new Error('Kaggle no longer accepts your code. Create a new token on Kaggle and connect again.');
+  }
+  if (push.status === 403) {
+    // On an upload, 403 is almost always the phone check rather than the code:
+    // Kaggle will not hand a free graphics card to an unverified account.
+    throw new Error('Kaggle would not let this account run a notebook. Open kaggle.com/settings and verify your phone number, then try again. It is free and it is once.');
+  }
+  if (push.status !== 200 || push.json?.error) {
+    throw new Error(push.json?.error || `Kaggle refused the upload (${push.status}). ${push.text.slice(0, 200)}`);
+  }
+}
+
+/**
+ * Wait for a pushed notebook to finish. -> { status } | { stopped } | { timedOut }.
+ * Throws the plain-words reason when Kaggle says it failed.
+ *
+ * THE LAST SONG IS NOT THIS SONG.
+ *
+ * Chris, 2026-10-11: waited on two three minute songs and got two thirty
+ * second ones that "didn't even sound like the fucking song". Right after an
+ * upload Kaggle can still answer with the PREVIOUS run's finished status, and
+ * this loop took that as done and brought the old songs home. So a finished
+ * or failed status only counts once this run has been seen queued or going.
+ * Ten minutes without ever seeing that, and the status is believed anyway.
+ */
+async function watchRun(cred, slug, url, { limitMs, shouldStop = () => false, onStatus = () => {} }) {
+  const started = Date.now();
+  let seenThisRun = false;
+  const STALE_MS = 10 * 60 * 1000;
+  while (Date.now() - started < limitMs) {
+    if (shouldStop()) return { stopped: true };
+    await new Promise((r) => setTimeout(r, 10000));
+    let st;
+    try {
+      st = await call('GetKernelSessionStatus', { userName: cred.username, kernelSlug: slug }, cred, 30000);
+    } catch {
+      continue;   // a blip in the network is not a failed render
+    }
+    const name = String(st.json?.status || '');
+    if (name && !TERMINAL[name]) seenThisRun = true;
+    if (TERMINAL[name] && !seenThisRun && Date.now() - started < STALE_MS) continue;
+    onStatus(name, Math.floor((Date.now() - started) / 60000));
+    if (name === 'ERROR') {
+      const plain = await explainFailure(
+        cred,
+        st.json?.failureMessage
+          || `Kaggle ran it and hit an error. Open the notebook to see what it said: ${url}`,
+        slug,
+      );
+      throw new Error(plain);
+    }
+    if (TERMINAL[name]) return { status: name };
+  }
+  return { timedOut: true };
 }
 
 /**
@@ -628,8 +860,14 @@ async function explainFailure(cred, fallback) {
  */
 async function collect() {
   const cred = readToken();
-  if (!cred) return { ok: true, collected: [], reason: 'not connected' };
+  if (!cred) return { ok: true, collected: [], videos: [], reason: 'not connected' };
+  const songs = await collectSongs(cred);
+  // Its own step after the songs: nothing about a video may keep a song out.
+  const videos = await collectVideos(cred);
+  return { ...songs, videos };
+}
 
+async function collectSongs(cred) {
   let st;
   try {
     st = await call('GetKernelSessionStatus', { userName: cred.username, kernelSlug: SLUG }, cred, 20000);
@@ -661,6 +899,27 @@ async function collect() {
     } catch { /* one that will not come down must not stop the rest */ }
   }
   return { ok: true, status, folder: dir, collected };
+}
+
+/** The same for a lyric video that finished with nobody watching. Never throws. */
+async function collectVideos(cred) {
+  try {
+    const st = await call('GetKernelSessionStatus', { userName: cred.username, kernelSlug: VIDEO_SLUG }, cred, 20000);
+    if (String(st.json?.status || '') !== 'COMPLETE') return [];
+    const out = await call('ListKernelSessionOutput', { userName: cred.username, kernelSlug: VIDEO_SLUG, pageSize: 50 }, cred, 60000);
+    const got = [];
+    for (const f of (out.json?.files || []).filter((x) => /\.(mp4|lrc|srt)$/i.test(x.fileName || ''))) {
+      const fileName = path.posix.basename(String(f.fileName));
+      const filePath = path.join(songsDir(), fileName);
+      if (fs.existsSync(filePath)) continue;
+      try {
+        got.push({ fileName, filePath, size: await downloadTo(f.url, filePath) });
+      } catch { /* the next one may still come down */ }
+    }
+    return got;
+  } catch {
+    return [];
+  }
 }
 
 async function render(song, onProgress, shouldStop = () => false) {
@@ -704,24 +963,12 @@ async function render(song, onProgress, shouldStop = () => false) {
     categoryIds: [],
   }, cred, 120000);
 
-  if (push.status === 401) {
-    throw new Error('Kaggle no longer accepts your code. Create a new token on Kaggle and connect again.');
-  }
-  if (push.status === 403) {
-    // On an upload, 403 is almost always the phone check rather than the code:
-    // Kaggle will not hand a free graphics card to an unverified account.
-    throw new Error('Kaggle would not let this account run a notebook. Open kaggle.com/settings and verify your phone number, then try again. It is free and it is once.');
-  }
-  if (push.status !== 200 || push.json?.error) {
-    throw new Error(push.json?.error || `Kaggle refused the upload (${push.status}). ${push.text.slice(0, 200)}`);
-  }
+  assertPushed(push);
   const url = push.json?.url || `https://www.kaggle.com/code/${cred.username}/${SLUG}`;
 
   say(0.1, n > 1
     ? 'Kaggle has it. Waiting for its graphics cards'
     : 'Kaggle has it. Waiting for a free graphics card');
-  const started = Date.now();
-  let lastStatus = '';
   // Kaggle queues, then runs. A full song is minutes; give it an hour before we
   // call it lost, and poll gently so we are not the reason it gets rate limited.
   /**
@@ -734,45 +981,16 @@ async function render(song, onProgress, shouldStop = () => false) {
    * the thing that should be deciding a song has taken too long.
    */
   const LIMIT_MS = 6 * 60 * 60 * 1000;
-  /**
-   * THE LAST SONG IS NOT THIS SONG.
-   *
-   * Chris, 2026-10-11: waited on two three minute songs and got two thirty
-   * second ones that "didn't even sound like the fucking song". Right after an
-   * upload Kaggle can still answer with the PREVIOUS run's finished status, and
-   * this loop took that as done and brought the old songs home. So a finished
-   * or failed status only counts once this run has been seen queued or going.
-   * Ten minutes without ever seeing that, and the status is believed anyway.
-   */
-  let seenThisRun = false;
-  const STALE_MS = 10 * 60 * 1000;
-  while (Date.now() - started < LIMIT_MS) {
-    if (shouldStop()) return { ok: false, stopped: true, url };
-    await new Promise((r) => setTimeout(r, 10000));
-    let st;
-    try {
-      st = await call('GetKernelSessionStatus', { userName: cred.username, kernelSlug: SLUG }, cred, 30000);
-    } catch {
-      continue;   // a blip in the network is not a failed render
-    }
-    const name = String(st.json?.status || '');
-    if (name && !TERMINAL[name]) seenThisRun = true;
-    if (TERMINAL[name] && !seenThisRun && Date.now() - started < STALE_MS) continue;
-    if (name && name !== lastStatus) lastStatus = name;
-    const mins = Math.floor((Date.now() - started) / 60000);
-    if (name === 'QUEUED' || name === 'NEW_SCRIPT') say(0.15, `Waiting in Kaggle's queue, ${mins} min`);
-    else if (name === 'RUNNING') say(0.5, `Kaggle is making ${takeWord}, ${mins} min`);
-    if (name === 'ERROR') {
-      const plain = await explainFailure(
-        cred,
-        st.json?.failureMessage
-          || `Kaggle ran it and hit an error. Open the notebook to see what it said: ${url}`,
-      );
-      throw new Error(plain);
-    }
-    if (TERMINAL[name] && name !== 'ERROR') break;
-  }
-  if (!TERMINAL[lastStatus]) {
+  const watched = await watchRun(cred, SLUG, url, {
+    limitMs: LIMIT_MS,
+    shouldStop,
+    onStatus: (name, mins) => {
+      if (name === 'QUEUED' || name === 'NEW_SCRIPT') say(0.15, `Waiting in Kaggle's queue, ${mins} min`);
+      else if (name === 'RUNNING') say(0.5, `Kaggle is making ${takeWord}, ${mins} min`);
+    },
+  });
+  if (watched.stopped) return { ok: false, stopped: true, url };
+  if (watched.timedOut) {
     return { ok: false, timedOut: true, url, error: 'Kaggle has been going six hours, so the app stopped watching. The run keeps going without it and the song comes in by itself when you open this tab again.' };
   }
 
@@ -831,8 +1049,199 @@ async function render(song, onProgress, shouldStop = () => false) {
   return { ok: true, url, folder: songsDir(), takes, fileName: takes[0].fileName, filePath: takes[0].filePath };
 }
 
+/**
+ * PUT ONE FINISHED SONG WHERE THE VIDEO NOTEBOOK CAN READ IT.
+ *
+ * Kaggle's own uploader does three things and so does this: ask for an upload
+ * address, PUT the bytes there, then file the upload as a new version of a
+ * private dataset (or make the dataset the first time). The name carries this
+ * run's mark, and the run waits until Kaggle lists that exact file as ready:
+ * right after a new version Kaggle can still be showing the last song, the
+ * same trap as a notebook's status.
+ *
+ * Every failure carries Kaggle's own status and words, so the first real press
+ * of the button names whatever is wrong.
+ *
+ * -> { name, ref }
+ */
+async function uploadSong(cred, filePath, say = () => {}) {
+  const bytes = fs.readFileSync(filePath);
+  const ext = (path.extname(filePath) || '.flac').toLowerCase().replace(/[^.a-z0-9]/g, '');
+  const stem = path.basename(filePath, path.extname(filePath))
+    .replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48) || 'song';
+  const name = `${stem}-${Date.now().toString(36)}${ext}`;
+
+  const start = await call('StartBlobUpload', {
+    type: 'DATASET',
+    name,
+    contentLength: bytes.length,
+    lastModifiedEpochSeconds: Math.floor(Date.now() / 1000),
+  }, cred, 60000, BLOBS);
+  if (start.status !== 200 || !start.json?.token || !start.json?.createUrl) {
+    throw new Error(`Kaggle would not take the song for the video ${said(start)}`);
+  }
+  const put = await putBytes(start.json.createUrl, bytes);
+  if (put.status !== 200 && put.status !== 201) {
+    throw new Error(`The song did not upload to Kaggle ${said(put)}`);
+  }
+
+  // A new version when the dataset is there, a new dataset when it is not.
+  // Which one is tried first does not matter: Kaggle's 403 for "missing" and
+  // for "not yours" look the same, so each is just tried in turn.
+  const owner = cred.username;
+  const files = [{ token: start.json.token }];
+  const version = () => call('CreateDatasetVersion', {
+    ownerSlug: owner,
+    datasetSlug: SONG_DATASET,
+    body: { versionNotes: `Song for the lyric video: ${name}`, deleteOldVersions: true, files },
+  }, cred, 120000, DATASETS);
+  const create = (licenseName) => call('CreateDataset', {
+    ownerSlug: owner, slug: SONG_DATASET, title: SONG_DATASET_TITLE, licenseName, isPrivate: true, files,
+  }, cred, 120000, DATASETS);
+  const good = (r) => r.status === 200 && !r.json?.error;
+  let made = await version();
+  if (!good(made)) made = await create('copyright-authors');
+  if (!good(made)) made = await create('CC0-1.0');
+  if (!good(made)) throw new Error(`Kaggle would not keep the song for the video ${said(made)}`);
+
+  say('Kaggle is unpacking the song');
+  const until = Date.now() + 15 * 60 * 1000;
+  let last = null;
+  while (Date.now() < until) {
+    await new Promise((r) => setTimeout(r, 5000));
+    let st;
+    let ls;
+    try {
+      st = await call('GetDatasetStatus', { ownerSlug: owner, datasetSlug: SONG_DATASET }, cred, 30000, DATASETS);
+      ls = await call('ListDatasetFiles', { ownerSlug: owner, datasetSlug: SONG_DATASET, pageSize: 50 }, cred, 30000, DATASETS);
+    } catch {
+      continue;
+    }
+    last = st;
+    const status = String(st.json?.status || '').toUpperCase();
+    if (status === 'FAILED') throw new Error(`Kaggle could not unpack the song for the video ${said(st)}`);
+    const listed = (ls.json?.datasetFiles || [])
+      .some((f) => path.posix.basename(String(f.name || f.ref || '')) === name);
+    if (status === 'READY' && listed) return { name, ref: `${owner}/${SONG_DATASET}` };
+  }
+  throw new Error(`Kaggle took the song but did not get it ready in fifteen minutes. Press Make the video again ${said(last)}`);
+}
+
+/**
+ * Put the song into the video notebook: one cell holds the file name, the
+ * words and the sound, every other cell is plumbing, same as the song notebook.
+ */
+function buildVideoNotebook({ audioName, outName, lyrics, caption, language, hfToken }) {
+  const nb = JSON.parse(fs.readFileSync(videoNotebookPath(), 'utf8'));
+  const plainName = (v) => String(v || '').replace(/[^A-Za-z0-9._-]/g, '');
+  const token = String(hfToken || '').trim();
+  const lang = String(language || 'en').replace(/[^a-z-]/gi, '').slice(0, 8) || 'en';
+  const cell = [
+    `AUDIO_NAME = "${plainName(audioName)}"\n`,
+    `OUT_NAME   = "${plainName(outName)}"\n`,
+    '\n',
+    `LYRICS = """${pyText(lyrics)}"""\n`,
+    '\n',
+    `CAPTION = """${pyText(caption)}"""\n`,
+    '\n',
+    `LANGUAGE = "${lang}"\n`,
+    `HF_TOKEN = "${/^[A-Za-z0-9_-]{8,200}$/.test(token) ? token : ''}"\n`,
+  ].join('');
+  const at = nb.cells.findIndex((c) => c.cell_type === 'code' && cellText(c).includes('AUDIO_NAME ='));
+  if (at < 0) throw new Error('The shipped video notebook has no song cell. This is a bug in Lyricist, not in your song.');
+  nb.cells[at].source = cell;
+  for (const c of nb.cells) if (Array.isArray(c.source)) c.source = c.source.join('');
+  return JSON.stringify(nb);
+}
+
+/**
+ * MAKE THE LYRIC VIDEO FOR ONE FINISHED TAKE. PLAN.md step 2.
+ *
+ * job: { filePath, lyrics, caption, language?, hfToken? }, filePath being a
+ * take in the songs folder. The song goes up, the video notebook runs on the
+ * T4s against it, and the video, the vertical chorus clips and the synced
+ * lyric files land in the songs folder next to the song.
+ */
+async function renderVideo(job, onProgress, shouldStop = () => false) {
+  const cred = readToken();
+  if (!cred) throw new Error('Not connected to Kaggle yet.');
+  const say = (p, msg) => { try { onProgress(p, msg); } catch { /* window gone */ } };
+  const filePath = String(job?.filePath || '');
+  if (!filePath || !fs.existsSync(filePath)) throw new Error('That take is not on disk any more, so there is nothing to make a video from.');
+  if (!String(job?.lyrics || '').trim()) throw new Error('This take has no lyrics with it, so there are no words to put on screen.');
+
+  say(0.02, 'Uploading the song to your Kaggle account');
+  const song = await uploadSong(cred, filePath, (msg) => say(0.06, msg));
+  if (shouldStop()) return { ok: false, stopped: true };
+  const outName = song.name.replace(/\.[^.]+$/, '');
+
+  const cache = await modelCache(cred, job?.hfToken, VIDEO_CACHE);
+  if (cache.attach) say(0.1, 'Using the picture and timing models saved in your Kaggle account');
+  else if (cache.saving) say(0.1, 'Saving the picture and timing models to your Kaggle account. This first video downloads them, so it takes longer');
+
+  say(0.12, 'Sending the video notebook to Kaggle');
+  const push = await call('SaveKernel', {
+    slug: `${cred.username}/${VIDEO_SLUG}`,
+    newTitle: VIDEO_TITLE,
+    text: buildVideoNotebook({ ...job, audioName: song.name, outName }),
+    language: 'python',
+    kernelType: 'notebook',
+    isPrivate: true,
+    enableGpu: true,
+    enableInternet: true,
+    machineShape: 'NvidiaTeslaT4',   // never the P100: see render()
+    datasetDataSources: [song.ref],
+    competitionDataSources: [],
+    kernelDataSources: cache.attach ? [`${cred.username}/${VIDEO_CACHE_SLUG}`] : [],
+    modelDataSources: [],
+    categoryIds: [],
+  }, cred, 120000);
+  assertPushed(push);
+  const url = push.json?.url || `https://www.kaggle.com/code/${cred.username}/${VIDEO_SLUG}`;
+
+  say(0.15, 'Kaggle has it. Waiting for its graphics cards');
+  const watched = await watchRun(cred, VIDEO_SLUG, url, {
+    limitMs: 3 * 60 * 60 * 1000,
+    shouldStop,
+    onStatus: (name, mins) => {
+      if (name === 'QUEUED' || name === 'NEW_SCRIPT') say(0.2, `Waiting in Kaggle's queue, ${mins} min`);
+      else if (name === 'RUNNING') say(0.5, `Kaggle is making the video, ${mins} min`);
+    },
+  });
+  if (watched.stopped) return { ok: false, stopped: true, url };
+  if (watched.timedOut) {
+    return { ok: false, timedOut: true, url, error: 'Kaggle has been going three hours, so the app stopped watching. The video comes in by itself when you open Black Hole Studios again.' };
+  }
+
+  say(0.9, 'Fetching the video');
+  const out = await call('ListKernelSessionOutput', { userName: cred.username, kernelSlug: VIDEO_SLUG, pageSize: 50 }, cred, 60000);
+  // Only this run's files: every one starts with this song's own upload name.
+  const files = (out.json?.files || [])
+    .map((f) => ({ ...f, fileName: path.posix.basename(String(f.fileName || '')) }))
+    .filter((f) => /\.(mp4|lrc|srt)$/i.test(f.fileName)
+      && (f.fileName.startsWith(`${outName}-`) || f.fileName.startsWith(`${outName}.`)));
+  if (!files.some((f) => /-lyric-video\.mp4$/i.test(f.fileName))) {
+    return { ok: false, url, error: `Kaggle finished but the video is not in its output. Open the notebook to see why: ${url}` };
+  }
+  const got = [];
+  for (let i = 0; i < files.length; i += 1) {
+    say(0.9 + (0.1 * i) / files.length, `Fetching ${i + 1} of ${files.length}`);
+    const dest = path.join(songsDir(), files[i].fileName);
+    try {
+      got.push({ fileName: files[i].fileName, filePath: dest, size: await downloadTo(files[i].url, dest) });
+    } catch { /* one that will not come down must not stop the rest */ }
+  }
+  const video = got.find((g) => /-lyric-video\.mp4$/i.test(g.fileName));
+  if (!video) {
+    return { ok: false, url, error: `Kaggle made the video but the download failed. It is still on the notebook: ${url}` };
+  }
+  say(1, 'Done');
+  return { ok: true, url, folder: songsDir(), video: video.filePath, files: got };
+}
+
 module.exports = {
   status, connect, disconnect, render, collect, whoAmI, songsDir, SLUG, TITLE,
+  renderVideo, VIDEO_SLUG,
   // Exposed for the offline test harness: these are the two pieces that can be
   // proved without a Kaggle account, and both of them can silently ruin a run.
   __test_parse: parseToken,
@@ -840,4 +1249,8 @@ module.exports = {
   __test_build: buildNotebook,
   __test_cache_build: buildCacheNotebook,
   __test_model_files: modelFiles,
+  __test_video_build: buildVideoNotebook,
+  __test_video_cache_build: buildVideoCacheNotebook,
+  __test_video_models: videoModels,
+  __test_upload_song: uploadSong,
 };

@@ -76,6 +76,32 @@ ok('the length goes in', /DURATION = 75/.test(four));
 ok('every cell is one string, as Kaggle wants',
    JSON.parse(build({ caption: 'x', lyrics: 'y', seconds: 60, seed: 1 })).cells.every((c) => typeof c.source === 'string'));
 
+const Q3 = TRIPLE;
+ok('a line ending on a quote cannot close the string early',
+   nbText({ caption: 'x', lyrics: 'she said "stay"', seconds: 60, seed: 1 }).includes(`she said \\"stay\\"${Q3}`));
+
+console.log('\n--- the lyric video notebook ---');
+const vText = (opts) => {
+  const nb = JSON.parse(kaggle.__test_video_build(opts));
+  return { nb, cell: String(nb.cells.find((c) => String(c.source).includes('AUDIO_NAME =')).source) };
+};
+const v = vText({
+  audioName: 'take1_seed5-lmx9.flac', outName: 'take1_seed5-lmx9', lyrics: '[Verse]\nhold the {brace} and back\\slash "home"',
+  caption: `warm ${TRIPLE} soul`, hfToken: 'hf_abcdefgh12345',
+});
+ok('the uploaded song name goes in', v.cell.includes('AUDIO_NAME = "take1_seed5-lmx9.flac"') && v.cell.includes('OUT_NAME   = "take1_seed5-lmx9"'));
+ok('the words go in escaped', v.cell.includes(`back\\\\slash \\"home\\"${Q3}`) && v.cell.includes('warm \\"\\"\\" soul'));
+ok('the HF token goes in, a junk one does not', v.cell.includes('HF_TOKEN = "hf_abcdefgh12345"')
+   && vText({ audioName: 'a.flac', outName: 'a', lyrics: 'x', caption: 'y', hfToken: 'x"; rm' }).cell.includes('HF_TOKEN = ""'));
+ok('a name cannot break out of its quotes', vText({ audioName: 'a"b\\c.flac', outName: 'o', lyrics: 'x', caption: 'y' }).cell.includes('AUDIO_NAME = "abc.flac"'));
+ok('only the song cell changes, every cell one string', v.nb.cells.length === 17 && v.nb.cells.every((c) => typeof c.source === 'string'));
+const vm = kaggle.__test_video_models();
+ok('the video models are read from the video notebook', vm.repo === 'stabilityai/stable-diffusion-xl-base-1.0'
+   && vm.file === 'sd_xl_base_1.0.safetensors' && vm.whisper.endsWith('/medium.pt'), `${vm.file}, ${vm.whisper.split('/').pop()}`);
+const vCache = String(JSON.parse(kaggle.__test_video_cache_build('hf_abcdefgh12345')).cells[0].source);
+ok('the video cache saves both models as its output', vCache.includes(vm.file) && vCache.includes(vm.whisper) && vCache.includes('"/kaggle/working"'));
+ok('the timing model is checked against the checksum in its address', vCache.includes('hashlib.sha256()') && vCache.includes('split("/")[-2]'));
+
 console.log('\n--- what it says when a run fails ---');
 const explain = kaggle.__test_explain;
 // The real thing, trimmed: this is what came back from his 2026-08-21 run.
@@ -205,6 +231,28 @@ if (files.length) {
     get(files[files.length - 1].url);
   });
   ok('the file downloads', bytes.length > 1000, `${bytes.length} bytes, header ${bytes.slice(0, 4).toString('latin1')}`);
+}
+
+console.log('\n--- live: a song goes up for the lyric video ---');
+{
+  // A second of silence as a real file, through the app's own upload code.
+  const os = await import('os');
+  const fs = await import('fs');
+  const path = await import('path');
+  const tmp = path.join(os.tmpdir(), 'lyricist-upload-check.wav');
+  const pcm = Buffer.alloc(8000 * 2);
+  const head = Buffer.alloc(44);
+  head.write('RIFF', 0); head.writeUInt32LE(36 + pcm.length, 4); head.write('WAVEfmt ', 8);
+  head.writeUInt32LE(16, 16); head.writeUInt16LE(1, 20); head.writeUInt16LE(1, 22);
+  head.writeUInt32LE(8000, 24); head.writeUInt32LE(16000, 28); head.writeUInt16LE(2, 32); head.writeUInt16LE(16, 34);
+  head.write('data', 36); head.writeUInt32LE(pcm.length, 40);
+  fs.writeFileSync(tmp, Buffer.concat([head, pcm]));
+  try {
+    const up = await kaggle.__test_upload_song({ mode: 'token', token: CODE, username: user }, tmp, (m) => console.log(`      ${m}`));
+    ok('the song uploads, is kept as a private dataset, and is listed ready', !!up?.name, `${up.ref} / ${up.name}`);
+  } catch (e) {
+    ok('the song uploads, is kept as a private dataset, and is listed ready', false, e.message);
+  }
 }
 
 console.log(`\n${bad ? `${bad} FAILED` : 'ALL PASSED, end to end, against a real Kaggle account'}.`);
