@@ -575,8 +575,12 @@ step's line was already spoken.${attempt ? `\n\nThe last try at this step did no
         return;
       }
 
+      // THE LAST FEW MESSAGES, NOT THE WHOLE CHAT. Chris: the chat never
+      // cleared, and every old song, topic and order in it went back to the
+      // model with every question, so it kept acting on songs from before.
       const history = msgs
         .filter((m) => m.who === 'you' || m.who === 'ghost')
+        .slice(-6)
         .map((m) => ({ role: m.who === 'you' ? 'user' : 'assistant', content: m.text }));
 
       const context = await gatherContext();
