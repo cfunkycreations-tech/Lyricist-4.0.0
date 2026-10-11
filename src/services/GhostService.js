@@ -142,7 +142,7 @@ const TAB_NOTES = {
   dictionary: 'Dictionary: meanings and pronunciation, free.',
   toolshub: 'AI Tools Hub: links to other tools.',
   scratchpad: 'Scratch Pad: a plain notebook that saves itself.',
-  settings: 'Settings: your BYOK routing key, the model picker, the voice, and the Razor Neon accent slider.',
+  settings: 'Settings: your BYOK routing key, the model picker, the voice, and the "Accent colour" slider (fill it with a number 0 to 100, or press a named colour under it).',
 };
 
 /**
