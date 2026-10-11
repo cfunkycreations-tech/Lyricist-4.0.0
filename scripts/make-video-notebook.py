@@ -377,6 +377,7 @@ def style_words(caption):
     text = re.sub(r"(Global Metadata|Basic Attributes|Vocal Details|Arrangement|Instrumentation|Mood)\s*:", " ", caption, flags=re.I)
     text = re.sub(r"\b\d+\s*BPM\b|\bbpm is \d+\b|\b[A-G](#|b)?\s*(major|minor)\b", " ", text, flags=re.I)
     first_sentence = re.split(r"(?<=[.!?])\s+", " ".join(text.split()))[0]
+    first_sentence = re.sub(r"\s*,(\s*,)+", ",", first_sentence)       # the gaps the tempo and key left
     return " ".join(first_sentence.split()[:25]).strip(" ,.")
 
 STYLE = style_words(CAPTION)
@@ -395,7 +396,7 @@ MAX_PICS, CHUNK_BARS = 24, 4
 def plan(per_part):
     pics, cuts = [], []
     for si, a, b in SPANS:
-        n = 2 if (per_part == 2 and b - a >= 16) else 1
+        n = 2 if (per_part == 2 and b - a >= (2 * CHUNK_BARS - 0.5) * BAR) else 1     # eight bars or more
         ids = []
         for v in range(n):
             ids.append(len(pics))
