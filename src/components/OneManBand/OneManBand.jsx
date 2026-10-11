@@ -776,6 +776,12 @@ export default function OneManBand() {
           // Kept next to the file, so the take keeps its own words when it is
           // brought back in later: its lyric video has to show THESE lyrics.
           if (res.filePath) window.lyricistAPI?.songRecipeSave?.(res.filePath, take.recipe)?.catch?.(() => {});
+          // A job asked for the video while this song was being made: it is
+          // this song's video, so it starts on this song's first take.
+          if (videoAfterSong.current) {
+            videoAfterSong.current = false;
+            makeVideo(take);
+          }
 
           /**
            * A FINISHED SONG SAVES ITSELF. HE SHOULD NEVER HAVE TO ASK WHERE IT WENT.
@@ -811,6 +817,7 @@ export default function OneManBand() {
     } finally {
       setBusy(false);
       abortRef.current = null;
+      videoAfterSong.current = false;   // no take came: no video waits on a later song
     }
   };
 
@@ -838,6 +845,7 @@ export default function OneManBand() {
   const [videoJob, setVideoJob] = useState(null);   // { takeId, msg, done?, video?, folder?, error? }
   const videoBusy = !!videoJob && !videoJob.done;
   const videoBusyRef = useRef(false);
+  const videoAfterSong = useRef(false);
   useEffect(() => window.lyricistAPI?.onSetupProgress?.(({ job, msg }) => {
     if (job !== 'kaggle-video' || !msg) return;
     setVideoJob((v) => (v && !v.done ? { ...v, msg } : v));
@@ -878,7 +886,7 @@ export default function OneManBand() {
     }
     if (res?.folder) setSongsFolder(res.folder);
     setVideoJob(res?.ok
-      ? { takeId: take.id, done: true, video: res.video, folder: res.folder }
+      ? { takeId: take.id, done: true, video: res.video, folder: res.folder, notes: res.notes }
       : { takeId: take.id, done: true, error: res?.stopped
         ? 'Stopped watching. If Kaggle finishes it anyway, it comes in by itself next time you open this tab.'
         : (res?.error || 'The video did not come back.') });
@@ -1260,6 +1268,12 @@ export default function OneManBand() {
      */
     make_the_video: () => {
       if (videoBusyRef.current) throw new Error('a video is already being made');
+      // The song is still being made: the newest take in the rack is an older
+      // song. Its video waits for this song's first take instead.
+      if (busy) {
+        videoAfterSong.current = true;
+        return 'the song is still being made, so its video starts by itself when the first take lands';
+      }
       if (!takes.length) throw new Error('there is no finished take to make a video from yet');
       const pick = takes[0];   // the newest take
       makeVideo(pick);
@@ -1743,7 +1757,10 @@ export default function OneManBand() {
                       )}
                       {videoJob.done && videoJob.video && (
                         <>
-                          <span>The video is made. It is in your songs folder with the chorus clips and the lyric files.</span>
+                          <span>
+                            The video is made{videoJob.notes ? ` (${videoJob.notes})` : ''}. It is in your songs
+                            folder with the chorus clips and the lyric files.
+                          </span>
                           <button type="button" className="omb-mini"
                                   onClick={() => window.lyricistAPI?.showFolder?.(videoJob.folder || songsFolder)}>
                             Open my songs folder

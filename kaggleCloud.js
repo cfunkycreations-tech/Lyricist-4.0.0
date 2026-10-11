@@ -743,13 +743,18 @@ const FAILURES = [
  * Best effort by design: a failure to read the log must never replace the
  * failure we are trying to explain.
  */
-function readFailure(raw, fallback) {
-  if (!raw) return fallback;
-  // Kaggle sends the log as JSON records; the text is all we want out of it.
-  let text = String(raw);
+/** Kaggle sends the log as JSON records; the text is all we want out of it. */
+function logText(raw) {
+  let text = String(raw || '');
   try {
     text = JSON.parse(text).map((e) => String(e?.data || '')).join('\n');
   } catch { /* already plain text */ }
+  return text;
+}
+
+function readFailure(raw, fallback) {
+  if (!raw) return fallback;
+  const text = logText(raw);
 
   const hit = FAILURES.find((f) => f.when.test(text));
   if (hit) return hit.say;
@@ -903,6 +908,9 @@ async function collectSongs(cred) {
 
 /** The same for a lyric video that finished with nobody watching. Never throws. */
 async function collectVideos(cred) {
+  // The run being watched brings its own files home; two downloads into the
+  // same file would trip each other up.
+  if (videoRunning) return [];
   try {
     const st = await call('GetKernelSessionStatus', { userName: cred.username, kernelSlug: VIDEO_SLUG }, cred, 20000);
     if (String(st.json?.status || '') !== 'COMPLETE') return [];
@@ -1064,7 +1072,7 @@ async function render(song, onProgress, shouldStop = () => false) {
  *
  * -> { name, ref }
  */
-async function uploadSong(cred, filePath, say = () => {}) {
+async function uploadSong(cred, filePath, say = () => {}, shouldStop = () => false) {
   const bytes = fs.readFileSync(filePath);
   const ext = (path.extname(filePath) || '.flac').toLowerCase().replace(/[^.a-z0-9]/g, '');
   const stem = path.basename(filePath, path.extname(filePath))
@@ -1107,7 +1115,9 @@ async function uploadSong(cred, filePath, say = () => {}) {
   say('Kaggle is unpacking the song');
   const until = Date.now() + 15 * 60 * 1000;
   let last = null;
+  let names = [];
   while (Date.now() < until) {
+    if (shouldStop()) return { stopped: true };
     await new Promise((r) => setTimeout(r, 5000));
     let st;
     let ls;
@@ -1118,13 +1128,13 @@ async function uploadSong(cred, filePath, say = () => {}) {
       continue;
     }
     last = st;
+    names = (ls.json?.datasetFiles || []).map((f) => String(f.name || f.ref || ''));
     const status = String(st.json?.status || '').toUpperCase();
     if (status === 'FAILED') throw new Error(`Kaggle could not unpack the song for the video ${said(st)}`);
-    const listed = (ls.json?.datasetFiles || [])
-      .some((f) => path.posix.basename(String(f.name || f.ref || '')) === name);
+    const listed = names.some((n) => path.posix.basename(n) === name);
     if (status === 'READY' && listed) return { name, ref: `${owner}/${SONG_DATASET}` };
   }
-  throw new Error(`Kaggle took the song but did not get it ready in fifteen minutes. Press Make the video again ${said(last)}`);
+  throw new Error(`Kaggle took the song but did not get it ready in fifteen minutes. Press Make the video again ${said(last)} [waiting for ${name}, listed: ${names.join(', ').slice(0, 200) || 'nothing'}]`);
 }
 
 /**
@@ -1162,7 +1172,20 @@ function buildVideoNotebook({ audioName, outName, lyrics, caption, language, hfT
  * T4s against it, and the video, the vertical chorus clips and the synced
  * lyric files land in the songs folder next to the song.
  */
+let videoRunning = false;
 async function renderVideo(job, onProgress, shouldStop = () => false) {
+  // One at a time: it is one notebook in their account, and a second push
+  // would replace the run that is going.
+  if (videoRunning) return { ok: false, error: 'A video is already being made. One at a time.' };
+  videoRunning = true;
+  try {
+    return await renderVideoNow(job, onProgress, shouldStop);
+  } finally {
+    videoRunning = false;
+  }
+}
+
+async function renderVideoNow(job, onProgress, shouldStop) {
   const cred = readToken();
   if (!cred) throw new Error('Not connected to Kaggle yet.');
   const say = (p, msg) => { try { onProgress(p, msg); } catch { /* window gone */ } };
@@ -1171,8 +1194,8 @@ async function renderVideo(job, onProgress, shouldStop = () => false) {
   if (!String(job?.lyrics || '').trim()) throw new Error('This take has no lyrics with it, so there are no words to put on screen.');
 
   say(0.02, 'Uploading the song to your Kaggle account');
-  const song = await uploadSong(cred, filePath, (msg) => say(0.06, msg));
-  if (shouldStop()) return { ok: false, stopped: true };
+  const song = await uploadSong(cred, filePath, (msg) => say(0.06, msg), shouldStop);
+  if (song.stopped || shouldStop()) return { ok: false, stopped: true };
   const outName = song.name.replace(/\.[^.]+$/, '');
 
   const cache = await modelCache(cred, job?.hfToken, VIDEO_CACHE);
@@ -1235,8 +1258,17 @@ async function renderVideo(job, onProgress, shouldStop = () => false) {
   if (!video) {
     return { ok: false, url, error: `Kaggle made the video but the download failed. It is still on the notebook: ${url}` };
   }
+  // How it went, from the run's own log: a video of colour washes, or with the
+  // words spread evenly, still "works", and he should hear which it was.
+  const log = logText(out.json?.log);
+  const painted = /(\d+) of (\d+) pictures painted/.exec(log);
+  const timed = /timed by (the singing|an even spread)/.exec(log);
+  const notes = [
+    painted && (painted[1] === '0' ? 'no pictures came out, so it uses colour washes' : `${painted[1]} of ${painted[2]} pictures painted`),
+    timed && (timed[1] === 'the singing' ? 'words timed to the singing' : 'the word timing failed, so the words are spread evenly'),
+  ].filter(Boolean).join(', ');
   say(1, 'Done');
-  return { ok: true, url, folder: songsDir(), video: video.filePath, files: got };
+  return { ok: true, url, folder: songsDir(), video: video.filePath, files: got, notes };
 }
 
 module.exports = {

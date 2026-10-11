@@ -239,7 +239,8 @@ console.log('\n--- live: a song goes up for the lyric video ---');
   const os = await import('os');
   const fs = await import('fs');
   const path = await import('path');
-  const tmp = path.join(os.tmpdir(), 'lyricist-upload-check.wav');
+  // Named like a real take, so Kaggle's listing is matched on the real shape.
+  const tmp = path.join(os.tmpdir(), 'take1_seed5_runlive_00001_.wav');
   const pcm = Buffer.alloc(8000 * 2);
   const head = Buffer.alloc(44);
   head.write('RIFF', 0); head.writeUInt32LE(36 + pcm.length, 4); head.write('WAVEfmt ', 8);

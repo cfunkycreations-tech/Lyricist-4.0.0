@@ -44,7 +44,10 @@ https.request = (url, opts, cb) => {
     else if (method === 'GetKernelSessionStatus') json = { status: statuses.length > 1 ? statuses.shift() : statuses[0] };
     else if (method === 'ListKernelSessionOutput') {
       const out = V.name.replace(/\.[^.]+$/, '');
-      json = { files: files.map((f) => f.replace('RUN', pushedRun).replace('OUT', out)).map((f) => ({ fileName: f, url: `https://x/${f}` })) };
+      json = {
+        files: files.map((f) => f.replace('RUN', pushedRun).replace('OUT', out)).map((f) => ({ fileName: f, url: `https://x/${f}` })),
+        log: JSON.stringify([{ data: '6 of 7 pictures painted\n' }, { data: '10 lines timed by the singing\n' }]),
+      };
     }
     else if (method === 'SaveKernel') {
       if (body.slug.endsWith('/lyricist-lyric-video')) V.save = body;
@@ -125,6 +128,7 @@ const ok = (name, cond, extra = '') => { console.log(`${cond ? 'PASS' : 'FAIL'} 
     ok('they land in the songs folder, whole, no half files left',
       r.ok && r.video === path.join(songs, `${out}-lyric-video.mp4`) && fs.readFileSync(r.video, 'utf8').startsWith('audio of https://x/')
       && !fs.readdirSync(songs).some((f) => f.endsWith('.part')));
+    ok('it says how the run went', r.notes === '6 of 7 pictures painted, words timed to the singing', r.notes);
     ok('the first video says it is slower while the models save', said.some((m) => /first video/i.test(m || '')) && V.calls.includes('SaveKernel'));
 
     // Collect on reopen: a video Kaggle finished with nobody watching.
