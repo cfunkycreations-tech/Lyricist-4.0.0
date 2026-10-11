@@ -356,7 +356,7 @@ const STEP_AIMS = [
 ];
 
 /** Every tab on the tab bar by the name on it, read off the group buttons. */
-function tabsByName() {
+export function tabsByName() {
   const out = [];
   for (const g of document.querySelectorAll('[data-tab-ids]')) {
     const ids = g.dataset.tabIds.split(' ');

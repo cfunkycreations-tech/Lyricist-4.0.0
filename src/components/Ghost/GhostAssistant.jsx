@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import './GhostAssistant.css';
 import { askGhost, planJob, looksLikeWorkflow } from '../../services/GhostService.js';
 import { registerGhostAction, registerGhostActions, runGhostAction, watchGhostActions, availableGhostActions } from '../../services/ghostBus.js';
-import { pressControl, fillControl, chooseControl, describeControls, aimForStep } from '../../services/ghostHands.js';
+import { pressControl, fillControl, chooseControl, describeControls, aimForStep, tabsByName } from '../../services/ghostHands.js';
+import { slyCheck, prepTab, ghostDid } from '../../services/slyGhost.js';
 import {
   captionHand, clearCaption, stopHand, resetHandStop, handStopped, getHandSpeed, setHandSpeed, HAND_SPEED_NAMES,
   setHandSpeedOverride,
@@ -12,7 +13,7 @@ import GhostHand from './GhostHand.jsx';
 import GhostJobs from './GhostJobs.jsx';
 import GhostLessons from './GhostLessons.jsx';
 import GhostFlightLog from './GhostFlightLog.jsx';
-import { record } from '../../services/ghostRecorder.js';
+import { record, visibleTab } from '../../services/ghostRecorder.js';
 import { subscribeTeach, beginTeach, endTeach, teachState, playLesson } from '../../services/ghostTeach.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import {
@@ -350,15 +351,16 @@ export default function GhostAssistant({ tab, config, getContext }) {
   }), []);
 
   /** Every open tab describes itself, and the controls on the showing tab come last. */
-  const gatherContext = async () => {
+  const gatherParts = async () => {
     const parts = [live.current.getContext?.() || ''];
     const describers = availableGhostActions().filter((n) => n.startsWith('describe_') && n !== 'describe_controls');
     for (const n of [...describers, 'describe_controls']) {
       const r = await runGhostAction(n);
       if (r.ok && r.said) parts.push(r.said);
     }
-    return parts.filter(Boolean).join('\n\n');
+    return parts.filter(Boolean);
   };
+  const gatherContext = async () => (await gatherParts()).join('\n\n');
 
   /**
    * ASK, AND MAKE IT DO THE WORK.
@@ -419,11 +421,20 @@ export default function GhostAssistant({ tab, config, getContext }) {
       }),
       runStep: async (job, i, signal, attempt) => {
         const step = job.steps[i];
+        // SLY GHOST, BEFORE: the tab this step is about, on screen, when the
+        // Ghost could not see or press anything there otherwise.
+        try {
+          const tab = prepTab(step.text, { tabs: tabsByName(), visible: visibleTab(), available: availableGhostActions() });
+          if (tab) {
+            record('job', `Sly Ghost opened ${tab.label} for step ${i + 1}`);
+            await runGhostAction('open_tab', { tab: tab.id });
+          }
+        } catch { /* a tab that will not open is the Ghost's to find out */ }
         const plan = job.steps
           .map((s, k) => `${k + 1}. ${s.text}${s.status === 'done' ? '   [done]' : s.status === 'skipped' ? '   [skipped]' : ''}`)
           .join('\n');
         const soFar = job.steps.slice(0, i)
-          .flatMap((s) => (s.did || []).map((d) => `${d.ok ? 'did' : 'failed'}: ${d.said || d.name}`))
+          .flatMap((s) => ghostDid(s.did).map((d) => `${d.ok ? 'did' : 'failed'}: ${d.said || d.name}`))
           .join('\n');
         const question = `YOU ARE RUNNING A JOB ONE STEP AT A TIME.
 
@@ -438,7 +449,8 @@ Emit the <do> lines (or the <lyrics> tag) that do this step. Never ask a
 question: pick anything missing yourself. Do not do later steps. Do not emit
 obs_record_start or obs_record_stop, the job records itself. No say: this
 step's line was already spoken.${attempt ? `\n\nThe last try at this step did not work (${step.said || 'nothing happened'}). Do it another way.` : ''}`;
-        const r = await askActing({ question, context: await gatherContext(), signal });
+        const before = await gatherParts();
+        const r = await askActing({ question, context: before.join('\n\n'), signal });
         if (signal.aborted) return { ok: false, said: 'stopped', did: [] };
         // The step's line was spoken before it started. A `say` from the model
         // on top of it was the Ghost saying everything twice on the recording,
@@ -452,7 +464,7 @@ step's line was already spoken.${attempt ? `\n\nThe last try at this step did no
          * step already made is left alone unless this step names it.
          */
         const doneBefore = new Map();
-        job.steps.slice(0, i).forEach((s, k) => (s.did || []).forEach((d) => { if (d.ok && !doneBefore.has(d.name)) doneBefore.set(d.name, k + 1); }));
+        job.steps.slice(0, i).forEach((s, k) => ghostDid(s.did).forEach((d) => { if (d.ok && !doneBefore.has(d.name)) doneBefore.set(d.name, k + 1); }));
         const seen = new Set();
         const acts = [];
         const left = [];
@@ -475,7 +487,15 @@ step's line was already spoken.${attempt ? `\n\nThe last try at this step did no
         // reply text is not read over the top of the work.
         const did = [...await runActions(r.text, acts, { quiet: true }), ...left];
         const bad = did.find((d) => !d.ok);
-        return { ok: !bad, said: bad ? bad.said : (r.text || did.map((d) => d.said).filter(Boolean).join('; ')), did };
+        if (bad) return { ok: false, said: bad.said, did };
+        // SLY GHOST, AFTER: did the step really happen? A miss on the first try
+        // sends the Ghost back with his note; on the retry it is only noted.
+        const sly = await slyCheck({
+          job, index: i, attempt, before, after: await gatherParts(), did, config: live.current.config, signal,
+        });
+        const all = sly.entry ? [...did, sly.entry] : did;
+        if (!sly.ok) return { ok: false, said: sly.entry.said, did: all };
+        return { ok: true, said: r.text || did.map((d) => d.said).filter(Boolean).join('; '), did: all };
       },
       record: (on) => runGhostAction(on ? 'obs_record_start' : 'obs_record_stop'),
       // Narration for a job is ON whenever a job runs: it is being filmed. The

@@ -290,6 +290,7 @@ body.lyricist-mobile .gha-face { font-size: 17px; }
 .ghj-did { display: grid; gap: 1px; margin-top: 2px; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 10.5px; }
 .ghj-did .ok { color: #7FD8B0; }
 .ghj-did .no { color: hsl(350 90% 76%); }
+.ghj-did .warn { color: hsl(42 95% 68%); }
 .ghj-btns { display: flex; gap: 6px; flex-wrap: wrap; }
 .ghj-log {
   margin: 0; max-height: 180px; overflow: auto; padding: 8px; border-radius: 6px;
