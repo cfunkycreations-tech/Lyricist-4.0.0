@@ -49,7 +49,7 @@
   font-family: var(--omb-mono); font-size: 10.5px; letter-spacing: .24em;
   text-transform: uppercase; color: var(--omb-faint);
 }
-.omb-id { position: relative; z-index: 1; }
+.omb-id { position: relative; z-index: 1; align-self: flex-start; }   /* title at the top. Chris, 2026-10-11 */
 
 /* ── the black hole ───────────────────────────────────────────────────────
    The right-hand column of the header: the hole across the full width of

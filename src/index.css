@@ -356,22 +356,14 @@ h1.gradient-title {
 
 /* The logo banner over the pads (App.jsx). Chris runs Windows at 150%, so
    his full-screen window is about 690px tall to the page: the banner has to
-   show there (it was hidden under 800 and he saw no logo). It never takes
-   more than the window minus 560px (pads 96, player and footer 104, the tab's
-   own 360), so nothing gets pushed off screen; off below 620. The tab workspace's min-height takes
+   show there (it was hidden under 800 and he saw no logo). 2026-10-11 he
+   asked for it twice as big: 36vh, but never more than the window minus 440px
+   (pads 96, player and footer 104, the tab's own 240), so nothing gets pushed
+   off screen; off below 620. The tab workspace's min-height takes
    --brand-banner-h off too, so the player and footer stay on screen. */
-:root { --brand-banner-h: clamp(0px, min(18vh, 100vh - 560px), 220px); }
+:root { --brand-banner-h: clamp(0px, min(36vh, 100vh - 440px), 440px); }
 @media (max-height: 620px) { :root { --brand-banner-h: 0px; } }
-.brand-banner {
-  flex-shrink: 0;
-  height: var(--brand-banner-h);
-  display: flex;
-  justify-content: center;
-  background: #000;
-  overflow: hidden;
-}
-.brand-banner img { height: 100%; width: auto; user-select: none; pointer-events: none; }
-@media (max-height: 620px) { .brand-banner { display: none; } }
+/* .brand-banner itself: components/BrandBanner/BrandBanner.css. */
 
 .output-cosmic {
   background: rgba(19,20,22,0.6);

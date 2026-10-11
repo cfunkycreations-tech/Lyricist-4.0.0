@@ -1,0 +1,83 @@
+/* The logo banner (BrandBanner.jsx). Its height comes from --brand-banner-h in
+   index.css; the scenes fill it edge to edge behind the logo. */
+
+.brand-banner {
+  position: relative; flex-shrink: 0; height: var(--brand-banner-h);
+  display: flex; justify-content: center; background: #000; overflow: hidden;
+}
+@media (max-height: 620px) { .brand-banner { display: none; } }
+
+.bb-logo {
+  position: relative; z-index: 3; height: 100%; width: auto;
+  user-select: none; pointer-events: none;
+  filter: drop-shadow(0 0 10px rgba(0, 0, 0, .85));
+}
+
+.bb-layer {
+  position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1;
+  opacity: 0; transition: opacity 1.4s ease; pointer-events: none;
+}
+.bb-layer[data-on="true"] { opacity: 1; }
+.brand-banner[data-scene="off"] .bb-layer { opacity: 0; }
+
+/* The black hole loop stretched across, so the disc runs out of both sides. */
+.bb-disc { object-fit: fill; transform: scaleY(1.15); }
+
+/* Song info: what's playing on the left, the song on the right, both leaning
+   in towards the logo. */
+.bb-info {
+  display: flex; align-items: center; justify-content: space-between;
+  background:
+    radial-gradient(60% 90% at 50% 55%, rgba(255, 120, 40, .16), transparent 70%),
+    radial-gradient(40% 70% at 12% 50%, rgba(255, 170, 80, .06), transparent 70%),
+    radial-gradient(40% 70% at 88% 50%, rgba(255, 170, 80, .06), transparent 70%);
+}
+.bb-info-side {
+  width: calc(50% - var(--brand-banner-h) * .46 - 28px);
+  display: flex; flex-direction: column; gap: 6px; min-width: 0;
+}
+.bb-info-left { align-items: flex-end; text-align: right; padding-left: 20px; }
+.bb-info-right { align-items: flex-start; text-align: left; padding-right: 20px; }
+.bb-info-lbl {
+  display: flex; align-items: center; gap: 8px;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: clamp(10px, calc(var(--brand-banner-h) * .05), 13px);
+  letter-spacing: .26em; text-transform: uppercase; color: #FFB25A;
+}
+.bb-info-big {
+  font-family: var(--faf-font); color: #FFF4E2; line-height: 1.08;
+  font-size: clamp(16px, calc(var(--brand-banner-h) * .13), 40px);
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  text-shadow: 0 0 18px rgba(255, 140, 50, .35);
+}
+.bb-info-small {
+  color: #C9B6A0; font-size: clamp(11px, calc(var(--brand-banner-h) * .062), 16px);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.bb-info-right .bb-info-small { align-items: flex-start; }
+.bb-info-left .bb-info-small { align-items: flex-end; }
+.bb-info-topic { color: #9C8C7C; font-style: italic; }
+
+.bb-eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 11px; }
+.bb-eq i { width: 3px; height: 3px; background: #FFB25A; border-radius: 1px; }
+.bb-eq.on i { animation: bb-eq 0.9s ease-in-out infinite; }
+.bb-eq.on i:nth-child(2) { animation-delay: -.3s; }
+.bb-eq.on i:nth-child(3) { animation-delay: -.6s; }
+@keyframes bb-eq { 0%, 100% { height: 3px; } 50% { height: 11px; } }
+
+/* The switch, bottom right. */
+.bb-mode {
+  position: absolute; right: 12px; bottom: 10px; z-index: 4;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase;
+  color: #D9C7B2; background: rgba(10, 6, 4, .62); cursor: pointer;
+  border: 1px solid rgba(255, 170, 90, .28); border-radius: 999px; padding: 5px 11px;
+  backdrop-filter: blur(6px); opacity: .55; transition: opacity .2s, border-color .2s;
+}
+.bb-mode:hover, .bb-mode:focus-visible { opacity: 1; border-color: rgba(255, 170, 90, .7); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bb-layer { transition: none; }
+  .bb-eq.on i { animation: none; height: 8px; }
+}
