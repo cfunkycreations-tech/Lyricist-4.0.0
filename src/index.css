@@ -354,6 +354,22 @@ h1.gradient-title {
   border-bottom: var(--border-hairline);
 }
 
+/* The logo banner over the pads (App.jsx). Off on short windows: the pads,
+   tabs and player come first. The tab workspace's min-height takes
+   --brand-banner-h off too, so the player and footer stay on screen. */
+:root { --brand-banner-h: clamp(120px, 20vh, 220px); }
+@media (max-height: 800px) { :root { --brand-banner-h: 0px; } }
+.brand-banner {
+  flex-shrink: 0;
+  height: var(--brand-banner-h);
+  display: flex;
+  justify-content: center;
+  background: #000;
+  overflow: hidden;
+}
+.brand-banner img { height: 100%; width: auto; user-select: none; pointer-events: none; }
+@media (max-height: 800px) { .brand-banner { display: none; } }
+
 .output-cosmic {
   background: rgba(19,20,22,0.6);
 }

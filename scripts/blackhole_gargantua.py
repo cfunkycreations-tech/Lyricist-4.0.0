@@ -13,6 +13,7 @@ What the icon shows, and what each layer below draws:
     at the middle, orange, then crimson at the ends, streaked like grooves,
     brighter on the left where it comes toward you.
 
+Hot clumps ride the disc, faster inside than out, so it reads as spinning.
 Streaks turn a whole number of times per loop, so the last frame flows into
 the first.
 
@@ -79,6 +80,18 @@ rng = np.random.default_rng(7)
 # frequencies only, so a whole turn of the pattern is the same pattern.
 BANDS = [(rng.uniform(5, 16), rng.uniform(0.6, 1.8), int(rng.integers(1, 5)), rng.uniform(0, 6.28),
           rng.uniform(0, 6.28), rng.uniform(0.4, 1.0)) for _ in range(9)]
+# Hot clumps riding the disc: spiral arms with integer arm counts, so the
+# motion reads (Chris, 2026-10-11: the first cut looked like a still).
+CLUMPS = [(int(rng.integers(2, 5)), rng.uniform(0.8, 2.2), rng.uniform(0, 6.28), rng.uniform(0.5, 1.0)) for _ in range(4)]
+
+
+def clumps(rad, ang):
+    c = np.zeros_like(rad)
+    total = 0.0
+    for k, twist, p, w in CLUMPS:
+        c += w * (0.5 + 0.5 * np.cos(k * ang + twist * rad + p))
+        total += w
+    return 0.1 + 1.9 * (c / total) ** 2.6
 
 
 def streaks(rad, ang):
@@ -93,9 +106,16 @@ def streaks(rad, ang):
 
 def frame(i):
     turn = 2 * np.pi * i / FRAMES
-    # Inner disc turns twice a loop, outer once, blended by radius.
-    inner = smooth((3.2 * RS - r) / (1.6 * RS))
-    tex = inner * streaks(r / RS, phi - 2 * turn) + (1 - inner) * streaks(r / RS, phi - turn)
+    # Faster inside than out: five turns a loop at the rim, three in the
+    # middle, two at the edge, blended by radius.
+    inner = smooth((2.4 * RS - r) / (0.9 * RS))
+    outer = smooth((r - 3.6 * RS) / (1.2 * RS))
+    mid = np.clip(1 - inner - outer, 0, 1)
+
+    def flow(n):
+        a = phi - n * turn
+        return streaks(r / RS, a) * clumps(r / RS, a)
+    tex = inner * flow(5) + mid * flow(3) + outer * flow(2)
 
     t_disc = (R_IN / np.maximum(r, 1)) ** 1.05
     doppler = 1 + 0.5 * (-np.cos(phi))
@@ -115,12 +135,13 @@ def frame(i):
     disc_back, disc_front = thick(disc_back), thick(disc_front)
 
     # Photon ring: thin, gold, all the way round, strongest underneath.
-    ring = np.exp(-((rr - 1.025 * RS) / (0.018 * RS)) ** 2) * (0.55 + 0.9 * np.clip(sin_th, 0, 1))
+    shimmer = 0.75 + 0.25 * np.cos(3 * th - 5 * turn) * np.cos(5 * th + 4 * turn)
+    ring = np.exp(-((rr - 1.025 * RS) / (0.018 * RS)) ** 2) * (0.55 + 0.9 * np.clip(sin_th, 0, 1)) * shimmer
     ring_c = colour(0.55 + 0.35 * np.clip(sin_th, 0, 1)) * (1.1 * ring)[..., None]
 
     # Lensed arcs: the disc's far side bent over the top, its underside below.
     out_of = np.clip(rr - 1.05 * RS, 0, None)
-    arc_tex = streaks(rr / RS * 3.0, th - turn)
+    arc_tex = streaks(rr / RS * 3.0, th - 3 * turn) * clumps(rr / RS * 3.0, th - 3 * turn)
     up_w = smooth((0.35 - sin_th) / 0.7)
     low_w = 1 - up_w
     side = 1 + 0.35 * (-np.cos(th))

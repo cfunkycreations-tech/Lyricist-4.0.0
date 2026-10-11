@@ -56,6 +56,7 @@ import { useMobile } from './mobile/useMobile.js';
 import MobileShell from './mobile/MobileShell.jsx';
 import GhostPilotLayer from './components/Ghost/GhostPilotLayer.jsx';
 import PushHeader from './components/PushHeader/PushHeader.jsx';
+import brandLogo from './assets/brand-logo.webp';
 import { track, isEnabled as analyticsEnabled } from './services/analytics.js';
 import { Compass, Ghost, Play, Lightbulb, KeyRound, Lock } from 'lucide-react';
 // The still header art (profile.jpg, logo.jpg, header-medallion / -signature /
@@ -439,6 +440,15 @@ function MainLayout() {
             Background is #000, matching the app floor. The 1px hairline
             underneath comes from .header-cosmic's stylesheet rule, which
             still separates the header from the tab strip below it. */}
+        {/* THE BRAND BANNER. Chris, 2026-10-11: "put that whole image as the top
+            header of the whole app". The full Lyricist Pro / FAFO / Austin logo,
+            centred on black above the pads. It sits outside .header-cosmic so the
+            Push grid's height: auto and overflow still work. Scales with the
+            window; .brand-banner in index.css hides it on short windows so the
+            pads and tabs stay reachable. */}
+        <div className="brand-banner">
+          <img src={brandLogo} alt="Lyricist Pro, Funk Audio Flow OpSec, Austin TX" draggable={false} />
+        </div>
         <div className="header-cosmic" style={{ flexShrink: 0, position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center', background: '#000', height: 96, overflow: 'hidden', width: '100%' }}>
 
           {/* THE PUSH HEADER. Chris, 2026-09-15: the tabs are four square group
@@ -617,7 +627,7 @@ function MainLayout() {
             and artwork loaded at once was enough to run the renderer out of
             memory and leave a black window. Now you pay for a tab when you
             actually open it. */}
-        <div style={{ flex: 1, minHeight: 'max(360px, calc(100vh - 200px))', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, minHeight: 'max(360px, calc(100vh - 200px - var(--brand-banner-h, 0px)))', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <TabPane id="songwriter" active={activeTab} opened={openedTabs}>
             <SongwriterHub ghostRiderData={ghostRiderData} />
           </TabPane>
