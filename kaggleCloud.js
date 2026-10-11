@@ -341,7 +341,7 @@ function notebookPath() {
  * about what one used to instead of a second queue, a second 12 GB fetch and a
  * second ten minute warm-up.
  */
-function buildNotebook({ caption, lyrics, seconds, seed, seeds, steps, guidance, hfToken }) {
+function buildNotebook({ caption, lyrics, seconds, seed, seeds, steps, guidance, hfToken, run }) {
   const nb = JSON.parse(fs.readFileSync(notebookPath(), 'utf8'));
   const safe = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/"""/g, '\\"\\"\\"');
   // Last line of defence on the take number. Every engine behind this app reads
@@ -360,6 +360,8 @@ function buildNotebook({ caption, lyrics, seconds, seed, seeds, steps, guidance,
     `SEEDS    = [${list.join(', ')}]\n`,
     `STEPS    = ${Math.round(steps ?? 30)}\n`,
     `CFG      = ${Number(guidance ?? 1.7)}\n`,
+    // This run's own mark, put into every take's file name by the notebook.
+    `RUN      = "${String(run || '').replace(/[^a-z0-9]/gi, '')}"\n`,
   ];
   // A cell's source is a list of lines in some notebooks and one string in
   // others, and the shipped one has been both. Read it either way rather than
@@ -673,7 +675,8 @@ async function render(song, onProgress, shouldStop = () => false) {
   const takeWord = n === 1 ? 'the song' : n === 2 ? 'both takes' : `all ${n} takes`;
 
   say(0.02, n === 1 ? 'Packing your song into the notebook' : `Packing ${n} takes into the notebook`);
-  const text = buildNotebook(song);
+  const run = Date.now().toString(36);
+  const text = buildNotebook({ ...song, run });
 
   const cache = await modelCache(cred, song?.hfToken);
   if (cache.attach) say(0.04, 'Using the model saved in your Kaggle account, no 12 GB download');
@@ -731,6 +734,18 @@ async function render(song, onProgress, shouldStop = () => false) {
    * the thing that should be deciding a song has taken too long.
    */
   const LIMIT_MS = 6 * 60 * 60 * 1000;
+  /**
+   * THE LAST SONG IS NOT THIS SONG.
+   *
+   * Chris, 2026-10-11: waited on two three minute songs and got two thirty
+   * second ones that "didn't even sound like the fucking song". Right after an
+   * upload Kaggle can still answer with the PREVIOUS run's finished status, and
+   * this loop took that as done and brought the old songs home. So a finished
+   * or failed status only counts once this run has been seen queued or going.
+   * Ten minutes without ever seeing that, and the status is believed anyway.
+   */
+  let seenThisRun = false;
+  const STALE_MS = 10 * 60 * 1000;
   while (Date.now() - started < LIMIT_MS) {
     if (shouldStop()) return { ok: false, stopped: true, url };
     await new Promise((r) => setTimeout(r, 10000));
@@ -741,6 +756,8 @@ async function render(song, onProgress, shouldStop = () => false) {
       continue;   // a blip in the network is not a failed render
     }
     const name = String(st.json?.status || '');
+    if (name && !TERMINAL[name]) seenThisRun = true;
+    if (TERMINAL[name] && !seenThisRun && Date.now() - started < STALE_MS) continue;
     if (name && name !== lastStatus) lastStatus = name;
     const mins = Math.floor((Date.now() - started) / 60000);
     if (name === 'QUEUED' || name === 'NEW_SCRIPT') say(0.15, `Waiting in Kaggle's queue, ${mins} min`);
@@ -761,9 +778,11 @@ async function render(song, onProgress, shouldStop = () => false) {
 
   say(0.9, 'Fetching the audio');
   const out = await call('ListKernelSessionOutput', { userName: cred.username, kernelSlug: SLUG, pageSize: 50 }, cred, 60000);
-  const files = (out.json?.files || []).filter((f) => /\.(flac|wav|mp3|ogg)$/i.test(f.fileName || ''));
+  // Only this run's takes: every one carries its run mark in the name.
+  const files = (out.json?.files || []).filter((f) => /\.(flac|wav|mp3|ogg)$/i.test(f.fileName || '')
+    && String(f.fileName).includes(`_run${run}`));
   if (!files.length) {
-    return { ok: false, url, error: `Kaggle finished but produced no audio file. Open the notebook to see why: ${url}` };
+    return { ok: false, url, error: `Kaggle finished but this song's audio is not in its output. Open the notebook to see why: ${url}` };
   }
 
   // EVERY take comes home, not just the last file in the list. The notebook

@@ -19,6 +19,7 @@
     "release:dir": "node scripts/release.mjs --dir",
     "preflight": "node scripts/preflight.mjs",
     "check:ghost": "node scripts/ghost-check.mjs",
+    "check:kaggle-run": "node scripts/kaggle-run-check.cjs",
     "copy:ort": "node scripts/copy-onnx-runtime.mjs",
     "fetch:voice": "node scripts/fetch-ghost-voice-model.mjs"
   },
