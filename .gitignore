@@ -5,6 +5,9 @@ node_modules/
 dist/
 build/*
 !build/installer.nsh
+!build/installerSidebar.bmp
+!build/uninstallerSidebar.bmp
+!build/installerHeader.bmp
 release/
 .vite/
 *.asar
