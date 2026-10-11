@@ -50,6 +50,10 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   kaggleDisconnect: () => ipcRenderer.invoke('kaggle-disconnect'),
   kaggleRender: (song) => ipcRenderer.invoke('kaggle-render', song),
   kaggleRenderStop: () => ipcRenderer.invoke('kaggle-render-stop'),
+  // The lyric video for one take. Progress comes on 'setup-progress' as job 'kaggle-video'.
+  kaggleVideo: (job) => ipcRenderer.invoke('kaggle-video', job),
+  kaggleVideoStop: () => ipcRenderer.invoke('kaggle-video-stop'),
+  songRecipeSave: (filePath, recipe) => ipcRenderer.invoke('song-recipe-save', { filePath, recipe }),
   songBytes: (filePath) => ipcRenderer.invoke('song-bytes', { filePath }),
   songsFolder: () => ipcRenderer.invoke('songs-folder'),
   songsList: () => ipcRenderer.invoke('songs-list'),

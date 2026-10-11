@@ -31,8 +31,8 @@ const DESCRIBED = {
   songwriter: 'describe_songwriter', analyzer: 'describe_ghostrider', quantum: 'describe_matrix', songforge: 'describe_songforge', onemanband: 'describe_song',
 };
 
-/** What a done step cannot show yet: a song takes minutes, a lesson just plays. */
-const UNCHECKABLE = /^(make_the_song|stop|play_lesson|say|set_voice|open_tab)$/;
+/** What a done step cannot show yet: a song or a video takes minutes, a lesson just plays. */
+const UNCHECKABLE = /^(make_the_song|make_the_video|stop|play_lesson|say|set_voice|open_tab)$/;
 
 /* ------------------------------ before ------------------------------ */
 

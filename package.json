@@ -20,6 +20,7 @@
     "preflight": "node scripts/preflight.mjs",
     "check:ghost": "node scripts/ghost-check.mjs",
     "check:kaggle-run": "node scripts/kaggle-run-check.cjs",
+    "check:kaggle-video": "python3 scripts/kaggle-video-check.py",
     "copy:ort": "node scripts/copy-onnx-runtime.mjs",
     "fetch:voice": "node scripts/fetch-ghost-voice-model.mjs"
   },
@@ -45,6 +46,10 @@
       {
         "from": "resources/kaggle-minimax-music3.ipynb",
         "to": "kaggle-minimax-music3.ipynb"
+      },
+      {
+        "from": "resources/kaggle-lyric-video.ipynb",
+        "to": "kaggle-lyric-video.ipynb"
       },
       {
         "from": "resources/music-caption-rewriter",

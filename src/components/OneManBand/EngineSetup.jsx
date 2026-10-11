@@ -88,7 +88,7 @@ export default function EngineSetup({ onKaggleReady, onLocalReady }) {
   useEffect(() => {
     if (!api?.onSetupProgress) return undefined;
     return api.onSetupProgress(({ job: which, p, msg }) => {
-      if (!mounted.current) return;
+      if (!mounted.current || which === 'kaggle-video') return;   // the video has its own line on the take
       if (typeof p === 'number') setPct(p);
       if (msg) setLine(msg);
       setJob((cur) => cur || which);

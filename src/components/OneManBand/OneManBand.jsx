@@ -773,6 +773,9 @@ export default function OneManBand() {
           };
           setTakes((prev) => [take, ...prev]);
           if (res.folder) setSongsFolder(res.folder);
+          // Kept next to the file, so the take keeps its own words when it is
+          // brought back in later: its lyric video has to show THESE lyrics.
+          if (res.filePath) window.lyricistAPI?.songRecipeSave?.(res.filePath, take.recipe)?.catch?.(() => {});
 
           /**
            * A FINISHED SONG SAVES ITSELF. HE SHOULD NEVER HAVE TO ASK WHERE IT WENT.
@@ -823,6 +826,65 @@ export default function OneManBand() {
     setError('');
     setPhase('');
   };
+
+  /**
+   * THE LYRIC VIDEO FOR ONE TAKE (PLAN.md step 2).
+   *
+   * Words lighting up as they are sung, pictures cut on the downbeats, vertical
+   * chorus clips and synced lyric files, made on Kaggle from the finished take.
+   * One at a time: it is one notebook in his Kaggle account. It lands in the
+   * songs folder next to the song.
+   */
+  const [videoJob, setVideoJob] = useState(null);   // { takeId, msg, done?, video?, folder?, error? }
+  const videoBusy = !!videoJob && !videoJob.done;
+  const videoBusyRef = useRef(false);
+  useEffect(() => window.lyricistAPI?.onSetupProgress?.(({ job, msg }) => {
+    if (job !== 'kaggle-video' || !msg) return;
+    setVideoJob((v) => (v && !v.done ? { ...v, msg } : v));
+  }), []);
+
+  const makeVideo = async (take) => {
+    const api = window.lyricistAPI;
+    if (!api?.kaggleVideo) return { ok: false, error: 'the lyric video needs the desktop app' };
+    if (videoBusyRef.current) return { ok: false, error: 'a video is already being made, one at a time' };
+    // A take brought in from before recipes were kept has no words of its own:
+    // it gets the lyrics on screen now, and the button says so.
+    const words = take.recipeGuessed ? { lyrics, caption } : (take.recipe || {});
+    if (!String(words.lyrics || '').trim()) {
+      const error = take.recipeGuessed
+        ? 'This take has no lyrics kept with it. Put its lyrics in Input Lyrics, then press Make the video.'
+        : 'This take has no lyrics with it, so there are no words to put on screen.';
+      setVideoJob({ takeId: take.id, done: true, error });
+      return { ok: false, error };
+    }
+    videoBusyRef.current = true;
+    setVideoJob({ takeId: take.id, msg: 'Starting the video' });
+    let res;
+    try {
+      const job = {
+        filePath: take.filePath || '',
+        fileName: take.fileName || `take-${take.seed}.flac`,
+        lyrics: words.lyrics,
+        caption: joinCaption(words.caption),
+        hfToken: store.config?.huggingFaceToken || '',
+      };
+      // A take from another engine is only in the window: its bytes go along.
+      if (!take.filePath && take.blob) job.bytes = new Uint8Array(await take.blob.arrayBuffer());
+      res = await api.kaggleVideo(job);
+    } catch (e) {
+      res = { ok: false, error: e.message };
+    } finally {
+      videoBusyRef.current = false;
+    }
+    if (res?.folder) setSongsFolder(res.folder);
+    setVideoJob(res?.ok
+      ? { takeId: take.id, done: true, video: res.video, folder: res.folder }
+      : { takeId: take.id, done: true, error: res?.stopped
+        ? 'Stopped watching. If Kaggle finishes it anyway, it comes in by itself next time you open this tab.'
+        : (res?.error || 'The video did not come back.') });
+    return res;
+  };
+  const stopVideo = () => { window.lyricistAPI?.kaggleVideoStop?.(); };
 
   /**
    * BRING IN A SONG THAT NEVER MADE IT INTO THE APP.
@@ -900,7 +962,10 @@ export default function OneManBand() {
           fileName: f.fileName,
           filePath: f.filePath,
           saved: true,
-          recipe: { lyrics, caption, genres, moods, voices, genre, mood, voice, seconds, steps, guidance, engine },
+          // Its own recipe when one was kept with it. Older takes have none, so
+          // their video uses the lyrics on screen when the button is pressed.
+          recipe: f.recipe || { lyrics, caption, genres, moods, voices, genre, mood, voice, seconds, steps, guidance, engine },
+          recipeGuessed: !f.recipe,
         }, ...prev]));
         brought += 1;
       }
@@ -1188,7 +1253,19 @@ export default function OneManBand() {
       return said;
     },
     stop: () => { stop(); return 'stopped it'; },
-  }), [busy, kaggle, comfy, lyrics, caption, seconds, store.config, genres.join('|'), moods.join('|'), voices.join('|')]);   // eslint-disable-line react-hooks/exhaustive-deps
+    /**
+     * THE LYRIC VIDEO, SO A JOB CAN FINISH A SONG ALL THE WAY. Starts it and
+     * returns at once: a video is twenty minutes or more on Kaggle, and the
+     * take shows its own progress and result.
+     */
+    make_the_video: () => {
+      if (videoBusyRef.current) throw new Error('a video is already being made');
+      if (!takes.length) throw new Error('there is no finished take to make a video from yet');
+      const pick = takes[0];   // the newest take
+      makeVideo(pick);
+      return `started the lyric video for take ${pick.seed.toLocaleString('en-US')}. It lands in the songs folder with the chorus clips and lyric files`;
+    },
+  }), [busy, kaggle, comfy, lyrics, caption, seconds, store.config, takes, genres.join('|'), moods.join('|'), voices.join('|')]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="omb">
@@ -1645,7 +1722,37 @@ export default function OneManBand() {
                       setCaptionEdited(true);
                     }}>Load this recipe
                     </button>
+                    <button
+                      type="button"
+                      className="omb-mini"
+                      data-demo="omb-video"
+                      disabled={videoBusy}
+                      title="A lyric video cut to the beat, vertical chorus clips and synced lyric files, made on Kaggle"
+                      onClick={() => makeVideo(t)}
+                    >
+                      {t.recipeGuessed ? 'Make the video (lyrics on screen)' : 'Make the video'}
+                    </button>
                   </div>
+                  {videoJob?.takeId === t.id && (
+                    <div className="omb-videoline" role="status">
+                      {!videoJob.done && (
+                        <>
+                          <span>{videoJob.msg}</span>
+                          <button type="button" className="omb-mini" onClick={stopVideo}>Stop</button>
+                        </>
+                      )}
+                      {videoJob.done && videoJob.video && (
+                        <>
+                          <span>The video is made. It is in your songs folder with the chorus clips and the lyric files.</span>
+                          <button type="button" className="omb-mini"
+                                  onClick={() => window.lyricistAPI?.showFolder?.(videoJob.folder || songsFolder)}>
+                            Open my songs folder
+                          </button>
+                        </>
+                      )}
+                      {videoJob.done && videoJob.error && <span className="omb-error">{videoJob.error}</span>}
+                    </div>
+                  )}
                 </article>
               ))}
             </div>

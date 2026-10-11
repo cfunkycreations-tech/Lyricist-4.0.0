@@ -849,7 +849,7 @@ ipcMain.handle('demucs-separate', async (event, { bytes, fileName, device }) => 
  * ------------------------------------------------------------------------- */
 
 /** A cancel flag per job. The renderer sets it by calling the -stop handler. */
-const setupStops = { comfy: false, kaggle: false };
+const setupStops = { comfy: false, kaggle: false, video: false };
 
 ipcMain.handle('comfy-status', async () => {
   try { return { ok: true, ...(await comfySetup.status()) }; }
@@ -930,6 +930,67 @@ ipcMain.handle('kaggle-render', async (event, song) => {
 ipcMain.handle('kaggle-render-stop', async () => { setupStops.kaggle = true; return { ok: true }; });
 
 /**
+ * MAKE THE LYRIC VIDEO FOR ONE TAKE (PLAN.md step 2).
+ *
+ * A take Kaggle made is already a file in the songs folder, and only a file in
+ * there is taken by path. A take from any other engine lives only in the
+ * window, so its bytes come over and are written to a scratch folder first:
+ * not the songs folder, or it would be filed in Recordings a second time.
+ */
+ipcMain.handle('kaggle-video', async (event, job = {}) => {
+  setupStops.video = false;
+  let scratch = '';
+  try {
+    const dir = path.resolve(kaggleCloud.songsDir());
+    let filePath = job.filePath ? path.resolve(String(job.filePath)) : '';
+    if (filePath && path.dirname(filePath) !== dir) return { ok: false, error: 'That file is not one of your songs.' };
+    if (!filePath || !fs.existsSync(filePath)) {
+      if (!job.bytes) return { ok: false, error: 'That take is not on disk, so there is nothing to make a video from.' };
+      let name = path.basename(String(job.fileName || '')).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^[.-]+/, '');
+      if (!/\.(flac|wav|mp3|ogg)$/i.test(name)) name = `${name || 'take'}-${Date.now().toString(36)}.flac`;
+      const tmp = path.join(app.getPath('userData'), 'video-uploads');
+      fs.mkdirSync(tmp, { recursive: true });
+      scratch = path.join(tmp, name);
+      fs.writeFileSync(scratch, Buffer.from(job.bytes));
+      filePath = scratch;
+    }
+    return await kaggleCloud.renderVideo(
+      { filePath, lyrics: job.lyrics, caption: job.caption, language: job.language, hfToken: job.hfToken },
+      (p, msg) => { try { event.sender.send('setup-progress', { job: 'kaggle-video', p, msg }); } catch { /* gone */ } },
+      () => setupStops.video,
+    );
+  } catch (e) {
+    return { ok: false, error: e.message };
+  } finally {
+    if (scratch) fs.rm(scratch, { force: true }, () => {});
+  }
+});
+
+ipcMain.handle('kaggle-video-stop', async () => { setupStops.video = true; return { ok: true }; });
+
+/**
+ * A take's recipe, saved next to it as <name>.recipe.json. A take brought back
+ * in from the songs folder used to borrow whatever lyrics were on screen; with
+ * this it keeps its own, which is what its lyric video has to show.
+ */
+const recipePath = (filePath) => filePath.replace(/\.[^.\\/]+$/, '') + '.recipe.json';
+ipcMain.handle('song-recipe-save', async (event, { filePath, recipe } = {}) => {
+  try {
+    const dir = path.resolve(kaggleCloud.songsDir());
+    const wanted = path.resolve(String(filePath || ''));
+    if (path.dirname(wanted) !== dir || !/\.(flac|wav|mp3|ogg)$/i.test(wanted)) {
+      return { ok: false, error: 'That file is not one of your songs.' };
+    }
+    const text = JSON.stringify(recipe || {});
+    if (text.length > 500000) return { ok: false, error: 'That recipe is too big to keep.' };
+    fs.writeFileSync(recipePath(wanted), text);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+/**
  * Hand a finished song's bytes to the window, once, as one buffer.
  *
  * A Buffer crosses the bridge as a Uint8Array with a straight copy. The old
@@ -969,7 +1030,9 @@ ipcMain.handle('songs-list', async () => {
       .filter((f) => /\.(flac|wav|mp3|ogg)$/i.test(f))
       .map((f) => {
         const filePath = path.join(dir, f);
-        return { fileName: f, filePath, size: fs.statSync(filePath).size };
+        let recipe = null;
+        try { recipe = JSON.parse(fs.readFileSync(recipePath(filePath), 'utf8')); } catch { /* made before recipes were kept */ }
+        return { fileName: f, filePath, size: fs.statSync(filePath).size, recipe };
       });
     return { ok: true, folder: dir, files };
   } catch (e) {
