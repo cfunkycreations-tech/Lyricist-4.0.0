@@ -1,0 +1,347 @@
+<style>
+@font-face { font-family: "Audiowide SF"; src: url(data:font/woff2;base64,{{FONT}}) format("woff2"); font-display: swap; }
+
+/* Layout: a stage, not a shop shelf. Funk inside a lit event horizon up top,
+   then the record itself (Lyricist Pro) laid out like liner notes, then the
+   rest of the shop small at the bottom. */
+:root {
+  --bg: #06030a; --bg-2: #0e0713; --panel: #140b19; --line: #2b1c2e;
+  --ink: #fbf1e6; --ink-2: #cbb8a8; --ink-3: #8f7c71;
+  --hot: #ff8a3d; --hot-2: #ffb25a; --violet: #a77bff; --mint: #39d98a;
+  --glow: rgba(255, 138, 61, .34);
+  --display: "Audiowide SF", "Bahnschrift", "Segoe UI", system-ui, sans-serif;
+  --body: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+  --r: 16px;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f4f1f6; --bg-2: #ece6f0; --panel: #ffffff; --line: #ddd3e2;
+    --ink: #170d1d; --ink-2: #4a3d52; --ink-3: #6e6175;
+    --hot: #c2410c; --hot-2: #9a3412; --violet: #6d3fd6; --mint: #0f8a53;
+    --glow: rgba(194, 65, 12, .2);
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f4f1f6; --bg-2: #ece6f0; --panel: #ffffff; --line: #ddd3e2;
+  --ink: #170d1d; --ink-2: #4a3d52; --ink-3: #6e6175;
+  --hot: #c2410c; --hot-2: #9a3412; --violet: #6d3fd6; --mint: #0f8a53;
+  --glow: rgba(194, 65, 12, .2);
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--body); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; }
+.wrap { width: 100%; max-width: 1160px; margin: 0 auto; padding-inline: 20px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 400; line-height: 1.06; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.eyebrow { font: 700 12px/1 var(--body); letter-spacing: .22em; text-transform: uppercase; color: var(--hot); }
+.lede { color: var(--ink-2); font-size: clamp(16px, 1.6vw, 19px); max-width: 58ch; }
+:focus-visible { outline: 3px solid var(--hot-2); outline-offset: 3px; border-radius: 6px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 15px 24px; border-radius: 999px; border: 0; cursor: pointer; text-decoration: none;
+  font: 400 15px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; transition: transform .15s ease, box-shadow .2s ease, filter .2s; }
+.btn-hot { background: linear-gradient(180deg, #ffa060, #ff7a26); color: #1a0b02; box-shadow: 0 0 0 1px rgba(255,255,255,.18) inset, 0 12px 32px -10px var(--glow), 0 0 44px -12px var(--glow); }
+.btn-hot:hover { transform: translateY(-2px); filter: brightness(1.06); }
+.btn-hot .tag { font: 700 14px/1 var(--body); letter-spacing: 0; background: rgba(26,11,2,.14); padding: 6px 9px; border-radius: 999px; }
+.btn-ghost { background: transparent; color: var(--ink); box-shadow: 0 0 0 1px var(--line) inset; }
+.btn-ghost:hover { box-shadow: 0 0 0 1px var(--hot) inset; }
+
+/* Nav */
+.nav { position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--bg) 84%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 400 17px/1 var(--display); letter-spacing: .03em; }
+.brand img { width: 34px; }
+.nav nav { display: flex; align-items: center; gap: 22px; font-size: 14px; }
+.nav nav a { text-decoration: none; color: var(--ink-2); }
+.nav nav a:hover { color: var(--ink); }
+.nav .btn { padding: 10px 16px; font-size: 13px; }
+.nav nav a.btn-hot { color: #1a0b02; }
+
+/* Hero: Funk inside the ring */
+.hero { position: relative; overflow: hidden; padding-block: clamp(44px, 7vw, 100px); }
+.hero::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(1.5px 1.5px at 8% 18%, var(--ink-3) 50%, transparent 51%),
+    radial-gradient(1px 1px at 22% 74%, var(--ink-3) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 40% 10%, var(--ink-3) 50%, transparent 51%),
+    radial-gradient(1px 1px at 63% 88%, var(--ink-3) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 92% 20%, var(--ink-3) 50%, transparent 51%),
+    radial-gradient(55% 60% at 24% 50%, var(--glow), transparent 70%); }
+.hero .wrap { position: relative; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(28px, 5vw, 72px); align-items: center; }
+.orbit { position: relative; width: min(440px, 100%); aspect-ratio: 1; margin-inline: auto; }
+.orbit .spin { position: absolute; inset: -4%; border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 8%, #ff7a26 16%, #ffd29a 22%, #ff8a3d 30%, transparent 42% 55%, #a77bff 64%, #ff6a1a 72%, #ffc078 78%, transparent 90%);
+  -webkit-mask: radial-gradient(circle, transparent 0 62%, #000 64% 70%, transparent 74%);
+          mask: radial-gradient(circle, transparent 0 62%, #000 64% 70%, transparent 74%);
+  filter: blur(3px); animation: spin 12s linear infinite; }
+.orbit .spin.wide { inset: -14%; filter: blur(18px); opacity: .7; animation-duration: 20s; animation-direction: reverse; }
+.orbit .photo { position: absolute; inset: 9%; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 2px rgba(255, 214, 170, .85), 0 0 34px 6px rgba(255, 140, 60, .55), 0 0 110px 30px rgba(255, 110, 40, .25); }
+.orbit .photo img { width: 100%; height: 100%; object-fit: cover; }
+.orbit .badge { position: absolute; right: 2%; bottom: 6%; width: 30%; animation: bob 6s ease-in-out infinite; filter: drop-shadow(0 10px 24px rgba(0,0,0,.6)); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes bob { 50% { transform: translateY(-8px) rotate(-3deg); } }
+.hero h1 { font-size: clamp(40px, 6.2vw, 78px); margin: 16px 0 0; }
+.hero h1 em { font-style: normal; background: linear-gradient(90deg, var(--hot-2), var(--hot) 45%, var(--violet)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero .lede { margin-top: 20px; }
+.hero .ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.sign { margin-top: 18px; color: var(--ink-3); font-size: 14px; }
+.sign b { color: var(--ink); font: 400 15px/1 var(--display); letter-spacing: .02em; }
+
+/* The record: Lyricist Pro */
+section.bay { padding-block: clamp(60px, 8vw, 110px); }
+.bay-head { display: grid; gap: 12px; max-width: 760px; margin-bottom: clamp(28px, 4vw, 48px); }
+.bay-head h2 { font-size: clamp(30px, 4.4vw, 54px); }
+.record { position: relative; border: 1px solid var(--line); border-radius: 24px; overflow: hidden; background: var(--panel); }
+.record .banner { position: relative; }
+.record .banner img { width: 100%; aspect-ratio: 1600 / 538; object-fit: cover; }
+.record .banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, var(--panel)); }
+.record .body { position: relative; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: clamp(24px, 4vw, 56px); padding: clamp(8px, 2vw, 16px) clamp(22px, 4vw, 48px) clamp(28px, 4vw, 48px); margin-top: -28px; }
+.record h3 { font-size: clamp(30px, 4vw, 48px); }
+.record .tagline { font: 400 clamp(17px, 2vw, 22px)/1.2 var(--display); color: var(--hot); margin-top: 8px; letter-spacing: .02em; }
+.record p.desc { color: var(--ink-2); margin-top: 16px; }
+.ticks { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 10px; }
+.ticks li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; color: var(--ink-2); }
+.ticks li::before { content: "✓"; color: var(--hot); font-weight: 800; }
+.ticks b { color: var(--ink); }
+.buybox { align-self: start; border: 1px solid var(--line); border-radius: 18px; padding: 24px; background: var(--bg-2); display: grid; gap: 14px; }
+.buybox .once { font: 400 13px/1 var(--display); letter-spacing: .2em; text-transform: uppercase; color: var(--hot); }
+.buybox .big { font: 400 clamp(48px, 6vw, 68px)/1 var(--display); }
+.buybox .fine { font-size: 13px; color: var(--ink-3); }
+.buybox .btn { width: 100%; }
+
+/* Gallery strip */
+.gallery { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+.gallery figure { margin: 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel); }
+.gallery img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; object-position: left top; transition: transform .4s ease; }
+.gallery figure:hover img { transform: scale(1.04); }
+.gallery figcaption { padding: 10px 12px; font: 400 13px/1.2 var(--display); letter-spacing: .03em; }
+.gallery figcaption span { display: block; font: 13px/1.4 var(--body); color: var(--ink-3); margin-top: 4px; letter-spacing: 0; }
+
+/* Suno strip */
+.suno { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px); align-items: center; }
+.tagbox { border: 1px solid var(--line); border-radius: 16px; background: #0b060e; color: #f6ecdf; padding: 18px 20px; font: 14px/1.6 var(--mono); box-shadow: 0 30px 70px -30px rgba(0,0,0,.6); }
+.tagbox .lbl { font: 400 11px/1 var(--display); letter-spacing: .16em; text-transform: uppercase; color: #ffb25a; margin-bottom: 10px; }
+.tagbox .t { color: #ffd2a8; }
+.tagbox + .tagbox { margin-top: 12px; }
+
+/* Tool cloud */
+.cloud { display: flex; flex-wrap: wrap; gap: 10px; list-style: none; margin: 0; padding: 0; }
+.cloud li { padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); font: 400 14px/1 var(--display); letter-spacing: .03em; }
+.cloud li.hi { border-color: var(--hot); color: var(--hot-2); }
+
+/* Phone + more from the shop */
+.duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.tile { border: 1px solid var(--line); border-radius: 20px; padding: clamp(22px, 3vw, 32px); background: var(--panel); display: grid; gap: 12px; align-content: start; }
+.tile h3 { font-size: clamp(22px, 2.6vw, 30px); }
+.tile p { color: var(--ink-2); }
+.shop { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.prod { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 14px; align-items: center; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); text-decoration: none; transition: border-color .2s; }
+.prod:hover { border-color: var(--hot); }
+.prod img, .prod .ph { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; }
+.prod .ph { display: grid; place-items: center; background: var(--bg-2); font: 400 18px/1 var(--display); color: var(--mint); }
+.prod b { display: block; font-weight: 700; line-height: 1.3; }
+.prod span { font-size: 14px; color: var(--ink-3); }
+
+/* Follow */
+.follow-card { text-align: center; display: grid; justify-items: center; gap: 16px; padding: clamp(32px, 5vw, 56px) 20px; border-radius: 24px; border: 1px solid var(--line);
+  background: radial-gradient(60% 80% at 50% 0%, var(--glow), transparent 70%), var(--panel); }
+.follow-card h2 { font-size: clamp(28px, 4vw, 46px); }
+form.follow { display: flex; gap: 10px; width: 100%; max-width: 480px; flex-wrap: wrap; }
+form.follow input { flex: 1 1 220px; min-width: 0; padding: 14px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: 16px var(--body); }
+form.follow input:focus { outline: none; border-color: var(--hot); box-shadow: 0 0 0 3px color-mix(in srgb, var(--hot) 25%, transparent); }
+form.follow .btn { flex: 0 0 auto; }
+
+footer { border-top: 1px solid var(--line); padding-block: 26px 40px; color: var(--ink-3); font-size: 14px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: space-between; }
+
+.js .rise { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+.js .rise.in { opacity: 1; transform: none; }
+
+@media (max-width: 900px) {
+  .hero .wrap, .record .body, .suno, .duo { grid-template-columns: minmax(0, 1fr); }
+  .orbit { width: min(340px, 84%); }
+  .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nav nav a.opt { display: none; }
+}
+@media (max-width: 560px) {
+  .wrap { padding-inline: 16px; }
+  .hero .ctas .btn { width: 100%; }
+  .nav nav { gap: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .orbit .spin, .orbit .badge { animation: none; }
+  .js .rise { opacity: 1; transform: none; transition: none; }
+  .btn, .gallery img { transition: none; }
+}
+</style>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="{{LOGO_SM}}" alt="" width="34" height="37">CFunky Creations</a>
+    <nav aria-label="Sections">
+      <a class="opt" href="#lyricist">Lyricist Pro</a>
+      <a class="opt" href="#suno">Suno</a>
+      <a class="opt" href="#shop">Shop</a>
+      <a class="btn btn-hot" href="{{LP_URL}}">Get Lyricist Pro</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+<section class="hero">
+  <div class="wrap">
+    <div class="orbit rise" aria-hidden="true">
+      <div class="spin wide"></div>
+      <div class="spin"></div>
+      <div class="photo"><img src="{{PHOTO}}" alt=""></div>
+    </div>
+    <div class="rise">
+      <p class="eyebrow">Singer-songwriter · Austin, Texas</p>
+      <h1>I built the studio <em>I couldn't afford.</em></h1>
+      <p class="lede">I'm Christopher Funk. Around Austin everybody just calls me Funk. Everything I wanted to make music with cost so much money that I taught myself to code and built it myself. Now I'm passing the savings on to you.</p>
+      <div class="ctas">
+        <a class="btn btn-hot" href="{{LP_URL}}">Get Lyricist Pro <span class="tag" data-gumroad-product="lyricist-pro" data-gumroad-field="price">$19.99</span></a>
+        <a class="btn btn-ghost" href="#lyricist">See what's inside</a>
+      </div>
+      <p class="sign"><b>Funk</b> · founder, CFunky Creations</p>
+    </div>
+  </div>
+</section>
+
+<section class="bay" id="lyricist" style="padding-top:0">
+  <div class="wrap">
+    <article class="record rise">
+      <div class="banner"><img src="{{SKYLINE}}" alt="Lyricist Pro: the ghost and the black hole over the Austin skyline" width="1600" height="538"></div>
+      <div class="body">
+        <div>
+          <p class="eyebrow">The flagship</p>
+          <h3 style="margin-top:12px">Lyricist Pro</h3>
+          <p class="tagline">Words in. Songs out.</p>
+          <p class="desc">A full songwriting studio with 18 tools in one app. Write the lyrics, get the Suno tags, hear your words sung by a full band, then master the record.</p>
+          <ul class="ticks">
+            <li><span><b>Black Hole Studios.</b> Your lyrics, sung by a full band. Short songs run free on the cloud engine.</span></li>
+            <li><span><b>Ghost Rider.</b> Name any artist and write a brand-new song in their style. It never copies their lyrics.</span></li>
+            <li><span><b>Suno-ready.</b> Lyrics and style tags, built to paste straight into Suno.</span></li>
+            <li><span><b>The Ghost Demo.</b> Press Play Demo and the Ghost walks you through any tab, out loud.</span></li>
+          </ul>
+        </div>
+        <div class="buybox">
+          <p class="once">One payment</p>
+          <p class="big" data-gumroad-product="lyricist-pro" data-gumroad-field="price">$19.99</p>
+          <p class="fine">Windows 10 and 11. The phone version for iPhone and Android is included. Every update lands in your Gumroad library.</p>
+          <a class="btn btn-hot" href="{{LP_URL}}">Get Lyricist Pro</a>
+          <p class="fine">No subscription. No per-song credits.</p>
+        </div>
+      </div>
+    </article>
+    <div class="gallery">
+      <figure class="rise"><img src="{{STUDIO}}" alt="Black Hole Studios screen" width="960" height="864"><figcaption>Black Hole Studios<span>Lyrics in, a real song out.</span></figcaption></figure>
+      <figure class="rise"><img src="{{RIDER}}" alt="Ghost Rider screen" width="960" height="864"><figcaption>Ghost Rider<span>Any artist's style, your words.</span></figcaption></figure>
+      <figure class="rise"><img src="{{MATRIX}}" alt="The Matrix word grid" width="960" height="864"><figcaption>The Matrix<span>A verse from word tiles.</span></figcaption></figure>
+      <figure class="rise"><img src="{{LOOPS}}" alt="RC-Funk 5000 and Chopped and Screwed" width="960" height="864"><figcaption>The studio<span>Loop it, screw it, master it.</span></figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section class="bay" id="suno" style="background:var(--bg-2);border-block:1px solid var(--line)">
+  <div class="wrap suno">
+    <div class="rise">
+      <p class="eyebrow">Made for Suno</p>
+      <h2 style="font-size:clamp(30px,4.4vw,52px);margin-top:12px">Build the song here. Run it on Suno.</h2>
+      <p class="lede" style="margin-top:16px">I use AI too, and Suno is a great tool. It sounds best when you hand it real lyrics and the right style tags. Lyricist Pro writes both, for free, before you spend a single Suno credit.</p>
+    </div>
+    <div class="rise">
+      <div class="tagbox"><div class="lbl">Lyrics</div>[Verse 1]<br>Pawn shop guitar with a crack down the side<br>Forty dollars, and I paid it with pride</div>
+      <div class="tagbox"><div class="lbl">Suno style tags</div><span class="t">southern rock, gritty male vocals, fuzz guitar, slide guitar, driving drums, live room, 112 bpm</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="bay">
+  <div class="wrap">
+    <div class="bay-head rise"><p class="eyebrow">Everything in the box</p><h2>18 tools. One app.</h2></div>
+    <ul class="cloud rise">{{CLOUD}}</ul>
+  </div>
+</section>
+
+<section class="bay" id="shop" style="padding-top:0">
+  <div class="wrap duo">
+    <div class="tile rise">
+      <p class="eyebrow">On your phone too</p>
+      <h3>iPhone and Android, included.</h3>
+      <p>Open lyricist-pro.pages.dev in Safari or Chrome, add it to your home screen, and unlock it with the license key from your receipt. Write wherever the line hits you.</p>
+    </div>
+    <div class="tile rise">
+      <p class="eyebrow">More from the shop</p>
+      <div class="shop" id="shop-grid">
+        <a class="prod" href="{{LP_URL}}"><img src="{{LOGO_MD}}" alt=""><div><b>Lyricist Pro</b><span>Songwriting studio · <span data-gumroad-product="lyricist-pro" data-gumroad-field="price">$19.99</span></span></div></a>
+        <a class="prod" href="{{TP_URL}}"><div class="ph" aria-hidden="true">TP</div><div><b>TriagePilot Pro</b><span>Inbox triage for small business · <span data-gumroad-product="avtte" data-gumroad-field="price">$19 a month</span></span></div></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bay" style="padding-top:0">
+  <div class="wrap">
+    <div class="follow-card rise">
+      <p class="eyebrow">Stay in the loop</p>
+      <h2>New versions. New songs.</h2>
+      <p class="lede">Get a note when Lyricist Pro updates or a new tool drops. No spam.</p>
+      <form class="follow" data-gumroad-follow>
+        <label class="sr" for="f-email" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Email address</label>
+        <input id="f-email" type="email" name="email" required placeholder="you@example.com" autocomplete="email">
+        <button class="btn btn-hot" type="submit">Follow</button>
+      </form>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>CFunky Creations · Austin, Texas</span>
+    <span>Lyricist Pro help: cfunkycreations@gmail.com</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  document.documentElement.classList.add('js');
+  var rise = document.querySelectorAll('.rise');
+  if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -6% 0px', threshold: 0.05 });
+    rise.forEach(function (el) { io.observe(el); });
+    setTimeout(function () { rise.forEach(function (el) { if (el.getBoundingClientRect().top < innerHeight) el.classList.add('in'); }); }, 60);
+  } else {
+    rise.forEach(function (el) { el.classList.add('in'); });
+  }
+
+  // Gumroad injects the live catalogue as JSON. Point the links at the URLs it
+  // hands us, and list anything new after the two products above.
+  function readJSON(id) { var el = document.getElementById(id); if (!el) return null; try { return JSON.parse(el.textContent); } catch (e) { return null; } }
+  function perm(url) { try { var p = new URL(url).pathname.split('/').filter(Boolean); return p[p.length - 1] || ''; } catch (e) { return ''; } }
+  function esc(t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  var data = readJSON('gumroad-data');
+  if (data && Array.isArray(data.products)) {
+    var known = { 'lyricist-pro': 1, 'pzglwj': 1, 'avtte': 1 };
+    var grid = document.getElementById('shop-grid');
+    data.products.forEach(function (p) {
+      var k = perm(p.url);
+      if (known[k]) return;
+      var img = p.thumbnail_url || p.cover_url;
+      grid.insertAdjacentHTML('beforeend', '<a class="prod" href="' + esc(p.url) + '">' +
+        (img ? '<img src="' + esc(img) + '" alt="">' : '<div class="ph" aria-hidden="true">' + esc((p.name || '?').charAt(0)) + '</div>') +
+        '<div><b>' + esc(p.name) + '</b><span>' + esc(p.price || '') + '</span></div></a>');
+    });
+  }
+})();
+</script>
