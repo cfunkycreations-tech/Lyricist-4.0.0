@@ -10,12 +10,19 @@ import './styles/opsec.css';
 import './styles/materials.css';
 import { startWheelControls } from './services/wheelControls.js';
 import { registerPWA } from './web/registerPWA.js';
+import { installPhoneAudio } from './web/iosAudio.js';
+import { installPhoneSave } from './web/iosSave.js';
 import LandscapeSplash from './web/LandscapeSplash.jsx';
 import DialogHost from './components/common/DialogHost.jsx';
 import { initAnalytics } from './services/analytics.js';
 
 // Installable on a phone. No-op inside Electron - see the file.
 registerPWA();
+// iPhone: play through the silent switch, wake audio on the first tap, and
+// turn Download buttons into the share sheet in the installed app. Both are
+// no-ops in Electron and on desktop browsers - see the files.
+installPhoneAudio();
+installPhoneSave();
 
 // Product analytics. Does nothing at all — no chunk fetched, no socket opened —
 // in a build with no VITE_POSTHOG_KEY, which is what makes the footer's

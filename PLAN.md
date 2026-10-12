@@ -55,11 +55,18 @@ Where it stands (PR #36): built, not yet run on Kaggle for real.
 
 ## 3. Getting it in front of people (after 2, one at a time)
 
-1. **Gumroad** listing: page copy, price, screenshots, a demo video. Ghost jobs
-   recorded in OBS are the demo footage.
-2. **New website**: rebuild `lyricist-site/` with a video up top, what each tab
-   does, and the Gumroad button.
-3. **Launch clips**: Shorts made by the step 2 video maker, plus Ghost demo clips.
+1. **Gumroad** listing (built 2026-10-11): `gumroad/README.md` is the paste-in
+   checklist; copy, covers, the skyline cover video, thumbnail and profile art
+   sit beside it. $29, pay what you want above it. Upload the
+   `npm run release:customer` installer. Ghost jobs recorded in OBS can still
+   become a longer demo video.
+2. **New website**: on hold, the site is down until the money comes in. When
+   it's back: rebuild `lyricist-site/` with a video up top, what each tab does,
+   and the Gumroad button. Until then Gumroad is the storefront.
+3. **Phone version** (Chris, 2026-10-11: "port the entire app to iOS and
+   Android"): the PWA on Cloudflare Pages, added to the home screen. No Apple
+   developer fee. An Android APK through PWABuilder from the same link.
+4. **Launch clips**: Shorts made by the step 2 video maker, plus Ghost demo clips.
 
 ## Later (only if he asks)
 

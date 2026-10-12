@@ -274,7 +274,8 @@ export default function LoopStation() {
       };
       rec.onstop = async () => {
         try {
-          const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+          // An iPhone records audio/mp4, never webm: label it with what it is.
+          const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' });
           const buffer = await decodeBlob(blob);
           setTracks((prev) =>
             prev.map((t) =>

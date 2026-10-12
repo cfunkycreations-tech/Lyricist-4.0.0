@@ -99,7 +99,7 @@ export default function EngineSetup({ onKaggleReady, onLocalReady }) {
     return (
       <div className="es">
         <p className="es-note">
-          Setting these up needs the desktop app. In the browser preview only the free cloud runs.
+          On the phone, songs run on the free cloud. Kaggle, Modal and this computer need the Windows app.
         </p>
       </div>
     );
