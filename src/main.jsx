@@ -13,6 +13,7 @@ import { registerPWA } from './web/registerPWA.js';
 import { installPhoneAudio } from './web/iosAudio.js';
 import { installPhoneSave } from './web/iosSave.js';
 import LandscapeSplash from './web/LandscapeSplash.jsx';
+import PurchaseLock from './web/PurchaseLock.jsx';
 import DialogHost from './components/common/DialogHost.jsx';
 import { initAnalytics } from './services/analytics.js';
 
@@ -77,7 +78,11 @@ try {
         {/* Web only. Turns the phone sideways and locks it, then gets out of
             the way. Renders nothing inside the desktop app. */}
         <LandscapeSplash />
-        <App />
+        {/* Phone build: asks for the Gumroad purchase code once. Passes
+            straight through in the desktop app and on the dev server. */}
+        <PurchaseLock>
+          <App />
+        </PurchaseLock>
         {/* In-app alert / confirm / prompt (services/dialog.js). */}
         <DialogHost />
       </BootErrorBoundary>

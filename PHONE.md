@@ -18,6 +18,20 @@ the Kaggle relay is on). It ends by printing the link, something like
 `https://lyricist-pro.pages.dev`. It's free, with no bandwidth bill, and it
 doesn't need your website.
 
+## The purchase code
+
+The phone version asks for a purchase code once per phone: the license key in
+the buyer's Gumroad receipt. It's checked with Gumroad by
+`functions/api/unlock.js`, which `npm run deploy:web` uploads with the site.
+
+- Gumroad product → Content → turn on **Generate a unique license key per sale**.
+- The product ID Gumroad shows there goes in `PRODUCT_ID` at the top of
+  `functions/api/unlock.js`. Until it's set, the phone says codes aren't
+  switched on yet.
+- One code works on up to 10 phones. A refund or chargeback locks it again
+  at the next weekly check. No signal never locks anybody out.
+- Your own phone: make a 100%-off offer code and buy a copy.
+
 ## Install it
 
 - **iPhone**: open the link in **Safari**, then **Share** → **Add to Home Screen**.
