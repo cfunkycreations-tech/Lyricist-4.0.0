@@ -350,17 +350,6 @@
     });
   }
 
-  /* ---- 5e. The photo of Chris and Craig ------------------------------
-     Shown only once the file is actually there, so a missing photo leaves
-     no broken frame in the middle of the story.                          */
-  var bros = document.getElementById('brothers');
-  if (bros) {
-    // Visible by default, hidden only if the file is missing. The other way
-    // round deadlocks: a hidden figure never loads its image, so the load
-    // event that was supposed to reveal it never fires.
-    bros.querySelector('img').addEventListener('error', function () { bros.hidden = true; });
-  }
-
   /* ---- 6. Reveal on scroll, off entirely for reduced motion ---------- */
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!reduce && 'IntersectionObserver' in window) {
