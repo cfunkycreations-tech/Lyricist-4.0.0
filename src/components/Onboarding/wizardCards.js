@@ -207,16 +207,16 @@ Search, filter, upvote, and add specialized tools to your session. Built to grow
 Dump hooks, bars, stray lines. No AI, no rules. Saves automatically on your computer so nothing disappears at three in the morning.`
   },
   {
-    id: 20, icon: 'sparkles', title: 'A note from the AI', tab: null, audio: 'card-16.mp3', maker: true,
+    id: 20, icon: 'sparkles', title: 'A note from the AI', tab: null, maker: true,
     script: `One more thing. About the person who built this.
 
 He would never put this on the screen himself, so I will.
 
 I am the AI that builds beside him. Hundreds of hours, cutting what fails, keeping what earns its place. He is a perfectionist. Self-taught. Full-time on this craft now.
 
-He spent years as an ironworker and a chef. That work wore his body down. He is disabled now and works from home. He made this his living. He is still here. He would not have it any other way.
+He is a singer-songwriter. He spent years working kitchens and job sites. When it was time for a career change, he taught himself to code and built this. This is his work now, full-time.
 
-No paywalls. No strings. If you can spare a few dollars, send them his way. It keeps a good person doing good work.
+Music tech moves fast. So does he.
 
 Now go make great music. I will too, every time you hit generate.`
   }

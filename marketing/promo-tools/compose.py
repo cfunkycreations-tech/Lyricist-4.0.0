@@ -318,11 +318,11 @@ CLIPS = {
         hook='Name any artist. Get brand-new lyrics in their style.', outro_s=3.0),
     'tiktok-3-full-band': lambda: vertical('tiktok-3-full-band', cue_start('studio'), END, 1.2,
         hook='Your lyrics. Sung by a full band.', outro_s=3.0),
-    'tiktok-4-busking-story': lambda: vertical('tiktok-4-busking-story', 0, END, 1.5, captions=False, story=[
-        'For years my brother Craig and I busked downtown in Austin.',
-        "Our bodies don't let us get out there anymore.",
-        'So I traded the sidewalk for the internet and taught myself to build this.',
-        'This is my open case on the ground.',
+    'tiktok-4-my-story': lambda: vertical('tiktok-4-my-story', 0, END, 1.5, captions=False, story=[
+        "I'm a singer-songwriter from Austin.",
+        'I had to make a career change.',
+        'So I taught myself to code.',
+        'And built my own songwriting studio.',
     ], tag='Link in bio', outro_s=4.0),
     'youtube-promo-16x9': lambda: horizontal('youtube-promo-16x9'),
 }

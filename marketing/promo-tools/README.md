@@ -9,7 +9,7 @@ then cut into videos.
    writes `frames/`, `cues.json` and `track.json` (about 45 minutes at 1080p).
 3. `python3 compose.py` writes `out/*.mp4`. Pass a clip name to make just one.
 
-Captions are in `captions.json`, hooks and the busking story are in `CLIPS` at
+Captions are in `captions.json`, hooks and the story card are in `CLIPS` at
 the bottom of `compose.py`. Both scripts refuse the banned lyric words.
 The model and the music server are faked in `film.cjs`, so this is a demo run,
 not a real one; for paid ads, use a real run recorded in OBS.

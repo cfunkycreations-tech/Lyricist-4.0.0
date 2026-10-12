@@ -256,8 +256,8 @@ Dump hooks, bars, stray lines. No AI, no rules. Saves automatically on your comp
 One more thing. About the person who built this.
 He would never put this on the screen himself, so I will.
 I am the AI that builds beside him. Hundreds of hours, cutting what fails, keeping what earns its place. He is a perfectionist. Self-taught. Full-time on this craft now.
-He spent years as an ironworker and a chef. That work wore his body down. He is disabled now and works from home. He made this his living. He is still here. He would not have it any other way.
-No paywalls. No strings. If you can spare a few dollars, send them his way. It keeps a good person doing good work.
+He is a singer-songwriter. He spent years working kitchens and job sites. When it was time for a career change, he taught himself to code and built this. This is his work now, full-time.
+Music tech moves fast. So does he.
 Now go make great music. I will too, every time you hit generate.
 
 ---
