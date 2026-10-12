@@ -21,7 +21,7 @@
 
 // From Gumroad: the product's page, Content > License key, "product_id".
 // GUMROAD_PRODUCT_ID set on the Pages project wins over this.
-const PRODUCT_ID = '';
+const PRODUCT_ID = 'vmQgyfBzmUFRW3O8y2CeMw==';   // Lyricist Pro (gumroad.com/l/pzglwj)
 
 // One code, this many installs. Generous on purpose: on an iPhone, Safari and
 // the Home Screen app keep separate storage, so one person can use two.

@@ -25,7 +25,7 @@ import './PurchaseLock.css';
 
 const STORE = 'lyricist.unlock';
 const RECHECK_MS = 7 * 24 * 60 * 60 * 1000;
-const BUY_URL = 'https://cfunkycreations.gumroad.com/l/lyricist-pro';
+const BUY_URL = 'https://gumroad.com/l/pzglwj';
 
 const isPhoneBuild = () => typeof window !== 'undefined'
   && !import.meta.env.DEV
