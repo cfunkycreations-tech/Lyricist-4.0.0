@@ -26,7 +26,7 @@ Gumroad → **Products** → **New product** → **Digital product**.
 | Field | Paste this |
 |---|---|
 | Description | all of `description.html` (see the top of this file) |
-| Cover | upload in this order: `covers/01-skyline-cover-video.mov` (the moving skyline), then `covers/01-hero.jpg` through `covers/08-everything.jpg` |
+| Cover | upload in this order: `covers/01-skyline-cover-video.mov` (the moving skyline), then `covers/01-hero.jpg` through `covers/09-everything.jpg` |
 | Thumbnail | `thumbnail-600.png` |
 | Call to action | `I want this!` |
 | Summary | `18 songwriting tools in one Windows app, from the first line to the finished, mastered song.` |
