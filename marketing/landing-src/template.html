@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lyricist Pro</title>
+<meta name="description" content="18 songwriting tools in one Windows app. Write the lyrics, get the Suno tags, hear it sung by a full band. $19.99 once.">
+<style>
+@font-face { font-family: "Audiowide LP"; src: url(data:font/woff2;base64,{{FONT}}) format("woff2"); font-display: swap; }
+
+/* Layout: one long stage. A spinning black hole holds the hero; every section after
+   it is a bay on the console, separated by a thin orange rule like the app's panels. */
+:root {
+  --bg: #07030b;
+  --bg-2: #0f0814;
+  --panel: #150c1b;
+  --line: #2c1d2f;
+  --ink: #fbf1e6;
+  --ink-2: #c9b6a6;
+  --ink-3: #8f7c70;
+  --hot: #ff8a3d;
+  --hot-2: #ffb25a;
+  --hot-ink: #1a0b02;
+  --violet: #a77bff;
+  --glow: rgba(255, 138, 61, .35);
+  --display: "Audiowide LP", "Bahnschrift", "Segoe UI", system-ui, sans-serif;
+  --body: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+  --r: 14px;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f3f0f6; --bg-2: #ebe6f0; --panel: #ffffff; --line: #ddd3e3;
+    --ink: #170d1d; --ink-2: #4a3d52; --ink-3: #6e6175;
+    --hot: #c2410c; --hot-2: #9a3412; --hot-ink: #ffffff; --violet: #6d3fd6;
+    --glow: rgba(194, 65, 12, .22);
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f3f0f6; --bg-2: #ebe6f0; --panel: #ffffff; --line: #ddd3e3;
+  --ink: #170d1d; --ink-2: #4a3d52; --ink-3: #6e6175;
+  --hot: #c2410c; --hot-2: #9a3412; --hot-ink: #ffffff; --violet: #6d3fd6;
+  --glow: rgba(194, 65, 12, .22);
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--body); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; }
+.wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding-inline: 20px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 400; line-height: 1.08; margin: 0; text-wrap: balance; letter-spacing: .01em; }
+p { margin: 0; }
+.eyebrow { font: 600 12px/1 var(--body); letter-spacing: .22em; text-transform: uppercase; color: var(--hot); }
+.lede { color: var(--ink-2); font-size: clamp(16px, 1.6vw, 19px); max-width: 60ch; }
+:focus-visible { outline: 3px solid var(--hot-2); outline-offset: 3px; border-radius: 6px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Buy buttons */
+.buy {
+  display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 16px 26px; border: 0; border-radius: 999px; cursor: pointer; text-decoration: none;
+  background: linear-gradient(180deg, #ffa060, #ff7a26); color: #1a0b02;
+  font: 400 16px/1 var(--display); letter-spacing: .06em; text-transform: uppercase;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.18) inset, 0 10px 30px -8px var(--glow), 0 0 40px -10px var(--glow);
+  transition: transform .15s ease, box-shadow .2s ease, filter .2s;
+}
+.buy:hover { transform: translateY(-2px); filter: brightness(1.06); box-shadow: 0 0 0 1px rgba(255,255,255,.25) inset, 0 16px 40px -8px var(--glow), 0 0 60px -6px var(--glow); }
+.buy:active { transform: translateY(0); }
+.buy .tag { font: 700 15px/1 var(--body); letter-spacing: 0; background: rgba(26,11,2,.14); padding: 7px 10px; border-radius: 999px; }
+.buy.ghost { background: transparent; color: var(--ink); box-shadow: 0 0 0 1px var(--line) inset; }
+.buy.ghost:hover { box-shadow: 0 0 0 1px var(--hot) inset; }
+.fine { font-size: 13px; color: var(--ink-3); }
+
+/* Top bar */
+.top { position: sticky; top: 0; z-index: 40; background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 400 17px/1 var(--display); letter-spacing: .04em; }
+.brand img { width: 34px; height: auto; }
+.top .buy { padding: 10px 16px; font-size: 13px; }
+.top .buy .tag { font-size: 13px; padding: 5px 8px; }
+
+/* Hero */
+.hero { position: relative; overflow: hidden; padding-block: clamp(40px, 7vw, 96px) clamp(48px, 7vw, 88px); }
+.hero::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(1.5px 1.5px at 12% 22%, var(--ink-3) 50%, transparent 51%),
+    radial-gradient(1px 1px at 28% 68%, var(--ink-3) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 44% 12%, var(--ink-3) 50%, transparent 51%),
+    radial-gradient(1px 1px at 58% 84%, var(--ink-3) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 72% 30%, var(--ink-3) 50%, transparent 51%),
+    radial-gradient(1px 1px at 86% 62%, var(--ink-3) 50%, transparent 51%),
+    radial-gradient(1px 1px at 94% 14%, var(--ink-3) 50%, transparent 51%),
+    radial-gradient(60% 50% at 75% 45%, var(--glow), transparent 70%);
+  opacity: .9; }
+.hero .wrap { position: relative; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: clamp(24px, 4vw, 56px); align-items: center; }
+.hero h1 { font-size: clamp(44px, 7.4vw, 92px); margin-top: 16px; }
+.hero h1 .out { display: block; background: linear-gradient(90deg, var(--hot-2), var(--hot) 45%, var(--violet)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero .lede { margin-top: 20px; }
+.hero .ctas { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 30px; }
+.hero .ctas .buy.ghost { padding-inline: 20px; }
+.hero .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 18px; font-size: 14px; color: var(--ink-2); }
+.hero .meta span::before { content: "✓"; color: var(--hot); margin-right: 7px; font-weight: 700; }
+.name-line { font-size: 13px; color: var(--ink-3); margin-top: 10px; }
+
+/* The black hole */
+.bh { position: relative; width: min(520px, 100%); aspect-ratio: 1; margin-inline: auto; }
+.bh .disk { position: absolute; inset: 6%; border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 6%, #ff7a26 14%, #ffd29a 20%, #ff8a3d 28%, transparent 40% 52%, #ff6a1a 62%, #ffc078 70%, #ff8a3d 78%, transparent 90% 100%);
+  -webkit-mask: radial-gradient(circle, transparent 0 31%, #000 33% 50%, transparent 70%);
+          mask: radial-gradient(circle, transparent 0 31%, #000 33% 50%, transparent 70%);
+  filter: blur(6px) saturate(1.2); transform: rotateX(68deg); animation: spin 14s linear infinite; }
+.bh .disk.two { inset: 0; filter: blur(16px); opacity: .55; animation-duration: 22s; animation-direction: reverse; }
+.bh .halo { position: absolute; inset: 24%; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255, 220, 170, .9), 0 0 30px 8px rgba(255, 150, 70, .75), 0 0 90px 30px rgba(255, 110, 40, .35); }
+.bh .core { position: absolute; inset: 25.5%; border-radius: 50%; background: radial-gradient(circle at 50% 50%, #000 62%, #120604 100%); }
+.bh .logo { position: absolute; inset: 22%; display: grid; place-items: center; animation: bob 6s ease-in-out infinite; }
+.bh .logo img { width: 100%; filter: drop-shadow(0 18px 40px rgba(0,0,0,.6)); }
+@keyframes spin { to { transform: rotateX(68deg) rotateZ(360deg); } }
+@keyframes bob { 50% { transform: translateY(-10px); } }
+
+/* Ticker */
+.ticker { border-block: 1px solid var(--line); background: var(--bg-2); overflow: hidden; }
+.ticker ul { display: flex; gap: 0; margin: 0; padding: 14px 0; list-style: none; width: max-content; animation: slide 48s linear infinite; }
+.ticker li { font: 400 14px/1 var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); padding-inline: 22px; white-space: nowrap; }
+.ticker li::after { content: "✦"; color: var(--hot); margin-left: 44px; }
+@keyframes slide { to { transform: translateX(-50%); } }
+
+/* Sections */
+section.bay { padding-block: clamp(64px, 9vw, 120px); }
+.bay-head { display: grid; gap: 14px; max-width: 760px; margin-bottom: clamp(32px, 5vw, 56px); }
+.bay-head h2 { font-size: clamp(30px, 4.4vw, 52px); }
+
+/* Steps: a real sequence, so numbered */
+.steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; counter-reset: s; list-style: none; margin: 0; padding: 0; }
+.steps li { position: relative; padding: 22px 20px 24px; border-top: 2px solid var(--hot); background: linear-gradient(180deg, var(--panel), transparent); border-radius: 0 0 var(--r) var(--r); }
+.steps li::before { counter-increment: s; content: "0" counter(s); font: 400 13px/1 var(--display); color: var(--hot); letter-spacing: .1em; }
+.steps h3 { font-size: 20px; margin: 14px 0 8px; }
+.steps p { color: var(--ink-2); font-size: 15px; }
+
+/* Showcase rows */
+.show { display: grid; gap: clamp(56px, 8vw, 104px); }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(24px, 5vw, 64px); align-items: center; }
+.row:nth-child(even) .shot { order: 2; }
+.row h3 { font-size: clamp(26px, 3.2vw, 38px); margin: 12px 0 14px; }
+.row p { color: var(--ink-2); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; padding: 0; list-style: none; }
+.chips li { font-size: 13px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-2); background: var(--panel); }
+.shot { position: relative; display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; border-radius: var(--r); }
+.shot img { width: 100%; aspect-ratio: 1600 / 1440; object-fit: cover; border-radius: var(--r); border: 1px solid var(--line); box-shadow: 0 30px 80px -30px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.04); transition: transform .3s ease; }
+.shot:hover img { transform: translateY(-4px) scale(1.01); }
+.shot .zoom { position: absolute; right: 12px; bottom: 12px; font-size: 12px; padding: 6px 10px; border-radius: 999px; background: rgba(0,0,0,.6); color: #fff; letter-spacing: .04em; }
+
+/* Suno toy */
+.suno { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(24px, 4vw, 56px); align-items: start; }
+.picker { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+.picker button { font: 600 14px/1 var(--body); padding: 11px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.picker button[aria-pressed="true"] { border-color: var(--hot); background: color-mix(in srgb, var(--hot) 16%, var(--panel)); color: var(--ink); }
+.console { border: 1px solid var(--line); border-radius: var(--r); background: #0b060e; color: #f6ecdf; overflow: hidden; box-shadow: 0 30px 80px -30px rgba(0,0,0,.6); }
+.console .bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #2a1c2c; font: 400 12px/1 var(--display); letter-spacing: .14em; text-transform: uppercase; color: #c9b6a6; }
+.console .dots { display: flex; gap: 6px; } .console .dots i { width: 9px; height: 9px; border-radius: 50%; background: #3b2a3c; display: block; }
+.console .dots i:first-child { background: #ff8a3d; }
+.console .part { padding: 16px 18px; border-bottom: 1px solid #2a1c2c; }
+.console .label { font: 400 11px/1 var(--display); letter-spacing: .16em; text-transform: uppercase; color: #ffb25a; margin-bottom: 10px; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.console pre { margin: 0; font: 14px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; color: #f6ecdf; }
+.console .tags { color: #ffd2a8; }
+.copy { font: 600 11px/1 var(--body); letter-spacing: .06em; text-transform: uppercase; padding: 6px 9px; border-radius: 6px; border: 1px solid #4a3346; background: transparent; color: #f6ecdf; cursor: pointer; }
+.console .note { padding: 10px 18px; font-size: 12px; color: #a4918a; }
+
+/* All 18 tools */
+.tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; list-style: none; margin: 0; padding: 0; }
+.tools li { background: var(--bg); padding: 20px 20px 22px; display: grid; gap: 6px; transition: background .2s; }
+.tools li:hover { background: var(--panel); }
+.tools b { font: 400 16px/1.2 var(--display); letter-spacing: .02em; }
+.tools span { color: var(--ink-2); font-size: 14px; }
+.tools .free { color: var(--hot); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; }
+
+/* Price */
+.price-bay { position: relative; overflow: hidden; }
+.price-bay::before { content: ""; position: absolute; inset: 0; background: radial-gradient(50% 60% at 50% 0%, var(--glow), transparent 70%); pointer-events: none; }
+.price-card { position: relative; max-width: 860px; margin-inline: auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 22px; overflow: hidden; background: var(--panel); }
+.price-card .l { padding: clamp(28px, 4vw, 44px); display: grid; gap: 16px; align-content: start; border-right: 1px solid var(--line); }
+.price-card .r { padding: clamp(28px, 4vw, 44px); }
+.big { font: 400 clamp(56px, 8vw, 84px)/1 var(--display); letter-spacing: -.01em; }
+.once { font: 400 15px/1 var(--display); letter-spacing: .2em; text-transform: uppercase; color: var(--hot); }
+.incl { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.incl li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; color: var(--ink-2); }
+.incl li::before { content: "✓"; color: var(--hot); font-weight: 800; }
+.incl b { color: var(--ink); font-weight: 600; }
+.vs { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 18px; margin-top: 4px; font-size: 14px; color: var(--ink-2); border-top: 1px solid var(--line); padding-top: 16px; }
+.vs .me { color: var(--ink); font-weight: 700; }
+.proof { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); }
+.proof .star { color: var(--hot-2); letter-spacing: 2px; }
+
+/* Needs, story, faq */
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(32px, 5vw, 72px); }
+.needs { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.needs li { padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); }
+.needs b { display: block; font-weight: 700; margin-bottom: 2px; }
+.needs span { color: var(--ink-2); font-size: 15px; }
+.story { padding: clamp(24px, 4vw, 40px); border-radius: 22px; border: 1px solid var(--line); background: linear-gradient(160deg, var(--panel), var(--bg-2)); display: grid; gap: 16px; align-content: start; }
+.story p { color: var(--ink-2); font-size: 17px; }
+.story .sig { font: 400 18px/1 var(--display); color: var(--ink); }
+.faq { display: grid; gap: 10px; max-width: 860px; }
+.faq details { border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); }
+.faq summary { cursor: pointer; list-style: none; padding: 18px 20px; font-weight: 700; display: flex; justify-content: space-between; gap: 16px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font: 400 20px/1 var(--display); color: var(--hot); transition: transform .2s; }
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq details p { padding: 0 20px 18px; color: var(--ink-2); }
+
+/* Final CTA */
+.final { text-align: center; display: grid; justify-items: center; gap: 20px; }
+.final h2 { font-size: clamp(36px, 6vw, 72px); }
+footer { border-top: 1px solid var(--line); padding-block: 28px 110px; color: var(--ink-3); font-size: 14px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: space-between; }
+
+/* Phone buy bar */
+.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--line); display: none; align-items: center; gap: 12px; transform: translateY(110%); transition: transform .25s ease; }
+.dock.on { transform: none; }
+.dock .t { flex: 1; min-width: 0; font-size: 13px; color: var(--ink-2); line-height: 1.3; }
+.dock .t b { display: block; color: var(--ink); font: 400 15px/1.2 var(--display); }
+.dock .buy { padding: 13px 18px; font-size: 14px; width: auto; flex: none; }
+
+/* Lightbox */
+dialog.lb { padding: 0; border: 0; background: transparent; max-width: min(1100px, 94vw); max-height: 92vh; }
+dialog.lb::backdrop { background: rgba(5, 2, 8, .86); backdrop-filter: blur(4px); }
+dialog.lb img { width: 100%; height: auto; max-height: 86vh; object-fit: contain; border-radius: 12px; }
+dialog.lb .x { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(0,0,0,.7); color: #fff; font-size: 22px; cursor: pointer; }
+dialog.lb figcaption { color: #e9dccf; font-size: 14px; text-align: center; padding-top: 10px; }
+
+/* Reveal: content is visible at rest; JS only adds the lift when it is running. */
+.js .rise { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+.js .rise.in { opacity: 1; transform: none; }
+
+@media (max-width: 900px) {
+  .hero .wrap, .row, .suno, .two, .price-card { grid-template-columns: minmax(0, 1fr); }
+  .row:nth-child(even) .shot { order: 0; }
+  .bh { width: min(380px, 86%); }
+  .hero .bh { order: -1; }
+  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .price-card .l { border-right: 0; border-bottom: 1px solid var(--line); }
+  .dock { display: flex; }
+  .top .buy { display: none; }
+}
+@media (max-width: 560px) {
+  .wrap { padding-inline: 16px; }
+  .steps, .tools { grid-template-columns: minmax(0, 1fr); }
+  .buy { width: 100%; }
+  .hero .ctas .buy.ghost { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .bh .disk, .bh .logo, .ticker ul { animation: none; }
+  .js .rise { opacity: 1; transform: none; transition: none; }
+  .buy, .shot img { transition: none; }
+}
+</style>
+</head>
+<body>
+<a class="sr" href="#main">Skip to content</a>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="{{LOGO_SM}}" alt="" width="34" height="37">Lyricist Pro</a>
+    <a class="buy" data-gumroad-action="buy" href="#buy">Get it <span class="tag" data-gumroad-field="price">$19.99</span></a>
+  </div>
+</header>
+
+<main id="main">
+<section class="hero" id="top">
+  <div class="wrap">
+    <div>
+      <p class="eyebrow">Songwriting studio · Windows · iPhone · Android</p>
+      <h1>Words in.<span class="out">Songs out.</span></h1>
+      <p class="lede">18 songwriting tools in one app. Write the lyrics, get the Suno tags, hear your words sung by a full band, then master the record. Pay once and keep it.</p>
+      <div class="ctas">
+        <a class="buy" data-gumroad-action="buy" href="#buy">Get Lyricist Pro <span class="tag" data-gumroad-field="price">$19.99</span></a>
+        <a class="buy ghost" href="#how">See how it works</a>
+      </div>
+      <div class="meta"><span>One payment</span><span>No subscription</span><span>Phone version included</span></div>
+      <p class="name-line" data-gumroad-field="name">Lyricist Pro — Songwriting Studio for Windows</p>
+    </div>
+    <div class="bh" aria-hidden="true">
+      <div class="disk two"></div>
+      <div class="disk"></div>
+      <div class="halo"></div>
+      <div class="core"></div>
+      <div class="logo"><img src="{{LOGO}}" alt=""></div>
+    </div>
+  </div>
+</section>
+
+<div class="ticker" aria-hidden="true">
+  <ul>{{TICKER}}{{TICKER}}</ul>
+</div>
+
+<section class="bay" id="how">
+  <div class="wrap">
+    <div class="bay-head rise">
+      <p class="eyebrow">From blank page to finished song</p>
+      <h2>Four moves. One window.</h2>
+    </div>
+    <ol class="steps">
+      <li class="rise"><h3>Pick the sound</h3><p>Choose a genre, a mood and a voice. Or name an artist you love and Ghost Rider breaks down how they write.</p></li>
+      <li class="rise"><h3>Write it</h3><p>Songwriter drafts verses, choruses and the bridge. Polish any line, lock what you like, redo what misses.</p></li>
+      <li class="rise"><h3>Hear it</h3><p>Send it to Black Hole Studios and hear it sung by a full band. Or copy the lyrics and Suno tags straight into Suno.</p></li>
+      <li class="rise"><h3>Finish it</h3><p>Master the track, add cover art, and export the album. Loop, chop, record and split stems along the way.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="bay" style="padding-top:0">
+  <div class="wrap show">
+    <div class="row">
+      <button class="shot rise" type="button" data-full="{{STUDIO}}" data-cap="Black Hole Studios">
+        <img src="{{STUDIO}}" alt="Black Hole Studios: lyrics in, engine picker, song structure tags" width="960" height="864">
+        <span class="zoom">Tap to enlarge</span>
+      </button>
+      <div class="rise">
+        <p class="eyebrow">Black Hole Studios</p>
+        <h3>Your lyrics. Sung by a full band.</h3>
+        <p>Your words go in and a real song comes out, with vocals and a band behind them. Pick a genre, a mood and a voice, and it writes the song description for you. Short songs run free on the cloud engine with no key. Full-length songs run on your own free Kaggle account, connected with one button.</p>
+        <ul class="chips"><li>Free cloud engine</li><li>Genre, mood, voice</li><li>Every take saved</li><li>Shows the wait before you start</li></ul>
+      </div>
+    </div>
+    <div class="row">
+      <button class="shot rise" type="button" data-full="{{RIDER}}" data-cap="Ghost Rider">
+        <img src="{{RIDER}}" alt="Ghost Rider: artist analysis report for a blues guitarist" width="960" height="864">
+        <span class="zoom">Tap to enlarge</span>
+      </button>
+      <div class="rise">
+        <p class="eyebrow">Ghost Rider</p>
+        <h3>Name any artist. Write in their style.</h3>
+        <p>It breaks down how they write: the flow, the imagery, the way they build a hook. Then it helps you write a brand-new song in that style, with Suno tags for that sound. It never copies their lyrics.</p>
+        <ul class="chips"><li>Style reports</li><li>Suno tags</li><li>Originality check</li></ul>
+      </div>
+    </div>
+    <div class="row">
+      <button class="shot rise" type="button" data-full="{{MATRIX}}" data-cap="The Matrix">
+        <img src="{{MATRIX}}" alt="The Matrix: a grid of word tiles with locked rhymes" width="960" height="864">
+        <span class="zoom">Tap to enlarge</span>
+      </button>
+      <div class="rise">
+        <p class="eyebrow">The Matrix</p>
+        <h3>Build a verse from word tiles.</h3>
+        <p>Drop your keywords into a 20-tile grid. Heat words up, lock the rhymes you want, and it writes the verse around them. Stuck lines come loose fast.</p>
+        <ul class="chips"><li>20-tile word grid</li><li>Lock the rhymes</li><li>One-click verse</li></ul>
+      </div>
+    </div>
+    <div class="row">
+      <button class="shot rise" type="button" data-full="{{LOOPS}}" data-cap="RC-Funk 5000 and Chopped &amp; Screwed">
+        <img src="{{LOOPS}}" alt="RC-Funk 5000 loop station and Chopped and Screwed" width="960" height="864">
+        <span class="zoom">Tap to enlarge</span>
+      </button>
+      <div class="rise">
+        <p class="eyebrow">The studio</p>
+        <h3>Loop it. Screw it. Master it.</h3>
+        <p>A four-track loop station, Chopped &amp; Screwed, a MIDI studio, a stem splitter, a recording booth and a mastering suite. They all work offline with no key at all.</p>
+        <ul class="chips"><li>Works offline</li><li>No key needed</li><li>Exports the album</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bay" id="suno" style="background:var(--bg-2);border-block:1px solid var(--line)">
+  <div class="wrap suno">
+    <div class="rise">
+      <p class="eyebrow">Made for Suno</p>
+      <h2 style="font-size:clamp(30px,4.4vw,52px)">Build the song here. Run it on Suno.</h2>
+      <p class="lede" style="margin-top:18px">Suno is a great tool, and it sounds best when you hand it real lyrics and the right style tags. Lyricist Pro writes both. Copy, paste, generate.</p>
+      <div class="picker" role="group" aria-label="Pick a style for the example">{{PICKS}}</div>
+      <p class="fine" style="margin-top:14px">Example output. Yours is written fresh for your song.</p>
+    </div>
+    <div class="console rise" aria-live="polite">
+      <div class="bar"><span class="dots"><i></i><i></i><i></i></span><span id="s-title">Songwriter</span></div>
+      <div class="part"><div class="label"><span>Lyrics</span><button class="copy" type="button" data-copy="s-lyr">Copy</button></div><pre id="s-lyr"></pre></div>
+      <div class="part"><div class="label"><span>Suno style tags</span><button class="copy" type="button" data-copy="s-tags">Copy</button></div><pre id="s-tags" class="tags"></pre></div>
+      <p class="note">Paste the lyrics into Suno's lyrics box and the tags into Style of Music.</p>
+    </div>
+  </div>
+</section>
+
+<section class="bay" id="tools">
+  <div class="wrap">
+    <div class="bay-head rise">
+      <p class="eyebrow">Everything in the box</p>
+      <h2>18 tools. One app.</h2>
+      <p class="lede">The ones marked ready work the moment it installs, with no key and no account.</p>
+    </div>
+    <ul class="tools">{{TOOLS}}</ul>
+  </div>
+</section>
+
+<section class="bay price-bay" id="buy">
+  <div class="wrap">
+    <div class="bay-head rise" style="margin-inline:auto;text-align:center;justify-items:center">
+      <p class="eyebrow">The price</p>
+      <h2>Pay once. Keep it.</h2>
+    </div>
+    <div class="price-card rise">
+      <div class="l">
+        <p class="once">One payment</p>
+        <p class="big" data-gumroad-field="price">$19.99</p>
+        <p class="proof"><span class="star" aria-hidden="true">★★★★★</span><span data-gumroad-field="rating" id="g-rating">Be the first to review</span><span data-gumroad-field="review-count" id="g-count"></span></p>
+        <a class="buy" data-gumroad-action="buy" href="#buy">Get Lyricist Pro</a>
+        <div class="vs"><span>Monthly studio subscriptions</span><span>every month</span><span>Per-song credits</span><span>every song</span><span class="me">Lyricist Pro</span><span class="me">once</span></div>
+      </div>
+      <div class="r">
+        <ul class="incl">
+          <li><span><b>All 18 tools</b> for Windows 10 and 11.</span></li>
+          <li><span><b>The phone version</b> for iPhone and Android. Unlock it with the license key from your receipt.</span></li>
+          <li><span><b>Every update.</b> New versions land in your Gumroad library.</span></li>
+          <li><span><b>Free songs</b> on the cloud engine. Full length on your own free Kaggle account.</span></li>
+          <li><span><b>The Ghost Demo.</b> Press Play Demo on any tab and the Ghost walks you through it, out loud.</span></li>
+          <li><span><b>Your words stay yours.</b> Your API key goes straight from your computer to the AI service. Lyricist Pro never sees it.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bay" style="padding-top:0">
+  <div class="wrap two">
+    <div class="rise">
+      <div class="bay-head" style="margin-bottom:24px"><p class="eyebrow">What you need</p><h2 style="font-size:clamp(28px,3.6vw,42px)">Not much.</h2></div>
+      <ul class="needs">
+        <li><b>A Windows 10 or 11 computer</b><span>Or an iPhone or Android phone for the phone version.</span></li>
+        <li><b>A free OpenRouter key for the writing tools</b><span>About two minutes to get. It does not ask for a card.</span></li>
+        <li><b>Optional: a free Kaggle account</b><span>For full-length songs in Black Hole Studios. The app connects it with one button.</span></li>
+      </ul>
+    </div>
+    <div class="story rise">
+      <p class="eyebrow">Built by one person</p>
+      <p>I'm Christopher Funk. Around Austin everybody just calls me Funk. I'm a singer-songwriter. Everything I wanted to make music with cost so much money that I taught myself to code and built it myself. Now I'm passing the savings on to you.</p>
+      <p>I use AI too. Suno is a great tool. Before I run a song there, I build it here for free: the lyrics, the structure and the Suno tags.</p>
+      <p class="sig">Funk, Austin, Texas</p>
+    </div>
+  </div>
+</section>
+
+<section class="bay" id="faq" style="padding-top:0">
+  <div class="wrap">
+    <div class="bay-head rise"><p class="eyebrow">Questions</p><h2 style="font-size:clamp(28px,3.6vw,42px)">Straight answers.</h2></div>
+    <div class="faq">
+      <details class="rise"><summary>Is this a subscription?</summary><p>No. You pay once and keep it, updates included.</p></details>
+      <details class="rise"><summary>Does it work with Suno?</summary><p>Yes. Songwriter and Ghost Rider write the lyrics and the Suno style tags to match. Copy them into Suno and generate. Black Hole Studios can also sing your song right inside the app.</p></details>
+      <details class="rise"><summary>Do I have to pay for AI?</summary><p>No. The writing tools run on a free OpenRouter key, with no card. Short songs in Black Hole Studios run free on the cloud engine, and full-length songs run on a free Kaggle account.</p></details>
+      <details class="rise"><summary>Does it work on a Mac?</summary><p>The full app is for Windows 10 and 11. The phone version runs on iPhone and Android, and it comes with your purchase.</p></details>
+      <details class="rise"><summary>Windows says "Windows protected your PC." Is that a virus?</summary><p>No. Windows shows that box for installers that aren't signed with a paid certificate. Click More info, then Run anyway.</p></details>
+      <details class="rise"><summary>How do I get the phone version?</summary><p>Open lyricist-pro.pages.dev in Safari on iPhone or Chrome on Android, add it to your home screen, and enter the license key from your receipt.</p></details>
+      <details class="rise"><summary>I'm stuck. Who do I ask?</summary><p>Email cfunkycreations@gmail.com. A real person answers.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="bay final">
+  <div class="wrap final">
+    <img src="{{LOGO_MD}}" alt="Lyricist Pro" width="140" height="153" style="width:140px">
+    <h2>Your next song starts here.</h2>
+    <p class="lede">18 tools, Suno tags built in, a full band on call. One payment.</p>
+    <a class="buy" data-gumroad-action="buy" href="#buy">Get Lyricist Pro <span class="tag" data-gumroad-field="price">$19.99</span></a>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Lyricist Pro by CFunky Creations · Austin, Texas</span>
+    <span>Help: cfunkycreations@gmail.com</span>
+  </div>
+</footer>
+
+<div class="dock" id="dock">
+  <div class="t"><b>Lyricist Pro</b>18 tools · phone included · pay once</div>
+  <a class="buy" data-gumroad-action="buy" href="#buy"><span data-gumroad-field="price">$19.99</span></a>
+</div>
+
+<dialog class="lb" id="lb" aria-label="Screenshot">
+  <figure style="margin:0;position:relative">
+    <img id="lb-img" src="" alt="">
+    <figcaption id="lb-cap"></figcaption>
+    <button class="x" type="button" id="lb-x" aria-label="Close">×</button>
+  </figure>
+</dialog>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  root.classList.add('js');
+
+  // Reveal on scroll. Everything is visible without this.
+  var rise = document.querySelectorAll('.rise');
+  if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -6% 0px', threshold: 0.05 });
+    rise.forEach(function (el) { io.observe(el); });
+  } else {
+    rise.forEach(function (el) { el.classList.add('in'); });
+  }
+
+  // Phone buy bar shows once the hero is out of view.
+  var dock = document.getElementById('dock'), hero = document.getElementById('top');
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) { dock.classList.toggle('on', !es[0].isIntersecting); }).observe(hero);
+  } else { dock.classList.add('on'); }
+
+  // Reviews: Gumroad fills these in when there are reviews.
+  var r = document.getElementById('g-rating'), c = document.getElementById('g-count');
+  var n = parseInt((c.textContent || '').replace(/[^0-9]/g, ''), 10);
+  if (n > 0) { c.textContent = '· ' + n + (n === 1 ? ' review' : ' reviews'); }
+  else { c.textContent = ''; if (/^[0-9.]+$/.test((r.textContent || '').trim())) r.textContent = 'Be the first to review'; }
+
+  // Suno example console.
+  var EX = {{EXAMPLES}};
+  var picks = document.querySelectorAll('.picker button');
+  function show(k) {
+    var x = EX[k]; if (!x) return;
+    document.getElementById('s-title').textContent = 'Songwriter · ' + x.name;
+    document.getElementById('s-lyr').textContent = x.lyrics;
+    document.getElementById('s-tags').textContent = x.tags;
+    picks.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.k === k ? 'true' : 'false'); });
+  }
+  picks.forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.k); }); });
+  show(picks[0].dataset.k);
+
+  document.querySelectorAll('.copy').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var el = document.getElementById(b.dataset.copy), t = el.textContent;
+      function done(ok) { b.textContent = ok ? 'Copied' : 'Select it'; setTimeout(function () { b.textContent = 'Copy'; }, 1300); }
+      function sel() { var rg = document.createRange(); rg.selectNodeContents(el); var s = getSelection(); s.removeAllRanges(); s.addRange(rg); done(false); }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { done(true); }, sel); else sel();
+    });
+  });
+
+  // Lightbox.
+  var lb = document.getElementById('lb'), li = document.getElementById('lb-img'), lc = document.getElementById('lb-cap');
+  document.querySelectorAll('.shot').forEach(function (b) {
+    b.addEventListener('click', function () {
+      li.src = b.dataset.full; li.alt = b.querySelector('img').alt; lc.textContent = b.dataset.cap;
+      if (lb.showModal) lb.showModal(); else lb.setAttribute('open', '');
+    });
+  });
+  function close() { if (lb.close) lb.close(); else lb.removeAttribute('open'); }
+  document.getElementById('lb-x').addEventListener('click', close);
+  lb.addEventListener('click', function (e) { if (e.target === lb) close(); });
+})();
+</script>
+</body>
+</html>
