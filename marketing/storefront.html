@@ -159,6 +159,9 @@ form.follow .btn { flex: 0 0 auto; }
 
 footer { border-top: 1px solid var(--line); padding-block: 26px 40px; color: var(--ink-3); font-size: 14px; }
 footer .wrap { display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: space-between; }
+footer .foot-links { display: flex; gap: 18px; flex-wrap: wrap; }
+footer .foot-links a { color: var(--ink-2); text-decoration: none; }
+footer .foot-links a:hover { color: var(--ink); }
 
 .js .rise { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
 .js .rise.in { opacity: 1; transform: none; }
@@ -189,6 +192,8 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: 
       <a class="opt" href="#lyricist">Lyricist Pro</a>
       <a class="opt" href="#suno">Suno</a>
       <a class="opt" href="#shop">Shop</a>
+      <a class="opt" href="https://funkycreations.gumroad.com/about">About</a>
+      <a class="opt" href="https://funkycreations.gumroad.com/faq">FAQ</a>
       <a class="btn btn-hot" href="https://funkycreations.gumroad.com/l/lyricist-pro">Get Lyricist Pro</a>
     </nav>
   </div>
@@ -307,6 +312,11 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: 
 <footer>
   <div class="wrap">
     <span>CFunky Creations · Austin, Texas</span>
+    <nav class="foot-links" aria-label="More">
+      <a href="https://funkycreations.gumroad.com/about">About</a>
+      <a href="https://funkycreations.gumroad.com/faq">FAQ</a>
+      <a href="https://funkycreations.gumroad.com/start">Get started</a>
+    </nav>
     <span>Lyricist Pro help: cfunkycreations@gmail.com</span>
   </div>
 </footer>
