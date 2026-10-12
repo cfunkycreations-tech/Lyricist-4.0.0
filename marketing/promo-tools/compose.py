@@ -319,10 +319,11 @@ CLIPS = {
     'tiktok-3-full-band': lambda: vertical('tiktok-3-full-band', cue_start('studio'), END, 1.2,
         hook='Your lyrics. Sung by a full band.', outro_s=3.0),
     'tiktok-4-my-story': lambda: vertical('tiktok-4-my-story', 0, END, 1.5, captions=False, story=[
-        "I'm a singer-songwriter from Austin.",
-        'I had to make a career change.',
-        'So I taught myself to code.',
-        'And built my own songwriting studio.',
+        "I'm a singer-songwriter.",
+        'Everything I wanted cost so much money.',
+        'So I taught myself to code and built it myself.',
+        'I use Suno too. I build my lyrics and Suno tags here first. Free.',
+        "Now I'm passing the savings on to you.",
     ], tag='Link in bio', outro_s=4.0),
     'youtube-promo-16x9': lambda: horizontal('youtube-promo-16x9'),
 }

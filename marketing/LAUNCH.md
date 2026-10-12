@@ -20,7 +20,7 @@ own song made in Lyricist Pro is best, or a trending sound turned down low.
 
 | # | File | What to write with it |
 |---|---|---|
-| 1 | `tiktok-4-my-story.mp4` | Singer-songwriter. Had to change careers, so I taught myself to code and built my own studio. #songwriting #selftaught #indieartist #austin |
+| 1 | `tiktok-4-my-story.mp4` | Singer-songwriter. Everything I wanted cost too much, so I taught myself to code and built it myself. I write my Suno songs here first. #songwriting #suno #sunoai #selftaught #indieartist |
 | 2 | `tiktok-1-ghost-writes-a-song.mp4` | I gave a ghost my songwriting app. #songwriter #lyrics #musicproducer #aimusic |
 | 3 | `tiktok-2-any-artist.mp4` | Name an artist in the comments and I'll write one in their style. #songwriting #lyrics #rapper #rocknroll |
 | 4 | `tiktok-3-full-band.mp4` | Typed words in. Got a full band back. #musicproducer #songwriter #homestudio |
@@ -34,8 +34,7 @@ run you recorded in OBS. I'll cut it the same way.
 
 ## What to keep making (one a day for 30 days)
 
-1. **You, 10 seconds, on camera.** You and the guitar, the career change, why
-   you built it. Your face and that story are the strongest thing you've got.
+1. **You, 10 seconds, on camera.** You and the guitar, and why you built it. Your face and that story are the strongest thing you've got.
 2. **The comment game.** Post "Give me an artist and a topic." Then answer
    comments with a video of the app making it. It never runs out of ideas.
 3. **Typed words, then the song.** Show the lyrics on screen, then the song

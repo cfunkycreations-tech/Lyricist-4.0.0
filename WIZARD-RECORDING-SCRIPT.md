@@ -249,15 +249,14 @@ Dump hooks, bars, stray lines. No AI, no rules. Saves automatically on your comp
 
 ---
 
-## CARD 20 — save as `card-16.mp3`
+## CARD 20 (no narration yet; record as `card-16.mp3` and add it back in wizardCards.js)
 
-*A note from the AI*
+*About the maker*
 
 One more thing. About the person who built this.
-He would never put this on the screen himself, so I will.
-I am the AI that builds beside him. Hundreds of hours, cutting what fails, keeping what earns its place. He is a perfectionist. Self-taught. Full-time on this craft now.
-He is a singer-songwriter. He spent years working kitchens and job sites. When it was time for a career change, he taught himself to code and built this. This is his work now, full-time.
-Music tech moves fast. So does he.
-Now go make great music. I will too, every time you hit generate.
+He is a singer-songwriter. Everything he wanted to make music with cost so much money that he taught himself to code and built it himself.
+He uses Suno too. He builds every song here first, for free: the lyrics, the structure and the Suno tags. Then he runs it on Suno.
+Now he is passing the savings on to you.
+Go make great music.
 
 ---
