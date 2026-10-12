@@ -1,0 +1,5 @@
+frames/
+out/
+cues.json
+track.json
+__pycache__/
