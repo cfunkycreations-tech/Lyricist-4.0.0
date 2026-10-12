@@ -1,0 +1,655 @@
+
+
+
+<link href="https://fonts.googleapis.com/css2?family=Audiowide&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+  /* ── tokens ─────────────────────────────────────────────────────────── */
+  :root {
+    --bg: #0A0A0A;
+    --bg-2: #0E1311;
+    --panel: #101412;
+    --panel-2: #0C100E;
+    --line: #1C2A23;
+    --ink: #E8FFF4;
+    --ink-2: #8FB5A2;
+    --ink-3: #5E7F70;
+    --accent: #10E08A;
+    --accent-ink: #04140C;
+    --accent-soft: rgba(16, 224, 138, 0.14);
+    --accent-line: rgba(16, 224, 138, 0.35);
+    --glow: 0 0 18px rgba(16, 224, 138, 0.55), 0 0 42px rgba(16, 224, 138, 0.22);
+    --glow-box: 0 0 0 1px rgba(16, 224, 138, 0.32), 0 0 30px rgba(16, 224, 138, 0.16);
+    --glow-btn: 0 0 22px rgba(16, 224, 138, 0.45);
+    --grid: rgba(16, 224, 138, 0.06);
+    --red: #F2555A;
+    --red-soft: rgba(242, 85, 90, 0.16);
+    --amber: #F5B83D;
+    --amber-soft: rgba(245, 184, 61, 0.16);
+    --radius: 18px;
+    --display: "Audiowide", system-ui, sans-serif;
+    --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  /* light: same system, mint paper instead of void */
+  :root[data-theme="light"] {
+    --bg: #F4FBF7;
+    --bg-2: #EAF6EF;
+    --panel: #FFFFFF;
+    --panel-2: #F7FCF9;
+    --line: #D3E7DC;
+    --ink: #0A1A12;
+    --ink-2: #3E5C4D;
+    --ink-3: #6D8A7B;
+    --accent: #0B9E61;
+    --accent-ink: #FFFFFF;
+    --accent-soft: rgba(11, 158, 97, 0.10);
+    --accent-line: rgba(11, 158, 97, 0.35);
+    --glow: none;
+    --glow-box: 0 1px 2px rgba(10, 40, 25, 0.05), 0 14px 40px rgba(10, 60, 35, 0.10);
+    --glow-btn: 0 8px 22px rgba(11, 158, 97, 0.28);
+    --grid: rgba(11, 158, 97, 0.08);
+    --red: #D13A40;
+    --red-soft: rgba(209, 58, 64, 0.10);
+    --amber: #B7791F;
+    --amber-soft: rgba(183, 121, 31, 0.12);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #F4FBF7; --bg-2: #EAF6EF; --panel: #FFFFFF; --panel-2: #F7FCF9;
+      --line: #D3E7DC; --ink: #0A1A12; --ink-2: #3E5C4D; --ink-3: #6D8A7B;
+      --accent: #0B9E61; --accent-ink: #FFFFFF;
+      --accent-soft: rgba(11, 158, 97, 0.10); --accent-line: rgba(11, 158, 97, 0.35);
+      --glow: none;
+      --glow-box: 0 1px 2px rgba(10, 40, 25, 0.05), 0 14px 40px rgba(10, 60, 35, 0.10);
+      --glow-btn: 0 8px 22px rgba(11, 158, 97, 0.28);
+      --grid: rgba(11, 158, 97, 0.08);
+      --red: #D13A40; --red-soft: rgba(209, 58, 64, 0.10);
+      --amber: #B7791F; --amber-soft: rgba(183, 121, 31, 0.12);
+    }
+  }
+
+  /* ── base ───────────────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color .3s ease, color .3s ease;
+  }
+  a { color: inherit; }
+  img { max-width: 100%; display: block; }
+  .wrap { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .2em;
+    text-transform: uppercase; color: var(--accent); margin: 0;
+  }
+  .display { font-family: var(--display); font-weight: 400; letter-spacing: .01em; }
+  .muted { color: var(--ink-2); }
+  section { padding: 0 0 88px; }
+
+  /* ── top bar ────────────────────────────────────────────────────────── */
+  .bar {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .bar .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 12px; }
+  .brand { font-family: var(--display); font-size: 18px; text-decoration: none; color: var(--ink); }
+  .brand b { color: var(--accent); font-weight: 400; }
+  .bar nav { display: flex; align-items: center; gap: 6px; }
+  .bar nav a {
+    font-size: 14px; text-decoration: none; color: var(--ink-2);
+    padding: 8px 10px; border-radius: 10px;
+  }
+  .bar nav a:hover { color: var(--ink); background: var(--accent-soft); }
+  .theme-btn {
+    width: 38px; height: 38px; border-radius: 11px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--ink); cursor: pointer;
+    display: inline-grid; place-items: center; flex-shrink: 0;
+  }
+  .theme-btn:hover { border-color: var(--accent-line); }
+  .theme-btn svg { width: 18px; height: 18px; }
+  .theme-btn .sun { display: none; }
+  :root[data-theme="light"] .theme-btn .sun { display: block; }
+  :root[data-theme="light"] .theme-btn .moon { display: none; }
+  @media (max-width: 640px) { .bar nav a.hide-sm { display: none; } }
+
+  /* ── buttons ────────────────────────────────────────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: var(--display); font-size: 14px; letter-spacing: .03em;
+    text-decoration: none; border-radius: 13px; padding: 14px 26px;
+    border: 1px solid transparent; cursor: pointer;
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background-color .2s ease;
+  }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); box-shadow: var(--glow-btn); }
+  .btn-primary:hover { transform: translateY(-1px); filter: brightness(1.05); }
+  .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  .btn-ghost:hover { border-color: var(--accent-line); }
+  .btn:focus-visible, .theme-btn:focus-visible, .bar nav a:focus-visible, input:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+
+  /* ── hero ───────────────────────────────────────────────────────────── */
+  .hero { position: relative; overflow: hidden; padding: 72px 0 96px; text-align: center; }
+  .hero .grid {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 44px 44px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 65% at 50% 0%, #000 30%, transparent 75%);
+            mask-image: radial-gradient(ellipse 80% 65% at 50% 0%, #000 30%, transparent 75%);
+  }
+  .hero .orb {
+    position: absolute; left: 50%; top: -260px; width: 720px; height: 720px;
+    transform: translateX(-50%); border-radius: 50%;
+    background: radial-gradient(circle, var(--accent-soft), transparent 65%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid var(--accent-line); background: var(--accent-soft);
+    border-radius: 999px; padding: 7px 13px;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2.2s ease-in-out infinite; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 var(--accent-line); }
+    50% { box-shadow: 0 0 0 6px transparent; }
+  }
+  .hero h1 {
+    font-family: var(--display); font-weight: 400;
+    font-size: clamp(40px, 8vw, 76px); line-height: 1.04; margin: 28px 0 0;
+    text-shadow: var(--glow);
+  }
+  .hero h1 b { color: var(--accent); font-weight: 400; }
+  .hero .lede { font-size: clamp(17px, 2.2vw, 20px); color: var(--ink-2); max-width: 640px; margin: 22px auto 0; }
+  .cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 34px; }
+  @media (max-width: 480px) { .cta-row .btn { width: 100%; } }
+
+  /* ── featured product ───────────────────────────────────────────────── */
+  .feature {
+    position: relative; overflow: hidden; border-radius: 26px;
+    background: var(--panel); box-shadow: var(--glow-box);
+    display: grid; grid-template-columns: 1.05fr .95fr; gap: 40px; padding: 44px;
+  }
+  @media (max-width: 900px) { .feature { grid-template-columns: 1fr; padding: 28px; gap: 30px; } }
+  .feature .scan { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .feature .scan::after {
+    content: ""; position: absolute; left: 0; right: 0; height: 40%;
+    background: linear-gradient(180deg, transparent, var(--accent-soft), transparent);
+    animation: sweep 6s linear infinite;
+  }
+  @keyframes sweep { from { transform: translateY(-100%); } to { transform: translateY(260%); } }
+  .feature > * { position: relative; }
+  .feature h2 { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 4.4vw, 42px); line-height: 1.1; margin: 12px 0 0; }
+  .feature h2 b { color: var(--accent); font-weight: 400; text-shadow: var(--glow); }
+  .feature p { margin: 16px 0 0; }
+  .ticks { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 10px; font-size: 15px; }
+  .ticks li { display: flex; gap: 12px; }
+  .ticks li::before { content: "\25B8"; color: var(--accent); font-family: var(--mono); }
+  .price { display: flex; align-items: baseline; gap: 6px; margin-top: 28px; }
+  .price .amt { font-family: var(--display); font-size: clamp(32px, 5vw, 44px); line-height: 1.1; }
+  .price .was { font-family: var(--mono); color: var(--ink-3); text-decoration: line-through; font-size: 18px; }
+  .price .was:empty { display: none; }
+  .price .per { color: var(--ink-2); }
+  .fine { font-family: var(--mono); font-size: 11px; color: var(--ink-3); margin-top: 12px !important; }
+
+  /* mock triage feed */
+  .feed { border: 1px solid var(--line); border-radius: 18px; background: var(--panel-2); padding: 16px; align-self: start; }
+  .feed-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .feed-top span { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-2); }
+  .live { display: inline-flex; align-items: center; gap: 6px; color: var(--accent) !important; letter-spacing: .06em !important; }
+  .card { border: 1px solid var(--line); border-left-width: 4px; border-radius: 13px; background: var(--panel); padding: 13px 14px; }
+  .card + .card { margin-top: 10px; }
+  .card.hot { border-left-color: var(--accent); }
+  .card.bad { border-left-color: var(--red); }
+  .card.mid { border-left-color: var(--amber); }
+  .card.dim { border-left-color: transparent; opacity: .55; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 7px; }
+  .tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 7px; }
+  .t-hot { background: var(--accent-soft); color: var(--accent); }
+  .t-bad { background: var(--red-soft); color: var(--red); }
+  .t-flag { background: var(--red); color: #fff; }
+  .t-mid { background: var(--amber-soft); color: var(--amber); }
+  .t-dim { background: var(--line); color: var(--ink-2); }
+  .card q { display: block; font-size: 14px; quotes: "\201C" "\201D"; }
+  .conf { display: flex; align-items: center; gap: 9px; margin-top: 9px; }
+  .conf i { flex: 1; height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .conf i::after { content: ""; display: block; height: 100%; width: var(--w); background: var(--accent); }
+  .conf b { font-family: var(--mono); font-size: 11px; font-weight: 400; color: var(--ink-2); }
+
+  /* ── section heads ──────────────────────────────────────────────────── */
+  .head { text-align: center; margin-bottom: 36px; }
+  .head h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.6vw, 34px); margin: 12px 0 0; }
+  .head p { color: var(--ink-2); margin: 10px auto 0; max-width: 560px; }
+
+  /* ── catalogue (rendered from gumroad-data) ─────────────────────────── */
+  .products { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .prod {
+    display: flex; flex-direction: column; text-decoration: none; overflow: hidden;
+    border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel);
+    transition: border-color .2s ease, transform .2s ease;
+  }
+  .prod:hover { border-color: var(--accent-line); transform: translateY(-2px); }
+  .prod .thumb { aspect-ratio: 16 / 10; background: var(--bg-2); object-fit: cover; width: 100%; }
+  .prod .ph {
+    aspect-ratio: 16 / 10; display: grid; place-items: center;
+    background: radial-gradient(circle at 30% 20%, var(--accent-soft), transparent 60%), var(--bg-2);
+    font-family: var(--display); font-size: 30px; color: var(--accent);
+  }
+  .prod .body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .prod h3 { margin: 0; font-size: 17px; line-height: 1.3; }
+  .prod p { margin: 0; font-size: 14px; color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .prod .foot { margin-top: auto; padding-top: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .prod .cost { font-family: var(--display); font-size: 16px; color: var(--accent); }
+  .prod .go { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  .count { text-align: center; font-family: var(--mono); font-size: 12px; color: var(--ink-3); margin-top: 18px; }
+  .count:empty { display: none; }
+  .posts { list-style: none; padding: 0; margin: 28px 0 0; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--panel); }
+  .posts li + li { border-top: 1px solid var(--line); }
+  .posts a { display: flex; justify-content: space-between; gap: 16px; padding: 15px 18px; text-decoration: none; }
+  .posts a:hover { background: var(--accent-soft); }
+  .posts time { font-family: var(--mono); font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+
+  /* ── services ───────────────────────────────────────────────────────── */
+  .svc { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 900px) { .svc { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .svc { grid-template-columns: 1fr; } }
+  .svc div { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); padding: 22px; transition: border-color .2s ease; }
+  .svc div:hover { border-color: var(--accent-line); }
+  .svc span { font-family: var(--display); color: var(--accent); font-size: 13px; }
+  .svc h3 { font-family: var(--display); font-weight: 400; font-size: 17px; margin: 8px 0 0; }
+  .svc p { color: var(--ink-2); font-size: 14px; margin: 8px 0 0; }
+
+  /* ── about ──────────────────────────────────────────────────────────── */
+  .about {
+    position: relative; overflow: hidden; max-width: 780px; margin: 0 auto;
+    border: 1px solid var(--line); border-radius: 26px; background: var(--panel); padding: 42px;
+  }
+  @media (max-width: 640px) { .about { padding: 28px; } }
+  .about::before {
+    content: ""; position: absolute; right: -110px; top: -110px; width: 300px; height: 300px;
+    border-radius: 50%; background: radial-gradient(circle, var(--accent-soft), transparent 65%);
+  }
+  .about > * { position: relative; }
+  .about .by { font-size: 14px; color: var(--ink-3); margin: 6px 0 0; }
+  .about p { font-size: 17px; margin: 16px 0 0; }
+  .about .close { font-family: var(--display); color: var(--accent); font-size: 21px; text-shadow: var(--glow); margin-top: 22px; }
+
+  /* ── follow + contact ───────────────────────────────────────────────── */
+  .cta {
+    border-radius: 26px; padding: 48px 28px; text-align: center; box-shadow: var(--glow-box);
+    background: radial-gradient(ellipse at 50% 0%, var(--accent-soft), transparent 70%), var(--panel);
+  }
+  .cta h2 { font-family: var(--display); font-weight: 400; font-size: clamp(24px, 3.4vw, 32px); margin: 0; }
+  .cta > p { color: var(--ink-2); max-width: 540px; margin: 12px auto 0; }
+  .follow { display: flex; gap: 10px; max-width: 460px; margin: 26px auto 0; }
+  @media (max-width: 480px) { .follow { flex-direction: column; } }
+  .follow input {
+    flex: 1; min-width: 0; font: inherit; font-size: 15px; color: var(--ink);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 13px; padding: 13px 15px;
+  }
+  .follow input::placeholder { color: var(--ink-3); }
+  .follow-msg { font-size: 14px; color: var(--accent); margin: 12px 0 0; min-height: 1em; }
+  .or { display: flex; align-items: center; gap: 14px; max-width: 460px; margin: 30px auto 0; color: var(--ink-3); font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; }
+  .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  footer { border-top: 1px solid var(--line); }
+  footer .wrap { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 26px; padding-bottom: 36px; }
+  footer p { margin: 0; font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+
+  /* ── motion ─────────────────────────────────────────────────────────── */
+  .reveal { opacity: 0; transform: translateY(14px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .dot, .feature .scan::after { animation: none; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+  }
+</style>
+
+
+
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#top">CFunk<b>.</b></a>
+    <nav aria-label="Sections">
+      <a href="#products">Products</a>
+      <a class="hide-sm" href="#services">Services</a>
+      <a class="hide-sm" href="#about">About</a>
+      <button class="theme-btn" id="themeBtn" type="button" aria-label="Switch light or dark mode">
+        <svg class="moon" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>
+        <svg class="sun" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="grid"></div>
+    <div class="orb"></div>
+    <div class="wrap">
+      <span class="pill"><span class="dot"></span>AI consulting · Austin, TX</span>
+      <h1>CFunk <b>Creations</b>
+</h1>
+      <p class="lede">We build AI systems that small businesses actually use. Automation, agents and tools that earn their keep, at a fraction of what an enterprise agency charges.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#triagepilot">See TriagePilot</a>
+        <a class="btn btn-ghost" href="#services">What we build</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURED -->
+  <section id="triagepilot">
+    <div class="wrap">
+      <div class="feature reveal">
+        <div class="scan" aria-hidden="true"></div>
+        <div>
+          <p class="eyebrow">Featured product</p>
+          <h2>Triage<b>Pilot</b> Pro</h2>
+          <p class="muted">Your inbox is sorted by when mail arrived. That's the problem. The customer ready to buy by Friday sits in the same stack as a free cruise offer.</p>
+          <p>Connect your inbox once. We check it every 10 minutes and put the email that needs you <strong style="color:var(--accent)">now</strong> on top.</p>
+          <ul class="ticks">
+            <li>Hot leads, scheduling, billing and complaints, ranked by what's at stake</li>
+            <li>A real confidence number on every call, and it tells you when it's unsure</li>
+            <li>5,000 emails a month, unlimited seats, cancel anytime</li>
+          </ul>
+          <div class="price">
+            <span class="was" data-gumroad-product="avtte" data-gumroad-field="original-price"></span>
+            <span class="amt" data-gumroad-product="avtte" data-gumroad-field="price">$19 a month</span>
+          </div>
+          <div class="cta-row" style="justify-content:flex-start;margin-top:24px">
+            <a class="btn btn-primary" id="tpLink" href="https://funkycreations.gumroad.com/l/avtte">Get TriagePilot Pro</a>
+            <a class="btn btn-ghost" href="https://triagepilot.cfunkycreationsllc.com/#demo" target="_blank" rel="noopener noreferrer">Try the free demo</a>
+          </div>
+          <p class="fine">Free demo: 25 triages a day, no signup.</p>
+        </div>
+
+        <div class="feed" aria-label="Example triage results">
+          <div class="feed-top">
+            <span>This morning's triage</span>
+            <span class="live"><span class="dot"></span>live</span>
+          </div>
+          <div class="card hot">
+            <div class="tags">
+<span class="tag t-hot">Hot lead</span><span class="tag t-flag">⚑ Needs attention</span>
+</div>
+            <q>Need a quote on two rooftop units. Ownership wants numbers by Friday.</q>
+            <div class="conf">
+<i style="--w:96%"></i><b>96%</b>
+</div>
+          </div>
+          <div class="card bad">
+            <div class="tags">
+<span class="tag t-bad">Refund/complaint</span><span class="tag t-flag">⚑ Needs attention</span>
+</div>
+            <q>Third time I've written. Refund or I'm disputing the charge.</q>
+            <div class="conf">
+<i style="--w:98%"></i><b>98%</b>
+</div>
+          </div>
+          <div class="card mid">
+            <div class="tags">
+<span class="tag t-mid">Scheduling</span><span class="tag t-mid">Worth a look</span>
+</div>
+            <q>Can we move tomorrow's 8am install to the afternoon?</q>
+            <div class="conf">
+<i style="--w:88%"></i><b>88%</b>
+</div>
+          </div>
+          <div class="card dim">
+            <div class="tags">
+<span class="tag t-dim">Spam</span><span class="tag t-dim">Routine</span>
+</div>
+            <q>CONGRATULATIONS you've won a free cruise…</q>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CATALOGUE -->
+  <section id="products">
+    <div class="wrap">
+      <div class="head reveal">
+        <p class="eyebrow">Products</p>
+        <h2>Everything in the shop</h2>
+      </div>
+      <div class="products reveal" id="productGrid">
+        <!-- fallback shown if the catalogue block is missing -->
+        <a class="prod" href="https://funkycreations.gumroad.com/l/avtte">
+          <div class="ph">TP</div>
+          <div class="body">
+            <h3>TriagePilot Pro</h3>
+            <p>Connect your inbox once. Hot leads and urgent requests surface first, checked every 10 minutes, automatically.</p>
+            <div class="foot">
+<span class="cost">$19</span><span class="go">View →</span>
+</div>
+          </div>
+        </a>
+      </div>
+      <p class="count" id="productCount"></p>
+      <ul class="posts" id="postList" hidden></ul>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section id="services">
+    <div class="wrap">
+      <div class="head reveal">
+        <p class="eyebrow">What we build</p>
+        <h2>Systems, not demos</h2>
+        <p>Every build is aimed at one thing: taking work off your plate that software should have been doing already.</p>
+      </div>
+      <div class="svc reveal">
+        <div>
+<span>01</span><h3>Agents &amp; automation</h3>
+<p>Multi-step workflows that run on their own and hand off to a human only when it matters.</p>
+</div>
+        <div>
+<span>02</span><h3>Apps &amp; tools</h3>
+<p>Full-stack builds with AI where it earns its place, and plain code everywhere else.</p>
+</div>
+        <div>
+<span>03</span><h3>Data &amp; RAG</h3>
+<p>Your documents and records turned into answers your team can actually search and trust.</p>
+</div>
+        <div>
+<span>04</span><h3>SEO &amp; AEO</h3>
+<p>Found on Google and cited by the AI answer engines people are switching to.</p>
+</div>
+        <div>
+<span>05</span><h3>Infrastructure</h3>
+<p>Hosting, DNS, security and deploys handled properly, so nothing breaks at 2am.</p>
+</div>
+        <div>
+<span>06</span><h3>Built for the trades</h3>
+<p>HVAC, plumbing, solar, mechanics and medical front desks. We speak your customers' language.</p>
+</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="wrap">
+      <div class="about reveal">
+        <p class="eyebrow">About</p>
+        <p class="by"><span data-gumroad-field="name">Christopher Funk</span> · Founder</p>
+        <p>Founder of CFunk Creations, out of Austin, TX.</p>
+        <p class="muted">When AI started breaking through, I saw where it was headed and went all in. Self-taught, relentless, and built on one belief: these tools level the playing field for anyone willing to put in the work.</p>
+        <p class="muted">Now I build AI systems that small businesses actually use, make music, and create art.</p>
+        <p class="close">The underdog's still in the fight.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOLLOW + CONTACT -->
+  <section id="follow">
+    <div class="wrap">
+      <div class="cta reveal">
+        <h2>Stay in the loop</h2>
+        <p>New tools, new features and what we're learning building AI for real businesses. No spam, unsubscribe anytime.</p>
+        <form class="follow" data-gumroad-follow>
+          <input type="email" name="email" required placeholder="you@yourbusiness.com" aria-label="Email address" autocomplete="email">
+          <button class="btn btn-primary" type="submit">Follow</button>
+        </form>
+        <p class="follow-msg" data-gumroad-follow-message aria-live="polite"></p>
+
+        <div class="or">or</div>
+        <p style="margin-top:18px">Got a problem AI should be solving? Tell us what's eating your week.</p>
+        <div class="cta-row" style="margin-top:18px">
+          <a class="btn btn-ghost" href="mailto:cfunkycreationsllc@gmail.com" target="_blank" rel="noopener noreferrer">Start a project</a>
+          <a class="btn btn-ghost" href="https://cfunkycreationsllc.com" target="_blank" rel="noopener noreferrer">cfunkycreationsllc.com</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <a class="brand" href="#top">CFunk<b>.</b></a>
+    <p>AI systems for small business · Austin, TX</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // ── theme: follow the system, allow an override ──────────────────────
+  // The page runs in a sandboxed iframe with an opaque origin, where
+  // localStorage throws. Every access is guarded; the toggle still works
+  // for the visit even when nothing can be remembered.
+  var root = document.documentElement;
+  var KEY = "cfunk-theme";
+  function saved() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+  function save(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
+  var mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: light)") : null;
+  function current() { return root.getAttribute("data-theme") || (mq && mq.matches ? "light" : "dark"); }
+  var s = saved();
+  if (s === "light" || s === "dark") root.setAttribute("data-theme", s);
+  var btn = document.getElementById("themeBtn");
+  function syncBtn() {
+    var t = current();
+    root.setAttribute("data-theme", t);
+    btn.setAttribute("aria-pressed", t === "light" ? "true" : "false");
+  }
+  syncBtn();
+  btn.addEventListener("click", function () {
+    var next = current() === "light" ? "dark" : "light";
+    root.setAttribute("data-theme", next);
+    save(next);
+    syncBtn();
+  });
+  if (mq && mq.addEventListener) {
+    mq.addEventListener("change", function () { if (!saved()) { root.removeAttribute("data-theme"); syncBtn(); } });
+  }
+
+  // ── catalogue from Gumroad's injected JSON ──────────────────────────
+  function esc(t) {
+    return String(t == null ? "" : t)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function readJSON(id) {
+    var el = document.getElementById(id);
+    if (!el) return null;
+    try { return JSON.parse(el.textContent); } catch (e) { return null; }
+  }
+  function permalinkOf(url) {
+    try { var p = new URL(url).pathname.split("/").filter(Boolean); return p[p.length - 1] || ""; }
+    catch (e) { return ""; }
+  }
+  function initials(name) {
+    var w = String(name || "").replace(/[^A-Za-z0-9 ]/g, " ").split(/\s+/).filter(Boolean);
+    return ((w[0] || "").charAt(0) + (w[1] || "").charAt(0)).toUpperCase() || "CF";
+  }
+
+  var data = readJSON("gumroad-data");
+  var prices = readJSON("gumroad-prices") || {};
+
+  if (data && Array.isArray(data.products)) {
+    var grid = document.getElementById("productGrid");
+    var list = data.products;
+
+    // point the featured button at the canonical URL Gumroad hands us
+    for (var i = 0; i < list.length; i++) {
+      if (permalinkOf(list[i].url) === "avtte") {
+        document.getElementById("tpLink").setAttribute("href", list[i].url);
+        break;
+      }
+    }
+
+    if (list.length) {
+      grid.innerHTML = list.map(function (p) {
+        var perm = permalinkOf(p.url);
+        var live = prices[perm];
+        var cost = (live && live.price) || p.price || "";
+        var img = p.thumbnail_url || p.cover_url;
+        var media = img
+          ? '<img class="thumb" src="' + esc(img) + '" alt="" loading="lazy" />'
+          : '<div class="ph" aria-hidden="true">' + esc(initials(p.name)) + "</div>";
+        return '<a class="prod" href="' + esc(p.url) + '">' + media +
+          '<div class="body"><h3>' + esc(p.name) + "</h3>" +
+          (p.description ? "<p>" + esc(p.description) + "</p>" : "") +
+          '<div class="foot"><span class="cost">' + esc(cost) + '</span><span class="go">View &rarr;</span></div>' +
+          "</div></a>";
+      }).join("");
+    }
+
+    var total = typeof data.products_total === "number" ? data.products_total : list.length;
+    if (total > list.length) {
+      document.getElementById("productCount").textContent =
+        "Showing " + list.length + " of " + total + " products";
+    }
+
+    var posts = Array.isArray(data.posts) ? data.posts : [];
+    if (posts.length) {
+      var ul = document.getElementById("postList");
+      ul.innerHTML = posts.slice(0, 6).map(function (p) {
+        var d = p.published_at ? new Date(p.published_at) : null;
+        var when = d && !isNaN(d) ? d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
+        return '<li><a href="' + esc(p.url) + '"><span>' + esc(p.name) + "</span>" +
+          (when ? "<time>" + esc(when) + "</time>" : "") + "</a></li>";
+      }).join("");
+      ul.hidden = false;
+      var pt = typeof data.posts_total === "number" ? data.posts_total : posts.length;
+      if (pt > 6) {
+        var more = document.createElement("li");
+        more.innerHTML = '<a href="#products"><span class="muted">Showing 6 of ' + pt + " posts</span></a>";
+        ul.appendChild(more);
+      }
+    }
+  }
+
+  // ── reveal on scroll ────────────────────────────────────────────────
+  var els = document.querySelectorAll(".reveal");
+  if (!("IntersectionObserver" in window)) {
+    for (var k = 0; k < els.length; k++) els[k].classList.add("in");
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } });
+    }, { threshold: 0.1 });
+    for (var m = 0; m < els.length; m++) io.observe(els[m]);
+    setTimeout(function () {
+      for (var n = 0; n < els.length; n++) if (els[n].getBoundingClientRect().top < window.innerHeight) els[n].classList.add("in");
+    }, 60);
+  }
+})();
+</script>
+
+
