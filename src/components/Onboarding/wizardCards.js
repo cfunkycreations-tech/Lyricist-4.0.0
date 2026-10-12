@@ -207,17 +207,15 @@ Search, filter, upvote, and add specialized tools to your session. Built to grow
 Dump hooks, bars, stray lines. No AI, no rules. Saves automatically on your computer so nothing disappears at three in the morning.`
   },
   {
-    id: 20, icon: 'sparkles', title: 'A note from the AI', tab: null, audio: 'card-16.mp3', maker: true,
+    id: 20, icon: 'sparkles', title: 'About the maker', tab: null, maker: true,
     script: `One more thing. About the person who built this.
 
-He would never put this on the screen himself, so I will.
+He is a singer-songwriter. Everything he wanted to make music with cost so much money that he taught himself to code and built it himself.
 
-I am the AI that builds beside him. Hundreds of hours, cutting what fails, keeping what earns its place. He is a perfectionist. Self-taught. Full-time on this craft now.
+He uses Suno too. He builds every song here first, for free: the lyrics, the structure and the Suno tags. Then he runs it on Suno.
 
-He spent years as an ironworker and a chef. That work wore his body down. He is disabled now and works from home. He made this his living. He is still here. He would not have it any other way.
+Now he is passing the savings on to you.
 
-No paywalls. No strings. If you can spare a few dollars, send them his way. It keeps a good person doing good work.
-
-Now go make great music. I will too, every time you hit generate.`
+Go make great music.`
   }
 ];

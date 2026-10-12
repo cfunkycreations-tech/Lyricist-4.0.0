@@ -18,8 +18,9 @@ Gumroad → **Products** → **New product** → **Digital product**.
 |---|---|
 | Name | `Lyricist Pro — Songwriting Studio for Windows` |
 | Price | `19.99` |
-| Pay what they want | **On**, minimum `$19.99`. Lets people throw extra in the case. |
+| Pay what they want | **Off**. Flat $19.99. |
 | URL | `lyricist-pro` |
+| License key | **On**: Content tab → **Generate a unique license key per sale**. That key is the phone version's purchase code. Copy the **product ID** it shows and send it to Claude. |
 
 ## 3. Product page
 
@@ -54,6 +55,7 @@ Upload the `Setup.exe` from step 1, then paste this under it:
 > 1. Run the installer. Windows shows a blue box that says "Windows protected your PC". That isn't a virus warning. It shows because the installer isn't signed with a paid certificate. Click **More info**, then **Run anyway**.
 > 2. Open **Settings** in the app and paste a free OpenRouter key (openrouter.ai, about two minutes, no card). That switches on the writing tools.
 > 3. Press **Play Demo** on any tab and the Ghost walks you through it.
+> 4. On your phone too: open **lyricist-pro.pages.dev** in Safari (iPhone) or Chrome (Android), add it to your home screen, and enter the **license key** from this receipt as your purchase code.
 >
 > New versions show up right here in your library. Stuck? Email cfunkycreations@gmail.com.
 >
@@ -68,7 +70,7 @@ Settings → **Profile**.
 | Name | `CFunky Creations` |
 | Username | `cfunkycreations` |
 | Logo / profile picture | `profile/avatar-1000.png` |
-| Bio | `Funk Audio Flow OpSec. Austin, Texas. Street musician turned app builder. Lyricist Pro is my open guitar case.` |
+| Bio | `Singer-songwriter in Austin, Texas. I taught myself to code and built the songwriting studio I couldn't afford. Now it's yours for $19.99.` |
 
 Then on your profile page: **Edit profile** → add a **Featured product** section
 with Lyricist Pro, and a **Rich text** section on top holding
@@ -79,9 +81,11 @@ with Lyricist Pro, and a **Rich text** section on top holding
 
 Hit **Publish** and you're live.
 
-## Later: the phone version
+## The phone version
 
-Once the phone version is live, add this line to the description under
-"What you need", with the real link:
+It's live at `lyricist-pro.pages.dev` and asks for the buyer's license key
+once. Add this line to the description under "What you need":
 
-> Also on iPhone and Android: open `[PHONE LINK]` in Safari or Chrome and add it to your home screen.
+> Also on iPhone and Android: open lyricist-pro.pages.dev in Safari or Chrome, add it to your home screen, and unlock it with the license key from your receipt.
+
+To unlock your own phone, make an offer code for 100% off and buy a copy.

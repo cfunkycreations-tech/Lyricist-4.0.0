@@ -1,0 +1,45 @@
+/* The purchase-code screen (PurchaseLock.jsx). Phone build only. Sized to fit a
+   phone held sideways, which is how the app runs there. */
+.plock {
+  position: fixed; inset: 0; z-index: 2147483000;
+  display: flex;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+           max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: radial-gradient(80% 70% at 50% 35%, rgba(255, 120, 40, .16), transparent 62%), #050208;
+  color: #FFF4E2; overflow: auto;
+}
+.plock-card {
+  width: 100%; max-width: 440px; margin: auto;   /* centred, but scrolls instead of clipping */
+  display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;
+}
+.plock-logo { width: 132px; height: auto; filter: drop-shadow(0 0 24px rgba(255, 120, 40, .35)); }
+.plock h1 {
+  margin: 0; font-family: var(--faf-font, sans-serif); font-weight: 400;
+  font-size: 24px; letter-spacing: .04em; text-transform: uppercase;
+}
+.plock-lede { margin: 0; font-size: 14px; line-height: 1.45; color: rgba(255, 244, 226, .78); }
+.plock-code {
+  width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 10px;
+  border: 1px solid rgba(255, 138, 61, .45); background: rgba(255, 255, 255, .05);
+  color: #FFF4E2; font: 15px/1.2 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em;
+  text-align: center; outline: none;
+}
+.plock-code:focus { border-color: #FF8A3D; box-shadow: 0 0 0 3px rgba(255, 138, 61, .22); }
+.plock-go {
+  width: 100%; padding: 12px; border: 0; border-radius: 10px; cursor: pointer;
+  background: #FF8A3D; color: #160a02; font-family: var(--faf-font, sans-serif);
+  font-size: 16px; letter-spacing: .08em; text-transform: uppercase;
+}
+.plock-go:disabled { opacity: .5; cursor: default; }
+.plock-why { margin: 0; font-size: 14px; line-height: 1.4; color: #ffb4a1; }
+.plock-buy { margin: 4px 0 0; font-size: 13px; color: rgba(255, 244, 226, .62); }
+.plock-buy a { color: #FFB25A; }
+
+/* Sideways phone: about 390px tall. */
+@media (max-height: 520px) {
+  .plock-card { gap: 8px; max-width: 520px; }
+  .plock-logo { width: 72px; }
+  .plock h1 { font-size: 19px; }
+  .plock-lede, .plock-why { font-size: 13px; }
+  .plock-code, .plock-go { padding: 9px 12px; }
+}

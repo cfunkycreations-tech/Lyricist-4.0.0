@@ -1,0 +1,14 @@
+[
+ {"id":"artist","text":"Name an artist you love"},
+ {"id":"study","text":"The Ghost studies how they write"},
+ {"id":"topic","text":"Give it something to write about"},
+ {"id":"write","text":"Brand-new words. Never copied."},
+ {"id":"send","text":"One click to Songwriter"},
+ {"id":"songwriter","text":"Every line is yours to edit"},
+ {"id":"studio","text":"Into Black Hole Studios"},
+ {"id":"pull","text":"Pull the song in"},
+ {"id":"caption","text":"Pick the sound. The caption writes itself."},
+ {"id":"make","text":"Make the song"},
+ {"id":"wait","text":"A full band plays your words"},
+ {"id":"song","text":"Your song."}
+]
