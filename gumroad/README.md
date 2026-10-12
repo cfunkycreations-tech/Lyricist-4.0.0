@@ -17,8 +17,8 @@ Gumroad → **Products** → **New product** → **Digital product**.
 | Field | Paste this |
 |---|---|
 | Name | `Lyricist Pro — Songwriting Studio for Windows` |
-| Price | `29` |
-| Pay what they want | **On**, minimum `$29`. Lets people throw extra in the case. |
+| Price | `19.99` |
+| Pay what they want | **On**, minimum `$19.99`. Lets people throw extra in the case. |
 | URL | `lyricist-pro` |
 
 ## 3. Product page
@@ -39,7 +39,7 @@ Gumroad → **Products** → **New product** → **Digital product**.
 | Tools | 18 |
 | Writing tools | Free OpenRouter key, no card |
 | Black Hole Studios | Free cloud engine for short songs; full length on a free Kaggle account |
-| Subscription | None. Pay once. |
+| Subscription | None. $19.99 once. |
 | Updates | New versions land in your Gumroad library |
 
 **Category**: Music & Sound Design.
