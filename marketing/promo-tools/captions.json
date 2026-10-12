@@ -1,14 +1,63 @@
-[
- {"id":"artist","text":"Name an artist you love"},
- {"id":"study","text":"The Ghost studies how they write"},
- {"id":"topic","text":"Give it something to write about"},
- {"id":"write","text":"Brand-new words. Never copied."},
- {"id":"send","text":"One click to Songwriter"},
- {"id":"songwriter","text":"Every line is yours to edit"},
- {"id":"studio","text":"Into Black Hole Studios"},
- {"id":"pull","text":"Pull the song in"},
- {"id":"caption","text":"Pick the sound. The caption writes itself."},
- {"id":"make","text":"Make the song"},
- {"id":"wait","text":"A full band plays your words"},
- {"id":"song","text":"Your song."}
-]
+{
+ "ghost": [
+  {"id":"artist","text":"Name an artist you love"},
+  {"id":"study","text":"The Ghost studies how they write"},
+  {"id":"topic","text":"Give it something to write about"},
+  {"id":"write","text":"Brand-new words. Never copied."},
+  {"id":"send","text":"One click to Songwriter"},
+  {"id":"songwriter","text":"Every line is yours to edit"},
+  {"id":"studio","text":"Into Black Hole Studios"},
+  {"id":"pull","text":"Pull the song in"},
+  {"id":"caption","text":"Pick the sound. The caption writes itself."},
+  {"id":"make","text":"Make the song"},
+  {"id":"wait","text":"A full band plays your words"},
+  {"id":"song","text":"Your song."}
+ ],
+ "suno": [
+  {"id":"artist","text":"Name an artist"},
+  {"id":"study","text":"It learns how they write"},
+  {"id":"topic","text":"Give it a topic"},
+  {"id":"write","text":"New lyrics in that style. Never copied."},
+  {"id":"tags","text":"The Suno tags come with it"},
+  {"id":"copy","text":"Copy. Paste into Suno."},
+  {"id":"send","text":"Or send it all to Songwriter"},
+  {"id":"songwriter","text":"The tags ride along"}
+ ],
+ "matrix": [
+  {"id":"seeds","text":"Type the words you've got"},
+  {"id":"load","text":"Drop them into the grid"},
+  {"id":"craft","text":"One button: Auto-Craft Verse"},
+  {"id":"heat","text":"The tiles heat up"},
+  {"id":"verses","text":"Two verses. Pick one."}
+ ],
+ "tour": [
+  {"id":"songwriter","text":"1/18  Songwriter"},
+  {"id":"onemanband","text":"2/18  Black Hole Studios"},
+  {"id":"analyzer","text":"3/18  Ghost Rider"},
+  {"id":"songforge","text":"4/18  Song Forge"},
+  {"id":"quantum","text":"5/18  The Matrix"},
+  {"id":"booth","text":"6/18  Recording Booth"},
+  {"id":"voicelab","text":"7/18  Voice Lab"},
+  {"id":"midistudio","text":"8/18  MIDI Studio"},
+  {"id":"loopstation","text":"9/18  RC-Funk 5000"},
+  {"id":"stemmer","text":"10/18  Stemmer"},
+  {"id":"screw","text":"11/18  Chopped & Screwed"},
+  {"id":"mastering","text":"12/18  Mastering Studio"},
+  {"id":"rhyme","text":"13/18  Rhyme Helper"},
+  {"id":"thesaurus","text":"14/18  Thesaurus"},
+  {"id":"dictionary","text":"15/18  Dictionary"},
+  {"id":"scratchpad","text":"16/18  Scratchpad"},
+  {"id":"collab","text":"17/18  Collaboration"},
+  {"id":"toolshub","text":"18/18  AI Tools Hub"}
+ ],
+ "phone": [
+  {"id":"home","text":"The whole studio, on your phone"},
+  {"id":"tags","text":"Your Suno tags"},
+  {"id":"topic","text":"Your topic"},
+  {"id":"write","text":"Write the song"},
+  {"id":"lyrics","text":"Written. Every line is yours."},
+  {"id":"studio","text":"Then Black Hole Studios"},
+  {"id":"pull","text":"Pull the song in"},
+  {"id":"make","text":"One tap and a full band sings it"}
+ ]
+}
