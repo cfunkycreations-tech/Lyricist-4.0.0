@@ -57,7 +57,7 @@ Where it stands (PR #36): built, not yet run on Kaggle for real.
 
 1. **Gumroad** listing (built 2026-10-11): `gumroad/README.md` is the paste-in
    checklist; copy, covers, the skyline cover video, thumbnail and profile art
-   sit beside it. $19.99 one-time, pay what you want above it. Upload the
+   sit beside it. $19.99 one-time, flat. Upload the
    `npm run release:customer` installer. Ghost jobs recorded in OBS can still
    become a longer demo video.
 2. **New website**: on hold, the site is down until the money comes in. When

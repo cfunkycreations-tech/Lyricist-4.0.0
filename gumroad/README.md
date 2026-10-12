@@ -18,7 +18,7 @@ Gumroad → **Products** → **New product** → **Digital product**.
 |---|---|
 | Name | `Lyricist Pro — Songwriting Studio for Windows` |
 | Price | `19.99` |
-| Pay what they want | **On**, minimum `$19.99`. Lets people throw extra in the case. |
+| Pay what they want | **Off**. Flat $19.99. |
 | URL | `lyricist-pro` |
 | License key | **On**: Content tab → **Generate a unique license key per sale**. That key is the phone version's purchase code. Copy the **product ID** it shows and send it to Claude. |
 
@@ -70,7 +70,7 @@ Settings → **Profile**.
 | Name | `CFunky Creations` |
 | Username | `cfunkycreations` |
 | Logo / profile picture | `profile/avatar-1000.png` |
-| Bio | `Funk Audio Flow OpSec. Austin, Texas. Street musician turned app builder. Lyricist Pro is my open guitar case.` |
+| Bio | `Singer-songwriter in Austin, Texas. I taught myself to code and built the songwriting studio I couldn't afford. Now it's yours for $19.99.` |
 
 Then on your profile page: **Edit profile** → add a **Featured product** section
 with Lyricist Pro, and a **Rich text** section on top holding
