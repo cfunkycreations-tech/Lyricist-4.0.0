@@ -114,6 +114,11 @@ a { color: inherit; }
 .bh-fact span { color: var(--bh-ink2); font-size: 14px; }
 @media (max-width: 760px) { .bh-about { grid-template-columns: minmax(0, 1fr); } .bh-orbit { width: min(260px, 80%); } .bh-facts { grid-template-columns: minmax(0, 1fr); } }
 
+/* Lists on License */
+.bh-list { list-style: disc outside; margin: 0; padding-left: 20px; display: grid; gap: 8px; color: var(--bh-ink2); max-width: 72ch; }
+.bh-list li::marker { color: var(--bh-hot); }
+.bh-main a:not(.bh-btn) { color: var(--bh-hot2); text-underline-offset: 3px; }
+
 /* FAQ */
 .bh-faq { display: grid; gap: 10px; }
 .bh-faq details { border-radius: 14px; background: var(--bh-panel); box-shadow: 0 0 0 1px var(--bh-line) inset; }
@@ -122,7 +127,7 @@ a { color: inherit; }
 .bh-faq summary::after { content: "+"; position: absolute; right: 18px; top: 50%; transform: translateY(-50%); font: 400 22px/1 var(--bh-display); color: var(--bh-hot); transition: transform .2s; }
 .bh-faq details[open] summary::after { transform: translateY(-50%) rotate(45deg); }
 .bh-faq details > div { padding: 0 18px 18px; color: var(--bh-ink2); display: grid; gap: 10px; max-width: 70ch; }
-.bh-faq ul { margin: 0; padding-left: 20px; }
+.bh-faq ul { list-style: disc outside; margin: 0; padding-left: 20px; }
 
 /* Get started */
 .bh-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: bh-step; }
@@ -170,6 +175,8 @@ a { color: inherit; }
     <div class="bh-faq">
       <details><summary>Is this a subscription?</summary><div><p>No. You pay $19.99 once and keep it, updates included.</p></div></details>
       <details><summary>What do I get?</summary><div><p>The Windows installer, a license key, and the phone version for iPhone and Android. New versions show up in your Gumroad library.</p></div></details>
+      <details><summary>Can I get a refund?</summary><div><p>Yes. There's a 30-day money-back guarantee. Email <span class="bh-mail">cfunkycreations@gmail.com</span> within 30 days of buying. <a href="https://funkycreations.gumroad.com/refunds">The details</a>.</p></div></details>
+      <details><summary>Can I sell the songs I make?</summary><div><p>Yes. What you write and make is yours, money-making included. Songs made with outside AI services like Suno are also covered by those services' terms. <a href="https://funkycreations.gumroad.com/license">The license</a> spells it out.</p></div></details>
       <details><summary>Does it work on a Mac?</summary><div><p>The full app is for Windows 10 and 11. The phone version runs on iPhone and Android, and it comes with your purchase.</p></div></details>
     </div>
   </section>
@@ -215,6 +222,8 @@ a { color: inherit; }
       <a href="https://funkycreations.gumroad.com/about">About</a>
       <a href="https://funkycreations.gumroad.com/faq">FAQ</a>
       <a href="https://funkycreations.gumroad.com/start">Get started</a>
+      <a href="https://funkycreations.gumroad.com/refunds">Refunds</a>
+      <a href="https://funkycreations.gumroad.com/license">License</a>
     </nav>
     <span>Help: <span class="bh-mail">cfunkycreations@gmail.com</span></span>
   </div>

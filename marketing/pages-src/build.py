@@ -1,4 +1,4 @@
-"""Build the Gumroad store pages (About, FAQ, Get started) into one file each.
+"""Build the Gumroad store pages (About, FAQ, Get started, Refunds, License) into one file each.
 
     python3 marketing/pages-src/build.py        → marketing/pages/<slug>.html
 
@@ -11,7 +11,7 @@ OUT = os.path.join(D, '..', 'pages')
 def b64(p): return base64.b64encode(open(os.path.join(A, p), 'rb').read()).decode()
 def uri(p): return 'data:image/webp;base64,' + b64(p)
 
-PAGES = {'about': 'About', 'faq': 'FAQ', 'start': 'Get started'}
+PAGES = {'about': 'About', 'faq': 'FAQ', 'start': 'Get started', 'refunds': 'Refunds', 'license': 'License'}
 CTA = '''<aside class="bh-cta">
     <img src="{{LOGO_MD}}" alt="" width="74" height="80">
     <div><h3>Lyricist Pro</h3><p>18 songwriting tools in one Windows app, plus the phone version. Lyrics and Suno tags, a full band, a mastered album.</p></div>
