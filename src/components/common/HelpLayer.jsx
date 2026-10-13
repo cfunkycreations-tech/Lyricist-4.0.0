@@ -44,7 +44,20 @@ export default function HelpLayer() {
       return node.closest ? node.closest('[data-help]') : null;
     };
 
+    /* NOT ON A TOUCH SCREEN. A tap fires a pretend mouseover, so on a phone
+       every button tapped left a help bubble parked over the screen, and
+       opening a tool from the launcher put one over whatever sat under the
+       finger. Touch switches the bubbles off until a real mouse moves again.
+       The guided demos send their own mouse events and no pointer events, so
+       they still show tips. */
+    let touch = false;
+    const onPointer = (e) => {
+      touch = e.pointerType === 'touch';
+      if (touch) setTip(null);
+    };
+
     const onOver = (e) => {
+      if (touch) return;
       const el = resolve(e.target);
       if (el) place(el);
     };
@@ -67,11 +80,15 @@ export default function HelpLayer() {
 
     const hide = () => setTip(null);
 
+    document.addEventListener('pointerdown', onPointer, true);
+    document.addEventListener('pointermove', onPointer, true);
     document.addEventListener('mouseover', onOver, true);
     document.addEventListener('mouseout', onOut, true);
     window.addEventListener('scroll', hide, true);
     window.addEventListener('resize', hide);
     return () => {
+      document.removeEventListener('pointerdown', onPointer, true);
+      document.removeEventListener('pointermove', onPointer, true);
       document.removeEventListener('mouseover', onOver, true);
       document.removeEventListener('mouseout', onOut, true);
       window.removeEventListener('scroll', hide, true);

@@ -224,8 +224,8 @@ export default function SectionEditor({ section, index }) {
         position: 'relative'
       }}
     >
-      {/* Section Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+      {/* Section Header. The class is for the phone: it wraps there (mobile.css). */}
+      <div className="sw-section-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span
             style={{ fontSize: '0.8rem', fontWeight: 800 }}
@@ -243,7 +243,7 @@ export default function SectionEditor({ section, index }) {
         </div>
 
         {/* Section Actions */}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="sw-section-actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button
             onClick={() => setShowStats(!showStats)}
             data-help="Show or hide the numbers about this section — like reading level, word variety, and average syllables per line. Click to peek; they're just helpful info, not rules."

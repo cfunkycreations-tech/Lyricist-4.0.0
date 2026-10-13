@@ -177,11 +177,12 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
   return (
     <div style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden', background: '#000' }}>
       <TabBackground name="rhyme" />
-      <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
+      {/* mob-stack: the panes stack on a phone held upright (mobile.css). */}
+      <div className="mob-stack" style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
       {/* Rhyme Finder panel */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid rgba(155,161,170,0.18)', overflow: 'hidden' }}>
         {/* Search header */}
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(155,161,170,0.2)', background: 'rgba(10,12,15,0.85)', display: 'flex', gap: 8, flexShrink: 0 }}>
+        <div className="mob-wrap" style={{ padding: '12px 16px', borderBottom: '1px solid rgba(155,161,170,0.2)', background: 'rgba(10,12,15,0.85)', display: 'flex', gap: 8, flexShrink: 0 }}>
           <input
             value={word}
             onChange={(e) => setWord(e.target.value)}

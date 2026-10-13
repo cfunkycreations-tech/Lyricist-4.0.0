@@ -487,8 +487,9 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
     <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', overflow: 'hidden', position: 'relative', background: '#000000' }}>
       {/* Ghost Rider background — the living prism, no clip */}
       <TabBackground name="analyzer" />
-      {/* Content sits above the background */}
-      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flex: 1, width: '100%', overflow: 'hidden' }}>
+      {/* Content sits above the background. mob-stack: the panes stack on a
+          phone held upright (mobile.css). */}
+      <div className="mob-stack" style={{ position: 'relative', zIndex: 1, display: 'flex', flex: 1, width: '100%', overflow: 'hidden' }}>
       {/* Sidebar for parameters and saved reports */}
       <div
         style={{
