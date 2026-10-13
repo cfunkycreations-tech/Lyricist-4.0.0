@@ -24,13 +24,7 @@ CREAM = (255, 244, 226)
 ORANGE = (255, 138, 61)
 AMBER = (255, 178, 90)
 
-meta = json.load(open(os.path.join(D, 'cues.json')))
-FPS = meta['fps']
-NSRC = meta['frames']
-CUES = meta['cues']
-TRACK = json.load(open(os.path.join(D, 'track.json')))
-SCALE = 1920 / TRACK['vw']
-
+FPS = 30
 BANNED = ['neon', 'midnight', 'rain', 'heartbreak', 'cold coffee', 'shadow', 'whisper', 'echo', 'spark', 'cage', 'gravity', 'chain', 'storm']
 
 _fonts = {}
@@ -131,7 +125,10 @@ def fit(img, w):
 
 def src(i):
     i = max(0, min(NSRC - 1, int(round(i))))
-    return Image.open(os.path.join(FR, f'f{i:05d}.jpg')).convert('RGB')
+    im = Image.open(os.path.join(FR, f'f{i:05d}.jpg')).convert('RGB')
+    # A low-res preview run still composes: the camera works in full-size pixels.
+    want = 1688 if SCENE == 'phone' else 1920
+    return im if im.width == want else fit(im, want)
 
 def cue_at(t):
     """The caption showing at source second t."""
@@ -157,22 +154,45 @@ CROP_TOP, CROP_BOT = 300, 985
 FULL_H = CROP_BOT - CROP_TOP
 ASPECT = 3 / 2                       # the app window in the vertical video
 FULL_W = int(FULL_H * ASPECT)
-# Per step: how wide the camera is, and where it looks ('cursor' or a fixed x).
+# Per scene, per step: how wide the camera is, and where it looks ('cursor' or a fixed x).
 # Tight on typing and clicks, wide when there is something to read.
-SPEC = {
-    'artist': (700, 420), 'study': (820, 'cursor'), 'topic': (700, 'cursor'),
-    'write': (FULL_W, 842), 'send': (820, 'cursor'), 'songwriter': (FULL_W, 'cursor'),
-    'studio': (760, 'cursor'), 'pull': (900, 'cursor'), 'caption': (FULL_W, 'cursor'),
-    'make': (820, 'cursor'), 'wait': (820, 'cursor'), 'song': (900, 'cursor'),
+GR = {'artist': (700, 420), 'study': (820, 'cursor'), 'topic': (700, 'cursor'),
+      'write': (FULL_W, 842), 'send': (820, 'cursor')}
+SPECS = {
+    'ghost': {**GR, 'songwriter': (FULL_W, 'cursor'),
+              'studio': (760, 'cursor'), 'pull': (900, 'cursor'), 'caption': (FULL_W, 'cursor'),
+              'make': (820, 'cursor'), 'wait': (820, 'cursor'), 'song': (900, 'cursor')},
+    'suno': {**GR, 'tags': (FULL_W, 842), 'copy': (820, 'cursor'), 'songwriter': (760, 'cursor')},
+    'matrix': {'seeds': (820, 'cursor'), 'load': (900, 'cursor'), 'craft': (FULL_W, 'cursor'),
+               'heat': (FULL_W, 560), 'verses': (FULL_W, 560)},
+    'tour': {},                      # every step: the left of the tab, where its title and controls start
+    'phone': {},
 }
-_cx, _cy, _w = [], [], []
-for i, (x, y) in enumerate(TRACK['track']):
-    c = cue_at(i / FPS)
-    w, look = SPEC.get(c['id'] if c else 'artist', (820, 'cursor'))
-    _cx.append(x * SCALE + 60 if look == 'cursor' else look)
-    _cy.append(y * SCALE)
-    _w.append(w)
-CX, CY, CW = smooth(_cx, 16), smooth(_cy, 16), smooth(_w, 12)
+SCENE = None
+
+def load(scene):
+    """Point every frame, cue and camera helper at one recorded scene."""
+    global SCENE, FR, FPS, NSRC, CUES, TRACK, SCALE, CX, CY, CW, END
+    if SCENE == scene:
+        return
+    sfx = '' if scene == 'ghost' else f'-{scene}'
+    meta = json.load(open(os.path.join(D, f'cues{sfx}.json')))
+    if meta.get('failed'):
+        raise SystemExit(f'{scene}: the recording failed ({meta["failed"]})')
+    SCENE, FR = scene, os.path.join(D, f'frames{sfx}')
+    FPS, NSRC, CUES = meta['fps'], meta['frames'], meta['cues']
+    TRACK = json.load(open(os.path.join(D, f'track{sfx}.json')))
+    SCALE = (1688 if scene == 'phone' else 1920) / TRACK['vw']
+    END = NSRC / FPS
+    spec = SPECS[scene]
+    _cx, _cy, _w = [], [], []
+    for i, (x, y) in enumerate(TRACK['track']):
+        c = cue_at(i / FPS)
+        w, look = spec.get(c['id'] if c else '', (FULL_W, 600) if scene == 'tour' else (820, 'cursor'))
+        _cx.append(x * SCALE + 60 if look == 'cursor' else look)
+        _cy.append(y * SCALE)
+        _w.append(w)
+    CX, CY, CW = smooth(_cx, 16), smooth(_cy, 16), smooth(_w, 12)
 
 def crop_box(i):
     i = max(0, min(len(CX) - 1, int(round(i))))
@@ -234,6 +254,41 @@ def v_frame(si, hook_layer, cap_layer):
         im.alpha_composite(cap_layer, ((VW - cap_layer.width) // 2, V_APP_Y - cap_layer.height - 18))
     return im.convert('RGB')
 
+# The phone version is filmed sideways, so it sits in a sideways phone.
+P_W = 1000
+P_H = round(P_W * 780 / 1688)
+P_BEZ = 22
+
+def p_body():
+    w, h = P_W + 2 * P_BEZ, P_H + 2 * P_BEZ
+    im = Image.new('RGBA', (w + 40, h + 40), (0, 0, 0, 0))
+    glow = Image.new('RGBA', im.size, (0, 0, 0, 0))
+    ImageDraw.Draw(glow).rounded_rectangle([20, 20, 20 + w, 20 + h], radius=64, fill=(255, 120, 40, 120))
+    im.alpha_composite(glow.filter(ImageFilter.GaussianBlur(18)))
+    d = ImageDraw.Draw(im)
+    d.rounded_rectangle([20, 20, 20 + w, 20 + h], radius=64, fill=(14, 12, 16, 255), outline=(70, 62, 66, 255), width=3)
+    d.rounded_rectangle([20 + 8, 20 + 8, 20 + w - 8, 20 + h - 8], radius=56, outline=(34, 30, 34, 255), width=2)
+    # the camera island, on the left edge when the phone is sideways
+    d.rounded_rectangle([20 + 7, 20 + h // 2 - 46, 20 + 17, 20 + h // 2 + 46], radius=5, fill=(0, 0, 0, 255))
+    return im
+P_BODY = p_body()
+P_MASK = Image.new('L', (P_W, P_H), 0)
+ImageDraw.Draw(P_MASK).rounded_rectangle([0, 0, P_W - 1, P_H - 1], radius=42, fill=255)
+
+def p_frame(si, hook_layer, cap_layer):
+    im = V_BG.copy().convert('RGBA')
+    if hook_layer is not None:
+        im.alpha_composite(hook_layer, (0, 170))
+    x = (VW - P_BODY.width) // 2
+    y = V_APP_Y + (V_APP_H - P_BODY.height) // 2
+    im.alpha_composite(P_BODY, (x, y))
+    im.paste(src(si).resize((P_W, P_H), Image.LANCZOS), (x + 20 + P_BEZ, y + 20 + P_BEZ), P_MASK)
+    im.paste(slice_bar(VW, 10), (0, V_APP_Y + V_APP_H))
+    im.alpha_composite(V_BRAND, (0, V_APP_Y + V_APP_H + 40))
+    if cap_layer is not None:
+        im.alpha_composite(cap_layer, ((VW - cap_layer.width) // 2, V_APP_Y - cap_layer.height - 18))
+    return im.convert('RGB')
+
 def vertical(name, s0, s1, speed, hook=None, story=None, captions=True, tag='Link in bio', outro_s=3.5):
     out = os.path.join(OUT, f'{name}.mp4')
     enc = encoder(out, VW, VH)
@@ -254,7 +309,7 @@ def vertical(name, s0, s1, speed, hook=None, story=None, captions=True, tag='Lin
         hl = hook_l
         if story_l:
             hl = story_l[min(len(story_l) - 1, int(k / n * len(story_l)))]
-        last = v_frame(si, hl, cl)
+        last = (p_frame if SCENE == 'phone' else v_frame)(si, hl, cl)
         enc.stdin.write(last.tobytes())
     end = v_outro(tag)
     fn = int(0.4 * FPS)
@@ -310,22 +365,84 @@ def horizontal(name, speed=1.0):
     enc.stdin.close(); enc.wait()
     print(name, f'{2.6 + n / FPS + 4.5:.1f}s')
 
-END = NSRC / FPS
+# ---- the price: kinetic text over the 18-tool tour --------------------------
+def price(name):
+    load('tour')
+    out = os.path.join(OUT, f'{name}.mp4')
+    enc = encoder(out, VW, VH)
+    def dim(si):
+        a = src(si).crop(crop_box(si)).resize((VW, V_APP_H), Image.LANCZOS).filter(ImageFilter.GaussianBlur(10))
+        im = V_BG.copy()
+        im.paste(Image.blend(a, Image.new('RGB', a.size, BG), 0.62), (0, V_APP_Y))
+        return im.convert('RGBA')
+    def card(si, text, sz, fill=CREAM, pop=1.0):
+        im = dim(si)
+        t = glow_text((VW, 700), text, sz, fill=fill, width=960)
+        if pop != 1.0:
+            t = t.resize((round(VW * pop), round(700 * pop)), Image.LANCZOS)
+        im.alpha_composite(t, ((VW - t.width) // 2, 610 + (700 - t.height) // 2))
+        return im.convert('RGB')
+    frames = []
+    beats = [('Another app.\nAnother monthly bill.', 76, CREAM, 2.4), ('Not this one.', 84, CREAM, 1.6),
+             ('$19.99\nOnce.', 150, ORANGE, 2.6)]
+    t0 = 0
+    for text, sz, fill, secs in beats:
+        n = int(secs * FPS)
+        for k in range(n):
+            pop = 1.0 + 0.25 * max(0, 1 - k / 6) if fill == ORANGE else 1.0
+            frames.append(card((t0 + k) * 2, text, sz, fill, pop))
+        t0 += n
+    hook = glow_text((VW, 300), '18 tools. One price.', 72, width=960)
+    for c in CUES:
+        si = (c['at'] + 0.9) * FPS
+        cap = pill(c['text'], 40, 980)
+        for k in range(10):
+            frames.append(v_frame(si + k, hook, cap))
+    for k in range(int(2.2 * FPS)):
+        frames.append(card(k, 'Windows, iPhone\nand Android.', 84))
+    for f in frames:
+        enc.stdin.write(f.tobytes())
+    last = frames[-1]
+    end = v_outro('Link in bio')
+    fn = int(0.4 * FPS)
+    for k in range(int(3.5 * FPS)):
+        enc.stdin.write((fade(last, end, (k + 1) / fn) if k < fn else end).tobytes())
+    enc.stdin.close(); enc.wait()
+    print(name, f'{len(frames) / FPS + 3.5:.1f}s')
+
+def scene(name, fn):
+    """A clip that needs one recorded scene loaded first."""
+    def run():
+        load(name)
+        fn()
+    return run
+
 CLIPS = {
-    'tiktok-1-ghost-writes-a-song': lambda: vertical('tiktok-1-ghost-writes-a-song', 0, END, 1.6,
-        hook='Watch the Ghost write a song'),
-    'tiktok-2-any-artist': lambda: vertical('tiktok-2-any-artist', 0, cue_start('songwriter') + 1.2, 1.25,
-        hook='Name any artist. Get brand-new lyrics in their style.', outro_s=3.0),
-    'tiktok-3-full-band': lambda: vertical('tiktok-3-full-band', cue_start('studio'), END, 1.2,
-        hook='Your lyrics. Sung by a full band.', outro_s=3.0),
-    'tiktok-4-my-story': lambda: vertical('tiktok-4-my-story', 0, END, 1.5, captions=False, story=[
+    'tiktok-1-ghost-writes-a-song': scene('ghost', lambda: vertical('tiktok-1-ghost-writes-a-song', 0, END, 1.6,
+        hook='Watch the Ghost write a song')),
+    'tiktok-2-any-artist': scene('ghost', lambda: vertical('tiktok-2-any-artist', 0, cue_start('songwriter') + 1.2, 1.25,
+        hook='Name any artist. Get brand-new lyrics in their style.', outro_s=3.0)),
+    'tiktok-3-full-band': scene('ghost', lambda: vertical('tiktok-3-full-band', cue_start('studio'), END, 1.2,
+        hook='Your lyrics. Sung by a full band.', outro_s=3.0)),
+    'tiktok-4-my-story': scene('ghost', lambda: vertical('tiktok-4-my-story', 0, END, 1.5, captions=False, story=[
         "I'm a singer-songwriter.",
         'Everything I wanted cost so much money.',
         'So I taught myself to code and built it myself.',
         'I use Suno too. I build my lyrics and Suno tags here first. Free.',
         "Now I'm passing the savings on to you.",
-    ], tag='Link in bio', outro_s=4.0),
-    'youtube-promo-16x9': lambda: horizontal('youtube-promo-16x9'),
+    ], tag='Link in bio', outro_s=4.0)),
+    'youtube-promo-16x9': scene('ghost', lambda: horizontal('youtube-promo-16x9')),
+    'tiktok-5-suno-tags': scene('suno', lambda: vertical('tiktok-5-suno-tags', 0, END, 1.4,
+        hook='Writing for Suno? Get the lyrics AND the tags.')),
+    'tiktok-6-the-matrix': scene('matrix', lambda: vertical('tiktok-6-the-matrix', 0, END, 1.2,
+        hook='Build a verse out of word tiles.')),
+    'tiktok-7-18-tools': scene('tour', lambda: vertical('tiktok-7-18-tools', 0, END, 1.5,
+        hook='18 songwriting tools. One app.')),
+    'tiktok-8-on-your-phone': scene('phone', lambda: vertical('tiktok-8-on-your-phone', 0, END, 1.2,
+        hook='Your songwriting studio. On your phone.')),
+    'tiktok-9-the-price': lambda: price('tiktok-9-the-price'),
+    'tiktok-10-comment-game': scene('ghost', lambda: vertical('tiktok-10-comment-game', 0, cue_start('songwriter') + 1.2, 1.3,
+        hook="Comment an artist and a topic. I'll write the song.", tag='Comment an artist + a topic', outro_s=3.0)),
 }
 
 if __name__ == '__main__':

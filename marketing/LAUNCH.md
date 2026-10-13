@@ -25,6 +25,22 @@ own song made in Lyricist Pro is best, or a trending sound turned down low.
 | 3 | `tiktok-2-any-artist.mp4` | Name an artist in the comments and I'll write one in their style. #songwriting #lyrics #rapper #rocknroll |
 | 4 | `tiktok-3-full-band.mp4` | Typed words in. Got a full band back. #musicproducer #songwriter #homestudio |
 
+## The next six (batch 2)
+
+Same rules: one a day, same file to TikTok, Shorts and Reels, add sound in the app.
+
+| # | File | What to write with it |
+|---|---|---|
+| 5 | `tiktok-5-suno-tags.mp4` | Writing for Suno? Get the lyrics AND the style tags. #suno #sunoai #songwriting #aimusic #lyrics |
+| 6 | `tiktok-7-18-tools.mp4` | 18 songwriting tools in one app. $19.99 once. #songwriter #musicproducer #homestudio #indieartist |
+| 7 | `tiktok-10-comment-game.mp4` | Comment an artist + a topic and I'll make the song. #songwriting #lyrics #suno #challenge |
+| 8 | `tiktok-6-the-matrix.mp4` | Built a verse out of word tiles. #songwriting #lyrics #writersblock #songwriter |
+| 9 | `tiktok-8-on-your-phone.mp4` | My whole songwriting studio, on my phone. #songwriting #iphone #android #suno |
+| 10 | `tiktok-9-the-price.mp4` | Another app, another monthly bill? Not this one. #musicproducer #songwriter #indieartist #homestudio |
+
+Store pages to link when people ask: funkycreations.gumroad.com/about,
+/faq and /start (setup steps for buyers).
+
 For YouTube, also post `youtube-promo-16x9.mp4` as a normal video. Title it
 "I built a songwriting studio. Watch the Ghost write a song." and put the
 Gumroad link at the top of the description.
