@@ -39,7 +39,24 @@ Same rules: one a day, same file to TikTok, Shorts and Reels, add sound in the a
 | 10 | `tiktok-9-the-price.mp4` | Another app, another monthly bill? Not this one. #musicproducer #songwriter #indieartist #homestudio |
 
 Store pages to link when people ask: funkycreations.gumroad.com/about,
-/faq and /start (setup steps for buyers).
+/faq and /start (setup steps for buyers). /refunds and /license answer
+"what if I don't like it?" and "can I sell my songs?".
+
+## Batch 3 (next to film)
+
+Each one is a single tool doing one thing, about 20 seconds, the payoff in the
+first 3 seconds. The promo tools film them the same way as batch 2.
+
+| # | File | Hook on screen | What happens | What to write with it |
+|---|---|---|---|---|
+| 11 | `tiktok-11-fix-a-line.mp4` | This line was weak. Watch. | Songwriter: one flat line, tap polish, three better versions, lock the best | Fixing a weak line in one tap. #songwriting #lyrics #writersblock #songwriter |
+| 12 | `tiktok-12-rhyme-helper.mp4` | Stuck on a rhyme? | Rhyme Helper: type a word, perfect, slant and internal rhymes fill in | Never stuck on a rhyme again. #rapper #lyrics #songwriting #freestyle |
+| 13 | `tiktok-13-song-forge.mp4` | One idea. A whole song. | Song Forge: one line in, full lyrics and cover art out | One sentence in. A whole song and the cover art out. #songwriting #suno #aimusic #albumart |
+| 14 | `tiktok-14-chopped-and-screwed.mp4` | Chop and screw any song. | Chopped & Screwed: load a track, slow it, chop it, play it back | The Houston sound, one click. #choppedandscrewed #houston #screwed #musicproducer |
+| 15 | `tiktok-15-pull-the-vocals.mp4` | Pull the vocals out of any song. | Stemmer: one track in, vocals, drums and bass out as separate files | Split any song into stems. #stems #musicproducer #remix #acapella |
+| 16 | `tiktok-16-master-it.mp4` | Rough mix in. Loud master out. | Mastering Studio: before/after meters, then album export | Master your songs at home. #mastering #homestudio #musicproducer #indieartist |
+
+Use your own songs for 14 to 16, not anybody else's track.
 
 For YouTube, also post `youtube-promo-16x9.mp4` as a normal video. Title it
 "I built a songwriting studio. Watch the Ghost write a song." and put the

@@ -96,7 +96,7 @@
   text-shadow: none;
 }
 .omb-tag { color: var(--omb-dim); font-size: 14px; margin-top: 8px; max-width: 46ch; }
-.omb-tag b { color: var(--omb-emerald-lit); font-weight: 600; }
+.omb-tag b { color: var(--omb-emerald-lit); font-weight: 600; white-space: nowrap; }
 
 .omb-tier {
   display: flex; gap: 6px; padding: 3px; border-radius: 999px; min-width: 210px;
