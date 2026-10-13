@@ -1348,7 +1348,7 @@ export default function OneManBand() {
             <div className="omb-brand">Lyricist Pro 4.2.0</div>
             <h1 className="omb-title">Black Hole Studios</h1>
             <p className="omb-tag">
-              Your words, sung by a full band. <b>Free forever.</b> Faster if you have the hardware.
+              Your words, sung by a full band. <b>No per-song fees.</b> Faster if you have the hardware.
             </p>
           </div>
           <div className="omb-side">

@@ -206,12 +206,17 @@ section.bay { padding-block: clamp(64px, 9vw, 120px); }
 .faq summary::after { content: "+"; font: 400 20px/1 var(--display); color: var(--hot); transition: transform .2s; }
 .faq details[open] summary::after { transform: rotate(45deg); }
 .faq details p { padding: 0 20px 18px; color: var(--ink-2); }
+.faq details p a, .faq-more a { color: var(--hot); }
+.faq-more { margin-top: 18px; color: var(--ink-2); }
 
 /* Final CTA */
 .final { text-align: center; display: grid; justify-items: center; gap: 20px; }
 .final h2 { font-size: clamp(36px, 6vw, 72px); }
 footer { border-top: 1px solid var(--line); padding-block: 28px 110px; color: var(--ink-3); font-size: 14px; }
 footer .wrap { display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: space-between; }
+footer .foot-links { display: flex; gap: 18px; flex-wrap: wrap; }
+footer .foot-links a { color: var(--ink-2); text-decoration: none; }
+footer .foot-links a:hover { color: var(--ink); }
 
 /* Phone buy bar */
 .dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--line); display: none; align-items: center; gap: 12px; transform: translateY(110%); transition: transform .25s ease; }
@@ -277,7 +282,7 @@ dialog.lb figcaption { color: #e9dccf; font-size: 14px; text-align: center; padd
         <a class="buy" data-gumroad-action="buy" href="#buy">Get Lyricist Pro <span class="tag" data-gumroad-field="price">$19.99</span></a>
         <a class="buy ghost" href="#how">See how it works</a>
       </div>
-      <div class="meta"><span>One payment</span><span>No subscription</span><span>Phone version included</span></div>
+      <div class="meta"><span>One payment</span><span>No subscription</span><span>Phone version included</span><span>30-day money back</span></div>
       <p class="name-line" data-gumroad-field="name">Lyricist Pro — Songwriting Studio for Windows</p>
     </div>
     <div class="bh" aria-hidden="true">
@@ -410,6 +415,7 @@ dialog.lb figcaption { color: #e9dccf; font-size: 14px; text-align: center; padd
           <li><span><b>All 18 tools</b> for Windows 10 and 11.</span></li>
           <li><span><b>The phone version</b> for iPhone and Android. Unlock it with the license key from your receipt.</span></li>
           <li><span><b>Every update.</b> New versions land in your Gumroad library.</span></li>
+          <li><span><b>30-day money-back guarantee.</b> Not for you? Email me within 30 days for a full refund.</span></li>
           <li><span><b>Free songs</b> on the cloud engine. Full length on your own free Kaggle account.</span></li>
           <li><span><b>The Ghost Demo.</b> Press Play Demo on any tab and the Ghost walks you through it, out loud.</span></li>
           <li><span><b>Your words stay yours.</b> Your API key goes straight from your computer to the AI service. Lyricist Pro never sees it.</span></li>
@@ -443,13 +449,16 @@ dialog.lb figcaption { color: #e9dccf; font-size: 14px; text-align: center; padd
     <div class="bay-head rise"><p class="eyebrow">Questions</p><h2 style="font-size:clamp(28px,3.6vw,42px)">Straight answers.</h2></div>
     <div class="faq">
       <details class="rise"><summary>Is this a subscription?</summary><p>No. You pay once and keep it, updates included.</p></details>
+      <details class="rise"><summary>What if it's not for me?</summary><p>Email cfunkycreations@gmail.com within 30 days of buying and you get a full refund. <a href="https://funkycreations.gumroad.com/refunds">Refund details</a>.</p></details>
+      <details class="rise"><summary>Can I sell the songs I make?</summary><p>Yes. Your lyrics, recordings and masters are yours to release and sell. Songs you make on outside AI services like Suno also fall under their terms. <a href="https://funkycreations.gumroad.com/license">The license</a>.</p></details>
       <details class="rise"><summary>Does it work with Suno?</summary><p>Yes. Songwriter and Ghost Rider write the lyrics and the Suno style tags to match. Copy them into Suno and generate. Black Hole Studios can also sing your song right inside the app.</p></details>
       <details class="rise"><summary>Do I have to pay for AI?</summary><p>No. The writing tools run on a free OpenRouter key, with no card. Short songs in Black Hole Studios run free on the cloud engine, and full-length songs run on a free Kaggle account.</p></details>
       <details class="rise"><summary>Does it work on a Mac?</summary><p>The full app is for Windows 10 and 11. The phone version runs on iPhone and Android, and it comes with your purchase.</p></details>
       <details class="rise"><summary>Windows says "Windows protected your PC." Is that a virus?</summary><p>No. Windows shows that box for installers that aren't signed with a paid certificate. Click More info, then Run anyway.</p></details>
-      <details class="rise"><summary>How do I get the phone version?</summary><p>Open lyricist-pro.pages.dev in Safari on iPhone or Chrome on Android, add it to your home screen, and enter the license key from your receipt.</p></details>
+      <details class="rise"><summary>How do I get the phone version?</summary><p>Open lyricist-pro.pages.dev in Safari on iPhone or Chrome on Android, add it to your home screen, and enter the license key from your receipt. <a href="https://funkycreations.gumroad.com/start">Setup steps</a>.</p></details>
       <details class="rise"><summary>I'm stuck. Who do I ask?</summary><p>Email cfunkycreations@gmail.com. A real person answers.</p></details>
     </div>
+    <p class="faq-more rise">More answers in the <a href="https://funkycreations.gumroad.com/faq">full FAQ</a>. Setup steps are in <a href="https://funkycreations.gumroad.com/start">Get started</a>.</p>
   </div>
 </section>
 
@@ -466,6 +475,13 @@ dialog.lb figcaption { color: #e9dccf; font-size: 14px; text-align: center; padd
 <footer>
   <div class="wrap">
     <span>Lyricist Pro by CFunky Creations · Austin, Texas</span>
+    <nav class="foot-links" aria-label="More">
+      <a href="https://funkycreations.gumroad.com/about">About</a>
+      <a href="https://funkycreations.gumroad.com/faq">FAQ</a>
+      <a href="https://funkycreations.gumroad.com/start">Get started</a>
+      <a href="https://funkycreations.gumroad.com/refunds">Refunds</a>
+      <a href="https://funkycreations.gumroad.com/license">License</a>
+    </nav>
     <span>Help: cfunkycreations@gmail.com</span>
   </div>
 </footer>
