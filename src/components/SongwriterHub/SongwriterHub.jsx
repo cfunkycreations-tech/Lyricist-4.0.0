@@ -382,8 +382,9 @@ export default function SongwriterHub({ ghostRiderData }) {
       <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
 
-      {/* Songwriter controls — below the banner */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      {/* Songwriter controls — below the banner. The class stacks the two
+          panes on a phone held upright (mobile.css). */}
+      <div className="sw-row" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Scrollable configuration sidebar */}
       <div
         className="sidebar-cosmic"
@@ -834,8 +835,9 @@ export default function SongwriterHub({ ghostRiderData }) {
 
       {/* Main Lyrics Editor workspace */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'rgba(8,10,13,0.45)' }}>
-        {/* Workspace Toolbar */}
+        {/* Workspace Toolbar. The class is for the phone: it wraps there (mobile.css). */}
         <div
+          className="sw-toolbar"
           style={{
             display: 'flex',
             alignItems: 'center',

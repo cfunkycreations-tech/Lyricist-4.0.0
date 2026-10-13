@@ -23,7 +23,7 @@ import './RotatePrompt.css';
  * IT IS NOT A WALL. There is a "Use it anyway" button, because being stuck on a
  * screen you cannot get past is worse than a cramped layout, and because some
  * people have their own rotation lock switched on and cannot turn the phone
- * even if they want to. Once dismissed it stays dismissed for the session.
+ * even if they want to. Once dismissed it stays dismissed, on that phone, for good.
  *
  * It renders ONLY when all of these are true:
  *   - this is the web build, not the desktop app
@@ -33,9 +33,19 @@ import './RotatePrompt.css';
  * so it can never appear on Android, on desktop, or inside Electron.
  */
 
+const DISMISS_KEY = 'lyricist.rotate.dismissed';
+
 export default function RotatePrompt() {
   const [show, setShow] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  // Remembered across launches: asking again every time the app opens, after
+  // someone already chose to use it upright, is nagging.
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem(DISMISS_KEY) === '1'; } catch { return false; }
+  });
+  const dismiss = () => {
+    setDismissed(true);
+    try { localStorage.setItem(DISMISS_KEY, '1'); } catch { /* private mode: asks again next time */ }
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -87,7 +97,7 @@ export default function RotatePrompt() {
           Lyricist Pro is a studio. The piano roll, the mixer, the loop tracks and the
           lattice all need the width — sideways gives you more than double it.
         </p>
-        <button className="rot-btn" onClick={() => setDismissed(true)}>
+        <button className="rot-btn" onClick={dismiss}>
           Use it anyway
         </button>
         <p className="rot-note">
