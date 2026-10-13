@@ -422,7 +422,7 @@ const SCENES = {
     await moveToEl(tile('Black Hole Studios'), 700);
     await click();
     await hold(1200);
-    await page.evaluate(async () => { const bus = await import('/src/services/ghostBus.js'); await bus.runGhostAction('set_length', { seconds: 180 }); });
+    await page.evaluate(async () => { const bus = await import('/src/services/ghostBus.js'); await bus.runGhostAction('set_length', { seconds: 45 }); });
     await scrollTo('[data-demo="omb-pull"]', 1000, 0.15);
     cue('pull');
     await moveToEl('[data-demo="omb-pull"]', 600);
