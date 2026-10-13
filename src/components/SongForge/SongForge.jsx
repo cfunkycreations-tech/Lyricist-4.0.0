@@ -15,7 +15,7 @@ import { registerGhostActions, ghostSettle } from '../../services/ghostBus.js';
 import TabBackground from '../common/TabBackground.jsx';
 import { Icon } from '../common/Glyph.jsx';
 const SURPRISE_TOPICS = [
-  'a rainy drive at 2am with the radio off',
+  'a long drive at 2am with the radio off',
   'burning the recipe your mom left you',
   'a text message you typed and never sent',
   'the last light on in a house you used to live in',

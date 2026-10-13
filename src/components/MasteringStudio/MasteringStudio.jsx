@@ -322,7 +322,7 @@ export default function MasteringStudio() {
               placeholder="Optional: describe the cover you want..." value={coverPrompt} onChange={(e) => setCoverPrompt(e.target.value)} />
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontWeight: 400, cursor: 'pointer' }}>
               <input type="checkbox" checked={medallion} onChange={(e) => setMedallion(e.target.checked)} style={{ accentColor: '#E7A540' }} />
-              <span style={{ fontSize: '0.66rem', color: '#e6e8eb' }}>Neon medallion frame</span>
+              <span style={{ fontSize: '0.66rem', color: '#e6e8eb' }}>Medallion frame</span>
             </label>
           </div>
 
