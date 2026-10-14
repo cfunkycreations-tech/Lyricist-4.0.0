@@ -20,7 +20,7 @@ Gumroad → **Products** → **New product** → **Digital product**.
 | Price | `19.99` |
 | Pay what they want | **Off**. Flat $19.99. |
 | URL | `lyricist-pro` |
-| License key | **On**: Content tab → **Generate a unique license key per sale**. That key is the phone version's purchase code. Copy the **product ID** it shows and send it to Claude. |
+| License key | **On**: Content tab → **Generate a unique license key per sale**. That key unlocks the Windows app and the phone version. Copy the **product ID** it shows and send it to Claude. |
 
 ## 3. Product page
 
@@ -52,7 +52,7 @@ Upload the `Setup.exe` from step 1, then paste this under it:
 
 > **Thanks for grabbing Lyricist Pro.**
 >
-> 1. Run the installer. Windows shows a blue box that says "Windows protected your PC". That isn't a virus warning. It shows because the installer isn't signed with a paid certificate. Click **More info**, then **Run anyway**.
+> 1. Run the installer. Windows shows a blue box that says "Windows protected your PC". That isn't a virus warning. It shows because the installer isn't signed with a paid certificate. Click **More info**, then **Run anyway**. The first time Lyricist opens, paste the **license key** from this receipt.
 > 2. Open **Settings** in the app and paste a free OpenRouter key (openrouter.ai, about two minutes, no card). That switches on the writing tools.
 > 3. Press **Play Demo** on any tab and the Ghost walks you through it.
 > 4. On your phone too: open **lyricist-pro.pages.dev** in Safari (iPhone) or Chrome (Android), add it to your home screen, and enter the **license key** from this receipt as your purchase code.

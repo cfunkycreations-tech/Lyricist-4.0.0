@@ -1,0 +1,103 @@
+/**
+ * THE WINDOWS APP'S PURCHASE CODE.
+ *
+ * The installer was a public download with nothing behind it: anyone could get
+ * Lyricist Pro without paying the $19.99. Same fix as the phone: the license
+ * key in the buyer's Gumroad receipt, asked for once (src/web/PurchaseLock.jsx),
+ * checked with Gumroad from here, the main process, so the renderer never talks
+ * to Gumroad and never holds the saved code.
+ *
+ * The rules match functions/api/unlock.js (the phone's Cloudflare check). Keep
+ * PRODUCT_ID, MAX_DEVICES and the refund rules the same in both.
+ *
+ * The creator build and `npm run dev` never ask (PurchaseLock decides that), so
+ * Chris is never locked out of his own app.
+ *
+ * Unlocked stays unlocked: userData\license.json. Once a week, when online, it
+ * is checked again quietly; only a definite no from Gumroad (refunded, charged
+ * back, not a real code) locks it again. No internet or Gumroad down never does.
+ * The code is never logged and never leaves this file except to Gumroad.
+ */
+const fs = require('fs');
+const path = require('path');
+
+// Lyricist Pro (gumroad.com/l/pzglwj). Same as functions/api/unlock.js.
+const PRODUCT_ID = 'vmQgyfBzmUFRW3O8y2CeMw==';
+// One code, this many installs, phones and PCs together.
+const MAX_DEVICES = 10;
+const RECHECK_MS = 7 * 24 * 60 * 60 * 1000;
+const VERIFY = 'https://api.gumroad.com/v2/licenses/verify';
+
+function file(userData) { return path.join(userData(), 'license.json'); }
+
+function read(userData) {
+  try {
+    const v = JSON.parse(fs.readFileSync(file(userData), 'utf8'));
+    return v && typeof v.code === 'string' && v.code ? v : null;
+  } catch { return null; }
+}
+function write(userData, v) {
+  try { fs.writeFileSync(file(userData), JSON.stringify(v), 'utf8'); } catch { /* asks again next launch */ }
+}
+function forget(userData) {
+  try { fs.unlinkSync(file(userData)); } catch { /* nothing to forget */ }
+}
+
+/** { ok } on yes; { ok: false, why, revoked } on no; throws when Gumroad can't be reached. */
+async function ask(code, recheck) {
+  const res = await fetch(VERIFY, {
+    method: 'POST',
+    body: new URLSearchParams({
+      product_id: PRODUCT_ID,
+      license_key: code,
+      increment_uses_count: recheck ? 'false' : 'true',
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!data.success) {
+    if (res.status >= 500) throw new Error('gumroad down');
+    return { ok: false, revoked: true, why: 'That code does not match a Lyricist Pro purchase. Copy it straight from your receipt.' };
+  }
+  const p = data.purchase || {};
+  if (p.refunded || p.chargebacked || (p.disputed && !p.dispute_won)) {
+    return { ok: false, revoked: true, why: 'That purchase was refunded, so the code no longer works.' };
+  }
+  if (!recheck && Number(data.uses) > MAX_DEVICES) {
+    return { ok: false, why: `That code is already on ${MAX_DEVICES} devices. Email cfunkycreations@gmail.com and we will sort it out.` };
+  }
+  return { ok: true };
+}
+
+/** Wire the IPC handles. Called once from main.js; userData is () => app.getPath('userData'). */
+function register(ipcMain, userData) {
+  ipcMain.on('license-unlocked', (event) => { event.returnValue = !!read(userData); });
+
+  ipcMain.handle('license-verify', async (_event, { code } = {}) => {
+    const c = typeof code === 'string' ? code.trim() : '';
+    if (!c || c.length > 120) return { ok: false, why: 'Type or paste the purchase code from your Gumroad receipt.' };
+    try {
+      const r = await ask(c, false);
+      if (r.ok) write(userData, { code: c, at: Date.now(), checked: Date.now() });
+      return { ok: r.ok, why: r.why || '' };
+    } catch {
+      return { ok: false, why: 'Could not reach Gumroad. Unlocking needs the internet once; after that it works offline.' };
+    }
+  });
+
+  // The weekly quiet re-check. Only a definite no locks the app again.
+  ipcMain.handle('license-recheck', async () => {
+    const saved = read(userData);
+    if (!saved) return { ok: false, revoked: true, why: '' };
+    if (Date.now() - (saved.checked || 0) < RECHECK_MS) return { ok: true };
+    try {
+      const r = await ask(saved.code, true);
+      if (r.ok) { write(userData, { ...saved, checked: Date.now() }); return { ok: true }; }
+      if (r.revoked) { forget(userData); return { ok: false, revoked: true, why: r.why }; }
+      return { ok: true };
+    } catch {
+      return { ok: true };   // offline or Gumroad down: stay unlocked
+    }
+  });
+}
+
+module.exports = { register };

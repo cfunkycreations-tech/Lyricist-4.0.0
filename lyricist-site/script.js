@@ -45,8 +45,6 @@
       var v = data[n.getAttribute('data-release-href')];
       if (typeof v === 'string' && v) n.setAttribute('href', v);
     });
-    var copyBtn = document.getElementById('copyLink');
-    if (copyBtn && data.installerUrl) copyBtn.dataset.url = data.installerUrl;
   }
 
   /* ---- 2. Copy the download link, for people on a phone -------------- */

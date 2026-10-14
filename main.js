@@ -5,6 +5,7 @@ const demucsLocal = require('./demucsLocal');
 const comfySetup = require('./comfySetup');
 const kaggleCloud = require('./kaggleCloud');
 const captionSkill = require('./captionSkill');
+const licenseCheck = require('./licenseCheck');
 
 /* ══════════════════════════════════════════════════════════════════════════
    GHOST PILOT — OS HARDWARE AUTOMATION.  INTERNAL / CREATOR BUILD ONLY.
@@ -665,6 +666,9 @@ ipcMain.handle('ghost-log-open', async () => {
 // sees a new one (src/services/freshStart.js); a reload keeps the same id.
 const LAUNCH_ID = `${Date.now()}-${process.pid}`;
 ipcMain.on('launch-id', (event) => { event.returnValue = LAUNCH_ID; });
+
+// The Gumroad purchase code (licenseCheck.js). PurchaseLock asks for it once.
+licenseCheck.register(ipcMain, () => app.getPath('userData'));
 
 // Save the lyrics from Songwriter, Ghost Rider or the Scratchpad as a .txt in
 // Documents\Lyricist Lyrics. Called via window.lyricistAPI.saveLyrics.
