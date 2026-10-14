@@ -87,6 +87,9 @@ self.addEventListener('fetch', (e) => {
   // Model weights: network only. See the comment at the top.
   if (isHeavy(url)) return;
 
+  // registerPWA asking the server whether a new build is out: never from cache.
+  if (url.searchParams.has('fresh')) return;
+
   // Navigations: network first, so a new build is picked up the moment it
   // ships, but the app still opens with no signal at all.
   if (req.mode === 'navigate') {

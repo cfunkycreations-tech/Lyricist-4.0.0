@@ -13,6 +13,7 @@ import { registerPWA } from './web/registerPWA.js';
 import { installPhoneAudio } from './web/iosAudio.js';
 import { installPhoneSave } from './web/iosSave.js';
 import LandscapeSplash from './web/LandscapeSplash.jsx';
+import NetStatus from './web/NetStatus.jsx';
 import PurchaseLock from './web/PurchaseLock.jsx';
 import DialogHost from './components/common/DialogHost.jsx';
 import { initAnalytics } from './services/analytics.js';
@@ -85,6 +86,8 @@ try {
         </PurchaseLock>
         {/* In-app alert / confirm / prompt (services/dialog.js). */}
         <DialogHost />
+        {/* Web only: offline notice and the new-version Reload bar. */}
+        <NetStatus />
       </BootErrorBoundary>
     </React.StrictMode>
   );
