@@ -126,7 +126,7 @@ const notes = fs.existsSync(notesPath)
   : [
     `## Lyricist ${fullVersion} for Windows`,
     '',
-    'Free. No account, no subscription, no card.',
+    'Lyricist Pro: $19.99 once on Gumroad. No subscription, no account.',
     '',
     '**Download the installer below.** Windows 10 and 11.',
     '',
@@ -149,7 +149,7 @@ if (seen.code !== 0) {
   console.log(`  ${repoSlug} does not exist yet. Creating it public (binaries only).`);
   if (!dryRun) {
     const made = gh(['repo', 'create', repoSlug, '--public',
-      '--description', 'Downloads for Lyricist, the free AI songwriting studio. Binaries only.']);
+      '--description', 'Downloads for Lyricist, the AI songwriting studio. Binaries only.']);
     if (made.code !== 0) die('Could not create the releases repo.', made.err);
   }
 } else if (!seen.out.includes('PUBLIC')) {
@@ -170,7 +170,7 @@ if (!dryRun) {
     const readme = [
       '# Lyricist downloads',
       '',
-      'Downloads for **Lyricist**, the free AI songwriting studio for Windows.',
+      'Downloads for **Lyricist**, the AI songwriting studio for Windows.',
       'Made by CFunky Creations LLC in Austin, Texas.',
       '',
       '**Get the app: https://cfunkycreationsllc.com**',
@@ -184,10 +184,10 @@ if (!dryRun) {
       '## Windows will warn you the first time',
       '',
       'Windows shows a blue "Windows protected your PC" box because this installer is not signed',
-      'with a paid certificate. A certificate costs more per year than this free app will ever make.',
+      'with a paid certificate. A certificate costs hundreds of dollars every year.',
       'Click **More info**, then **Run anyway**. Every release lists a SHA-256 you can check.',
       '',
-      'Free. No account, no subscription, no card. Free AI tools for the masses.',
+      'Lyricist Pro: $19.99 once on Gumroad. No subscription, no account. AI tools for the masses.',
       '',
     ].join('\n');
     const put = gh(['api', `repos/${repoSlug}/contents/README.md`, '-X', 'PUT',

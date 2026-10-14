@@ -211,7 +211,7 @@ export function explainCloudError(payload) {
    *
    * The free cloud shares a pool of cards between everybody using it. When they
    * are all busy it waits sixty seconds and gives up, then advertises their
-   * paid plan. This app is free forever, so the answer is not to buy anything:
+   * paid plan. Nobody should have to buy a second subscription, so the answer is:
    * it is Kaggle, which is also free and hands you two whole cards.
    */
   if (/no gpu was available|gpu task aborted|zerogpu is unavailable/i.test(msg)) {
