@@ -11,7 +11,7 @@ import { applySongTags, tagsFromText } from '../../services/songTags.js';
 import { saveSunoTags } from '../../services/ghostMemory.js';
 import { notify } from '../../services/dialog.js';
 import { saveText } from '../../services/saveText.js';
-import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, AlertCircle, Upload, PenLine, GitBranch, X } from 'lucide-react';
+import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, AlertCircle, Upload, PenLine, GitBranch, X, Share2 } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
 // The logo and the founder photo were imported here but never rendered — a
 // leftover from the old in-tab header. Vite emits an imported asset whether or
@@ -255,6 +255,9 @@ export default function SongwriterHub({ ghostRiderData }) {
     store.setFullLyrics([...store.lyrics, newBridgeSection]);
     setShowBridgeModal(false);
   };
+
+  // The phone's share sheet. Not in the desktop app, where Copy and Save do the job.
+  const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function' && !window.lyricistAPI;
 
   const handleCopyAll = () => {
     const fullText = store.getFullText();
@@ -951,6 +954,33 @@ export default function SongwriterHub({ ghostRiderData }) {
                   {copied ? <Check size={12} /> : <Copy size={12} />}
                   {copied ? 'Copied!' : 'Copy Full Song'}
                 </button>
+
+                {/* Phones: straight to Messages, Notes, email or Suno, no copy and paste. */}
+                {canShare && (
+                  <button
+                    onClick={() => {
+                      const title = [store.artistRef, store.topic].filter(Boolean).join(' - ') || 'Lyrics';
+                      navigator.share({ title, text: store.getFullText() }).catch(() => { /* closed the share sheet */ });
+                    }}
+                    data-help="Sends the whole song to another app on your phone: Messages, Notes, email, or Suno."
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                      padding: '4px 12px',
+                      borderRadius: 6,
+                      border: '1px solid rgba(155,161,170,0.35)',
+                      background: 'transparent',
+                      color: 'rgba(230,232,235,0.7)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    <Share2 size={12} />
+                    Share
+                  </button>
+                )}
 
                 {/* Closing the app wipes the song (freshStart.js), so it gets a Save. */}
                 <button

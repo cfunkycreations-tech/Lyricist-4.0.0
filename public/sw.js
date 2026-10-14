@@ -70,6 +70,15 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// "Your song is ready" (src/web/songDone.js): a tap brings the app back up.
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((list) => (list[0] ? list[0].focus() : self.clients.openWindow('./')))
+  );
+});
+
 self.addEventListener('message', (e) => {
   if (e.data === 'skip-waiting') self.skipWaiting();
 });
