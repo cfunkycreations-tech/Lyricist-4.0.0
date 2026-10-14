@@ -627,7 +627,7 @@ function MainLayout() {
             <SongwriterHub ghostRiderData={ghostRiderData} />
           </TabPane>
           <TabPane id="onemanband" active={activeTab} opened={openedTabs}>
-            <OneManBand />
+            <OneManBand onNavigate={setActiveTab} />
           </TabPane>
           <TabPane id="screw" active={activeTab} opened={openedTabs}>
             <ScrewShop />

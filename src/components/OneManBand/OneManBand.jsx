@@ -79,8 +79,9 @@ import {
   GENRE_GROUPS, MOOD_GROUPS, VOICE_GROUPS, COUNTS, kitFor,
 } from '../../services/musicTaxonomy.js';
 import { askToPing, pingSongDone } from '../../web/songDone.js';
+import { notify, ask as askDialog } from '../../services/dialog.js';
 import { blendLabel } from '../../utils/blend.js';
-import { saveRecording, listRecordings } from '../../services/RecordingsStore.js';
+import { saveRecording, listRecordings, deleteRecording } from '../../services/RecordingsStore.js';
 import './OneManBand.css';
 import bhLoop from '../../assets/blackhole/bh_loop.webm';
 import bhStill from '../../assets/blackhole/bh_still.webp';
@@ -236,7 +237,7 @@ function joinCaption(parts) {
     .join('\n\n');
 }
 
-function draftCaption({ genres, moods, voices, seconds }) {
+function draftCaption({ genres, moods, voices, seconds, tags = [] }) {
   // Up to five of each now, mixed into one piece of music.
   const gs = (genres || []).filter(Boolean);
   const ms = (moods || []).filter(Boolean);
@@ -287,7 +288,12 @@ function draftCaption({ genres, moods, voices, seconds }) {
       // from when the tab opened on Blues rock, and it made grunge come out
       // sounding like a bar band.
       + `Sonics & Production Profile: produced and mixed the way a ${style} record is, `
-      + `nothing borrowed from other styles.`,
+      + `nothing borrowed from other styles. `
+      // The caption check flagged both of these on every song Chris wrote
+      // himself: nothing said how fast, and his own sections (hook, guitar
+      // solo, a cappella) never appeared, so the model ignored his shape.
+      + `Tempo: the tempo a ${style} record usually sits at, held steady.`
+      + (tags.length ? ` Timeline: ${tags.join(' → ')}, in that order.` : ''),
     vocals: instrumental
       ? 'This piece is instrumental with no vocals. The lead melodic role is carried by the '
         + 'main instrument of the arrangement.'
@@ -334,7 +340,7 @@ function picksForSkill({ genres = [], moods = [], voices = [], instrumental = fa
   return out.join(' ');
 }
 
-export default function OneManBand() {
+export default function OneManBand({ onNavigate } = {}) {
   const store = useLyricStore();
   const [lyrics, setLyrics] = useState(
     '[Verse]\nSteel in my hands and the sun going down\n'
@@ -467,13 +473,15 @@ export default function OneManBand() {
     return () => { dead = true; };
   }, []);
 
-  // Redraft the caption when the picks change, unless he has taken it over.
+  const tags = useMemo(() => readSections(lyrics), [lyrics]);
+
+  // Redraft the caption when the picks or the song's sections change, unless he has taken it over.
   useEffect(() => {
     if (captionEdited) return;
-    setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds })));
+    setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds, tags })));
     // Joined rather than the arrays themselves: a new array every render would
     // redraft the caption on every keystroke elsewhere in the tab.
-  }, [genres.join('|'), moods.join('|'), voices.join('|'), seconds, captionEdited]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [genres.join('|'), moods.join('|'), voices.join('|'), seconds, captionEdited, tags.join('|')]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!busy) return undefined;
@@ -481,7 +489,6 @@ export default function OneManBand() {
     return () => clearInterval(t);
   }, [busy]);
 
-  const tags = useMemo(() => readSections(lyrics), [lyrics]);
 
   /**
    * THE TAKE NUMBERS. Plural, because there is one per take.
@@ -614,7 +621,7 @@ export default function OneManBand() {
   };
   const budget = sectionBudget(seconds);
   const tooManyParts = tags.length > budget;
-  const estimate = estimateSeconds(engine, seconds, engine === 'cloud' ? 1 : takeCount);
+  const estimate = estimateSeconds(engine, seconds, takeCount);
 
   /** Songwriter already stores lyrics as [SECTION] + lines, which is exactly
       the shape this tab wants, so nothing has to be reformatted. */
@@ -750,12 +757,50 @@ export default function OneManBand() {
     abortRef.current = ac;
     let pinged = false;
 
+    /**
+     * THE AUTOMATIC DRAFT IS A STARTING POINT, NOT A CAPTION.
+     *
+     * Chris, 2026-10-14, after a night of songs on his iPhone: the samples
+     * sound like their genre and his own songs "sound like shit". The samples
+     * carry hand-written captions; his went out on the bare draft, because the
+     * caption skill never ran on the phone and nobody presses Rewrite first.
+     * So when the box still holds the draft and there is a key to run the
+     * skill with, the skill writes the caption before the song is made. If it
+     * fails the draft goes out as before and the reason is on screen.
+     */
+    let sendCaption = caption;
+    const hasKey = !!String(store.config?.openRouterApiKey || '').trim();
+    if (!captionEdited && caption.trim()) {
+      if (hasKey) {
+        try {
+          setPhase("Writing the sound with MiniMax's caption skill");
+          const r = await runCaptionSkill({
+            caption,
+            lyrics,
+            constraints: picksForSkill({ genres, moods, voices, instrumental }),
+            config: store.config,
+            signal: ac.signal,
+            onStage: (msg) => msg && setPhase(`Caption skill: ${msg.toLowerCase()}`),
+          });
+          undoCaption.current = caption;
+          sendCaption = r.caption;
+          setCaption(r.caption);
+          setCaptionEdited(true);
+        } catch (e) {
+          if (ac.signal.aborted) { setBusy(false); setPhase(''); abortRef.current = null; return { ok: false, error: 'Stopped.' }; }
+          notify(`The caption skill could not write this one (${e.message}), so the song went out on the automatic description.`, { tone: 'error', ms: 12000 });
+        }
+      } else {
+        notify('Made from the automatic description. Add your AI key in Settings and the caption skill writes a much better one for every song.', { ms: 9000 });
+      }
+    }
+
     const state = buildState({
       lyrics,
       // The whole caption travels as globalMeta: MusicService joins the three
       // fields with blank lines, so one full string and two empties comes out
       // the other end as exactly the caption that is on screen.
-      globalMeta: caption,
+      globalMeta: sendCaption,
       vocals: '',
       arrangement: '',
       instrumental,
@@ -786,7 +831,9 @@ export default function OneManBand() {
         onTake: (res) => {
           const url = URL.createObjectURL(res.blob);
           const take = {
-            id: `${res.seed}-${res.fileName || ''}-${res.blob.size}`,
+            // Unique per take. Two presses on the same take number used to make
+            // the same id, so Delete took both and Recordings kept one.
+            id: `${res.seed}-${res.fileName || ''}-${res.blob.size}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
             seed: res.seed,
             at: Date.now(),
             url,
@@ -796,7 +843,7 @@ export default function OneManBand() {
             fileName: res.fileName || '',
             filePath: res.filePath || '',
             // The seed alone does NOT reproduce a take. Keep the whole recipe.
-            recipe: { lyrics, caption, genres, moods, voices, genre, mood, voice, seconds, steps, guidance, engine },
+            recipe: { lyrics, caption: sendCaption, genres, moods, voices, genre, mood, voice, seconds, steps, guidance, engine },
           };
           setTakes((prev) => [take, ...prev.filter((t) => !take.fileName || t.fileName !== take.fileName)]);
           if (!pinged) { pinged = true; pingSongDone(); }
@@ -832,8 +879,8 @@ export default function OneManBand() {
               : `Black Hole Studios ${new Date().toLocaleString()} (take ${res.seed})`,
             blob: res.blob,
             duration: seconds,
-          }).then(() => {
-            setTakes((prev) => prev.map((t) => (t.id === take.id ? { ...t, saved: true } : t)));
+          }).then((rec) => {
+            setTakes((prev) => prev.map((t) => (t.id === take.id ? { ...t, saved: true, recId: rec?.id } : t)));
           }).catch((e) => {
             // Never lose the take over a failed file. It is on disk and on
             // screen either way, and the reason belongs on screen too.
@@ -980,8 +1027,12 @@ export default function OneManBand() {
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const bringInFromDisk = async ({ quiet = false } = {}) => {
+    // The phone has no songs folder. And a quiet run (the one after every Make
+    // the song) must not wipe the error that run just put on screen: it did,
+    // which is why "1 of 2 takes" and "out of time for today" never showed.
+    if (!window.lyricistAPI?.songsList) return;
     setRecovering(true);
-    setError('');
+    if (!quiet) setError('');
     try {
       const listed = await window.lyricistAPI?.songsList?.();
       if (!listed?.ok) throw new Error(listed?.error || 'Could not read your songs folder.');
@@ -1057,6 +1108,47 @@ export default function OneManBand() {
   };
 
 
+
+  /**
+   * DELETE AND CLEAR. Chris, 2026-10-14: "give me a way to erase the songs".
+   *
+   * A take comes out of the rack and out of Recordings, where it was filed by
+   * itself. Copies he saved on purpose with "Save another copy" stay. In the
+   * Windows app the file in the songs folder is his and stays where it is.
+   */
+  const desktop = typeof window !== 'undefined' && !!window.lyricistAPI;
+  const removeTakes = async (list) => {
+    const gone = new Set(list.map((t) => t.id));
+    let filed = [];
+    if (list.some((t) => !t.recId && t.fileName)) {
+      filed = await listRecordings().catch(() => []);
+    }
+    for (const t of list) {
+      try {
+        if (t.recId) await deleteRecording(t.recId);
+        else if (t.fileName) {
+          const name = `Black Hole Studios ${t.fileName.replace(/\.[^.]+$/, '')}`;
+          for (const r of filed.filter((x) => x.name === name)) await deleteRecording(r.id);
+        }
+      } catch { /* already gone from Recordings */ }
+      if (t.url) { try { URL.revokeObjectURL(t.url); } catch { /* fine */ } }
+    }
+    setTakes((prev) => prev.filter((t) => !gone.has(t.id)));
+  };
+  const folderNote = desktop ? ' The file in your songs folder stays.' : '';
+  const deleteTake = async (t) => {
+    const ok = await askDialog(`Delete this take? It also comes out of Recordings.${folderNote}`, { ok: 'Delete', danger: true });
+    if (ok) await removeTakes([t]);
+  };
+  const clearTakes = async () => {
+    const n = takes.length;
+    const ok = await askDialog(`Delete all ${n} take${n === 1 ? '' : 's'}? They also come out of Recordings.${folderNote}`, { ok: 'Delete all', danger: true });
+    if (ok) await removeTakes(takes);
+  };
+  // On an iPhone, Download opens the share sheet (src/web/iosSave.js), where
+  // Save to Files keeps the song on the phone. Say that, not "Download".
+  const iPhone = typeof navigator !== 'undefined' && !desktop
+    && (/iP(hone|od|ad)/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1));
 
   const keep = async (take) => {
     try {
@@ -1168,7 +1260,7 @@ export default function OneManBand() {
       if (before.trim() && !sameSong(before, t) && caption.trim()) {
         undoCaption.current = caption;
         setCaptionEdited(false);
-        setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds })));
+        setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds, tags })));
         fresh = ', and started the Input Caption over for this song';
       }
       return before.trim() && before.trim() !== t
@@ -1266,7 +1358,7 @@ export default function OneManBand() {
       return `set the length to ${v} seconds`;
     },
     set_takes: ({ count }) => {
-      const v = Math.max(1, Math.min(4, Math.round(Number(count) || 0)));
+      const v = Math.max(1, Math.min(2, Math.round(Number(count) || 0)));
       setTakeCount(v);
       return `set it to make ${v} take${v === 1 ? '' : 's'}`;
     },
@@ -1568,7 +1660,7 @@ export default function OneManBand() {
                         was the one button that could wreck the caption. */}
                     <button type="button" className="omb-mini" onClick={() => {
                       setCaptionEdited(false);
-                      setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds })));
+                      setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds, tags })));
                     }}>Start over
                     </button>
                   </span>
@@ -1649,7 +1741,9 @@ export default function OneManBand() {
                       ? 'Different versions of the same song. Kaggle has two graphics cards, so two of them take about as long as one.'
                       : 'Different versions, pick the one you like'}
                   </div>
-                  <input type="range" min="1" max="4" value={takeCount}
+                  {/* Two at most: the free cloud's daily allowance is about two
+                      takes, and Kaggle makes two side by side on its two cards. */}
+                  <input type="range" min="1" max="2" value={takeCount}
                          onChange={(e) => setTakeCount(Number(e.target.value))} />
                 </div>
 
@@ -1760,13 +1854,18 @@ export default function OneManBand() {
           <section className="omb-takes">
             <div className="omb-rackhd">
               <h2>Takes</h2>
+              {takes.length > 1 && (
+                <button type="button" className="omb-mini omb-clear" onClick={clearTakes}>Clear all</button>
+              )}
               {/* WHERE THEY WENT, SAID OUT LOUD, WITH THE BUTTON RIGHT THERE.
                   "Where are my songs" is not a question anybody should have to
                   ask about their own finished work. Every take is already
                   filed in Recordings and written to a folder; this says so and
                   opens it. */}
               <span className="omb-rackwhere">
-                Every take is saved in <b>Recordings</b> and kept as a file.
+                Every take is saved in{' '}
+                <button type="button" className="omb-link" onClick={() => onNavigate?.('booth')}>Recordings</button>
+                {desktop ? ' and kept as a file.' : ' (the Recording Booth tool).'}
                 {songsFolder && (
                   <button
                     type="button"
@@ -1786,30 +1885,40 @@ export default function OneManBand() {
                     {/* A song brought back in off the disk was not timed here,
                         and "0s to make" is a lie about a twenty minute run. */}
                     {t.ms > 0 && <span className="badge">{Math.round(t.ms / 1000)}s to make</span>}
-                    {t.saved && <span className="badge saved">in Recordings</span>}
+                    {t.saved && (
+                      <button type="button" className="badge saved" onClick={() => onNavigate?.('booth')}
+                              title="Open Recordings in the Recording Booth">in Recordings</button>
+                    )}
                   </div>
                   <audio controls src={t.url} />
                   <div className="row">
                     <button type="button" className="omb-mini" onClick={() => keep(t)}>
                       {t.saved ? 'Save another copy' : 'Keep it'}
                     </button>
-                    <a className="omb-mini" href={t.url} download={`one-man-band-${t.seed}.flac`}>Download</a>
+                    <a className="omb-mini" href={t.url} download={`black-hole-studios-${t.seed}.flac`}>
+                      {iPhone ? 'Save to iPhone' : 'Download'}
+                    </a>
                     <button type="button" className="omb-mini" onClick={() => {
                       setLyrics(t.recipe.lyrics); setCaption(joinCaption(t.recipe.caption));
                       setSeconds(t.recipe.seconds); setSeed(safeSeed(t.seed));
                       setCaptionEdited(true);
                     }}>Load this recipe
                     </button>
-                    <button
-                      type="button"
-                      className="omb-mini"
-                      data-demo="omb-video"
-                      disabled={videoBusy}
-                      title="A lyric video cut to the beat, vertical chorus clips and synced lyric files, made on Kaggle"
-                      onClick={() => makeVideo(t)}
-                    >
-                      {t.recipeGuessed ? 'Make the video (lyrics on screen)' : 'Make the video'}
-                    </button>
+                    {/* Made on Kaggle through the Windows app; the phone has no way to run it. */}
+                    {desktop && (
+                      <button
+                        type="button"
+                        className="omb-mini"
+                        data-demo="omb-video"
+                        disabled={videoBusy}
+                        title="A lyric video cut to the beat, vertical chorus clips and synced lyric files, made on Kaggle"
+                        onClick={() => makeVideo(t)}
+                      >
+                        {t.recipeGuessed ? 'Make the video (lyrics on screen)' : 'Make the video'}
+                      </button>
+                    )}
+                    <button type="button" className="omb-mini omb-clear" onClick={() => deleteTake(t)}
+                            aria-label={`Delete take ${t.seed}`}>Delete</button>
                   </div>
                   {videoJob?.takeId === t.id && (
                     <div className="omb-videoline" role="status">
