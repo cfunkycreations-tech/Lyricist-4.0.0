@@ -11,6 +11,12 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   saveLyrics: (filename, content) => ipcRenderer.invoke('save-lyrics', { filename, content }),
   // Which time the app was opened. A new one means unsaved work from last time is wiped.
   launchId: (() => { try { return ipcRenderer.sendSync('launch-id'); } catch { return ''; } })(),
+  // The Gumroad purchase code (licenseCheck.js). The saved code never comes back to the UI.
+  license: {
+    unlocked: () => { try { return ipcRenderer.sendSync('license-unlocked') === true; } catch { return false; } },
+    verify: (code) => ipcRenderer.invoke('license-verify', { code }),
+    recheck: () => ipcRenderer.invoke('license-recheck'),
+  },
   // The Ghost's flight recorder (src/services/ghostRecorder.js).
   ghostLogAppend: (line) => ipcRenderer.invoke('ghost-log-append', line),
   ghostLogShot: (label) => ipcRenderer.invoke('ghost-log-shot', label),

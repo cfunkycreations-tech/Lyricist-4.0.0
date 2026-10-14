@@ -78,6 +78,7 @@ import { useLyricStore } from '../../context/LyricStore.jsx';
 import {
   GENRE_GROUPS, MOOD_GROUPS, VOICE_GROUPS, COUNTS, kitFor,
 } from '../../services/musicTaxonomy.js';
+import { askToPing, pingSongDone } from '../../web/songDone.js';
 import { blendLabel } from '../../utils/blend.js';
 import { saveRecording, listRecordings } from '../../services/RecordingsStore.js';
 import './OneManBand.css';
@@ -740,12 +741,14 @@ export default function OneManBand() {
   });
 
   const make = async () => {
+    askToPing();
     setError('');
     setBusy(true);
     setElapsed(0);
     setPhase('starting');
     const ac = new AbortController();
     abortRef.current = ac;
+    let pinged = false;
 
     const state = buildState({
       lyrics,
@@ -796,6 +799,7 @@ export default function OneManBand() {
             recipe: { lyrics, caption, genres, moods, voices, genre, mood, voice, seconds, steps, guidance, engine },
           };
           setTakes((prev) => [take, ...prev.filter((t) => !take.fileName || t.fileName !== take.fileName)]);
+          if (!pinged) { pinged = true; pingSongDone(); }
           if (res.folder) setSongsFolder(res.folder);
           // Kept next to the file, so the take keeps its own words when it is
           // brought back in later: its lyric video has to show THESE lyrics.

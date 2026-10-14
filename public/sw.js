@@ -70,6 +70,15 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// "Your song is ready" (src/web/songDone.js): a tap brings the app back up.
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((list) => (list[0] ? list[0].focus() : self.clients.openWindow('./')))
+  );
+});
+
 self.addEventListener('message', (e) => {
   if (e.data === 'skip-waiting') self.skipWaiting();
 });
@@ -86,6 +95,9 @@ self.addEventListener('fetch', (e) => {
 
   // Model weights: network only. See the comment at the top.
   if (isHeavy(url)) return;
+
+  // registerPWA asking the server whether a new build is out: never from cache.
+  if (url.searchParams.has('fresh')) return;
 
   // Navigations: network first, so a new build is picked up the moment it
   // ships, but the app still opens with no signal at all.

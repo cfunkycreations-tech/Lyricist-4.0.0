@@ -40,6 +40,7 @@
       "comfySetup.js",
       "kaggleCloud.js",
       "captionSkill.js",
+      "licenseCheck.js",
       "splash/**/*",
       "src/assets/icon.ico",
       "!node_modules/**/*"
