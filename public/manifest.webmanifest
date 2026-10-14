@@ -1,7 +1,7 @@
 {
   "name": "Lyricist 4.2.0 Goes Quantum",
   "short_name": "Lyricist",
-  "description": "A free songwriting studio. Write, shape, forge full songs, loop live, master albums, and turn finished lyrics into real music. No subscription, no data collection.",
+  "description": "A songwriting studio. Write, shape, forge full songs, loop live, master albums, and turn finished lyrics into real music. No subscription, no data collection.",
   "id": "/",
   "start_url": ".",
   "scope": ".",

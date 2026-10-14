@@ -1,14 +1,14 @@
 # 🎵 Lyricist
 
-### Free AI-Powered Songwriting Studio for Windows
+### AI-Powered Songwriting Studio for Windows
 
 **Write full, original songs from a blank page — line by line.** Lyricist is a complete creative workspace that helps you draft, refine, and finish real songs with AI. Set your genre, mood, topic, and even an artist influence, and the AI writes your verses, choruses, and bridges. Then you shape every line your way.
 
-> *Free AI tools for the masses. Always free, available for all. Keep Austin Wonky.*
+> *AI tools for the masses. Keep Austin Wonky.*
 
-Built by **Christopher Funk (CFunky)** — a self-taught AI technologist in Austin, Texas — because powerful creative tools shouldn't be locked behind a paywall.
+Built by **Christopher Funk (CFunky)** — a self-taught AI technologist in Austin, Texas — because powerful creative tools shouldn't cost a monthly bill.
 
-**No account. No data collected. Always free.**
+**Lyricist Pro is $19.99 once on [Gumroad](https://funkycreations.gumroad.com/l/lyricist-pro). No subscription. No account. No data collected.**
 
 ---
 
@@ -18,9 +18,9 @@ Built by **Christopher Funk (CFunky)** — a self-taught AI technologist in Aust
 |------|--------------|
 | 🎵 **Songwriter** | Full AI lyric generation with structure presets, rhyme scheme / density / flow controls, cadence, hook-first mode, fill-in-the-blank, and a bridge builder. Refine any line — *harder, simpler, or elevated* — adjust syllables, lock the words you love, add ad-libs, and watch live stats like word variety and reading level. |
 | 👻 **Ghost Rider** | Studies any artist's writing style, then helps you write a brand-new **original** song in that style. It never copies — always original. Includes one-click Suno style tags. |
-| 📖 **Rhyme Helper** | Find perfect, slant, and internal rhymes, and scan your own lines for rhyme patterns. *Free — no AI key needed.* |
-| 📚 **Thesaurus** | Synonyms, antonyms, and related words to find the exact word your line is missing. *Free — no key.* |
-| 📕 **Dictionary** | English **and Spanish** definitions, pronunciation, and example sentences. *Free — no key.* |
+| 📖 **Rhyme Helper** | Find perfect, slant, and internal rhymes, and scan your own lines for rhyme patterns. *No AI key needed.* |
+| 📚 **Thesaurus** | Synonyms, antonyms, and related words to find the exact word your line is missing. *No key needed.* |
+| 📕 **Dictionary** | English **and Spanish** definitions, pronunciation, and example sentences. *No key needed.* |
 | 📝 **Scratchpad** | A full-page, auto-saving notepad so no hook or idea ever gets lost. |
 
 ---
@@ -71,15 +71,11 @@ npm run build
 
 ---
 
-## ❤️ Support the Work
+## 🛒 Get Lyricist Pro
 
-Lyricist is free because Christopher makes it free. If it helps you, consider supporting so he can keep building:
+**$19.99 once** on Gumroad: https://funkycreations.gumroad.com/l/lyricist-pro
 
-- **Hire on Fiverr:** https://www.fiverr.com/s/m541z1V
-- **PayPal:** https://paypal.me/funkchris
-- **Venmo:** https://venmo.com/u/Chris-Funk-20
-- **Cash App:** https://cash.app/$cfunkycreations
-- **Buy Me a Coffee:** https://www.buymeacoffee.com/cfunkycream
+For custom work, hire Christopher on Fiverr: https://www.fiverr.com/s/m541z1V
 
 📧 **cfunkycreations@gmail.com** · 🌐 [cfunkycreationsllc.com](https://cfunkycreationsllc.com)
 
@@ -91,4 +87,4 @@ The real story behind Lyricist and CFunky Creations — in Christopher's own wor
 
 ---
 
-© 2026 **CFunky Creations LLC** · Austin, Texas · *Free AI Tools for the Masses* · Keep Austin Wonky.
+© 2026 **CFunky Creations LLC** · Austin, Texas · *AI Tools for the Masses* · Keep Austin Wonky.

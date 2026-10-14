@@ -113,7 +113,7 @@ app-wide including the ghost's spoken lines and audio files.
 Modal is **not** a shipped engine and gets no IPC channel, no Settings key and no
 `EngineSetup` card. It is a developer tool that runs Chatterbox to bake ghost voice-over
 (see Workstream 4). This keeps `env.allowRemoteModels = false` (`GhostVoice.js:280`) intact,
-adds no per-user account, and keeps the app free.
+adds no per-user account, and adds no running cost.
 
 New file **`scripts/modal_chatterbox.py`** — a Modal app exposing a Chatterbox TTS function,
 plus a local driver that posts lines and writes wavs. Modal's free tier is $30/mo of

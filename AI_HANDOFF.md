@@ -376,8 +376,8 @@
 > **Re-record the wizard narration** after changing any card text:
 > `python scripts/generate-wizard-audio.py --qa`
 >
-> **Who this is for:** Chris Funk / CFunky Creations LLC, Austin TX. The app is free, forever, for
-> everybody — so **every dependency must be free**, and nothing may require an account the user has
+> **Who this is for:** Chris Funk / CFunky Creations LLC, Austin TX. Lyricist Pro sells for **$19.99
+> once on Gumroad** — never call it free, free forever or always free. **Every dependency must be free**, and nothing may require an account the user has
 > to pay to keep. Verify "free" before building on it. Read "The rules he has actually had to
 > repeat" below before you write any code.
 
@@ -420,13 +420,13 @@ He pays per token and has been burned by an overage. **Be concise. Do the work; 
 > **Keep Austin, Austin, Bruh**
 
 Not "Keep Austin Weird." Not "Keep Austin Wonky." The "Bruh" is the punchline, aimed at the tech bros
-who moved in. Never drop it. Other motto: *"Free AI tools for the masses."*
+who moved in. Never drop it. Other motto: *"AI tools for the masses."*
 
 ---
 
 ## The project
 
-Electron + Vite + React desktop app. **Free forever, no paywall, no subscription.**
+Electron + Vite + React desktop app. **Lyricist Pro: $19.99 once on Gumroad, no subscription.** Never call the app free.
 
 - **Code:** `V:\src\Lyricist-4.0.0` (folder name says 4.0.0; the app is 4.2.0)
 - **Do NOT** put code in `V:\Lyricist 4.2.0 UI renders` — that folder is render exports and assets
@@ -437,7 +437,7 @@ Electron + Vite + React desktop app. **Free forever, no paywall, no subscription
 ### Why it exists
 
 Chris and his brother used to busk downtown. He considers this **online busking** — same act, bigger
-corner. The money was never the point; somebody walking away with a song was. That's why it's free.
+corner. Somebody walking away with a song is the point. That's why it's $19.99 once, not a subscription.
 Keep that in mind for any copy you write.
 
 ---
@@ -601,8 +601,8 @@ opaque backdrop already has one — its own root background.
 - **The donation buttons work. They never had.** Fiverr, PayPal, Venmo, Cash App and Buy Me A
   Coffee all did nothing when clicked — no browser, no error. `setWindowOpenHandler` denied every
   window request that wasn't the visualizer popout, **and a `target="_blank"` link is a window
-  request**. The URLs were right the whole time; nothing was ever allowed to open them. This is how
-  Chris gets paid for a free app, so treat any breakage here as urgent.
+  request**. The URLs were right the whole time; nothing was ever allowed to open them. Treat any
+  breakage here as urgent.
   - http(s) links now go out through `shell.openExternal` — the user's own browser, where they are
     already signed in to PayPal or Venmo. The visualizer popout path is untouched.
   - A `will-navigate` guard was added too: a link **without** `target="_blank"` navigates the app
