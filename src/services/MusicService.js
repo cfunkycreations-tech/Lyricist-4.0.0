@@ -202,8 +202,11 @@ export function explainCloudError(payload) {
     const when = (msg.match(/Try again in ([\d:]+)/) || [])[1];
     return 'The free cloud is out of time for today'
       + (when ? `, and resets in ${when}` : '')
-      + '. Adding a free Hugging Face token in Settings raises this a lot. '
-      + 'Until then, Kaggle or your own computer will still make the song.';
+      + '. Adding a free Hugging Face token in Settings raises this a lot.'
+      // Kaggle and a local engine are the Windows app's; the phone only has this.
+      + (typeof window !== 'undefined' && window.lyricistAPI
+        ? ' Until then, Kaggle or your own computer will still make the song.'
+        : '');
   }
 
   /**
@@ -782,9 +785,37 @@ export async function generateTakes({ seeds = [0], onTake, ...opts } = {}) {
     return made;
   }
 
+  /**
+   * TWO TAKES MEANS TWO TAKES.
+   *
+   * Chris, 2026-10-14, on his iPhone: asked for two, got one, every time. The
+   * free cloud makes them one call after the other, and the second call is
+   * the one that meets the day's GPU allowance. It threw, the run ended, and
+   * the screen never said that one of the two had come back. Now a later take
+   * that fails gets one more try (unless the reason is the daily allowance or
+   * the length, which a retry cannot change), and if it still fails the takes
+   * already made stay and the message says how many of how many arrived.
+   */
   const made = [];
   for (const seed of list) {
-    const res = await generateSong({ ...opts, seed, seeds: [seed] });
+    let res = null;
+    for (let attempt = 1; !res; attempt++) {
+      try {
+        res = await generateSong({ ...opts, seed, seeds: [seed] });
+      } catch (e) {
+        if (opts.signal?.aborted || !made.length) throw e;
+        const final = attempt >= 2 || /out of time for today|too long for the free cloud/i.test(e.message);
+        if (final) {
+          throw new Error(`Got ${made.length} of ${list.length} takes. ${e.message}`);
+        }
+        opts.onProgress?.({ phase: `take ${made.length + 1} hit a snag, trying it once more` });
+        await new Promise((r) => {
+          const t = setTimeout(r, 20000);
+          opts.signal?.addEventListener?.('abort', () => { clearTimeout(t); r(); }, { once: true });
+        });
+        if (opts.signal?.aborted) throw e;
+      }
+    }
     const one = { ...res, blob: res.blob, seed };
     made.push(one);
     onTake?.(one);

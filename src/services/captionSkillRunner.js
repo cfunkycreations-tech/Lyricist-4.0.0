@@ -31,6 +31,7 @@ import { assertApiKey } from './AIService.js';
 import { stripReasoning } from '../utils/stripReasoning.js';
 import { resolveGhostModel, freeGhostModels } from './GhostService.js';
 import { chatCompletion } from './openrouter.js';
+import { captionSkillWeb } from '../web/captionSkillWeb.js';
 
 
 /**
@@ -50,10 +51,13 @@ const WRITE_BUDGET = 10000;
 /** Free models that refused for good this session ("only available on agentic harnesses"). */
 const refused = new Set();
 
-const api = () => (typeof window !== 'undefined' ? window.lyricistAPI : null);
+// The desktop app reads the skill off disk; the phone reads the same files from
+// MiniMax's repository (src/web/captionSkillWeb.js). Same calls either way.
+const api = () => (typeof window !== 'undefined' && window.lyricistAPI?.captionSkillOpen
+  ? window.lyricistAPI
+  : captionSkillWeb);
 
-/** Is the skill on this machine at all? The desktop app carries it; a browser
- *  preview does not, and saying so beats failing three calls in. */
+/** Is the skill reachable at all? Saying so beats failing three calls in. */
 export async function captionSkillReady() {
   const r = await api()?.captionSkillPresent?.();
   return r?.ok ? r : { ok: false, error: r?.error || 'The caption skill only runs in the desktop app.' };
@@ -202,7 +206,7 @@ export async function runCaptionSkill({
   }
 
   const bridge = api();
-  if (!bridge?.captionSkillOpen) throw new Error('The caption skill only runs in the desktop app.');
+  if (!bridge?.captionSkillOpen) throw new Error('The caption skill could not be reached.');
 
   onStage?.('Reading the skill');
   const open = await bridge.captionSkillOpen();

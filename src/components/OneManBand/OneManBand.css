@@ -448,6 +448,16 @@
 .omb-take .badge.saved {
   color: #FFD08A; border-color: rgba(var(--accent-rgb), .55); background: rgba(var(--accent-rgb), .18);
 }
+/* "in Recordings" opens the Recording Booth, where the songs are. */
+button.badge.saved { cursor: pointer; }
+.omb-link {
+  background: none; border: 0; padding: 0; cursor: pointer; font: inherit; font-weight: 700;
+  color: #FFD08A; text-decoration: underline; text-underline-offset: 3px;
+}
+/* Takes header: the title, Clear all on the right, the where-line under both. */
+.omb-rackhd { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.omb-rackhd > .omb-clear { margin-left: auto; }
+.omb-rackhd > .omb-rackwhere { flex-basis: 100%; }
 
 /* The lyric video's progress and result, under the take it belongs to. */
 .omb-videoline {
