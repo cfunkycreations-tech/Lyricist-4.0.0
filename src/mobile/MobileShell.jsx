@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './mobile.css';
-import { KeyRound } from 'lucide-react';
+import { KeyRound, Info, Share, X } from 'lucide-react';
 import { Glyph } from '../components/common/Glyph.jsx';
 import { useLyricStore } from '../context/LyricStore.jsx';
+import { useInstallOffer } from './install.js';
 
 /**
  * THE PHONE NAVIGATION, built from the approved landscape mockups.
@@ -68,6 +69,42 @@ const ACTIONS = {
   voicelab: { hook: 'vl-play', label: 'Read it' },
 };
 
+/* Tools built around a wide grid. Held upright they still work, but the grid
+   runs off the side, so they say so once instead of looking broken. */
+const WIDE = new Set(['quantum', 'midistudio']);
+
+/* WHAT EACH TOOL IS FOR, THE FIRST TIME YOU OPEN IT.
+   On desktop every control explains itself on hover. A phone has no hover, so
+   the tool's own one-paragraph description (the `help` line in App.jsx) comes
+   up once, the first time, and after that lives behind the (i) in the bar. */
+const SEEN_KEY = 'lyricist.mob.seen';
+function readSeen() {
+  try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || '[]')); } catch { return new Set(); }
+}
+function markSeen(id) {
+  try {
+    const seen = readSeen();
+    seen.add(id);
+    localStorage.setItem(SEEN_KEY, JSON.stringify([...seen]));
+  } catch { /* private mode: shown again next time */ }
+}
+
+/* The help lines were written for a mouse. On a phone you tap. */
+function touchWords(text) {
+  return String(text || '').replace(/\b(double-)?click(s|ed|ing)?\b/gi, (m, dbl, end) => {
+    const tap = { s: 'taps', ed: 'tapped', ing: 'tapping' }[(end || '').toLowerCase()] || 'tap';
+    const word = (dbl ? 'double-' : '') + tap;
+    return m[0] === m[0].toUpperCase() ? word[0].toUpperCase() + word.slice(1) : word;
+  });
+}
+
+/* A text box the keyboard can cover. */
+function isField(el) {
+  if (!el || el.nodeType !== 1) return false;
+  if (el.isContentEditable || el.tagName === 'TEXTAREA') return true;
+  return el.tagName === 'INPUT' && !/^(range|checkbox|radio|color|file|button|submit|reset)$/i.test(el.type);
+}
+
 function TileIcon({ tab }) {
   if (tab.img) return <img className="mob-tile-ico" src={tab.img} alt="" aria-hidden="true" />;
   return <span className="mob-tile-ico mob-tile-emoji" aria-hidden="true"><Glyph name={tab.icon} size={24} strokeWidth={1.5} /></span>;
@@ -98,6 +135,26 @@ function findVisible(hook) {
 export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
   const store = useLyricStore();
   const hasKey = !!String(store.config?.openRouterApiKey || '').trim();
+  const installOffer = useInstallOffer();
+  // The tool whose description card is showing, or null.
+  const [helpFor, setHelpFor] = useState(null);
+  const [wideHintOff, setWideHintOff] = useState(false);
+  const [keyToast, setKeyToast] = useState(false);
+  const hadKey = useRef(hasKey);
+
+  /* THE MOMENT THE KEY GOES IN, SAY SO. Pasting it into Settings used to change
+     nothing you could see; the only proof it worked was going back and trying
+     a tool. Now it says it worked and offers the way back to writing. */
+  useEffect(() => {
+    if (hasKey && !hadKey.current) {
+      setKeyToast(true);
+      const t = setTimeout(() => setKeyToast(false), 6000);
+      hadKey.current = hasKey;
+      return () => clearTimeout(t);
+    }
+    hadKey.current = hasKey;
+    return undefined;
+  }, [hasKey]);
 
   // null = launcher showing. Otherwise the id of the open tool.
   const [openId, setOpenId] = useState(null);
@@ -128,6 +185,11 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
     const tool = (s && s.tool) || null;
     setSheet(!!(s && s.sheet));
     setOpenId(tool);
+    // Marked seen as soon as it shows, so leaving by the back arrow instead of
+    // "Got it" still counts: it is a first-time card, never a nag.
+    const firstTime = !!tool && !readSeen().has(tool);
+    if (firstTime) markSeen(tool);
+    setHelpFor(firstTime ? tool : null);
     if (tool && tool !== lastActive.current) {
       lastActive.current = tool;
       onSelectRef.current(tool);
@@ -177,6 +239,7 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
   };
 
   const openSheet = () => {
+    setHelpFor(null);
     try { window.history.pushState({ mob: { tool: openRef.current, sheet: true } }, ''); } catch { /* no history */ }
     setSheet(true);
   };
@@ -198,18 +261,47 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
+  /* THE KEYBOARD MUST NOT COVER WHAT YOU ARE TYPING.
+     Sideways, the on-screen keyboard takes more than half of a 390px screen,
+     and a box in the lower half (Songwriter's notes, the Scratchpad, the
+     Settings key field) disappeared under it the moment it was tapped. When a
+     text box gets focus, and again when the keyboard finishes opening, it is
+     scrolled into the part of the screen that is left. */
+  useEffect(() => {
+    let timer = 0;
+    const reveal = () => {
+      const el = document.activeElement;
+      if (!isField(el) || el.closest('.mob-root')) return;
+      el.scrollIntoView({ block: el.tagName === 'TEXTAREA' ? 'nearest' : 'center', behavior: 'smooth' });
+    };
+    const onFocus = (e) => {
+      if (!isField(e.target)) return;
+      clearTimeout(timer);
+      timer = setTimeout(reveal, 350);
+    };
+    const vv = window.visualViewport;
+    document.addEventListener('focusin', onFocus);
+    if (vv) vv.addEventListener('resize', reveal);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('focusin', onFocus);
+      if (vv) vv.removeEventListener('resize', reveal);
+    };
+  }, []);
+
   /* Escape closes the sheet, then the tool. Being unable to get out of a screen
      is the fastest way to make an app feel broken. */
   useEffect(() => {
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
-      if (sheet) closeSheet();
+      if (helpFor) closeHelp();
+      else if (sheet) closeSheet();
       else if (openId) goHome();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sheet, openId]);
+  }, [sheet, openId, helpFor]);
 
   /* Tell the document whether a tool is open, so the CSS can give the tab
      content the full height minus the bar. */
@@ -219,6 +311,8 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
   }, [openId]);
 
   const current = tabs.find((t) => t.id === openId);
+  const helpTab = helpFor ? tabs.find((t) => t.id === helpFor) : null;
+  const closeHelp = () => setHelpFor(null);
   const action = openId ? ACTIONS[openId] : null;
   const actionNeedsKey = !!action && NEEDS_KEY.has(openId) && !hasKey;
 
@@ -274,6 +368,15 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
                 {actionNeedsKey ? 'Add key' : action.label}
               </button>
             )}
+            {current?.help && (
+              <button
+                className="mob-icon-btn"
+                onClick={() => setHelpFor(helpFor ? null : openId)}
+                aria-label={`What ${current.label} does`}
+              >
+                <Info size={20} strokeWidth={2} aria-hidden="true" />
+              </button>
+            )}
           </>
         ) : (
           <>
@@ -313,9 +416,11 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
           onClick={() => (sheet ? closeSheet() : openSheet())}
           aria-label={sheet ? 'Close the tool list' : 'All tools'}
         >
+          {/* An X while the list is open: the list covers everything under
+              the bar, so this is the obvious way back out of it. */}
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-            <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" strokeWidth="2"
-                  strokeLinecap="round" />
+            <path d={sheet ? 'M6 6l12 12M18 6L6 18' : 'M4 7h16M4 12h16M4 17h16'} fill="none"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </button>
       </header>
@@ -342,6 +447,27 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
           </button>
         )}
 
+        {installOffer.kind && (
+          <div className="mob-install">
+            <span className="mob-install-text">
+              {installOffer.kind === 'ios' ? (
+                <>
+                  Put it on your home screen: tap <Share size={14} strokeWidth={2} aria-label="Share" className="mob-install-ico" />{' '}
+                  <b>Share</b>, then <b>Add to Home Screen</b>. It opens full screen, like an app.
+                </>
+              ) : (
+                <>Put Lyricist Pro on your home screen. It opens full screen, like an app.</>
+              )}
+            </span>
+            {installOffer.kind === 'prompt' && (
+              <button className="mob-install-go" onClick={installOffer.install}>Install</button>
+            )}
+            <button className="mob-install-x" onClick={installOffer.dismiss} aria-label="Not now">
+              <X size={16} strokeWidth={2} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+
         {groups.map((g) => (
           <section className="mob-group" key={g.name}>
             <h2 className="mob-group-h">{g.name}</h2>
@@ -366,6 +492,41 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
           </span>
         </div>
       </div>
+
+      {keyToast && (
+        <div className="mob-toast" role="status">
+          <span>Key saved. The writing tools are ready.</span>
+          <button onClick={() => { setKeyToast(false); go('songwriter'); }}>Start writing</button>
+        </div>
+      )}
+
+      {openId && WIDE.has(openId) && !wideHintOff && (
+        <div className="mob-wide-hint" role="note">
+          <span>Turn your phone sideways for the whole grid.</span>
+          <button onClick={() => setWideHintOff(true)} aria-label="Hide this">
+            <X size={14} strokeWidth={2} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
+      {helpTab && !sheet && (
+        <>
+          <div className="mob-scrim" onClick={closeHelp} />
+          <div className="mob-help" role="dialog" aria-label={`What ${helpTab.label} does`}>
+            <div className="mob-help-head">
+              <TileIcon tab={helpTab} />
+              <span className="mob-help-title">{helpTab.label}</span>
+            </div>
+            <p className="mob-help-text">{touchWords(helpTab.help)}</p>
+            {!hasKey && NEEDS_KEY.has(helpTab.id) && (
+              <p className="mob-help-key">
+                <KeyRound size={13} strokeWidth={2} aria-hidden="true" /> Needs your free AI key from Settings.
+              </p>
+            )}
+            <button className="mob-help-ok" onClick={closeHelp}>Got it</button>
+          </div>
+        </>
+      )}
 
       {sheet && (
         <>

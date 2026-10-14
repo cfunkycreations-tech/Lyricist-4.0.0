@@ -621,7 +621,9 @@ export default function Settings() {
           boxes stay empty until modal/lyricist_comfy.py has been deployed, and
           the Modal button in Black Hole Studios stays disabled until the URL is
           filled in. The token is entered here, never baked into the build. */}
-      <div style={{ marginBottom: 18 }} data-help="Optional. Runs Black Hole Studios on your own GPU at Modal instead of this computer. Deploy modal/lyricist_comfy.py once, then paste the address it prints and the token you chose. Both stay on your computer.">
+      {/* desktop-only: the phone build cannot use Modal (Black Hole Studios runs
+          on the free cloud there), so mobile.css hides this box on a phone. */}
+      <div className="desktop-only" style={{ marginBottom: 18 }} data-help="Optional. Runs Black Hole Studios on your own GPU at Modal instead of this computer. Deploy modal/lyricist_comfy.py once, then paste the address it prints and the token you chose. Both stay on your computer.">
         <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(231,165,64,0.75)', marginBottom: 5, display: 'block' }}>
           Black Hole Studios — Modal GPU (optional)
         </label>
