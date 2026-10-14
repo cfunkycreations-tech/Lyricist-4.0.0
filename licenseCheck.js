@@ -55,7 +55,9 @@ async function ask(code, recheck) {
   });
   const data = await res.json().catch(() => ({}));
   if (!data.success) {
-    if (res.status >= 500) throw new Error('gumroad down');
+    // Gumroad's real "no such code" is a 404 with success: false. Anything else
+    // (rate limit, a firewall page, an outage) is not a no, so it never locks.
+    if (res.status !== 404 || data.success !== false) throw new Error(`gumroad ${res.status}`);
     return { ok: false, revoked: true, why: 'That code does not match a Lyricist Pro purchase. Copy it straight from your receipt.' };
   }
   const p = data.purchase || {};

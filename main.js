@@ -667,6 +667,10 @@ ipcMain.handle('ghost-log-open', async () => {
 const LAUNCH_ID = `${Date.now()}-${process.pid}`;
 ipcMain.on('launch-id', (event) => { event.returnValue = LAUNCH_ID; });
 
+// Windows shows a notification (songDone.js) only for an app with an ID; the
+// installer's shortcut carries this same one (package.json build.appId).
+if (process.platform === 'win32') app.setAppUserModelId('com.cfunkycreations.lyricist');
+
 // The Gumroad purchase code (licenseCheck.js). PurchaseLock asks for it once.
 licenseCheck.register(ipcMain, () => app.getPath('userData'));
 
@@ -1898,7 +1902,9 @@ app.whenReady().then(() => {
   // see it perfectly well. 'media' is what lets the recording lanes capture a
   // take through the microphone.
   const ALLOWED_PERMISSIONS = new Set([
-    'media', 'audioCapture', 'midi', 'midiSysex', 'fileSystem', 'clipboard-sanitized-write'
+    'media', 'audioCapture', 'midi', 'midiSysex', 'fileSystem', 'clipboard-sanitized-write',
+    // "Your song is ready" (src/web/songDone.js) when the window is in the back.
+    'notifications',
   ]);
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
     callback(ALLOWED_PERMISSIONS.has(permission));

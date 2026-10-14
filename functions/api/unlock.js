@@ -65,8 +65,10 @@ export async function onRequestPost({ request, env }) {
   }
 
   // Gumroad answers a code it does not know with 404 and success: false.
+  // Anything else (rate limit, outage, a firewall page) is not a no, so it
+  // never locks a phone. Same rule as licenseCheck.js.
   if (!data.success) {
-    if (res.status >= 500) return json({ ok: false, why: 'Gumroad is not answering right now. Try again in a minute.' }, 502);
+    if (res.status !== 404 || data.success !== false) return json({ ok: false, why: 'Gumroad is not answering right now. Try again in a minute.' }, 502);
     return json({ ok: false, revoked: true, why: 'That code does not match a Lyricist Pro purchase. Copy it straight from your receipt.' });
   }
 
