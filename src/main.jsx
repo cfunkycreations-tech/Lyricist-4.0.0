@@ -105,8 +105,10 @@ try {
   console.error(e);
   rootEl.innerHTML = `<div style="padding:32px;color:#fff;background:#0b0d10;min-height:100vh;font-family:sans-serif">
     <h1 style="color:#ff6b9d">Lyricist Pro failed to start</h1>
-    <pre style="white-space:pre-wrap;color:#e6e8eb">${String(e?.stack || e)}</pre>
+    <pre style="white-space:pre-wrap;color:#e6e8eb"></pre>
   </div>`;
+  // As text, never as markup.
+  rootEl.querySelector('pre').textContent = String(e?.stack || e);
 }
 
 window.addEventListener('error', (ev) => {
