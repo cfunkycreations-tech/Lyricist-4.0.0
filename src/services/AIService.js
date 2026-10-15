@@ -488,7 +488,19 @@ SONGWRITING CONFIGURATION:
 - Cadence Notes: ${store.cadenceNotes || "none"}
 - Topic / Concept: ${store.topic || "generic human tension"}
 - Artist Reference: ${store.artistRef || "none"}
-${store.sunoTags ? `- Style Tags (the exact sound of this song, these win over the genre and mood above): ${store.sunoTags}\n` : ''}`;
+${store.sunoTags ? `- Style Tags (the exact sound of this song, these win over the genre and mood above): ${store.sunoTags}\n` : ''}${writerNotes(store)}`;
+}
+
+/**
+ * THE NOTES BOX WAS NEVER SENT. Chris wrote "use plenty of expletives" in it
+ * and got a song without one (2026-10-15): no prompt in the app read it. Now
+ * every Songwriter write gets it, worded as orders, not as a hint.
+ */
+function writerNotes(store) {
+  const notes = String(store.notes || '').trim();
+  return notes
+    ? `\nTHE WRITER'S NOTES. Do exactly what these say; they beat every other setting above:\n${notes}\n`
+    : '';
 }
 
 const HUMAN_LYRICIST_RULES = `
@@ -520,9 +532,12 @@ export async function generateFullSong(store) {
     : '';
 
   const systemPrompt = `You are a professional lyricist and songwriter. Output lyrics only. Clear section markers like [Verse 1], [Chorus], etc.\n${NO_CLICHES}`;
+  // Said again last, where a model weighs it most.
+  const notes = String(store.notes || '').trim();
+  const orders = notes ? `\n\nBefore you answer, check the song does what the writer's notes say: ${notes}` : '';
   const userPrompt = hasDraft
-    ? `Rewrite this song. Keep its story, its point of view and its sections in the same order, and make every line stronger. Output the whole rewritten song.\n\nCONTEXT:\n${context}${ideas}\n\nTHE DRAFT TO REWRITE:\n${draft}`
-    : `Write the full song lyrics based on this context:\n${context}${ideas}\n\nSTRUCTURE:\n${structureSequence}`;
+    ? `Rewrite this song. Keep its story, its point of view and its sections in the same order, and make every line stronger. Output the whole rewritten song.\n\nCONTEXT:\n${context}${ideas}\n\nTHE DRAFT TO REWRITE:\n${draft}${orders}`
+    : `Write the full song lyrics based on this context:\n${context}${ideas}\n\nSTRUCTURE:\n${structureSequence}${orders}`;
 
   const messages = [
     { role: "system", content: systemPrompt },

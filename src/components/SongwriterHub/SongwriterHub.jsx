@@ -155,8 +155,12 @@ export default function SongwriterHub({ ghostRiderData }) {
     try {
       const generatedSections = await generateFullSong(store);
       store.setFullLyrics(generatedSections);
-      // Land on the first line of the new song, not wherever the last one was scrolled to.
-      workRef.current?.scrollTo({ top: 0 });
+      // Land on the first line of the new song, not wherever the last one was
+      // scrolled to. On a phone held upright the whole tab is one scroll, so
+      // bring the lyrics up instead.
+      const work = workRef.current;
+      if (work && work.scrollHeight > work.clientHeight + 1) work.scrollTo({ top: 0 });
+      else work?.scrollIntoView({ block: 'start', behavior: 'smooth' });
       // Say which model actually wrote it, and own up if any of it was thrown
       // away. A router can serve a different model than the one you picked, and
       // when the words come back wrong you need to know who wrote them.
@@ -370,9 +374,9 @@ export default function SongwriterHub({ ghostRiderData }) {
   const hasWords = store.lyrics.some((sec) => sec.lines.some((l) => String(l.text || '').trim()));
 
   return (
-    <div style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'radial-gradient(70% 50% at 20% 0%, rgba(231,165,64,0.08) 0%, transparent 55%), radial-gradient(60% 45% at 85% 100%, rgba(155,161,170,0.08) 0%, transparent 50%), #08090b' }}>
+    <div className="sw-root" style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'radial-gradient(70% 50% at 20% 0%, rgba(231,165,64,0.08) 0%, transparent 55%), radial-gradient(60% 45% at 85% 100%, rgba(155,161,170,0.08) 0%, transparent 50%), #08090b' }}>
       <TabBackground name="songwriter" />
-      <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div className="sw-inner" style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
 
       {/* Songwriter controls — below the banner. The class stacks the two
@@ -828,7 +832,7 @@ export default function SongwriterHub({ ghostRiderData }) {
       </div>
 
       {/* Main Lyrics Editor workspace */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'rgba(8,10,13,0.45)' }}>
+      <div className="sw-work" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'rgba(8,10,13,0.45)' }}>
         {/* Workspace Toolbar. The class is for the phone: it wraps there (mobile.css). */}
         <div
           className="sw-toolbar"
@@ -1043,7 +1047,7 @@ export default function SongwriterHub({ ghostRiderData }) {
         )}
 
         {/* Workspace Body. overflowX hidden: nothing in it may slide sideways. */}
-        <div ref={workRef} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: 20 }}>
+        <div ref={workRef} className="sw-work-body" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: 20 }}>
           {store.lyrics.length > 0 ? (
             store.lyrics.map((section, idx) => (
               <SectionEditor key={section.id} section={section} index={idx} />

@@ -415,6 +415,7 @@ export default function SectionEditor({ section, index }) {
 
                 <input
                   type="number"
+                  className="sw-syl-target"
                   placeholder="--"
                   value={line.targetSyllables || ''}
                   onChange={(e) => handleTargetSyllablesChange(lIdx, e.target.value)}

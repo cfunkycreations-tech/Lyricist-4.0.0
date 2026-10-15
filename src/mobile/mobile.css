@@ -570,40 +570,73 @@ body.lyricist-mobile .sw-section-actions { flex-wrap: wrap; }
 /* SONGWRITER'S LINES ON A PHONE: the words first, across the whole card, and
    the count, lock, refine and regen underneath. The tools used to sit beside
    the line, invisible (they only show on hover) but still taking the room, so
-   the words got 88px. Nothing in the pane may slide sideways. */
-body.lyricist-mobile [data-tab-pane="songwriter"] { overflow-x: hidden !important; }
+   the words got 88px. The count stays; the syllable goal box ("--") goes:
+   nobody could tell what it was. */
+body.lyricist-mobile .sw-syl-target { display: none; }
 body.lyricist-mobile .lyric-line-row { flex-wrap: wrap; align-items: center !important; row-gap: 4px; }
 body.lyricist-mobile .lyric-line-row > div:nth-child(2) { order: -1; flex: 1 1 100% !important; padding: 2px 2px 0 !important; }
 body.lyricist-mobile .lyric-line-row .hover-line-actions { opacity: 1; margin-left: auto; }
 body.lyricist-mobile .sw-row .card-cosmic { max-width: 100%; box-sizing: border-box; padding: 14px 12px !important; }
-body.lyricist-mobile .sw-section-actions select { max-width: 100%; min-width: 0; }
+/* The section's tools on one row: the Refine menu takes what is left. */
+body.lyricist-mobile .sw-section-actions { width: 100%; flex-wrap: nowrap; }
+body.lyricist-mobile .sw-section-actions select { flex: 1 1 auto; min-width: 0; max-width: 100%; }
 
-/* SONGWRITER HELD UPRIGHT: setup on top, lyrics underneath. Side by side at
-   390px wide left the lyrics pane 70px wide, one word per line. */
+/* SONGWRITER HELD UPRIGHT: setup on top, lyrics underneath, ONE SCROLL.
+   Side by side at 390px left the lyrics 70px wide. Then it was two half-
+   screen boxes, each scrolling on its own, the lyrics squeezed into the
+   bottom one (Chris, 2026-10-15: "not ergonomic at all"). Now the whole tab
+   scrolls as one page, top to bottom, the way a phone app does. */
 @media (max-width: 560px) {
   body.lyricist-mobile .sw-row { flex-direction: column; }
+  body.lyricist-mobile .sw-root,
+  body.lyricist-mobile .sw-inner,
+  body.lyricist-mobile .sw-row,
+  body.lyricist-mobile .sw-work,
+  body.lyricist-mobile .sw-work-body {
+    flex: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
   body.lyricist-mobile .sw-row > .sidebar-cosmic {
     width: 100% !important;
-    flex: 0 0 auto !important;
-    max-height: 50%;
+    flex: none !important;
+    overflow: visible !important;
     border-right: 0;
     border-bottom: 1px solid rgba(155, 161, 170, 0.18);
   }
-  body.lyricist-mobile .sw-row > .sidebar-cosmic + div { min-height: 50%; }
 }
 
 /* THE SAME FOR EVERY OTHER TWO-PANE TOOL (Ghost Rider, Rhyme Helper): held
-   upright, the fixed-width pane took the whole 390px and the other one
-   vanished. Stacked, each gets the full width and half the height. */
+   upright, full width each and one scroll down the whole tool, not two
+   half-height boxes. */
 @media (max-width: 560px) {
-  body.lyricist-mobile .mob-stack { flex-direction: column; }
+  body.lyricist-mobile .mob-stack {
+    flex-direction: column;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
   body.lyricist-mobile .mob-stack > * {
     width: 100% !important;
-    flex: 1 1 0 !important;
+    flex: none !important;
     min-height: 0;
+    max-height: none !important;
+    overflow: visible !important;
     border-right: 0 !important;
   }
 }
+
+/* NOTHING SLIDES SIDEWAYS, IN ANY TOOL. Chris, 2026-10-15: the lyrics and
+   the alerts bounced side to side while he scrolled, on Songwriter and on
+   Ghost Rider. A tool's page never scrolls sideways and never rubber-bands
+   sideways; the few things built to scroll across (the piano roll) still do,
+   inside themselves. The zoom that caused most of it is stopped in App.jsx. */
+html:has(body.lyricist-mobile),
+body.lyricist-mobile { overscroll-behavior: none; }
+body.lyricist-mobile [data-tab-pane] { overflow-x: hidden !important; }
+body.lyricist-mobile [data-tab-pane] * { overscroll-behavior-x: none; }
+body.lyricist-mobile .ql-bgvid-clip { left: 0; right: 0; }
+body.lyricist-mobile .omb-write > header,
+body.lyricist-mobile .omb-writehd { flex-wrap: wrap; row-gap: 8px; }
 /* A row of box + buttons that runs off the side when narrow wraps instead. */
 body.lyricist-mobile .mob-wrap { flex-wrap: wrap; }
 body.lyricist-mobile .mob-wrap > input { min-width: 0; flex-basis: 100% !important; }
