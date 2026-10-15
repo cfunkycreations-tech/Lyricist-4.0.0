@@ -8,6 +8,7 @@ import { stripReasoning, isMostlyReasoning } from '../utils/stripReasoning.js';
 import { blendPhrase } from '../utils/blend.js';
 import { chatCompletion, listModels, noEndpointsHelp } from './openrouter.js';
 import { modelFit } from './modelFit.js';
+import { labelSections } from '../utils/importLyrics.js';
 
 export const lastGeneration = { model: null, provider: null, ok: true, reasons: [], dropped: 0, at: null, unfiltered: false };
 
@@ -865,20 +866,43 @@ export async function writeInArtistStyle(artist, topic, store) {
     ? `Topic: ${String(topic).trim()}`
     : 'Choose a typical subject for this artist.';
 
-  const prompt = `Write original lyrics in the style of ${name}. ${topicPrompt}
-Write a verse (16 bars) and a hook (8 bars). Match their rhyme schemes, vocabulary, and flow. Do NOT mention the artist's name anywhere in the lyrics.
+  /**
+   * A WHOLE SONG, EVERY TIME. The prompt used to ask for "a verse (16 bars)
+   * and a hook (8 bars)", so that is what came back: a verse and a chorus,
+   * sometimes a verse alone. Chris, 2026-10-15: "write a whole goddamn song
+   * every time." The sections are named so the model cannot stop early, and
+   * the chorus is written out every time it comes back, because Suno sings
+   * only what is on the page.
+   */
+  const prompt = `Write a COMPLETE original song in the style of ${name}. ${topicPrompt}
+${FULL_SONG_SHAPE}
+Match their rhyme schemes, vocabulary, and flow. Do NOT mention the artist's name anywhere in the lyrics.
 
 After the lyrics, on a new line write exactly this separator and nothing else:
 ---SUNO TAGS---
 Then on the very next line write 10-14 comma-separated Suno AI style keywords. STRICT RULES for the tags: NO artist names, NO real person names, NO celebrity names whatsoever. Only include: genre, subgenre, production style, mood, tempo, instruments, vocal style, era. One line only.`;
 
+  const system = 'You are an elite ghostwriter who captures the raw, authentic artistic voice, flow, cadence, vocabulary, and stylistic nuances of specific musical artists. You despise generic AI-sounding imitations. Focus on subtext, friction, and rhythm.\n' + NO_CLICHES;
+  // A whole song with every chorus written out needs the room.
+  const room = Math.max(Number(store.config?.maxTokens) || 0, 3000);
   const rawResult = await callAI([
-    { role: 'system', content: 'You are an elite ghostwriter who captures the raw, authentic artistic voice, flow, cadence, vocabulary, and stylistic nuances of specific musical artists. You despise generic AI-sounding imitations. Focus on subtext, friction, and rhythm.\n' + NO_CLICHES },
+    { role: 'system', content: system },
     { role: 'user', content: prompt }
-  ], store.config);
+  ], store.config, null, room);
 
   const parts = String(rawResult).split('---SUNO TAGS---');
-  const lyrics = parts[0]?.trim() || '';
+  let lyrics = labelSections(parts[0]?.trim() || '', 'Verse 1');
+
+  // Still short? One more pass: keep what is there, write what is missing.
+  const missing = missingSections(lyrics);
+  if (lyrics && missing.length) {
+    const more = await callAI([
+      { role: 'system', content: system },
+      { role: 'user', content: `This song is not finished. It is missing: ${missing.join(', ')}.\n${FULL_SONG_SHAPE}\nKeep every line already written, add what is missing, and output the WHOLE song with every section labelled. Lyrics only, nothing else.\n\n${lyrics}` }
+    ], store.config, null, room);
+    const done = labelSections(String(more).split('---SUNO TAGS---')[0].trim(), 'Verse 1');
+    if (missingSections(done).length < missing.length) lyrics = done;
+  }
 
   // Strip the artist's name out of the tags even if the model ignored the rule.
   const artistClean = name.toLowerCase();
@@ -889,6 +913,30 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
     .join(', ');
 
   return { lyrics, sunoTags };
+}
+
+const FULL_SONG_SHAPE = `It must be a whole song, never a sketch. Label every section in square brackets, in this order:
+[Intro] 2-4 lines (optional)
+[Verse 1] 12-16 lines
+[Pre-Chorus] 2-4 lines (if it suits the style)
+[Chorus] 6-8 lines
+[Verse 2] 12-16 lines, new images, the story moves on
+[Pre-Chorus] (if used above)
+[Chorus] written out in full again
+[Bridge] 4-8 lines that turn the song
+[Chorus] written out in full again
+[Outro] 2-4 lines`;
+
+/** Which parts of a whole song a labelled lyric still lacks. */
+function missingSections(text) {
+  const heads = (String(text).match(/^\[[^\]]+\]\s*$/gm) || []).map((h) => h.toLowerCase());
+  const count = (re) => heads.filter((h) => re.test(h)).length;
+  const out = [];
+  if (count(/verse/) < 2) out.push('a second verse');
+  if (count(/chorus|hook|refrain/) - count(/pre-?\s?chorus/) < 2) out.push('the chorus written out each time it comes back');
+  if (!count(/bridge/)) out.push('a bridge');
+  if (!count(/outro/)) out.push('an outro');
+  return out;
 }
 
 /**

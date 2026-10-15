@@ -166,6 +166,103 @@ export function captionBrief({ seconds, tags = [], genres = [], moods = [], voic
   return lines.join('\n');
 }
 
+/* ------------------------------------------------------------------ */
+/* THE SONG'S OWN FACTS                                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * SUNO TAGS, SORTED INTO WHAT A CAPTION NEEDS.
+ *
+ * Chris, 2026-10-15: the captions were not "rich input captions that tell the
+ * models exactly what kind of song to create". The skill rewrites the
+ * description it is handed and, by its own rules, invents nothing, and it was
+ * handed "the tempo a Rock record usually sits at". Meanwhile the song's own
+ * tags ("stomping mid-tempo, gruff vocal style, overdriven electric guitar,
+ * Hammond organ, raw lo-fi production, 2010s") sat unused. These sort them
+ * into the parts of a caption, so the draft and the skill both get them.
+ */
+const TAG_KINDS = [
+  ['tempo', /\b(\d{2,3}\s*bpm|bpm|tempo|slow|fast|mid-?tempo|up-?tempo|down-?tempo|half-?time|double-?time|stomp\w*|driving|shuffle|swing\w*|groove|laid-?back|paced?)\b/i],
+  ['vocals', /\b(vocals?|vocalist|voice|singer|sung|rap|rapped|rapping|croon\w*|falsetto|choir|harmon(y|ies)|baritone|tenor|soprano|alto|male|female)\b/i],
+  ['instruments', /\b(guitars?|bass|basses|bassline|drums?|kit|percussion|piano|keys|organ|hammond|synths?|synthesizers?|strings|violins?|cello|horns?|brass|sax\w*|trumpets?|harmonica|banjo|mandolin|fiddle|808s?|pads?|accordion|steel|slide|dobro|flute|claps?|hi-?hats?|snare|kick|riffs?)\b/i],
+  ['production', /\b(production|produced|lo-?fi|hi-?fi|mix|mixed|mastered|analog|tape|reverb|polished|raw|saturated|live room|studio)\b/i],
+  ['era', /\b((19|20)\d0s|[2-9]0s|vintage|retro)\b/i],
+  ['mood', /\b(mood|dark|sad|happy|angry|sardonic|melanchol\w*|uplifting|euphoric|brooding|defiant|playful|menacing|tender|aggressive|moody|somber|sombre|joyful|hopeful|bitter|swagger\w*|cocky|sultry|haunting|eerie|nostalgic|triumphant|rebellious|gritty|wistful|romantic)\b/i],
+];
+
+export function sortSunoTags(text = '') {
+  const out = { genre: [], tempo: [], vocals: [], instruments: [], production: [], era: [], mood: [] };
+  for (const raw of String(text).split(',')) {
+    const t = raw.trim();
+    if (!t) continue;
+    const kind = TAG_KINDS.find(([, re]) => re.test(t));
+    out[kind ? kind[0] : 'genre'].push(t);
+  }
+  return out;
+}
+
+/**
+ * Everything the app knows about this song, as the skill's "Additional
+ * constraints" input: the tags word for word, the sections in order, the real
+ * length. The skill's own Validate list says every explicit constraint and
+ * every section tag must survive, so these are what it checks itself against.
+ */
+export function songFacts({ sunoTags = '', subgenres = [], artistRef = '' } = {}) {
+  const lines = [];
+  const tags = String(sunoTags || '').trim();
+  if (tags) lines.push(`The song's own style tags, every one of them must show in the caption: ${tags}.`);
+  if (subgenres.length) lines.push(`Subgenres: ${subgenres.join(', ')}.`);
+  if (String(artistRef || '').trim()) {
+    lines.push(`The sound is in the vein of ${String(artistRef).trim()}. Use that for style only and never name any real artist, band or song in the caption.`);
+  }
+  return lines.join('\n');
+}
+
+/**
+ * WHAT A SECTION TAG IS CALLED IN A CAPTION.
+ *
+ * The check said "The timeline never mentions your verse, hook" on captions
+ * that walked the whole song: the skill calls a hook a chorus, and Songwriter
+ * names sections "Ghost Rider Verse (Gary Clark Jr.)" or "Bridge (AI Refined)".
+ * A tag is matched on the kind of section it is, with its usual names.
+ */
+const SECTION_NAMES = [
+  [/pre-?\s?chorus|lift|build/i, /pre-?\s?chorus|lift|build-?up/i],
+  [/post-?\s?chorus/i, /post-?\s?chorus|chorus/i],
+  [/chorus|hook|refrain/i, /chorus|hook|refrain/i],
+  [/verse/i, /verse/i],
+  [/bridge/i, /bridge|middle eight/i],
+  [/intro/i, /intro|opening|opens/i],
+  [/outro|coda|ending|end/i, /outro|coda|ending|ends|fade/i],
+  [/solo/i, /solo/i],
+  [/break(down)?/i, /break(down)?/i],
+  [/drop/i, /drop/i],
+  [/interlude|instrumental/i, /interlude|instrumental/i],
+];
+
+export function sectionMatcher(tag = '') {
+  const name = String(tag).replace(/\([^)]*\)/g, ' ').replace(/\d+/g, ' ').trim();
+  if (!name) return null;
+  const known = SECTION_NAMES.find(([is]) => is.test(name));
+  if (known) return known[1];
+  // Their own kind of section ("A Cappella", "Spoken Word"): its last real word.
+  const word = name.toLowerCase().split(/[^a-z]+/).filter((w) => w.length > 2).pop();
+  return word ? new RegExp(`\\b${word}`, 'i') : null;
+}
+
+/** The section tags a caption never mentions, deduped by kind. */
+export function sectionsMissing(text = '', tags = []) {
+  const seen = new Set();
+  const out = [];
+  for (const t of tags) {
+    const re = sectionMatcher(t);
+    if (!re || seen.has(re.source)) continue;
+    seen.add(re.source);
+    if (!re.test(text)) out.push(String(t).replace(/\([^)]*\)/g, '').replace(/\s*\d+$/, '').trim().toLowerCase());
+  }
+  return out;
+}
+
 /**
  * The sections one Input Caption has to contain.
  *
@@ -219,7 +316,10 @@ export function validateCaption(caption = '', { lyrics = '', instrumental = fals
   // people write "165 bpm", and the first version of this check only knew one
   // of them and called a perfectly good caption tempo-less.
   const hasNumber = /\b\d{2,3}\s*(bpm|beats)/i.test(all) || /\bbpm\b[^.\n]{0,12}?\d{2,3}/i.test(all);
-  const hasWords = /(tempo|slow|fast|mid-?tempo|up-?tempo|ballad|driving|relaxed|brisk)/i.test(all);
+  // Every way a real caption says how fast: "moderate groove", "mid-paced
+  // shuffle", "half-time feel", "laid-back pulse". The short list flagged
+  // good captions as tempo-less, over and over.
+  const hasWords = /(tempo|slow|fast|mid-?tempo|up-?tempo|down-?tempo|ballad|driving|relaxed|brisk|moderate|steady|pace|paced|pulse|groove|shuffle|swing|half-?time|double-?time|stomp|laid-?back|unhurried|lively|energetic|beats per minute)/i.test(all);
   if (!hasNumber && !hasWords) {
     problems.push('Nothing in there says how fast the song is.');
   }
@@ -250,11 +350,10 @@ export function validateCaption(caption = '', { lyrics = '', instrumental = fals
     }
   }
 
-  // Every tag the person actually wrote should turn up in the timeline.
-  const named = [...new Set(tags.map((t) => t.replace(/\s*\d+$/, '').trim().toLowerCase()))]
-    .filter((t) => t && t.length > 2);
-  const missing = named.filter((t) => !new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i').test(all));
-  if (missing.length && named.length) {
+  // Every tag the person actually wrote should turn up in the timeline, by
+  // the kind of section it is (a hook is a chorus).
+  const missing = sectionsMissing(all, tags);
+  if (missing.length) {
     problems.push(`The timeline never mentions your ${missing.join(', ')}.`);
   }
 

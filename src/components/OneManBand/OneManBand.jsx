@@ -4,7 +4,7 @@ import MultiPick from '../common/MultiPick.jsx';
 import EngineSetup from './EngineSetup.jsx';
 import { registerGhostActions } from '../../services/ghostBus.js';
 import { EXAMPLES } from '../../services/minimaxExamples.js';
-import { validateCaption, captionBrief } from '../../services/minimaxCaption.js';
+import { validateCaption, captionBrief, sortSunoTags, songFacts } from '../../services/minimaxCaption.js';
 import { runCaptionSkill } from '../../services/captionSkillRunner.js';
 import { readSunoTags } from '../../services/ghostMemory.js';
 import { applySongTags } from '../../services/songTags.js';
@@ -237,7 +237,7 @@ function joinCaption(parts) {
     .join('\n\n');
 }
 
-function draftCaption({ genres, moods, voices, seconds, tags = [] }) {
+function draftCaption({ genres, moods, voices, seconds, tags = [], songTags = '' }) {
   // Up to five of each now, mixed into one piece of music.
   const gs = (genres || []).filter(Boolean);
   const ms = (moods || []).filter(Boolean);
@@ -245,7 +245,16 @@ function draftCaption({ genres, moods, voices, seconds, tags = [] }) {
   const genre = blendLabel(gs);
   const mood = blendLabel(ms);
   const voice = blendLabel(vs);
-  const style = genre || 'the style';
+  /**
+   * THE SONG'S OWN TAGS MAKE IT SPECIFIC. "The tempo a Rock record usually
+   * sits at" told the model nothing, and the caption skill, which invents
+   * nothing, passed the nothing on. The tags say "stomping mid-tempo", "gruff
+   * vocal style", "Hammond organ", "raw lo-fi production", so the draft says
+   * that (Chris, 2026-10-15).
+   */
+  const t = sortSunoTags(songTags);
+  const style = genre || t.genre[0] || 'the style';
+  const era = t.era.length ? `, with a ${t.era.join(', ')} sound` : '';
 
   /**
    * NOTHING PICKED MEANS NOTHING WRITTEN.
@@ -257,7 +266,7 @@ function draftCaption({ genres, moods, voices, seconds, tags = [] }) {
    * caption shows the placeholder instead, which says what the box is for and
    * points at the pickers directly above it.
    */
-  if (!gs.length && !ms.length && !vs.length) return '';
+  if (!gs.length && !ms.length && !vs.length && !String(songTags).trim()) return '';
 
   // Instrumental only if EVERY voice pick is instrumental. One real voice in the
   // list means the piece has singing in it.
@@ -267,14 +276,18 @@ function draftCaption({ genres, moods, voices, seconds, tags = [] }) {
     ? `A ${seconds} second excerpt: a single section, no intro or outro.`
     : `About ${seconds} seconds, roughly ${budget} sections.`;
 
+  const tagMoods = t.mood.map((m) => m.replace(/\s*mood\s*/i, '').trim().toLowerCase()).filter(Boolean);
   return {
     globalMeta:
       (gs.length
         ? `Basic Attributes: ${gs.length > 1
           ? `${genre} — a genuine fusion, with ${gs[0]} leading and ${gs.slice(1).join(', ')} `
             + `folded into the same arrangement rather than taking turns`
-          : genre}. ${shape} `
-        : `Basic Attributes: ${shape} `)
+          : genre}${t.genre.length ? `, specifically ${t.genre.join(', ')}` : ''}${era}. ${shape} `
+        : t.genre.length
+          ? `Basic Attributes: ${t.genre.join(', ')}${era}. ${shape} `
+          : `Basic Attributes: ${shape} `)
+      + (tagMoods.length ? `The attitude is ${tagMoods.join(', ')} throughout. ` : '')
       + (ms.length > 1
         ? `Global Emotional Progression: ${ms[0].toLowerCase()} at the core from the opening bar, `
           + `shaded with ${ms.slice(1).map((m) => m.toLowerCase()).join(' and ')}, all of it present `
@@ -287,16 +300,22 @@ function draftCaption({ genres, moods, voices, seconds, tags = [] }) {
       // instrument ... close-miked, analog warmth" for every pick, left over
       // from when the tab opened on Blues rock, and it made grunge come out
       // sounding like a bar band.
-      + `Sonics & Production Profile: produced and mixed the way a ${style} record is, `
-      + `nothing borrowed from other styles. `
+      + `Sonics & Production Profile: ${t.production.length ? `${t.production.join(', ')}, ` : ''}`
+      + `produced and mixed the way a ${style} record is, nothing borrowed from other styles. `
       // The caption check flagged both of these on every song Chris wrote
       // himself: nothing said how fast, and his own sections (hook, guitar
       // solo, a cappella) never appeared, so the model ignored his shape.
-      + `Tempo: the tempo a ${style} record usually sits at, held steady.`
+      + (t.tempo.length
+        ? `Tempo: ${t.tempo.join(', ')}, held steady.`
+        : `Tempo: the tempo a ${style} record usually sits at, held steady.`)
       + (tags.length ? ` Timeline: ${tags.join(' → ')}, in that order.` : ''),
     vocals: instrumental
       ? 'This piece is instrumental with no vocals. The lead melodic role is carried by the '
         + 'main instrument of the arrangement.'
+      : !vs.length && t.vocals.length
+        ? `Vocal Gender & Timbre: ${t.vocals.join(', ')}. `
+          + `Vocal Style: phrasing true to ${style}. `
+          + 'Harmony/Backing Vocals: sparse, only where the song lifts.'
       : !vs.length
         // No voice picked is not the same as an instrumental — it is a singer
         // nobody has described yet. Say that, so the model sings it rather than
@@ -307,14 +326,15 @@ function draftCaption({ genres, moods, voices, seconds, tags = [] }) {
           + 'Harmony/Backing Vocals: sparse, only where the song lifts.'
         : `Vocal Gender & Timbre: ${vs.length > 1
           ? `${vs[0]} on lead, with ${vs.slice(1).join(' and ')} in support and in harmony`
-          : voice}. `
+          : voice}${t.vocals.length ? `; ${t.vocals.join(', ')}` : ''}. `
           + `Vocal Style: delivered the way ${style} is sung. `
           + `Harmony/Backing Vocals: sparse, only where the song lifts.`,
     // The genre's own instruments, not a generic band. This is the single
     // biggest thing that makes a world-music pick sound like that music
     // instead of like pop with a different label on it.
     arrangement:
-      `Instrument Lifecycle Description (Primary/Secondary Layering): Primary: ${mergedKit(gs)} `
+      `Instrument Lifecycle Description (Primary/Secondary Layering): Primary: ${
+        [...new Set([...t.instruments, ...(gs.length || !t.instruments.length ? mergedKit(gs).split(', ') : [])])].slice(0, 12).join(', ')} `
       + `carry the song from the first bar. Secondary: supporting parts join early and stay; a `
       + `lead line answers the vocal only where the song opens up. `
       + `Groove & Foundation Progression: drums and bass played the way ${style} plays them.`,
@@ -432,7 +452,7 @@ export default function OneManBand({ onNavigate } = {}) {
   // nothing, so the box opens empty with its placeholder showing rather than
   // pre-loaded with a Blues rock caption nobody asked for.
   const [caption, setCaption] = useState(() => joinCaption(draftCaption({
-    genres: store.bhGenreList, moods: store.bhMoodList, voices: store.voiceList, seconds: 30,
+    genres: store.bhGenreList, moods: store.bhMoodList, voices: store.voiceList, seconds: 30, songTags: store.sunoTags,
   })));
   const [captionEdited, setCaptionEdited] = useState(false);
   const [rewriting, setRewriting] = useState(false);
@@ -478,10 +498,10 @@ export default function OneManBand({ onNavigate } = {}) {
   // Redraft the caption when the picks or the song's sections change, unless he has taken it over.
   useEffect(() => {
     if (captionEdited) return;
-    setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds, tags })));
+    setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds, tags, songTags: store.sunoTags })));
     // Joined rather than the arrays themselves: a new array every render would
     // redraft the caption on every keystroke elsewhere in the tab.
-  }, [genres.join('|'), moods.join('|'), voices.join('|'), seconds, captionEdited, tags.join('|')]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [genres.join('|'), moods.join('|'), voices.join('|'), seconds, captionEdited, tags.join('|'), store.sunoTags]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!busy) return undefined;
@@ -573,6 +593,20 @@ export default function OneManBand({ onNavigate } = {}) {
     [caption, lyrics, voices, tags],
   );
 
+  /**
+   * WHAT THE CAPTION SKILL IS TOLD ABOUT THIS SONG, besides the description.
+   * It used to get the three pickers and nothing else: not the song's Suno
+   * tags, not its sections, not its length. The skill's own rules say keep
+   * every explicit constraint and every section tag, so it can only keep what
+   * it is given.
+   */
+  const skillConstraints = (extra = '') => [
+    String(extra || ''),
+    picksForSkill({ genres, moods, voices, instrumental }),
+    songFacts({ sunoTags: store.sunoTags, subgenres: store.subgenreList || [], artistRef: store.artistRef }),
+    captionBrief({ seconds, tags, genres, moods, voices, instrumental }),
+  ].filter((x) => String(x).trim()).join('\n');
+
   const [copied, setCopied] = useState(false);
   const [confirmExample, setConfirmExample] = useState(null);
 
@@ -656,7 +690,8 @@ export default function OneManBand({ onNavigate } = {}) {
       const r = await runCaptionSkill({
         caption,
         lyrics,
-        constraints: picksForSkill({ genres, moods, voices, instrumental }),
+        constraints: skillConstraints(),
+        sections: tags,
         config: store.config,
         onStage: (msg) => setPhase(msg),
       });
@@ -777,7 +812,8 @@ export default function OneManBand({ onNavigate } = {}) {
           const r = await runCaptionSkill({
             caption,
             lyrics,
-            constraints: picksForSkill({ genres, moods, voices, instrumental }),
+            constraints: skillConstraints(),
+            sections: tags,
             config: store.config,
             signal: ac.signal,
             onStage: (msg) => msg && setPhase(`Caption skill: ${msg.toLowerCase()}`),
@@ -911,7 +947,7 @@ export default function OneManBand({ onNavigate } = {}) {
     setLyrics('');
     setSeconds(30);
     setCaptionEdited(false);
-    setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds: 30 })));
+    setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds: 30, songTags: store.sunoTags })));
     setError('');
     setPhase('');
   };
@@ -1260,7 +1296,7 @@ export default function OneManBand({ onNavigate } = {}) {
       if (before.trim() && !sameSong(before, t) && caption.trim()) {
         undoCaption.current = caption;
         setCaptionEdited(false);
-        setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds, tags })));
+        setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds, tags, songTags: store.sunoTags })));
         fresh = ', and started the Input Caption over for this song';
       }
       return before.trim() && before.trim() !== t
@@ -1322,8 +1358,8 @@ export default function OneManBand({ onNavigate } = {}) {
       const r = await runCaptionSkill({
         caption: seed,
         lyrics,
-        constraints: [String(instruction || ''), picksForSkill({ genres, moods, voices, instrumental })]
-          .filter((t) => t.trim()).join(' '),
+        constraints: skillConstraints(instruction),
+        sections: tags,
         config: store.config,
         onStage: (msg) => setPhase(msg),
       });
@@ -1430,7 +1466,7 @@ export default function OneManBand({ onNavigate } = {}) {
       makeVideo(pick);
       return `started the lyric video for take ${pick.seed.toLocaleString('en-US')}. It lands in the songs folder with the chorus clips and lyric files`;
     },
-  }), [busy, kaggle, comfy, lyrics, caption, seconds, store.config, takes, genres.join('|'), moods.join('|'), voices.join('|')]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }), [busy, kaggle, comfy, lyrics, caption, seconds, store.config, takes, genres.join('|'), moods.join('|'), voices.join('|'), store.sunoTags, store.artistRef, (store.subgenreList || []).join('|'), tags.join('|')]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="omb">
@@ -1660,7 +1696,7 @@ export default function OneManBand({ onNavigate } = {}) {
                         was the one button that could wreck the caption. */}
                     <button type="button" className="omb-mini" onClick={() => {
                       setCaptionEdited(false);
-                      setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds, tags })));
+                      setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds, tags, songTags: store.sunoTags })));
                     }}>Start over
                     </button>
                   </span>

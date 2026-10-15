@@ -47,8 +47,9 @@ export default function SongwriterHub({ ghostRiderData }) {
     let prepared = raw;
     let splitNote = '';
     if (/^\[.+\]$/m.test(raw)) {
-      // His own [Verse]/[Chorus] markers. Nothing to work out — use them.
-      prepared = raw;
+      // His own [Verse]/[Chorus] markers, used as they are, plus a name for an
+      // unlabelled hook that repeats (see labelSections).
+      prepared = labelSections(raw);
     } else if (hasLineStructure(raw)) {
       // Line-broken but unlabelled: each blank-line block becomes a section
       // rather than dumping the whole song into one giant verse.
