@@ -806,9 +806,10 @@ export default function Settings() {
             {statsOn ? 'Sharing anonymous usage stats' : 'Not sharing — collection is off'}
           </button>
           <p style={{ fontSize: '0.65rem', color: 'rgba(155,161,170,0.45)', marginTop: 6, lineHeight: 1.55 }}>
-            Collected: which tab you opened, that a grid was loaded, that a verse was generated,
-            that an album was exported, that a stem split was requested — plus counts and engine
-            names. <b>Never collected:</b> your lyrics, keywords, prompts, model output, file names,
+            Collected: that the app opened (phone or desktop, and the version), which tab you
+            opened, that a song was written or rewritten, that Ghost Rider wrote one, that a caption
+            was written, that a song was made, that an album was exported, that a stem split was
+            requested — plus counts and engine names. <b>Never collected:</b> your lyrics, keywords, prompts, model output, file names,
             file paths, audio, or API keys.
           </p>
         </div>

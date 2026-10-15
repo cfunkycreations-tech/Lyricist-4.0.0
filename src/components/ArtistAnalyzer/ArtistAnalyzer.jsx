@@ -5,14 +5,13 @@ import { randomArtist, saveSunoTags } from '../../services/ghostMemory.js';
 import { applySongTags } from '../../services/songTags.js';
 import { writeStylePressure } from '../QuantumLab/quantumFeatures.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
-import { callAI, refineLyrics, analyzeClichés, checkSimilarity, checkThemeConsistency } from '../../services/AIService.js';
+import { callAI, writeInArtistStyle, refineLyrics, analyzeClichés, checkSimilarity, checkThemeConsistency } from '../../services/AIService.js';
 import { parseStyleDNA } from '../../utils/styleDNA.js';
-import { labelSections } from '../../utils/importLyrics.js';
-import { NO_CLICHES } from '../../services/cliches.js';
 import { Search, Sparkles, BookOpen, AlertTriangle, ShieldCheck, Check, Copy, Save, Heart, Send, TrendingUp, Dna, Grid3x3, Ghost, Tags } from 'lucide-react';
 import { notify } from '../../services/dialog.js';
 import { Icon } from '../common/Glyph.jsx';
 import { useLogged } from '../../services/useLogged.js';
+import { track } from '../../services/analytics.js';
 
 const analysisTabs = [
   { id: 'style', label: 'Lyrical Style' },
@@ -229,33 +228,12 @@ export default function ArtistAnalyzer({ onGhostSend }) {
     setGhostSent(false);
 
     try {
-      const topicPrompt = ghostTopic.trim() ? `Topic: ${ghostTopic.trim()}` : `Choose a typical subject for this artist.`;
-      
-      const prompt = `Write original lyrics in the style of ${artist}. ${topicPrompt}
-Write a verse (16 bars) and a hook (8 bars). Match their rhyme schemes, vocabulary, and flow. Do NOT mention the artist's name anywhere in the lyrics.
+      // The one writer (AIService): a whole song every time, never a verse and a hook.
+      const { lyrics, sunoTags: tags } = await writeInArtistStyle(artist, ghostTopic, store);
 
-After the lyrics, on a new line write exactly this separator and nothing else:
----SUNO TAGS---
-Then on the very next line write 10-14 comma-separated Suno AI style keywords. STRICT RULES for the tags: NO artist names, NO real person names, NO celebrity names whatsoever. Only include: genre, subgenre, production style, mood, tempo, instruments, vocal style, era. One line only.`;
-
-      const rawResult = await callAI([
-        { role: 'system', content: 'You are an elite ghostwriter who captures the raw, authentic artistic voice, flow, cadence, vocabulary, and stylistic nuances of specific musical artists. You despise generic AI-sounding imitations. Focus on subtext, friction, and rhythm.\n' + NO_CLICHES },
-        { role: 'user', content: prompt }
-      ], store.config);
-
-      const parts = rawResult.split('---SUNO TAGS---');
-      const lyrics = parts[0]?.trim() || '';
-      
-      // Clean tags of any artist names
-      let tags = parts[1]?.trim().split('\n')[0]?.trim() || '';
-      const artistClean = artist.toLowerCase().trim();
-      tags = tags.split(',')
-        .map(t => t.trim())
-        .filter(t => t.toLowerCase() !== artistClean && t.length > 2)
-        .join(', ');
-
-      setGhostLyrics(lyrics ? labelSections(lyrics, 'Verse') : '');
+      setGhostLyrics(lyrics);
       setSunoTags(tags);
+      track('ghostrider_song_written', { sections: (lyrics.match(/^\[[^\]]+\]\s*$/gm) || []).length });
 
       /**
        * AND CHECK THE BOXES, which is what this whole tab exists to feed.

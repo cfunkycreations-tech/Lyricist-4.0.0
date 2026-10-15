@@ -6,6 +6,10 @@ const comfySetup = require('./comfySetup');
 const kaggleCloud = require('./kaggleCloud');
 const captionSkill = require('./captionSkill');
 const licenseCheck = require('./licenseCheck');
+// Customer builds update themselves from GitHub Releases (desktopUpdate.js).
+// Guarded: a missing file must never stop the app from opening.
+let desktopUpdate = null;
+try { desktopUpdate = require('./desktopUpdate'); } catch (e) { console.warn('desktop updates off:', e?.message); }
 
 /* ══════════════════════════════════════════════════════════════════════════
    GHOST PILOT — OS HARDWARE AUTOMATION.  INTERNAL / CREATOR BUILD ONLY.
@@ -1862,6 +1866,11 @@ app.whenReady().then(() => {
   // Belt and braces: a losing second instance never gets as far as a window.
   if (!gotInstanceLock) return;
 
+  try {
+    const { net } = require('electron');
+    desktopUpdate?.register({ app, ipcMain, net, BrowserWindow });
+  } catch (e) { bootLog(`desktop updates off: ${e?.message || e}`); }
+
   // Allow Google Fonts and OpenRouter in packaged app.
   // 4.1.3: media-src added so the persistent Suno player can stream tracks
   // from any https audio host (e.g. cdn*.suno.ai) and play local uploads
@@ -1871,7 +1880,9 @@ app.whenReady().then(() => {
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://fonts.gstatic.com https://openrouter.ai https://api.replicate.com https://replicate.delivery https://api.datamuse.com https://api.dictionaryapi.dev https://img.buymeacoffee.com https://generativelanguage.googleapis.com data: blob:; " +
+          // PostHog's hosts: anonymous usage stats, only in a build made with a
+          // VITE_POSTHOG_KEY (see src/services/analytics.js).
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://us.i.posthog.com https://us-assets.i.posthog.com https://fonts.googleapis.com https://fonts.gstatic.com https://openrouter.ai https://api.replicate.com https://replicate.delivery https://api.datamuse.com https://api.dictionaryapi.dev https://img.buymeacoffee.com https://generativelanguage.googleapis.com data: blob:; " +
           "media-src 'self' https: blob: data: mediastream:; " +
           // Collaboration (4.2.0) needs a WebSocket to a signalling server to
           // introduce two peers to each other. connect-src falls back to

@@ -32,6 +32,7 @@ import { stripReasoning } from '../utils/stripReasoning.js';
 import { resolveGhostModel, freeGhostModels } from './GhostService.js';
 import { chatCompletion } from './openrouter.js';
 import { captionSkillWeb } from '../web/captionSkillWeb.js';
+import { sectionsMissing } from './minimaxCaption.js';
 
 
 /**
@@ -164,7 +165,7 @@ function pickKnown(reply, known, limit) {
  * a failure buys exactly the one revision the skill allows. Nothing is added to
  * the skill's list and nothing is invented: these are its own words.
  */
-function failedChecks(text, lyrics) {
+function failedChecks(text, lyrics, sections = []) {
   const bad = [];
   for (const heading of ['Global Metadata', 'Vocal Details', 'Arrangement']) {
     if (!new RegExp(heading, 'i').test(text)) bad.push(`the "${heading}" heading is missing`);
@@ -176,6 +177,9 @@ function failedChecks(text, lyrics) {
   const hay = text.toLowerCase();
   const copied = lines.filter((l) => hay.includes(l.toLowerCase()));
   if (copied.length) bad.push(`it reproduces the lyric line "${copied[0]}", and no lyric content may appear`);
+  // "every actionable section tag appears in the matching section"
+  const missing = sectionsMissing(text, sections);
+  if (missing.length) bad.push(`the section tags ${missing.map((m) => `[${m}]`).join(', ')} do not appear in the Arrangement, and every actionable section tag must appear in the matching section`);
   return bad;
 }
 
@@ -187,7 +191,7 @@ function failedChecks(text, lyrics) {
  * is about to be told to expect.
  */
 export async function runCaptionSkill({
-  caption, lyrics = '', constraints = '', config, signal, onStage,
+  caption, lyrics = '', constraints = '', sections = [], config, signal, onStage,
 } = {}) {
   const brief = String(caption || '').trim();
   if (!brief) throw new Error('Write something in the Input Caption first, even one line. The skill rewrites a description, it does not invent one.');
@@ -311,7 +315,7 @@ export async function runCaptionSkill({
   let written = writtenRes.text;
 
   // The skill's own list, and the single revision it allows.
-  const bad = failedChecks(written, lyrics);
+  const bad = failedChecks(written, lyrics, sections);
   if (bad.length) {
     onStage?.('Checking it against the skill');
     const fixed = await askAnyOf({
@@ -333,7 +337,7 @@ ${written}
 It fails Validate Before Returning: `
         + `${bad.join('; ')}. This is the one revision that section allows. Return only the corrected caption.`,
     });
-    if (!failedChecks(fixed.text, lyrics).length) written = fixed.text;
+    if (failedChecks(fixed.text, lyrics, sections).length < bad.length) written = fixed.text;
   }
 
   onStage?.('');

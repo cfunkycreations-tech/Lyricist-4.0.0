@@ -11,6 +11,7 @@ import { applySongTags, tagsFromText } from '../../services/songTags.js';
 import { saveSunoTags } from '../../services/ghostMemory.js';
 import { notify } from '../../services/dialog.js';
 import { saveText } from '../../services/saveText.js';
+import { track } from '../../services/analytics.js';
 import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, Upload, PenLine, GitBranch, X, Share2 } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
 // The logo and the founder photo were imported here but never rendered — a
@@ -47,8 +48,9 @@ export default function SongwriterHub({ ghostRiderData }) {
     let prepared = raw;
     let splitNote = '';
     if (/^\[.+\]$/m.test(raw)) {
-      // His own [Verse]/[Chorus] markers. Nothing to work out — use them.
-      prepared = raw;
+      // His own [Verse]/[Chorus] markers, used as they are, plus a name for an
+      // unlabelled hook that repeats (see labelSections).
+      prepared = labelSections(raw);
     } else if (hasLineStructure(raw)) {
       // Line-broken but unlabelled: each blank-line block becomes a section
       // rather than dumping the whole song into one giant verse.
@@ -153,8 +155,10 @@ export default function SongwriterHub({ ghostRiderData }) {
     setIsGenerating(true);
     setErrorMsg('');
     try {
+      const rewrite = hasWords;
       const generatedSections = await generateFullSong(store);
       store.setFullLyrics(generatedSections);
+      track('song_written', { mode: rewrite ? 'rewrite' : 'new', sections: generatedSections.length });
       // Land on the first line of the new song, not wherever the last one was
       // scrolled to. On a phone held upright the whole tab is one scroll, so
       // bring the lyrics up instead.

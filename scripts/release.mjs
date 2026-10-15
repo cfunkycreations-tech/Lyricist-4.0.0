@@ -19,6 +19,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
+import { posthogStatus } from './posthog-status.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -137,6 +138,8 @@ function run(cmd, cmdArgs, opts = {}) {
   }
 }
 
+posthogStatus(ROOT);
+
 // 1) Vite production build
 run('npm', ['run', 'build']);
 
@@ -253,6 +256,10 @@ const builderArgs = [
   `--config.productName=Lyricist`,
   // Windows File Description / version strings
   `--config.buildVersion=${fullVersion}`,
+  // Read by desktopUpdate.js in the packaged app: only a customer build
+  // updates itself, and it compares build numbers (every build is 4.2.0).
+  `--config.extraMetadata.lyricistEdition=${creator ? 'creator' : 'customer'}`,
+  `--config.extraMetadata.lyricistBuild=${buildNum}`,
 ];
 
 // TEMP dirs on C: avoid OneDrive EPERM
@@ -262,6 +269,33 @@ process.env.TEMP = tempBuild;
 process.env.TMP = tempBuild;
 
 run('npx', builderArgs);
+
+// 2b) The update manifest for a customer installer: what desktopUpdate.js
+// fetches to decide whether there is something newer, and to check the
+// download byte for byte. `npm run publish:update` puts both on GitHub.
+if (!creator && !dirOnly) {
+  const setupName = artifactName.replace('${ext}', 'exe');
+  const setupPath = path.join(desktopOut, setupName);
+  if (fs.existsSync(setupPath)) {
+    const crypto = await import('node:crypto');
+    const hash = crypto.createHash('sha512');
+    await new Promise((ok, bad) => fs.createReadStream(setupPath).on('data', (d) => hash.update(d)).on('end', ok).on('error', bad));
+    const tag = `v${fullVersion}`;
+    const asset = `Lyricist-${fullVersion}-Setup.exe`;
+    fs.writeFileSync(path.join(desktopOut, 'update.json'), JSON.stringify({
+      edition: 'customer',
+      build: buildNum,
+      version: fullVersion,
+      tag,
+      setup: setupName,
+      asset,
+      url: `https://github.com/cfunkycreations-tech/Lyricist-4.0.0/releases/download/${tag}/${asset}`,
+      size: fs.statSync(setupPath).size,
+      sha512: hash.digest('base64'),
+    }, null, 2));
+    console.log('Update manifest written. To send this build to everyone who has the app: npm run publish:update');
+  }
+}
 
 // 3) Also rename/copy win-unpacked folder for clarity
 const unpacked = path.join(desktopOut, 'win-unpacked');
