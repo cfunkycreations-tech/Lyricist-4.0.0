@@ -105,8 +105,9 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put('./index.html', copy));
+          // Only the app itself. The code screen (functions/_middleware.js,
+          // a 401) must never become the copy that opens offline.
+          if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put('./index.html', copy)); }
           return res;
         })
         .catch(() => caches.match('./index.html').then((r) => r || caches.match('./')))

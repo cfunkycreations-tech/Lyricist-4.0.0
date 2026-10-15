@@ -16,6 +16,7 @@
  *   Android  Chrome -> menu -> Install app.
  */
 import { execSync, spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -42,6 +43,24 @@ const said = `${made.stdout || ''}${made.stderr || ''}`;
 if (made.status !== 0 && !/already exists|8000002/i.test(said)) {
   console.error(said);
   throw new Error('Cloudflare would not make the project. The lines above say why.');
+}
+
+// The phone lock (functions/_middleware.js) signs its "paid" cookie with
+// UNLOCK_SECRET. Made here once, straight into Cloudflare: never printed, never
+// written to a file. Without it the site would let nobody in, so no secret, no deploy.
+const hasSecret = () => {
+  const r = run(`${WRANGLER} pages secret list --project-name ${PROJECT}`);
+  return /\bUNLOCK_SECRET\b/.test(`${r.stdout || ''}${r.stderr || ''}`);
+};
+if (!hasSecret()) {
+  console.log('Switching on the phone lock (one time)...');
+  const put = spawnSync(`${WRANGLER} pages secret put UNLOCK_SECRET --project-name ${PROJECT}`, {
+    cwd: ROOT, shell: true, encoding: 'utf8', input: `${crypto.randomBytes(32).toString('base64url')}\n`,
+  });
+  if (put.status !== 0 || !hasSecret()) {
+    console.error(`${put.stdout || ''}${put.stderr || ''}`);
+    throw new Error('Cloudflare would not take the phone lock secret. Nothing was deployed.');
+  }
 }
 
 execSync(`${WRANGLER} pages deploy dist-web --project-name ${PROJECT} --branch main --commit-dirty=true`,

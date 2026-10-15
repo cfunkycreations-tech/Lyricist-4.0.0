@@ -47,6 +47,9 @@ yarn-error.log*
 # build flags (Ghost Pilot gate, PostHog keys) are documented. Without this
 # exception `.env.*` above swallows it and the documentation never ships.
 !.env.example
+# The desktop update signing key lives in ~/.lyricist, never here. Belt and braces.
+*.pem
+update-signing-key*
 
 # Editor / OS cruft
 .vscode/

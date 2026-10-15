@@ -12,7 +12,8 @@
  *
  * CUSTOMER BUILDS ONLY. The repo is public and the creator build has no
  * license lock, so publishing it would be a free download of the paid app.
- * This refuses anything the release script did not mark as customer.
+ * This refuses anything the release script did not mark as customer, and
+ * anything not signed with the update key (scripts/update-key.mjs).
  *
  * Uses the GitHub CLI if it is installed and logged in; otherwise GH_TOKEN
  * (a token with "repo" access) from the environment.
@@ -20,6 +21,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { loadOrCreateKey, manifestSigned, KEY_PATH } from './update-key.mjs';
 
 const REPO = 'cfunkycreations-tech/Lyricist-4.0.0';
 const releaseRoot = process.env.LYRICIST_RELEASE_DIR
@@ -32,6 +34,10 @@ const manifestPath = path.join(dir, 'update.json');
 if (!fs.existsSync(manifestPath)) fail(`No update.json in ${dir}. Run npm run release:customer first.`);
 const m = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 if (m.edition !== 'customer') fail('That is not a customer build. Only customer builds are published.');
+if (!fs.existsSync(KEY_PATH)) fail(`No update key at ${KEY_PATH}. Put your backup copy there, or run npm run release:customer to make a new one.`);
+if (!m.sig || !manifestSigned(m, loadOrCreateKey())) {
+  fail('update.json is not signed with your update key, so no copy of the app would take it. Run npm run release:customer again.');
+}
 const setup = path.join(dir, m.setup);
 if (!fs.existsSync(setup)) fail(`The installer ${m.setup} is not next to update.json.`);
 if (fs.statSync(setup).size !== m.size) fail('The installer changed after update.json was written. Run npm run release:customer again.');
