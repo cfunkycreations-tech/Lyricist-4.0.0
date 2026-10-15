@@ -311,7 +311,7 @@ function draftCaption({ genres, moods, voices, seconds, tags = [], songTags = ''
         : `Tempo: the tempo a ${style} record usually sits at, held steady.`)
       + (tags.length ? ` Timeline: ${tags.join(' → ')}, in that order.` : ''),
     vocals: instrumental
-      ? 'This piece is instrumental with no vocals. The lead melodic role is carried by the '
+      ? `This piece is instrumental (${vs.join(', ')}). The lead melodic role is carried by the `
         + 'main instrument of the arrangement.'
       : !vs.length && t.vocals.length
         ? `Vocal Gender & Timbre: ${t.vocals.join(', ')}. `
@@ -356,7 +356,10 @@ function picksForSkill({ genres = [], moods = [], voices = [], instrumental = fa
       + 'Do not add instruments, vocal treatments or production from other styles.');
   }
   if (moods.length) out.push(`Mood: ${moods.join(', ')}.`);
-  if (instrumental) out.push('Instrumental, no vocals.');
+  // The pick itself, word for word: "with wordless humming" and "with
+  // occasional vocal samples" are instrumentals too, and both used to go out
+  // as plain "no vocals".
+  if (instrumental) out.push(`Instrumental: ${voices.join(', ')}.`);
   else if (voices.length) out.push(`Lead voice: ${voices.join(', ')}.`);
   return out.join(' ');
 }
