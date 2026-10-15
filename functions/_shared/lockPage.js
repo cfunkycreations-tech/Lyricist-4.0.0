@@ -76,7 +76,7 @@ export const LOCK_PAGE = `<!doctype html>
 </form>
 <script>
 (function () {
-  var STORE = 'lyricist.unlock';
+  var STORE = 'lyricist.unlock', TRIED = 'lyricist.unlock.tried';
   var f = document.getElementById('f'), c = document.getElementById('c');
   var go = document.getElementById('go'), why = document.getElementById('why');
   var busy = false;
@@ -94,6 +94,7 @@ export const LOCK_PAGE = `<!doctype html>
     }).then(function (r) { return r.json().catch(function () { return {}; }); }).then(function (d) {
       if (d.ok) {
         try { localStorage.setItem(STORE, JSON.stringify({ code: code, at: Date.now(), checked: Date.now() })); } catch (e) {}
+        try { sessionStorage.setItem(TRIED, String(Date.now())); } catch (e) {}
         location.reload();
         return;
       }
@@ -111,8 +112,16 @@ export const LOCK_PAGE = `<!doctype html>
     var code = c.value.trim();
     if (code && !busy) unlock(code);
   });
+  // Back here moments after a yes: the browser threw the cookie away. Sending
+  // the code again would only loop, and every pass counts as a new device.
+  var tried = 0;
+  try { tried = Number(sessionStorage.getItem(TRIED)) || 0; } catch (e) {}
   var had = saved();
-  if (had) { c.value = had; unlock(had); } else { sync(); }
+  if (had) c.value = had;
+  if (Date.now() - tried < 60000) {
+    why.textContent = 'This browser is blocking cookies for this site. Allow cookies for it in your browser settings, then press Unlock.';
+    sync();
+  } else if (had) { unlock(had); } else { sync(); }
 })();
 </script>
 </body>

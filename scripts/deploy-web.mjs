@@ -48,7 +48,10 @@ if (made.status !== 0 && !/already exists|8000002/i.test(said)) {
 // The phone lock (functions/_middleware.js) signs its "paid" cookie with
 // UNLOCK_SECRET. Made here once, straight into Cloudflare: never printed, never
 // written to a file. Without it the site would let nobody in, so no secret, no deploy.
-const hasSecret = () => /\bUNLOCK_SECRET\b/.test(run(`${WRANGLER} pages secret list --project-name ${PROJECT}`).stdout || '');
+const hasSecret = () => {
+  const r = run(`${WRANGLER} pages secret list --project-name ${PROJECT}`);
+  return /\bUNLOCK_SECRET\b/.test(`${r.stdout || ''}${r.stderr || ''}`);
+};
 if (!hasSecret()) {
   console.log('Switching on the phone lock (one time)...');
   const put = spawnSync(`${WRANGLER} pages secret put UNLOCK_SECRET --project-name ${PROJECT}`, {
