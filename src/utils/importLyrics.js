@@ -160,6 +160,16 @@ export function labelSections(text, fallback = 'Verse') {
       return line.replace(/\*\*|__/g, '').replace(/^\s*[*_]\s+/, '').trimEnd();
     })
     .join('\n')
-    .trim();
+    .trim()
+    // A block with no header whose lines repeat is a chorus the model forgot
+    // to name. Chris's Ghost Rider song had [Verse] and then its hook, twice,
+    // unlabelled, and the whole song landed as one 20-line verse.
+    .split(/\n\s*\n/)
+    .map((block, i) => {
+      if (i === 0 || /^\s*\[[^\]]+\]/.test(block)) return block;
+      const said = block.split('\n').map((l) => l.trim().toLowerCase()).filter(Boolean);
+      return said.length > 1 && new Set(said).size < said.length ? `[Chorus]\n${block}` : block;
+    })
+    .join('\n\n');
   return /^\[[^\]]+\]\s*$/m.test(out) ? out : `[${fallback}]\n${out}`;
 }

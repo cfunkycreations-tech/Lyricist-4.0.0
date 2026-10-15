@@ -196,8 +196,25 @@ export function normalizeApiKey(raw) {
     .replace(/^bearer\s*/i, '');
 }
 
+/**
+ * NO CALL HANGS FOREVER. A request that never answered (a phone that slept
+ * mid-call, a free host that stalled) left the button saying it was busy and
+ * disabled for good, so Generate on the phone did nothing at all.
+ */
+const CALL_TIMEOUT_MS = 150000;
+
 async function postCompletion(body, config) {
-  const r = await chatCompletion(body, { apiKey: normalizeApiKey(config?.openRouterApiKey) });
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), CALL_TIMEOUT_MS);
+  let r;
+  try {
+    r = await chatCompletion(body, { apiKey: normalizeApiKey(config?.openRouterApiKey), signal: ctl.signal });
+  } catch (e) {
+    if (ctl.signal.aborted) throw new Error(`${body.model} took over ${CALL_TIMEOUT_MS / 60000} minutes to answer, so it was stopped. Try again, or pick a faster model in Settings.`);
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
   if (r.ok) return { ok: true, result: r.json || {} };
   return { ok: false, status: r.status, message: r.message || 'Unknown Provider Error' };
 }
@@ -471,7 +488,19 @@ SONGWRITING CONFIGURATION:
 - Cadence Notes: ${store.cadenceNotes || "none"}
 - Topic / Concept: ${store.topic || "generic human tension"}
 - Artist Reference: ${store.artistRef || "none"}
-${store.sunoTags ? `- Style Tags (the exact sound of this song, these win over the genre and mood above): ${store.sunoTags}\n` : ''}`;
+${store.sunoTags ? `- Style Tags (the exact sound of this song, these win over the genre and mood above): ${store.sunoTags}\n` : ''}${writerNotes(store)}`;
+}
+
+/**
+ * THE NOTES BOX WAS NEVER SENT. Chris wrote "use plenty of expletives" in it
+ * and got a song without one (2026-10-15): no prompt in the app read it. Now
+ * every Songwriter write gets it, worded as orders, not as a hint.
+ */
+function writerNotes(store) {
+  const notes = String(store.notes || '').trim();
+  return notes
+    ? `\nTHE WRITER'S NOTES. Do exactly what these say; they beat every other setting above:\n${notes}\n`
+    : '';
 }
 
 const HUMAN_LYRICIST_RULES = `
@@ -485,8 +514,30 @@ export async function generateFullSong(store) {
   const context = buildPromptContext(store);
   const structureSequence = (store.customStructure || ['verse', 'chorus', 'verse', 'chorus']).map(s => s.toUpperCase()).join(" -> ");
 
+  /**
+   * WORDS ON THE PAGE GET REWRITTEN, NOT THROWN AWAY.
+   *
+   * Chris, 2026-10-15: he sent a Ghost Rider song to Songwriter and pressed
+   * Generate to rewrite it. Generate wrote a new song from the pickers and
+   * ignored his. Now the song on the page is the draft, its story and sections
+   * stay, and every idea in the topic has to land in it.
+   */
+  const draft = (store.lyrics || [])
+    .map((s) => `[${s.name}]\n${(s.lines || []).map((l) => l.text || '').join('\n')}`)
+    .join('\n\n')
+    .trim();
+  const hasDraft = Boolean(draft.replace(/\[[^\]]*\]/g, '').trim());
+  const ideas = store.topic?.trim()
+    ? `\n\nEvery idea in the Topic must be clearly in the lyrics, named or shown: ${store.topic.trim()}`
+    : '';
+
   const systemPrompt = `You are a professional lyricist and songwriter. Output lyrics only. Clear section markers like [Verse 1], [Chorus], etc.\n${NO_CLICHES}`;
-  const userPrompt = `Write the full song lyrics based on this context:\n${context}\n\nSTRUCTURE:\n${structureSequence}`;
+  // Said again last, where a model weighs it most.
+  const notes = String(store.notes || '').trim();
+  const orders = notes ? `\n\nBefore you answer, check the song does what the writer's notes say: ${notes}` : '';
+  const userPrompt = hasDraft
+    ? `Rewrite this song. Keep its story, its point of view and its sections in the same order, and make every line stronger. Output the whole rewritten song.\n\nCONTEXT:\n${context}${ideas}\n\nTHE DRAFT TO REWRITE:\n${draft}${orders}`
+    : `Write the full song lyrics based on this context:\n${context}${ideas}\n\nSTRUCTURE:\n${structureSequence}${orders}`;
 
   const messages = [
     { role: "system", content: systemPrompt },
@@ -494,7 +545,10 @@ export async function generateFullSong(store) {
   ];
 
   const resultText = await callAI(messages, store.config, store.config?.temperature, store.config?.maxTokens);
-  return parseSectionsFromText(resultText, store);
+  const sections = parseSectionsFromText(resultText, store).filter((s) => s.lines.length);
+  // An empty reply never wipes the song on the page.
+  if (!sections.length) throw new Error('The AI sent back no lyrics. Try again, or pick another model in Settings.');
+  return sections;
 }
 
 export async function generateSection(sectionType, store, priorSections = []) {
