@@ -20,6 +20,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
 import { posthogStatus } from './posthog-status.mjs';
+import { loadOrCreateKey, publicKeyB64, signManifest } from './update-key.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -262,6 +263,11 @@ const builderArgs = [
   `--config.extraMetadata.lyricistBuild=${buildNum}`,
 ];
 
+// A customer build only installs updates signed with Chris's key
+// (scripts/update-key.mjs). The public half goes into its package.json here.
+const updateKey = !creator ? loadOrCreateKey() : null;
+if (updateKey) builderArgs.push(`--config.extraMetadata.lyricistUpdateKey=${publicKeyB64(updateKey)}`);
+
 // TEMP dirs on C: avoid OneDrive EPERM
 const tempBuild = 'C:\\temp\\lyricist-build';
 fs.mkdirSync(tempBuild, { recursive: true });
@@ -282,7 +288,7 @@ if (!creator && !dirOnly) {
     await new Promise((ok, bad) => fs.createReadStream(setupPath).on('data', (d) => hash.update(d)).on('end', ok).on('error', bad));
     const tag = `v${fullVersion}`;
     const asset = `Lyricist-${fullVersion}-Setup.exe`;
-    fs.writeFileSync(path.join(desktopOut, 'update.json'), JSON.stringify({
+    const manifest = {
       edition: 'customer',
       build: buildNum,
       version: fullVersion,
@@ -292,7 +298,9 @@ if (!creator && !dirOnly) {
       url: `https://github.com/cfunkycreations-tech/Lyricist-4.0.0/releases/download/${tag}/${asset}`,
       size: fs.statSync(setupPath).size,
       sha512: hash.digest('base64'),
-    }, null, 2));
+    };
+    manifest.sig = signManifest(manifest, updateKey);
+    fs.writeFileSync(path.join(desktopOut, 'update.json'), JSON.stringify(manifest, null, 2));
     console.log('Update manifest written. To send this build to everyone who has the app: npm run publish:update');
   }
 }

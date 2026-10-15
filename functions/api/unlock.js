@@ -13,11 +13,16 @@
  *
  * POST { code, recheck }  ->  { ok: true } or { ok: false, why, revoked }
  *   recheck: a phone that is already unlocked asking again every few days. It
- *            does not count as a new device.
+ *            does not count as a new device, so it only counts as a recheck
+ *            when the phone holds this code's unlock cookie. Without the
+ *            cookie it is a new device like any other.
  *   revoked: Gumroad said no for certain (no such code, refunded, charged back).
  *            Only then does an unlocked phone lock again; Gumroad being down
  *            never locks anybody out.
+ * Every yes sets the lp_unlock cookie (functions/_shared/unlockCookie.js),
+ * which is what functions/_middleware.js lets in. A certain no clears it.
  */
+import { codeHash, makeUnlock, readUnlock, clearUnlock } from '../_shared/unlockCookie.js';
 
 // From Gumroad: the product's page, Content > License key, "product_id".
 // GUMROAD_PRODUCT_ID set on the Pages project wins over this.
@@ -29,24 +34,30 @@ const MAX_DEVICES = 10;
 
 const VERIFY = 'https://api.gumroad.com/v2/licenses/verify';
 
-const json = (body, status = 200) => new Response(JSON.stringify(body), {
+const json = (body, status = 200, cookie = null) => new Response(JSON.stringify(body), {
   status,
-  headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+  headers: {
+    'content-type': 'application/json',
+    'cache-control': 'no-store',
+    ...(cookie ? { 'set-cookie': cookie } : {}),
+  },
 });
 
 export async function onRequestPost({ request, env }) {
   let input = {};
   try { input = await request.json(); } catch { /* answered below */ }
   const code = typeof input.code === 'string' ? input.code.trim() : '';
-  const recheck = input.recheck === true;
   if (!code || code.length > 120) {
     return json({ ok: false, why: 'Type or paste the purchase code from your Gumroad receipt.' }, 400);
   }
 
   const productId = env?.GUMROAD_PRODUCT_ID || PRODUCT_ID;
-  if (!productId) {
+  const secret = env?.UNLOCK_SECRET;
+  if (!productId || !secret) {
     return json({ ok: false, why: 'Purchase codes are not switched on yet. Try again soon.' }, 503);
   }
+  const hash = await codeHash(code);
+  const recheck = input.recheck === true && (await readUnlock(request, secret)) === hash;
 
   let res;
   let data = {};
@@ -69,17 +80,17 @@ export async function onRequestPost({ request, env }) {
   // never locks a phone. Same rule as licenseCheck.js.
   if (!data.success) {
     if (res.status !== 404 || data.success !== false) return json({ ok: false, why: 'Gumroad is not answering right now. Try again in a minute.' }, 502);
-    return json({ ok: false, revoked: true, why: 'That code does not match a Lyricist Pro purchase. Copy it straight from your receipt.' });
+    return json({ ok: false, revoked: true, why: 'That code does not match a Lyricist Pro purchase. Copy it straight from your receipt.' }, 200, clearUnlock());
   }
 
   const p = data.purchase || {};
   if (p.refunded || p.chargebacked || (p.disputed && !p.dispute_won)) {
-    return json({ ok: false, revoked: true, why: 'That purchase was refunded, so the code no longer works.' });
+    return json({ ok: false, revoked: true, why: 'That purchase was refunded, so the code no longer works.' }, 200, clearUnlock());
   }
   if (!recheck && Number(data.uses) > MAX_DEVICES) {
     return json({ ok: false, why: `That code is already on ${MAX_DEVICES} devices. Email cfunkycreations@gmail.com and we will sort it out.` });
   }
-  return json({ ok: true });
+  return json({ ok: true }, 200, await makeUnlock(hash, secret));
 }
 
 export function onRequest() {

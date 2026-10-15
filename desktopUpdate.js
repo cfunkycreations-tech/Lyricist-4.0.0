@@ -24,6 +24,10 @@
  *   check tries again.
  * - Nothing is trusted that does not match: the downloaded file must have the
  *   exact size and SHA-512 the manifest names, or it is deleted.
+ * - Nothing is trusted that Chris did not sign. The manifest carries an Ed25519
+ *   signature made with a key on his PC (scripts/update-key.mjs); release.mjs
+ *   bakes the public half into this build. A release pushed by anyone else,
+ *   even with his GitHub login, is ignored.
  */
 const fs = require('fs');
 const path = require('path');
@@ -43,9 +47,24 @@ const EVERY_MS = 4 * 60 * 60 * 1000;
 function stamp() {
   try {
     const pkg = require('./package.json');
-    return { edition: pkg.lyricistEdition || '', build: Number(pkg.lyricistBuild) || 0 };
+    return { edition: pkg.lyricistEdition || '', build: Number(pkg.lyricistBuild) || 0, key: pkg.lyricistUpdateKey || '' };
   } catch {
-    return { edition: '', build: 0 };
+    return { edition: '', build: 0, key: '' };
+  }
+}
+
+/** Exactly what gets signed. scripts/update-key.mjs signs this same string. */
+function updateMessage(m) {
+  return ['lyricist-update', m.edition, m.build, m.version, m.url, m.size, m.sha512].join('\n');
+}
+
+/** The manifest was signed by the key this build trusts. */
+function signedBy(m, keyB64) {
+  try {
+    const key = crypto.createPublicKey({ key: Buffer.from(keyB64, 'base64'), format: 'der', type: 'spki' });
+    return crypto.verify(null, Buffer.from(updateMessage(m)), key, Buffer.from(String(m.sig || ''), 'base64'));
+  } catch {
+    return false;
   }
 }
 
@@ -61,10 +80,10 @@ async function matches(file, want) {
   }
 }
 
-function register({ app, ipcMain, net, BrowserWindow, manifestUrl = MANIFEST, force = false }) {
-  const mine = stamp();
-  const enabled = force || (app.isPackaged && process.platform === 'win32'
-    && mine.edition === 'customer' && mine.build > 0);
+function register({ app, ipcMain, net, BrowserWindow, manifestUrl = MANIFEST, force = false, stampOverride = null }) {
+  const mine = stampOverride || stamp();
+  const enabled = !!mine.key && (force || (app.isPackaged && process.platform === 'win32'
+    && mine.edition === 'customer' && mine.build > 0));
 
   let ready = null;        // { build, version, file }
   let launched = false;
@@ -111,6 +130,7 @@ function register({ app, ipcMain, net, BrowserWindow, manifestUrl = MANIFEST, fo
       const m = await res.json();
       const build = Number(m.build);
       if (!(build > mine.build) || m.edition !== 'customer' || !m.url || !m.sha512 || !m.size) return null;
+      if (!signedBy(m, mine.key)) return null;
       // The installer only ever comes from this repo's own releases.
       if (!force && !String(m.url).startsWith(`https://github.com/${REPO}/releases/download/`)) return null;
       if (ready && ready.build >= build) return ready;
@@ -147,4 +167,4 @@ function register({ app, ipcMain, net, BrowserWindow, manifestUrl = MANIFEST, fo
   return { check };
 }
 
-module.exports = { register, matches, stamp };
+module.exports = { register, matches, stamp, updateMessage, signedBy };
