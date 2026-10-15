@@ -111,6 +111,8 @@ function register({ app, ipcMain, net, BrowserWindow, manifestUrl = MANIFEST, fo
       const m = await res.json();
       const build = Number(m.build);
       if (!(build > mine.build) || m.edition !== 'customer' || !m.url || !m.sha512 || !m.size) return null;
+      // The installer only ever comes from this repo's own releases.
+      if (!force && !String(m.url).startsWith(`https://github.com/${REPO}/releases/download/`)) return null;
       if (ready && ready.build >= build) return ready;
 
       fs.mkdirSync(dir, { recursive: true });

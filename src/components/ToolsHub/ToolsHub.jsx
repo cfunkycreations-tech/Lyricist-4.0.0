@@ -67,7 +67,8 @@ export default function ToolsHub() {
     const name = draft.name.trim();
     const url = draft.url.trim();
     if (!name || !url) { setFormError('Name and URL are both required.'); return; }
-    try { new URL(url); } catch { setFormError('That URL doesn\'t look valid — include the https://'); return; }
+    // Web links only: a javascript: link here would run code when clicked.
+    try { if (!/^https?:$/.test(new URL(url).protocol)) throw new Error(); } catch { setFormError('That URL doesn\'t look valid — include the https://'); return; }
     if (state.tools.some(t => t.url.replace(/\/$/, '') === url.replace(/\/$/, ''))) {
       setFormError('That tool is already in the hub.'); return;
     }
@@ -196,7 +197,7 @@ export default function ToolsHub() {
                   </p>
                 </div>
               </div>
-              <a href={t.url} target="_blank" rel="noopener noreferrer"
+              <a href={/^https?:\/\//i.test(t.url) ? t.url : undefined} target="_blank" rel="noopener noreferrer"
                 style={{ marginTop: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.68rem', fontWeight: 700, color: '#FFD08A', textDecoration: 'none' }}>
                 <ExternalLink size={12} /> Open tool
               </a>

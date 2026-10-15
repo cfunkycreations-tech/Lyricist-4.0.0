@@ -94,6 +94,21 @@ for (const f of DROP_FILES) {
     fs.rmSync(p, { force: true });
   }
 }
+
+// Security headers for the phone site. Cloudflare Pages reads _headers from the
+// site root. Nobody can frame the app (click-jacking), browsers never guess a
+// file's type, and no page can use the camera, location or payments. The mic
+// stays allowed: the Recording Booth needs it.
+fs.writeFileSync(path.join(WEB, '_headers'), [
+  '/*',
+  '  X-Frame-Options: DENY',
+  '  X-Content-Type-Options: nosniff',
+  '  Referrer-Policy: strict-origin-when-cross-origin',
+  '  Strict-Transport-Security: max-age=31536000',
+  '  Permissions-Policy: camera=(), geolocation=(), payment=(), usb=()',
+  "  Content-Security-Policy: frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
+  '',
+].join('\n'));
 /**
  * CLOUDFLARE PAGES REFUSES ANY FILE OVER 25 MiB.
  *

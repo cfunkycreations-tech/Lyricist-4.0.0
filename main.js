@@ -11,6 +11,43 @@ const licenseCheck = require('./licenseCheck');
 let desktopUpdate = null;
 try { desktopUpdate = require('./desktopUpdate'); } catch (e) { console.warn('desktop updates off:', e?.message); }
 
+/* ONLY THE APP ITSELF MAY CALL THE MAIN PROCESS.
+
+   The handlers below save files, open folders and start programs, and they
+   trust whoever calls them. A web page that ended up inside one of our windows
+   must never get that, so a call from anything but the app's own page (or the
+   dev server, unpackaged) is refused before the handler runs. licenseCheck.js
+   and desktopUpdate.js are handed this same ipcMain, so they are covered too. */
+const APP_DIST = path.resolve(__dirname, 'dist');
+function trustedSender(event) {
+  const url = event?.senderFrame?.url ?? null;
+  if (url == null) return false;
+  if (url === '' || url === 'about:blank') return true;          // the visualizer popout: window.open('')
+  if (url.startsWith('file:')) {
+    try {
+      const file = path.resolve(require('url').fileURLToPath(url));
+      const same = process.platform === 'win32'
+        ? file.toLowerCase().startsWith(APP_DIST.toLowerCase() + path.sep)
+        : file.startsWith(APP_DIST + path.sep);
+      return same;
+    } catch { return false; }
+  }
+  return !app.isPackaged && /^http:\/\/(localhost|127\.0\.0\.1):\d+\//.test(url);
+}
+for (const kind of ['handle', 'handleOnce']) {
+  const register = ipcMain[kind].bind(ipcMain);
+  ipcMain[kind] = (channel, fn) => register(channel, (event, ...args) => (trustedSender(event)
+    ? fn(event, ...args)
+    : { ok: false, error: 'Refused: that call did not come from Lyricist.' }));
+}
+{
+  const listen = ipcMain.on.bind(ipcMain);
+  ipcMain.on = (channel, fn) => listen(channel, (event, ...args) => {
+    if (!trustedSender(event)) { event.returnValue = null; return undefined; }
+    return fn(event, ...args);
+  });
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    GHOST PILOT — OS HARDWARE AUTOMATION.  INTERNAL / CREATOR BUILD ONLY.
 
@@ -46,6 +83,14 @@ const PILOT_LIBNUT = app.isPackaged
 const PILOT_ENABLED = !app.isPackaged
   || process.env.VITE_FAFO_INTERNAL_BUILD === 'true'
   || fs.existsSync(PILOT_LIBNUT);
+
+// The Ghost's other helpers (opening OBS, its logs and lessons, keeping the PC
+// awake) are refused in a customer install for the same reason: nothing there
+// uses them, and each one is a door left open. release.mjs stamps the edition.
+const CREATOR_EDITION = PILOT_ENABLED || (() => {
+  try { return require('./package.json').lyricistEdition === 'creator'; } catch { return false; }
+})();
+const NOT_HERE = { ok: false, error: 'Not part of this build.' };
 
 let _pilot = null;
 function pilot() {
@@ -169,6 +214,7 @@ function obsWebsocket({ enable = false } = {}) {
 }
 
 ipcMain.handle('obs-launch', async (_event, { record = false } = {}) => {
+  if (!CREATOR_EDITION) return NOT_HERE;
   const { execFile, spawn } = require('child_process');
   const running = await new Promise((resolve) => {
     execFile('tasklist', ['/FI', 'IMAGENAME eq obs64.exe', '/NH'], (err, out) => resolve(!err && /obs64\.exe/i.test(out)));
@@ -194,6 +240,7 @@ ipcMain.handle('obs-launch', async (_event, { record = false } = {}) => {
 
 let ghostAwakeId = null;
 ipcMain.handle('ghost-keep-awake', async (_event, { on } = {}) => {
+  if (!CREATOR_EDITION) return NOT_HERE;
   const { powerSaveBlocker } = require('electron');
   if (on && ghostAwakeId == null) ghostAwakeId = powerSaveBlocker.start('prevent-app-suspension');
   if (!on && ghostAwakeId != null) { powerSaveBlocker.stop(ghostAwakeId); ghostAwakeId = null; }
@@ -327,6 +374,7 @@ const lessonBase = (name) => String(name || '').replace(/[\\/:*?"<>|]/g, '-').re
 const lessonPath = (name) => path.join(lessonsDir(), `${lessonBase(name)}.json`);
 
 ipcMain.handle('ghost-lesson-save', async (_event, lesson) => {
+  if (!CREATOR_EDITION) return NOT_HERE;
   try {
     // A new lesson never overwrites an old one with the same name.
     const base = lessonBase(lesson?.name);
@@ -341,6 +389,7 @@ ipcMain.handle('ghost-lesson-save', async (_event, lesson) => {
 });
 
 ipcMain.handle('ghost-lesson-list', async () => {
+  if (!CREATOR_EDITION) return NOT_HERE;
   try {
     const dir = lessonsDir();
     const lessons = fs.readdirSync(dir).filter((f) => f.toLowerCase().endsWith('.json')).map((f) => {
@@ -365,6 +414,7 @@ ipcMain.handle('ghost-lesson-list', async () => {
 });
 
 ipcMain.handle('ghost-lesson-load', async (_event, { name } = {}) => {
+  if (!CREATOR_EDITION) return NOT_HERE;
   try {
     return { ok: true, lesson: JSON.parse(fs.readFileSync(lessonPath(name), 'utf8')) };
   } catch (e) {
@@ -374,6 +424,7 @@ ipcMain.handle('ghost-lesson-load', async (_event, { name } = {}) => {
 
 // To the Recycle Bin, so a lesson deleted by mistake can come back.
 ipcMain.handle('ghost-lesson-delete', async (_event, { name } = {}) => {
+  if (!CREATOR_EDITION) return NOT_HERE;
   try {
     await shell.trashItem(lessonPath(name));
     return { ok: true };
@@ -383,6 +434,7 @@ ipcMain.handle('ghost-lesson-delete', async (_event, { name } = {}) => {
 });
 
 ipcMain.handle('ghost-lesson-reveal', async () => {
+  if (!CREATOR_EDITION) return NOT_HERE;
   shell.openPath(lessonsDir());
   return { ok: true };
 });
@@ -576,6 +628,12 @@ ipcMain.handle('music-fetch', async (event, { url, method = 'GET', body = null, 
     if (target.protocol !== 'http:' && target.protocol !== 'https:') {
       return { ok: false, error: `Refusing to fetch a ${target.protocol} address.` };
     }
+    // Only the four ComfyUI calls MusicService makes, so the window can never
+    // use this to reach anything else on this PC or its network.
+    if (!/\/(system_stats|prompt|history\/[A-Za-z0-9-]+|view)$/.test(target.pathname)
+      || !['GET', 'POST'].includes(String(method).toUpperCase())) {
+      return { ok: false, error: 'That is not a ComfyUI call.' };
+    }
     // A local ComfyUI has no auth and gets none. A remote one (Modal) sits on
     // the open internet behind a bearer token, and this handler is the only way
     // the packaged app reaches it, so the token has to be forwarded here or
@@ -584,7 +642,7 @@ ipcMain.handle('music-fetch', async (event, { url, method = 'GET', body = null, 
     if (body) headers['Content-Type'] = 'application/json';
     if (token) headers.Authorization = `Bearer ${String(token)}`;
     const res = await fetch(target.toString(), {
-      method,
+      method: String(method).toUpperCase(),
       headers: Object.keys(headers).length ? headers : undefined,
       body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined,
     });
@@ -642,9 +700,11 @@ function ghostLogFolder() {
   return ghostLogDir;
 }
 ipcMain.handle('ghost-log-append', async (_event, line) => {
+  if (!CREATOR_EDITION) return NOT_HERE;
   try { fs.appendFileSync(path.join(ghostLogFolder(), 'log.txt'), `${String(line)}\n`, 'utf8'); return { ok: true }; } catch (e) { return { ok: false, error: e.message }; }
 });
 ipcMain.handle('ghost-log-shot', async (event, label) => {
+  if (!CREATOR_EDITION) return NOT_HERE;
   if (ghostShots >= 600) return { ok: false, error: 'screenshot limit for this session' };
   try {
     const img = await event.sender.capturePage();
@@ -655,6 +715,7 @@ ipcMain.handle('ghost-log-shot', async (event, label) => {
   } catch (e) { return { ok: false, error: e.message }; }
 });
 ipcMain.handle('ghost-log-save', async (_event, { filename, content }) => {
+  if (!CREATOR_EDITION) return NOT_HERE;
   try {
     const full = path.join(ghostLogFolder(), String(filename).replace(/[\\/:*?"<>|]/g, '-').slice(0, 120));
     fs.writeFileSync(full, String(content), 'utf8');
@@ -662,6 +723,7 @@ ipcMain.handle('ghost-log-save', async (_event, { filename, content }) => {
   } catch (e) { return { ok: false, error: e.message }; }
 });
 ipcMain.handle('ghost-log-open', async () => {
+  if (!CREATOR_EDITION) return NOT_HERE;
   const { shell } = require('electron');
   try { return { ok: !(await shell.openPath(ghostLogFolder())) }; } catch (e) { return { ok: false, error: e.message }; }
 });
@@ -757,6 +819,13 @@ ipcMain.handle('save-recording', async (event, { filename, bytes }) => {
    memory all at once. */
 const SAMPLE_EXTS = ['.wav', '.mp3', '.ogg', '.flac', '.aif', '.aiff', '.m4a', '.webm', '.opus'];
 const isSampleFile = (f) => SAMPLE_EXTS.some((e) => f.toLowerCase().endsWith(e));
+// read-sample-file reads only what the two pickers below handed back, so the
+// window can never read any other file on the PC.
+const pickedSamples = new Set();
+const sampleKey = (p) => {
+  const full = path.resolve(String(p || ''));
+  return process.platform === 'win32' ? full.toLowerCase() : full;
+};
 
 ipcMain.handle('pick-sample-files', async (event) => {
   try {
@@ -769,6 +838,7 @@ ipcMain.handle('pick-sample-files', async (event) => {
         { name: 'All files', extensions: ['*'] },
       ],
     });
+    for (const p of res.filePaths || []) pickedSamples.add(sampleKey(p));
     return { ok: true, canceled: res.canceled, paths: res.filePaths || [] };
   } catch (e) {
     return { ok: false, error: e.message };
@@ -798,6 +868,7 @@ ipcMain.handle('pick-sample-folder', async (event) => {
       }
     };
     walk(res.filePaths[0]);
+    for (const p of out) pickedSamples.add(sampleKey(p));
     return { ok: true, canceled: false, paths: out, root: res.filePaths[0] };
   } catch (e) {
     return { ok: false, error: e.message };
@@ -1083,9 +1154,15 @@ ipcMain.handle('songs-folder', async () => {
 });
 
 /** Reveal a folder in Explorer — "where did my stems go" should be one click. */
-ipcMain.handle('show-folder', async (event, { folderPath }) => {
+ipcMain.handle('show-folder', async (event, { folderPath } = {}) => {
   try {
-    shell.openPath(folderPath);
+    // Opening a FILE runs it, and a \\server path leaks the Windows login to
+    // that server, so only a real local folder is opened.
+    const dir = path.resolve(String(folderPath || ''));
+    if (/^[\\/]{2}/.test(String(folderPath || '')) || !fs.statSync(dir).isDirectory()) {
+      return { ok: false, error: 'That is not a folder.' };
+    }
+    shell.openPath(dir);
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e.message };
@@ -1125,8 +1202,9 @@ ipcMain.handle('pick-lyrics-file', async (event) => {
 });
 
 /** Read ONE sample off disk. One at a time, on purpose — see the note above. */
-ipcMain.handle('read-sample-file', async (event, { filePath }) => {
+ipcMain.handle('read-sample-file', async (event, { filePath } = {}) => {
   try {
+    if (!pickedSamples.has(sampleKey(filePath))) throw new Error('pick it with Add samples first');
     const stat = fs.statSync(filePath);
     const bytes = fs.readFileSync(filePath);
     return { ok: true, name: path.basename(filePath), size: stat.size, bytes };
@@ -1158,7 +1236,7 @@ ipcMain.handle('save-album', async (event, { albumName, files }) => {
 // Returns { ok: true, tracks: [{ name, url }] } or { ok: false, error }.
 ipcMain.handle('suno-playlist', async (event, { id }) => {
   try {
-    const clean = String(id || '').trim();
+    const clean = encodeURIComponent(String(id || '').trim());
     if (!clean) return { ok: false, error: 'No playlist id.' };
     const bases = [
       (p) => `https://studio-api.suno.ai/api/playlist/${clean}/?page=${p}`,
@@ -1430,6 +1508,9 @@ function bootLog(message) {
 
 /** Last-resort page, so the user always sees words instead of a black rectangle. */
 function failurePage(title, detail) {
+  const esc = (v) => String(v).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+  title = esc(title);
+  detail = esc(detail);
   const html = `<!doctype html><html><body style="margin:0;background:#0a0614;color:#f3e8ff;
     font-family:Segoe UI,system-ui,sans-serif;padding:40px">
     <h1 style="color:#ff6b9d;margin:0 0 8px">${title}</h1>
@@ -1490,7 +1571,7 @@ function createWindow() {
   //
   // All this handler does is put that child on the monitor the UI picked.
   win.webContents.setWindowOpenHandler(({ url, frameName, features }) => {
-    if (frameName !== 'lyricist-visualizer') {
+    if (frameName !== 'lyricist-visualizer' || !(url === '' || url === 'about:blank')) {
       // Everything else asking for a window is a real link — the Fiverr,
       // PayPal, Venmo, Cash App and Buy Me A Coffee buttons in the footer.
       // This handler used to just deny them, so every one of those buttons did
@@ -1536,7 +1617,11 @@ function createWindow() {
     const sameApp = (() => {
       try { return new URL(url).origin === new URL(here).origin; } catch { return false; }
     })();
-    if (sameApp || url.startsWith('file://')) return;
+    let ownFile = false;
+    if (url.startsWith('file:')) {
+      try { ownFile = path.resolve(require('url').fileURLToPath(url)).toLowerCase() === path.resolve(__dirname, 'dist', 'index.html').toLowerCase(); } catch { /* not a path */ }
+    }
+    if ((sameApp && !url.startsWith('file:')) || ownFile) return;
     event.preventDefault();
     if (/^https?:\/\//i.test(url)) {
       shell.openExternal(url).catch((e) => bootLog(`openExternal failed: ${e.message}`));
@@ -1893,7 +1978,8 @@ app.whenReady().then(() => {
           // ws://localhost:4455 is OBS's own websocket, plain ws on this
           // machine only. Without it the Ghost could never reach OBS in the
           // packaged app: the connect was blocked and simply never settled.
-          "connect-src 'self' wss: https: blob: data: ws://localhost:4455 ws://127.0.0.1:4455;"
+          "connect-src 'self' wss: https: blob: data: ws://localhost:4455 ws://127.0.0.1:4455; " +
+          "object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
         ],
       },
     });
