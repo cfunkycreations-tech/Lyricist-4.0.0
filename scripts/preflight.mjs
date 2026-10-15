@@ -18,22 +18,54 @@ import { fileURLToPath } from 'url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const problems = [];
 
-/** Every ipcMain channel must be registered exactly once. */
+/**
+ * The main process is main.js plus every local module it requires
+ * (licenseCheck.js, desktopUpdate.js...), which register handlers of their own.
+ */
+function requireGraph(starts) {
+  const seen = new Set();
+  const files = [];
+  const queue = [...starts];
+  while (queue.length) {
+    const rel = queue.shift();
+    if (seen.has(rel)) continue;
+    seen.add(rel);
+    const abs = path.join(ROOT, rel);
+    if (!fs.existsSync(abs)) continue;
+    files.push(rel);
+    if (!/\.[cm]?js$/.test(rel)) continue;
+    const src = fs.readFileSync(abs, 'utf8');
+    for (const m of src.matchAll(/require\(\s*['"`](\.[^'"`]+)['"`]\s*\)/g)) {
+      let dep = path.posix.normalize(path.posix.join(path.posix.dirname(rel), m[1]));
+      if (!/\.[cm]?js$|\.json$/.test(dep)) {
+        if (fs.existsSync(path.join(ROOT, dep + '.js'))) dep += '.js';
+        else if (fs.existsSync(path.join(ROOT, dep, 'index.js'))) dep = path.posix.join(dep, 'index.js');
+      }
+      queue.push(dep);
+    }
+  }
+  return files;
+}
+
+const MAIN_FILES = requireGraph(['main.js']).filter((f) => /\.[cm]?js$/.test(f));
+
+/** Every ipcMain channel must be registered exactly once, across all of them. */
 function checkDuplicateIpcHandlers() {
-  const file = path.join(ROOT, 'main.js');
-  const src = fs.readFileSync(file, 'utf8');
   const seen = new Map();
   const re = /ipcMain\.handle\(\s*['"`]([^'"`]+)['"`]/g;
-  let m;
-  while ((m = re.exec(src))) {
-    const line = src.slice(0, m.index).split('\n').length;
-    if (seen.has(m[1])) {
-      problems.push(
-        `main.js: ipcMain.handle('${m[1]}') registered twice `
-        + `(lines ${seen.get(m[1])} and ${line}). Electron throws on the second one.`
-      );
-    } else {
-      seen.set(m[1], line);
+  for (const file of MAIN_FILES) {
+    const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
+    let m;
+    while ((m = re.exec(src))) {
+      const where = `${file}:${src.slice(0, m.index).split('\n').length}`;
+      if (seen.has(m[1])) {
+        problems.push(
+          `ipcMain.handle('${m[1]}') registered twice `
+          + `(${seen.get(m[1])} and ${where}). Electron throws on the second one.`
+        );
+      } else {
+        seen.set(m[1], where);
+      }
     }
   }
   return seen.size;
@@ -41,17 +73,15 @@ function checkDuplicateIpcHandlers() {
 
 /** Anything the preload bridge invokes must have a handler behind it. */
 function checkPreloadChannels() {
-  const main = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8');
   const preload = fs.readFileSync(path.join(ROOT, 'preload.js'), 'utf8');
-  const handled = new Set(
-    [...main.matchAll(/ipcMain\.handle\(\s*['"`]([^'"`]+)['"`]/g)].map((m) => m[1])
-  );
+  const handled = new Set(MAIN_FILES.flatMap((f) => [...fs.readFileSync(path.join(ROOT, f), 'utf8')
+    .matchAll(/ipcMain\.handle\(\s*['"`]([^'"`]+)['"`]/g)].map((m) => m[1])));
   const invoked = new Set(
     [...preload.matchAll(/ipcRenderer\.invoke\(\s*['"`]([^'"`]+)['"`]/g)].map((m) => m[1])
   );
   for (const ch of invoked) {
     if (!handled.has(ch)) {
-      problems.push(`preload.js invokes '${ch}' but main.js has no handler for it.`);
+      problems.push(`preload.js invokes '${ch}' but the main process has no handler for it.`);
     }
   }
   return invoked.size;
@@ -78,30 +108,16 @@ function checkPackagedMainModules() {
     return rx.test(rel);
   });
 
-  const seen = new Set();
-  const queue = ['main.js', 'preload.js'];
   let checked = 0;
-  while (queue.length) {
-    const rel = queue.shift();
-    if (seen.has(rel)) continue;
-    seen.add(rel);
-    const abs = path.join(ROOT, rel);
-    if (!fs.existsSync(abs)) continue;
+  for (const rel of requireGraph(['main.js', 'preload.js'])) {
     checked++;
-    if (rel !== 'main.js' && rel !== 'preload.js' && !covers(rel)) {
+    // electron-builder always packs package.json, whatever build.files says.
+    if (rel === 'main.js' || rel === 'preload.js' || rel === 'package.json') continue;
+    if (!covers(rel)) {
       problems.push(
         `main process requires '${rel}' but build.files in package.json does not include it — `
         + `it will be missing from app.asar and the packaged app will crash on launch.`
       );
-    }
-    const src = fs.readFileSync(abs, 'utf8');
-    for (const m of src.matchAll(/require\(\s*['"`](\.[^'"`]+)['"`]\s*\)/g)) {
-      let dep = path.posix.normalize(path.posix.join(path.posix.dirname(rel), m[1]));
-      if (!/\.[cm]?js$/.test(dep)) {
-        if (fs.existsSync(path.join(ROOT, dep + '.js'))) dep += '.js';
-        else if (fs.existsSync(path.join(ROOT, dep, 'index.js'))) dep = path.posix.join(dep, 'index.js');
-      }
-      queue.push(dep);
     }
   }
   return checked;
