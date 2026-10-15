@@ -162,6 +162,13 @@ export function initAnalytics() {
         // and must stay off.
         autocapture: false,
         disable_session_recording: true,
+        // Nothing extra loaded or measured: no surveys, heatmaps, dead-click or
+        // error capture, no performance timings. Only the events track() sends.
+        disable_surveys: true,
+        capture_heatmaps: false,
+        capture_dead_clicks: false,
+        capture_exceptions: false,
+        capture_performance: false,
         session_recording: { maskAllInputs: true, maskTextSelector: '*' },
         // Pageviews are captured by hand from the tab router — this app is one
         // HTML document, so the automatic ones would all read as "/index.html".

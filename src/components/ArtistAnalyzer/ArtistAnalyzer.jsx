@@ -11,6 +11,7 @@ import { Search, Sparkles, BookOpen, AlertTriangle, ShieldCheck, Check, Copy, Sa
 import { notify } from '../../services/dialog.js';
 import { Icon } from '../common/Glyph.jsx';
 import { useLogged } from '../../services/useLogged.js';
+import { track } from '../../services/analytics.js';
 
 const analysisTabs = [
   { id: 'style', label: 'Lyrical Style' },
@@ -232,6 +233,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
 
       setGhostLyrics(lyrics);
       setSunoTags(tags);
+      track('ghostrider_song_written', { sections: (lyrics.match(/^\[[^\]]+\]\s*$/gm) || []).length });
 
       /**
        * AND CHECK THE BOXES, which is what this whole tab exists to feed.

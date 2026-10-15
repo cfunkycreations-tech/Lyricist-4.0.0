@@ -16,7 +16,8 @@ import LandscapeSplash from './web/LandscapeSplash.jsx';
 import NetStatus from './web/NetStatus.jsx';
 import PurchaseLock from './web/PurchaseLock.jsx';
 import DialogHost from './components/common/DialogHost.jsx';
-import { initAnalytics } from './services/analytics.js';
+import { initAnalytics, track } from './services/analytics.js';
+import { APP_VERSION, BUILD_NUMBER } from './buildInfo.js';
 
 // Installable on a phone. No-op inside Electron - see the file.
 registerPWA();
@@ -32,6 +33,12 @@ installPhoneSave();
 // what is and is not collected. Never awaited: a slow or blocked analytics load
 // must not delay the first paint.
 initAnalytics();
+// One per launch: which build, and phone or desktop. Nothing else.
+track('app_opened', {
+  platform: window.lyricistAPI ? 'desktop' : (window.matchMedia?.('(pointer: coarse)').matches ? 'phone' : 'web'),
+  version: APP_VERSION,
+  build: Number(BUILD_NUMBER) || 0,
+});
 
 // Surface boot errors instead of a silent black screen
 class BootErrorBoundary extends React.Component {

@@ -7,6 +7,7 @@ import { EXAMPLES } from '../../services/minimaxExamples.js';
 import { validateCaption, captionBrief, sortSunoTags, songFacts } from '../../services/minimaxCaption.js';
 import { runCaptionSkill } from '../../services/captionSkillRunner.js';
 import { readSunoTags } from '../../services/ghostMemory.js';
+import { track } from '../../services/analytics.js';
 import { applySongTags } from '../../services/songTags.js';
 
 /**
@@ -698,9 +699,11 @@ export default function OneManBand({ onNavigate } = {}) {
       undoCaption.current = caption;
       setCaption(r.caption);
       setCaptionEdited(true);
+      track('caption_written', { trigger: 'button', ok: true });
       setPhase(`Rewritten by MiniMax's caption skill, from ${r.families.join(' and ')}`);
       setTimeout(() => setPhase((p) => (p.startsWith('Rewritten') ? '' : p)), 6000);
     } catch (e) {
+      track('caption_written', { trigger: 'button', ok: false });
       setError(`${e.message} Your description was left as it was.`);
     } finally {
       setRewriting(false);
@@ -882,7 +885,11 @@ export default function OneManBand({ onNavigate } = {}) {
             recipe: { lyrics, caption: sendCaption, genres, moods, voices, genre, mood, voice, seconds, steps, guidance, engine },
           };
           setTakes((prev) => [take, ...prev.filter((t) => !take.fileName || t.fileName !== take.fileName)]);
-          if (!pinged) { pinged = true; pingSongDone(); }
+          if (!pinged) {
+            pinged = true;
+            pingSongDone();
+            track('song_made', { engine, takes: takeCount, seconds, instrumental });
+          }
           if (res.folder) setSongsFolder(res.folder);
           // Kept next to the file, so the take keeps its own words when it is
           // brought back in later: its lyric video has to show THESE lyrics.

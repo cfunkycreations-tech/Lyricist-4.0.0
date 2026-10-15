@@ -44,6 +44,7 @@ import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { posthogStatus } from './posthog-status.mjs';
 
 const ROOT = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
 const DIST = path.join(ROOT, 'dist');
@@ -66,6 +67,7 @@ function sizeOf(p) {
 }
 
 console.log('Building the renderer...');
+posthogStatus(ROOT);
 // Always the customer build. Variables already in the environment beat any
 // .env file, so a creator .env on the PC can never put the Ghost Pilot on the
 // public phone link.

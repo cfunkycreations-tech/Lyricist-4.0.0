@@ -19,6 +19,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
+import { posthogStatus } from './posthog-status.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -136,6 +137,8 @@ function run(cmd, cmdArgs, opts = {}) {
     process.exit(r.status || 1);
   }
 }
+
+posthogStatus(ROOT);
 
 // 1) Vite production build
 run('npm', ['run', 'build']);

@@ -3,6 +3,7 @@ import './mobile.css';
 import { KeyRound, Info, Share, X } from 'lucide-react';
 import { Glyph } from '../components/common/Glyph.jsx';
 import { useLyricStore } from '../context/LyricStore.jsx';
+import { isEnabled as analyticsEnabled } from '../services/analytics.js';
 import { useInstallOffer } from './install.js';
 
 /**
@@ -500,7 +501,7 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
             Funk Audio Flow OpSec (FAFO) · Austin, Texas
           </span>
           <span className="mob-support-line">
-            Lyricist Pro · Engine: Local/Hybrid · Air-Gapped Safe
+            Lyricist Pro · Engine: Local/Hybrid · {analyticsEnabled() ? 'Anonymous Usage Stats' : 'Air-Gapped Safe'}
           </span>
         </div>
       </div>
