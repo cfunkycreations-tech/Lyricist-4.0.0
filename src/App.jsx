@@ -224,6 +224,18 @@ function MainLayout() {
     return () => document.body.classList.remove('lyricist-mobile');
   }, [isMobile]);
 
+  // IPHONE ZOOMS IN ON ANY TEXT BOX UNDER 16PX the moment it is tapped, and
+  // stays zoomed, so the whole page then slid side to side under a finger,
+  // lyrics and all (Chris, 2026-10-15). maximum-scale=1 stops that zoom; iOS
+  // still lets you pinch. iOS only: Android would lose pinch zoom, and never
+  // zooms on a tap anyway.
+  useEffect(() => {
+    const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const meta = document.querySelector('meta[name="viewport"]');
+    if (!isMobile || !ios || !meta || /maximum-scale/.test(meta.content)) return;
+    meta.content += ', maximum-scale=1';
+  }, [isMobile]);
+
   openedTabsRef.current.add(activeTab);
   const openedTabs = openedTabsRef.current;
 

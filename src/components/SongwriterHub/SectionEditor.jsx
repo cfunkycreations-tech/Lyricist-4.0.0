@@ -5,6 +5,14 @@ import { refineLyrics, generateLineVariation, generateAdLibs, generateSection } 
 import { Lock, Unlock, Sparkles, Trash2, RefreshCw, Volume2, Type, ArrowUp, ArrowDown, HelpCircle, Check, Copy, Megaphone } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
 import { notify } from '../../services/dialog.js';
+import { useMobile } from '../../mobile/useMobile.js';
+
+/** A wrapping line field grows to fit its words. */
+const fitHeight = (el) => {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = `${el.scrollHeight}px`;
+};
 
 const sectionStyles = {
   intro: { border: '1px solid rgba(155, 161, 170, 0.45)', bg: 'rgba(155, 161, 170, 0.04)', glow: 'rgba(155, 161, 170, 0.2)', pill: 'pill-purple' },
@@ -22,6 +30,7 @@ export default function SectionEditor({ section, index }) {
   const [lineGeneratingIndex, setLineGeneratingIndex] = useState(null);
   const [showStats, setShowStats] = useState(false);
   const [copied, setCopied] = useState(false);
+  const isMobile = useMobile();
 
   const style = sectionStyles[section.type] || sectionStyles.verse;
 
@@ -427,30 +436,68 @@ export default function SectionEditor({ section, index }) {
 
               {/* Single line field — solid text only, zero shadow / zero underlay */}
               <div style={{ flex: 1, padding: '0 10px', display: 'flex', alignItems: 'center', minWidth: 0, position: 'relative', isolation: 'isolate' }}>
-                <input
-                  type="text"
-                  className="lyric-line-input"
-                  value={activeText}
-                  onChange={(e) => handleLineTextChange(lIdx, e.target.value)}
-                  autoComplete="off"
-                  spellCheck={false}
-                  data-help="This is one line of your song. Click in and type to edit. Refine / regenerate replaces this line in place — use Undo at the top of the workspace if you want the old wording back."
-                  style={{
-                    width: '100%',
-                    background: 'transparent',
-                    border: 'none',
-                    outline: 'none',
-                    fontSize: '0.85rem',
-                    color: '#e8eef8',
-                    WebkitTextFillColor: '#e8eef8',
-                    fontFamily: 'var(--faf-font)',
-                    textShadow: 'none',
-                    filter: 'none',
-                    WebkitTextStroke: '0',
-                    boxShadow: 'none',
-                    caretColor: '#e7a540',
-                  }}
-                />
+                {/* ON A PHONE THE LINE WRAPS. A one-line box there was 88px wide and
+                    the words slid sideways inside it whenever you scrolled or
+                    tapped (Chris, 2026-10-15). It is one lyric line still:
+                    Return finishes it and pasted line breaks become spaces. */}
+                {isMobile ? (
+                  <textarea
+                    className="lyric-line-input"
+                    rows={1}
+                    ref={fitHeight}
+                    value={activeText}
+                    onChange={(e) => { handleLineTextChange(lIdx, e.target.value.replace(/\s*\n\s*/g, ' ')); fitHeight(e.target); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                    autoComplete="off"
+                    spellCheck={false}
+                    enterKeyHint="done"
+                    style={{
+                      width: '100%',
+                      background: 'transparent',
+                      border: 'none',
+                      outline: 'none',
+                      resize: 'none',
+                      overflow: 'hidden',
+                      padding: 0,
+                      margin: 0,
+                      minHeight: 0,
+                      fontSize: '16px',
+                      lineHeight: 1.45,
+                      whiteSpace: 'pre-wrap',
+                      overflowWrap: 'anywhere',
+                      color: '#e8eef8',
+                      WebkitTextFillColor: '#e8eef8',
+                      textShadow: 'none',
+                      boxShadow: 'none',
+                      caretColor: '#e7a540',
+                    }}
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    className="lyric-line-input"
+                    value={activeText}
+                    onChange={(e) => handleLineTextChange(lIdx, e.target.value)}
+                    autoComplete="off"
+                    spellCheck={false}
+                    data-help="This is one line of your song. Click in and type to edit. Refine / regenerate replaces this line in place — use Undo at the top of the workspace if you want the old wording back."
+                    style={{
+                      width: '100%',
+                      background: 'transparent',
+                      border: 'none',
+                      outline: 'none',
+                      fontSize: '0.85rem',
+                      color: '#e8eef8',
+                      WebkitTextFillColor: '#e8eef8',
+                      fontFamily: 'var(--faf-font)',
+                      textShadow: 'none',
+                      filter: 'none',
+                      WebkitTextStroke: '0',
+                      boxShadow: 'none',
+                      caretColor: '#e7a540',
+                    }}
+                  />
+                )}
               </div>
 
               {/* Hover actions */}

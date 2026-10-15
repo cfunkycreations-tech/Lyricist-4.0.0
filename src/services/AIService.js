@@ -196,8 +196,25 @@ export function normalizeApiKey(raw) {
     .replace(/^bearer\s*/i, '');
 }
 
+/**
+ * NO CALL HANGS FOREVER. A request that never answered (a phone that slept
+ * mid-call, a free host that stalled) left the button saying it was busy and
+ * disabled for good, so Generate on the phone did nothing at all.
+ */
+const CALL_TIMEOUT_MS = 150000;
+
 async function postCompletion(body, config) {
-  const r = await chatCompletion(body, { apiKey: normalizeApiKey(config?.openRouterApiKey) });
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), CALL_TIMEOUT_MS);
+  let r;
+  try {
+    r = await chatCompletion(body, { apiKey: normalizeApiKey(config?.openRouterApiKey), signal: ctl.signal });
+  } catch (e) {
+    if (ctl.signal.aborted) throw new Error(`${body.model} took over ${CALL_TIMEOUT_MS / 60000} minutes to answer, so it was stopped. Try again, or pick a faster model in Settings.`);
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
   if (r.ok) return { ok: true, result: r.json || {} };
   return { ok: false, status: r.status, message: r.message || 'Unknown Provider Error' };
 }
@@ -485,8 +502,27 @@ export async function generateFullSong(store) {
   const context = buildPromptContext(store);
   const structureSequence = (store.customStructure || ['verse', 'chorus', 'verse', 'chorus']).map(s => s.toUpperCase()).join(" -> ");
 
+  /**
+   * WORDS ON THE PAGE GET REWRITTEN, NOT THROWN AWAY.
+   *
+   * Chris, 2026-10-15: he sent a Ghost Rider song to Songwriter and pressed
+   * Generate to rewrite it. Generate wrote a new song from the pickers and
+   * ignored his. Now the song on the page is the draft, its story and sections
+   * stay, and every idea in the topic has to land in it.
+   */
+  const draft = (store.lyrics || [])
+    .map((s) => `[${s.name}]\n${(s.lines || []).map((l) => l.text || '').join('\n')}`)
+    .join('\n\n')
+    .trim();
+  const hasDraft = Boolean(draft.replace(/\[[^\]]*\]/g, '').trim());
+  const ideas = store.topic?.trim()
+    ? `\n\nEvery idea in the Topic must be clearly in the lyrics, named or shown: ${store.topic.trim()}`
+    : '';
+
   const systemPrompt = `You are a professional lyricist and songwriter. Output lyrics only. Clear section markers like [Verse 1], [Chorus], etc.\n${NO_CLICHES}`;
-  const userPrompt = `Write the full song lyrics based on this context:\n${context}\n\nSTRUCTURE:\n${structureSequence}`;
+  const userPrompt = hasDraft
+    ? `Rewrite this song. Keep its story, its point of view and its sections in the same order, and make every line stronger. Output the whole rewritten song.\n\nCONTEXT:\n${context}${ideas}\n\nTHE DRAFT TO REWRITE:\n${draft}`
+    : `Write the full song lyrics based on this context:\n${context}${ideas}\n\nSTRUCTURE:\n${structureSequence}`;
 
   const messages = [
     { role: "system", content: systemPrompt },
@@ -494,7 +530,10 @@ export async function generateFullSong(store) {
   ];
 
   const resultText = await callAI(messages, store.config, store.config?.temperature, store.config?.maxTokens);
-  return parseSectionsFromText(resultText, store);
+  const sections = parseSectionsFromText(resultText, store).filter((s) => s.lines.length);
+  // An empty reply never wipes the song on the page.
+  if (!sections.length) throw new Error('The AI sent back no lyrics. Try again, or pick another model in Settings.');
+  return sections;
 }
 
 export async function generateSection(sectionType, store, priorSections = []) {

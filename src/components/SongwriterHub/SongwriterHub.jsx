@@ -11,7 +11,7 @@ import { applySongTags, tagsFromText } from '../../services/songTags.js';
 import { saveSunoTags } from '../../services/ghostMemory.js';
 import { notify } from '../../services/dialog.js';
 import { saveText } from '../../services/saveText.js';
-import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, AlertCircle, Upload, PenLine, GitBranch, X, Share2 } from 'lucide-react';
+import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, Upload, PenLine, GitBranch, X, Share2 } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
 // The logo and the founder photo were imported here but never rendered — a
 // leftover from the old in-tab header. Vite emits an imported asset whether or
@@ -23,8 +23,6 @@ const RAPPED_GENRES = [
   'Phonk', 'Conscious / Spoken Word', 'Hyperpop / Glitchcore', 'Latin / Reggaeton',
 ];
 
-const TOPIC_FILLER = new Set(('the and for with about from that this into onto over under your you yours our ours are was were have has had not but all any can will would just like what when where who why how its it\'s song songs track tracks lyric lyrics verse chorus hook make made write written being been than then them they their there here out off get got let lets one two who whom she her his him hers also very really some more most much many each every only own same such too way ways thing things feel feels feeling').split(' '));
-
 export default function SongwriterHub({ ghostRiderData }) {
   const store = useLyricStore();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -35,6 +33,7 @@ export default function SongwriterHub({ ghostRiderData }) {
   const [showPasteBox, setShowPasteBox] = useState(false);
   const [pasteDraft, setPasteDraft] = useState('');
   const lyricsFileRef = useRef(null);
+  const workRef = useRef(null);
 
   /**
    * Take lyrics the user wrote themselves and put them in the workspace.
@@ -156,6 +155,8 @@ export default function SongwriterHub({ ghostRiderData }) {
     try {
       const generatedSections = await generateFullSong(store);
       store.setFullLyrics(generatedSections);
+      // Land on the first line of the new song, not wherever the last one was scrolled to.
+      workRef.current?.scrollTo({ top: 0 });
       // Say which model actually wrote it, and own up if any of it was thrown
       // away. A router can serve a different model than the one you picked, and
       // when the words come back wrong you need to know who wrote them.
@@ -341,7 +342,7 @@ export default function SongwriterHub({ ghostRiderData }) {
       await ghost.current.handleGenerate();
       await ghostSettle();
       writeFailed();
-      return { said: 'wrote the whole song on Songwriter', undo: had ? undoWords : null };
+      return { said: had ? 'rewrote the song on Songwriter' : 'wrote the whole song on Songwriter', undo: had ? undoWords : null };
     },
     songwriter_set_lyrics: async ({ text } = {}) => {
       if (!String(text || '').trim()) throw new Error('There were no words to put in.');
@@ -365,19 +366,8 @@ export default function SongwriterHub({ ghostRiderData }) {
     songwriter_undo: () => { ghost.current.store.undo(); return 'put the lyrics back'; },
   }), []);
 
-  // Keyword check
-  // Only the words that carry the idea. "about", "the", "song" never count, and
-  // a word counts as used in any form: rain / rains / raining, break / breaking.
-  const getMissingKeywords = () => {
-    if (!store.topic) return [];
-    const root = (w) => (w.length > 5 ? w.replace(/(ing|ed|es|s|ly|er)$/, '') : w.replace(/s$/, ''));
-    // Flexible separators: commas, dashes, periods, spaces, or line breaks (any mix).
-    const keywords = [...new Set(store.topic.toLowerCase().split(/[^a-z0-9']+/).filter(w => w.length > 2 && !TOPIC_FILLER.has(w)))];
-    const lyricsText = store.lyrics.map(s => s.lines.map(l => l.text).join(' ')).join(' ').toLowerCase();
-    return keywords.filter(kw => !lyricsText.includes(root(kw)));
-  };
-
-  const missingKeywords = getMissingKeywords();
+  // Words on the page: Generate rewrites them instead of starting over.
+  const hasWords = store.lyrics.some((sec) => sec.lines.some((l) => String(l.text || '').trim()));
 
   return (
     <div style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'radial-gradient(70% 50% at 20% 0%, rgba(231,165,64,0.08) 0%, transparent 55%), radial-gradient(60% 45% at 85% 100%, rgba(155,161,170,0.08) 0%, transparent 50%), #08090b' }}>
@@ -395,6 +385,7 @@ export default function SongwriterHub({ ghostRiderData }) {
           width: 320,
           flexShrink: 0,
           overflowY: 'auto',
+          overflowX: 'hidden',
           padding: 16,
           display: 'flex',
           flexDirection: 'column',
@@ -700,7 +691,7 @@ export default function SongwriterHub({ ghostRiderData }) {
             disabled={isGenerating}
             data-demo="sw-generate"
             className="btn-neon-purple pulse-glow"
-            data-help="The big one. Click this and the AI writes a complete set of lyrics using all your choices above. You can edit, regenerate, or refine everything afterward. (Needs your AI key set up in Settings.)"
+            data-help="The big one. With nothing on the page, the AI writes a complete song from your choices above. With a song already there (yours, or one sent from Ghost Rider), it rewrites that song: same story, stronger lines, every topic idea worked in. Undo brings the old one back. (Needs your AI key set up in Settings.)"
             style={{
               width: '100%',
               padding: '11px',
@@ -718,7 +709,7 @@ export default function SongwriterHub({ ghostRiderData }) {
             }}
           >
             <Sparkles size={16} />
-            {isGenerating ? 'Channeling Muse...' : 'Generate Full Song'}
+            {isGenerating ? (hasWords ? 'Rewriting…' : 'Writing…') : (hasWords ? 'Rewrite Song' : 'Generate Full Song')}
           </button>
 
           {/* ── ALREADY WROTE ONE? ──────────────────────────────────────────
@@ -859,26 +850,6 @@ export default function SongwriterHub({ ghostRiderData }) {
               Songwriter Workspace
             </span>
 
-            {/* Keyword Alert */}
-            {missingKeywords.length > 0 && store.lyrics.length > 0 && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  fontSize: '0.7rem',
-                  color: '#f87171',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  padding: '2px 8px',
-                  borderRadius: 6,
-                  border: '1px solid rgba(239, 68, 68, 0.2)'
-                }}
-                data-help="A friendly heads-up: these are topic words you asked for that haven't made it into the lyrics yet. Not an error — just so you can work them in if you want."
-              >
-                <AlertCircle size={12} />
-                <span>Missing Ideas: {missingKeywords.join(', ')}</span>
-              </div>
-            )}
           </div>
 
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -1063,8 +1034,16 @@ export default function SongwriterHub({ ghostRiderData }) {
           }}
         />
 
-        {/* Workspace Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+        {/* Busy, said where the song is. On a phone the button that says it is
+            half a screen away, and a rewrite can take a minute on a free model. */}
+        {isGenerating && hasWords && (
+          <div className="pulse-glow" style={{ margin: '10px 20px 0', padding: '9px 13px', borderRadius: 8, fontSize: '0.78rem', border: '1px solid rgba(231,165,64,0.45)', background: 'rgba(231,165,64,0.1)', color: '#FFD08A' }}>
+            Rewriting your song… free models can take a minute.
+          </div>
+        )}
+
+        {/* Workspace Body. overflowX hidden: nothing in it may slide sideways. */}
+        <div ref={workRef} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: 20 }}>
           {store.lyrics.length > 0 ? (
             store.lyrics.map((section, idx) => (
               <SectionEditor key={section.id} section={section} index={idx} />

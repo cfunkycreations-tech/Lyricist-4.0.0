@@ -316,6 +316,18 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
   const action = openId ? ACTIONS[openId] : null;
   const actionNeedsKey = !!action && NEEDS_KEY.has(openId) && !hasKey;
 
+  /* BUSY SHOWS IN THE BAR. The tool's own button says it is working, but on a
+     phone that button is usually scrolled out of sight, so tapping Generate
+     looked like it did nothing. The bar reads the button's aria-busy. */
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!action) { setBusy(false); return undefined; }
+    const check = () => setBusy(findVisible(action.hook)?.getAttribute('aria-busy') === 'true');
+    check();
+    const t = setInterval(check, 400);
+    return () => clearInterval(t);
+  }, [action]);
+
   const runAction = () => {
     if (!action) return;
     // Pushed, not swapped, so back returns to the tool once the key is in.
@@ -364,8 +376,8 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
             </button>
             <span className="mob-bar-title">{current ? current.label : ''}</span>
             {action && (
-              <button className={`mob-go ${actionNeedsKey ? 'is-key' : ''}`} onClick={runAction}>
-                {actionNeedsKey ? 'Add key' : action.label}
+              <button className={`mob-go ${actionNeedsKey ? 'is-key' : ''}`} onClick={runAction} disabled={busy} aria-busy={busy}>
+                {actionNeedsKey ? 'Add key' : busy ? 'Working…' : action.label}
               </button>
             )}
             {current?.help && (
