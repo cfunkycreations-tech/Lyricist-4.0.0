@@ -6,6 +6,10 @@ const comfySetup = require('./comfySetup');
 const kaggleCloud = require('./kaggleCloud');
 const captionSkill = require('./captionSkill');
 const licenseCheck = require('./licenseCheck');
+// Customer builds update themselves from GitHub Releases (desktopUpdate.js).
+// Guarded: a missing file must never stop the app from opening.
+let desktopUpdate = null;
+try { desktopUpdate = require('./desktopUpdate'); } catch (e) { console.warn('desktop updates off:', e?.message); }
 
 /* ══════════════════════════════════════════════════════════════════════════
    GHOST PILOT — OS HARDWARE AUTOMATION.  INTERNAL / CREATOR BUILD ONLY.
@@ -1861,6 +1865,11 @@ ipcMain.handle('juce-close', async () => {
 app.whenReady().then(() => {
   // Belt and braces: a losing second instance never gets as far as a window.
   if (!gotInstanceLock) return;
+
+  try {
+    const { net } = require('electron');
+    desktopUpdate?.register({ app, ipcMain, net, BrowserWindow });
+  } catch (e) { bootLog(`desktop updates off: ${e?.message || e}`); }
 
   // Allow Google Fonts and OpenRouter in packaged app.
   // 4.1.3: media-src added so the persistent Suno player can stream tracks

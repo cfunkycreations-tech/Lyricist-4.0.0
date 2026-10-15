@@ -139,6 +139,18 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
   lessonDelete: (name) => ipcRenderer.invoke('ghost-lesson-delete', { name }),
   lessonReveal: () => ipcRenderer.invoke('ghost-lesson-reveal'),
 
+  // Desktop updates (desktopUpdate.js): a newer customer build, downloaded and
+  // checked, waiting to install on close or on "Restart now".
+  update: {
+    state: () => ipcRenderer.invoke('desktop-update-state'),
+    onReady: (cb) => {
+      const h = (_e, info) => cb(info);
+      ipcRenderer.on('desktop-update', h);
+      return () => ipcRenderer.removeListener('desktop-update', h);
+    },
+    installNow: () => ipcRenderer.invoke('desktop-update-install'),
+  },
+
   // Real Windows VST3 Plugin Scanner & Native Window Hosting
   sendJuceCommand: (cmd, args) => ipcRenderer.invoke('juce-command', { cmd, args }),
 });

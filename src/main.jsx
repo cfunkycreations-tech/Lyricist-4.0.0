@@ -14,6 +14,7 @@ import { installPhoneAudio } from './web/iosAudio.js';
 import { installPhoneSave } from './web/iosSave.js';
 import LandscapeSplash from './web/LandscapeSplash.jsx';
 import NetStatus from './web/NetStatus.jsx';
+import DesktopUpdate from './web/DesktopUpdate.jsx';
 import PurchaseLock from './web/PurchaseLock.jsx';
 import DialogHost from './components/common/DialogHost.jsx';
 import { initAnalytics, track } from './services/analytics.js';
@@ -95,6 +96,8 @@ try {
         <DialogHost />
         {/* Web only: offline notice and the new-version Reload bar. */}
         <NetStatus />
+        {/* Desktop only: a newer build downloaded, installs on close. */}
+        <DesktopUpdate />
       </BootErrorBoundary>
     </React.StrictMode>
   );
