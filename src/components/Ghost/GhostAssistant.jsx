@@ -106,6 +106,8 @@ const REDO_NAMES = {
   matrix_send_to_songwriter: /songwriter/i,
   blackhole_pull_from_songwriter: /pull|bring|black hole/i,
   songwriter_send_to_studio: /send|black hole|studio/i,
+  songwriter_pull_from_studio: /pull|bring|studio/i,
+  blackhole_send_to_songwriter: /send|songwriter/i,
   lay_out_song: /lay|shape|structure|sections/i,
   matrix_autocraft: /craft/i,
   songwriter_set_style: /tag|genre|mood|style/i,

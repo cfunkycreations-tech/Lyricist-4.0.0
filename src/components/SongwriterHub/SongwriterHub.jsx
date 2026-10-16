@@ -24,7 +24,7 @@ const RAPPED_GENRES = [
   'Phonk', 'Conscious / Spoken Word', 'Hyperpop / Glitchcore', 'Latin / Reggaeton',
 ];
 
-export default function SongwriterHub({ ghostRiderData, onSendToStudio }) {
+export default function SongwriterHub({ ghostRiderData, onSendToStudio, incoming }) {
   const store = useLyricStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isFillingBlanks, setIsFillingBlanks] = useState(false);
@@ -75,11 +75,36 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio }) {
 
     store.setFullLyrics(sections);
     const lineCount = sections.reduce((n, s) => n + s.lines.length, 0);
-    setModelNote(`Loaded ${lineCount} lines from ${sourceLabel} — these are yours, nothing was generated.${splitNote}`);
+    setModelNote(`Loaded ${lineCount} line${lineCount === 1 ? '' : 's'} from ${sourceLabel} — these are yours, nothing was generated.${splitNote}`);
     setErrorMsg('');
     setShowPasteBox(false);
     setPasteDraft('');
   };
+
+  /**
+   * BLACK HOLE STUDIOS → SONGWRITER, from either tab.
+   *
+   * Chris, 2026-10-16: "it needs to work both ways... all these tabs need to
+   * work interchangeably." The Studio's Input Lyrics come in as the song here,
+   * sections and all, ready to rewrite. Tags are already the same on both tabs.
+   * Undo puts the old song back.
+   */
+  const pullFromStudio = () => {
+    const t = String(store.getStudioLyrics?.() || '').trim();
+    if (!t) { setErrorMsg('Black Hole Studios has no Input Lyrics yet. Open it and write some, or press Send to Songwriter there.'); return false; }
+    loadOwnLyrics(t, 'Black Hole Studios');
+    workRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    return true;
+  };
+  const lastIncoming = useRef(null);
+  useEffect(() => {
+    if (!incoming?.at || lastIncoming.current === incoming.at) return;
+    lastIncoming.current = incoming.at;
+    const t = String(incoming.lyrics || '').trim();
+    if (!t) return;
+    loadOwnLyrics(t, 'Black Hole Studios');
+    setTimeout(() => workRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 80);
+  }, [incoming?.at]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleUploadLyrics = async () => {
     const api = window.lyricistAPI;
@@ -170,9 +195,10 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio }) {
       // when the words come back wrong you need to know who wrote them.
       if (lastGeneration.model) {
         setModelNote(
-          lastGeneration.dropped
+          (lastGeneration.dropped
             ? `Written by ${lastGeneration.model} — but ${lastGeneration.dropped} line(s) came back garbled and were dropped (${lastGeneration.reasons.join('; ')}). Try a different model in Settings.`
-            : `Written by ${lastGeneration.model}`
+            : `Written by ${lastGeneration.model}`)
+          + (lastGeneration.warn ? ` ${lastGeneration.warn}` : '')
         );
       }
     } catch (e) {
@@ -312,7 +338,7 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio }) {
    * the store's own undo, so it lands as a button next to what it did.
    */
   const ghost = useRef({});
-  ghost.current = { store, errorMsg, handleGenerate, handleFillBlanks, loadOwnLyrics, sendToStudio };
+  ghost.current = { store, errorMsg, handleGenerate, handleFillBlanks, loadOwnLyrics, sendToStudio, pullFromStudio };
   const writeFailed = () => { if (ghost.current.errorMsg) throw new Error(ghost.current.errorMsg); };
   const hadWords = () => Boolean(ghost.current.store.getFullText().replace(/\[[^\]]*\]/g, '').trim());
   const undoWords = { action: 'songwriter_undo', label: 'Put my lyrics back' };
@@ -404,6 +430,12 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio }) {
       await ghostSettle();
       if (!ghost.current.sendToStudio()) throw new Error('There are no lyrics on Songwriter to send.');
       return 'sent the song and its tags to Black Hole Studios';
+    },
+    songwriter_pull_from_studio: async () => {
+      const had = hadWords();
+      if (!ghost.current.pullFromStudio()) throw new Error('Black Hole Studios has no Input Lyrics to bring over.');
+      await ghostSettle();
+      return { said: 'brought the Black Hole Studios lyrics onto Songwriter', undo: had ? undoWords : null };
     },
   }), []);
 
@@ -1024,6 +1056,25 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio }) {
               </>
             )}
 
+                {/* The other way from Send to Black Hole Studios. Always there. */}
+                <button
+                  onClick={pullFromStudio}
+                  data-demo="sw-pull-studio"
+                  data-help="Brings the Input Lyrics from Black Hole Studios here as the song, to rewrite, refine and tag. Undo puts your old song back."
+                  style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    padding: '4px 12px',
+                    borderRadius: 6,
+                    border: '1px solid rgba(231,165,64,0.45)',
+                    background: 'transparent',
+                    color: '#FFD08A',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Pull from Studio
+                </button>
+
                 {/* Always there: tags, topic and notes can need clearing with no words on the page. */}
                 <button
                   onClick={store.clearSong}
@@ -1057,9 +1108,9 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio }) {
           <div style={{
             margin: '10px 20px', padding: '9px 13px', borderRadius: 8, fontSize: '0.72rem', lineHeight: 1.5,
             display: 'flex', alignItems: 'flex-start', gap: 8,
-            border: `1px solid ${/garbled|dropped/.test(modelNote) ? 'rgba(251,191,36,0.45)' : 'rgba(52,211,153,0.35)'}`,
-            background: /garbled|dropped/.test(modelNote) ? 'rgba(251,191,36,0.08)' : 'rgba(52,211,153,0.07)',
-            color: /garbled|dropped/.test(modelNote) ? 'rgba(253,224,71,0.95)' : 'rgba(110,231,183,0.9)',
+            border: `1px solid ${/garbled|dropped|Heads up/.test(modelNote) ? 'rgba(251,191,36,0.45)' : 'rgba(52,211,153,0.35)'}`,
+            background: /garbled|dropped|Heads up/.test(modelNote) ? 'rgba(251,191,36,0.08)' : 'rgba(52,211,153,0.07)',
+            color: /garbled|dropped|Heads up/.test(modelNote) ? 'rgba(253,224,71,0.95)' : 'rgba(110,231,183,0.9)',
           }}>
             <span style={{ flex: 1 }}>{modelNote}</span>
             <button onClick={() => setModelNote('')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', display: 'inline-flex' }} aria-label="Dismiss"><X size={14} /></button>

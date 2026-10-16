@@ -364,7 +364,7 @@ function picksForSkill({ genres = [], moods = [], voices = [], instrumental = fa
   return out.join(' ');
 }
 
-export default function OneManBand({ onNavigate, incoming } = {}) {
+export default function OneManBand({ onNavigate, incoming, onSendToSongwriter } = {}) {
   const store = useLyricStore();
   const [lyrics, setLyrics] = useState(
     '[Verse]\nSteel in my hands and the sun going down\n'
@@ -694,6 +694,20 @@ export default function OneManBand({ onNavigate, incoming } = {}) {
       return;
     }
     takeSong(text);
+  };
+
+  // Songwriter can pull these words while this tab is open or not.
+  useEffect(() => { store.setStudioLyricsMirror?.(lyrics); }, [lyrics]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** The other direction: these Input Lyrics go to Songwriter to be worked on. */
+  const sendToSongwriter = () => {
+    const t = lyrics.trim();
+    if (!t) { setError('There are no Input Lyrics to send yet.'); return false; }
+    setError('');
+    setArrived('');
+    track('song_sent_to_songwriter', { parts: readSections(t).length });
+    onSendToSongwriter?.({ lyrics: t });
+    return true;
   };
 
   // Sent from Songwriter's button. Keyed on the send, so it lands on the first
@@ -1326,6 +1340,10 @@ export default function OneManBand({ onNavigate, incoming } = {}) {
       fitLength(back);
       return 'put your words back the way they were';
     },
+    blackhole_send_to_songwriter: () => {
+      if (!sendToSongwriter()) throw new Error('There are no Input Lyrics to send.');
+      return 'sent the Input Lyrics to Songwriter';
+    },
     /** Songwriter → Black Hole Studios: the song on Songwriter becomes the Input Lyrics. */
     blackhole_pull_from_songwriter: () => {
       const t = String(store.getStudioText?.() || '').trim();
@@ -1638,8 +1656,13 @@ export default function OneManBand({ onNavigate, incoming } = {}) {
                       onClick={clearStudio}>
                 Clear
               </button>
-              <button type="button" className="omb-mini" data-demo="omb-pull" onClick={pullFromSongwriter}>
+              <button type="button" className="omb-mini" data-demo="omb-pull" onClick={pullFromSongwriter}
+                      title="Brings the song on Songwriter in as the Input Lyrics. Its tags are already picked here.">
                 Pull from Songwriter
+              </button>
+              <button type="button" className="omb-mini" data-demo="omb-send-sw" onClick={sendToSongwriter}
+                      title="Sends these Input Lyrics to Songwriter to rewrite, refine and tag.">
+                Send to Songwriter
               </button>
             </div>
           </header>
@@ -1692,7 +1715,7 @@ export default function OneManBand({ onNavigate, incoming } = {}) {
 
             <GrowBox className="omb-sheet" data-demo="omb-lyrics" minRows={18} value={lyrics} spellCheck
                      placeholder={'[Verse]\nWrite your words here, or pull them in from Songwriter.'}
-                     onChange={(e) => setLyrics(e.target.value)} />
+                     onChange={(e) => { setLyrics(e.target.value); if (arrived) setArrived(''); }} />
           </div>
         </section>
 

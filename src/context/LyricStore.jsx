@@ -818,6 +818,11 @@ export const LyricStoreProvider = ({ children }) => {
   };
   // The same song with plain part names, for Black Hole Studios (studioSheet.js).
   const getStudioText = () => studioSheet(latestLyrics.current);
+  // And the other way: Black Hole Studios' Input Lyrics, kept current by that
+  // tab, so Songwriter can pull them. A ref, so typing there re-renders nothing here.
+  const studioLyricsRef = useRef('');
+  const setStudioLyricsMirror = (t) => { studioLyricsRef.current = String(t || ''); };
+  const getStudioLyrics = () => studioLyricsRef.current;
 
   return (
     <LyricStoreContext.Provider value={{
@@ -835,6 +840,8 @@ export const LyricStoreProvider = ({ children }) => {
       updateSectionMeta,
       getFullText,
       getStudioText,
+      getStudioLyrics,
+      setStudioLyricsMirror,
       undo,
       redo,
       canUndo: undoStack.length > 0,

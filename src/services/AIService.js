@@ -10,7 +10,7 @@ import { chatCompletion, listModels, noEndpointsHelp } from './openrouter.js';
 import { modelFit } from './modelFit.js';
 import { labelSections } from '../utils/importLyrics.js';
 
-export const lastGeneration = { model: null, provider: null, ok: true, reasons: [], dropped: 0, at: null, unfiltered: false };
+export const lastGeneration = { model: null, provider: null, ok: true, reasons: [], dropped: 0, at: null, unfiltered: false, warn: '' };
 
 /**
  * Default & fallback, CHECKED AGAINST THE LIVE CATALOGUE ON 2026-08-27.
@@ -489,7 +489,41 @@ SONGWRITING CONFIGURATION:
 - Cadence Notes: ${store.cadenceNotes || "none"}
 - Topic / Concept: ${store.topic || "generic human tension"}
 - Artist Reference: ${store.artistRef || "none"}
-${store.sunoTags ? `- Style Tags (the exact sound of this song, these win over the genre and mood above): ${store.sunoTags}\n` : ''}${writerNotes(store)}`;
+${store.sunoTags ? `- Style Tags (the exact sound of this song): ${store.sunoTags}\n- The genre, subgenre and mood picks and the style tags ALL describe this song. Use every one of them together; never drop a pick because a tag names something else.\n` : ''}${writerNotes(store)}${wantsExplicit(store) ? EXPLICIT_ORDER : ''}`;
+}
+
+/**
+ * HE ASKED FOR EXPLETIVES AND GOT A CLEAN SONG.
+ *
+ * Chris, 2026-10-16: "I said add expletives. It's not adding no expletives."
+ * A note is easy for a model to wave off, so a request for a dirty song, in the
+ * notes, the topic or the tags, becomes an order of its own, and the result is
+ * checked for it (generateFullSong). "No swearing" or "keep it clean" wins.
+ */
+const ASKS_EXPLICIT = /\b(expletives?|explicit|profan\w*|curs(e|es|ing)|cuss\w*|swear\w*|f[- ]?bombs?|nsfw|uncensored|vulgar|bad words|dirty (words|lyrics|language))\b/i;
+const ASKS_CLEAN = /\b(no|without|don'?t|do not|never|avoid|zero)\b[\w\s,'-]{0,20}\b(expletives?|explicit|profan\w*|curs\w*|cuss\w*|swear\w*|bad words)|\b(keep it|make it|radio|family)[\s-]+(clean|friendly|edit)\b/i;
+export function wantsExplicit(store) {
+  const text = [store?.notes, store?.topic, store?.sunoTags, store?.cadenceNotes].filter(Boolean).join('\n');
+  return ASKS_EXPLICIT.test(text) && !ASKS_CLEAN.test(text);
+}
+const EXPLICIT_ORDER = `
+EXPLICIT LYRICS, ASKED FOR BY THE WRITER: this is an adult song. Use real profanity spelled out in full (fuck, shit, damn, bitch, motherfucker and the like) in every section, the way a real artist in this genre would. Never censor a word with asterisks or dashes.
+`;
+const PROFANITY = /\b(fuck\w*|motherfuck\w*|shit\w*|bullshit|goddamn\w*|damn\w*|bitch\w*|ass|asshole\w*|bastard\w*|dick\w*|piss\w*)\b/i;
+/** "f***ing", "sh*t": a model that censors itself gets the word put back. */
+const unmask = (t) => String(t)
+  .replace(/\bf[*#@]+(?:c?k)?/gi, 'fuck')
+  .replace(/\bsh[*#@]+t/gi, 'shit')
+  .replace(/\bb[*#@]+tch/gi, 'bitch')
+  .replace(/\bd[*#@]+mn/gi, 'damn');
+
+/** How much of the draft came back word for word. */
+const lineKey = (t) => String(t || '').toLowerCase().replace(/[^a-z0-9' ]+/g, ' ').replace(/\s+/g, ' ').trim();
+function keptShare(draftSections, sections) {
+  const draft = draftSections.flatMap((s) => (s.lines || []).map((l) => lineKey(l.text))).filter(Boolean);
+  if (!draft.length) return 0;
+  const out = new Set(sections.flatMap((s) => s.lines.map((l) => lineKey(l.text))));
+  return draft.filter((l) => out.has(l)).length / draft.length;
 }
 
 /**
@@ -536,8 +570,20 @@ export async function generateFullSong(store) {
   // Said again last, where a model weighs it most.
   const notes = String(store.notes || '').trim();
   const orders = notes ? `\n\nBefore you answer, check the song does what the writer's notes say: ${notes}` : '';
+  /**
+   * A REWRITE FOLLOWS THE SETTINGS AS THEY ARE NOW.
+   *
+   * Chris, 2026-10-16: he changed the genre, mood and subgenre, added tags,
+   * asked for expletives, pressed Generate and got his song back. "Keep its
+   * story and make every line stronger" let a model hand the draft back, and
+   * the old tags were told to win over his new picks. Now the draft is only the
+   * story; the sound is whatever the settings say now, every line changes, and
+   * the answer is checked: most of the draft back word for word, or no swearing
+   * when he asked for it, gets one more try with the reason spelled out.
+   */
+  const explicit = wantsExplicit(store);
   const userPrompt = hasDraft
-    ? `Rewrite this song. Keep its story, its point of view and its sections in the same order, and make every line stronger. Output the whole rewritten song.\n\nCONTEXT:\n${context}${ideas}\n\nTHE DRAFT TO REWRITE:\n${draft}${orders}`
+    ? `Rewrite this song to fit the settings below. The genre, subgenre, mood, style tags and notes may have changed since this draft was written, and the rewrite must sound like the settings now, not like the draft: change the wording, slang, imagery, energy and rhymes to fit them. Keep its story, its point of view and its sections in the same order. Rewrite every line; do not hand back the draft's lines. Output the whole rewritten song.\n\nCONTEXT:\n${context}${ideas}\n\nTHE DRAFT TO REWRITE:\n${draft}${orders}`
     : `Write the full song lyrics based on this context:\n${context}${ideas}\n\nSTRUCTURE:\n${structureSequence}${orders}`;
 
   const messages = [
@@ -545,10 +591,37 @@ export async function generateFullSong(store) {
     { role: "user", content: userPrompt }
   ];
 
+  const read = (text) => parseSectionsFromText(explicit ? unmask(text) : text, store).filter((s) => s.lines.length);
+  const faults = (secs) => {
+    const out = [];
+    const kept = hasDraft ? keptShare(store.lyrics || [], secs) : 0;
+    if (kept >= 0.5) out.push(`${Math.round(kept * 100)}% of the lines came back exactly as they were in the draft. Rewrite every line for the settings`);
+    if (explicit && !PROFANITY.test(secs.flatMap((s) => s.lines.map((l) => l.text)).join('\n'))) {
+      out.push('the writer asked for expletives and there are none. Put real, uncensored profanity in every section');
+    }
+    return out;
+  };
+
+  lastGeneration.warn = '';
   const resultText = await callAI(messages, store.config, store.config?.temperature, store.config?.maxTokens);
-  const sections = parseSectionsFromText(resultText, store).filter((s) => s.lines.length);
+  let sections = read(resultText);
   // An empty reply never wipes the song on the page.
   if (!sections.length) throw new Error('The AI sent back no lyrics. Try again, or pick another model in Settings.');
+
+  const first = faults(sections);
+  if (first.length) {
+    try {
+      const again = await callAI([
+        ...messages,
+        { role: 'assistant', content: resultText },
+        { role: 'user', content: `That is not right: ${first.join('; ')}. Write the whole song again and fix that.${orders}` },
+      ], store.config, store.config?.temperature, store.config?.maxTokens);
+      const better = read(again);
+      if (better.length) sections = better;
+    } catch { /* the first answer stands */ }
+    const still = faults(sections);
+    if (still.length) lastGeneration.warn = `Heads up: ${still[0].split('.')[0]}, even after a second try. Another model in Settings may do better.`;
+  }
   return sections;
 }
 
