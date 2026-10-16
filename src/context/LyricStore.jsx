@@ -4,6 +4,7 @@ import { useLogged } from '../services/useLogged.js';
 import { verifyModel, probeModel, why } from '../services/openrouter.js';
 import { DEFAULT_AI_MODEL, discoverFreeModels } from '../services/AIService.js';
 import { notify } from '../services/dialog.js';
+import { studioSheet } from '../services/studioSheet.js';
 import {
   toBlackHoleGenres, toSongwriterGenres, toBlackHoleMoods, toSongwriterMoods,
 } from '../services/styleBridge.js';
@@ -815,6 +816,13 @@ export const LyricStoreProvider = ({ children }) => {
       return `[${s.name.toUpperCase()}]\n${secLines}`;
     }).join('\n\n');
   };
+  // The same song with plain part names, for Black Hole Studios (studioSheet.js).
+  const getStudioText = () => studioSheet(latestLyrics.current);
+  // And the other way: Black Hole Studios' Input Lyrics, kept current by that
+  // tab, so Songwriter can pull them. A ref, so typing there re-renders nothing here.
+  const studioLyricsRef = useRef('');
+  const setStudioLyricsMirror = (t) => { studioLyricsRef.current = String(t || ''); };
+  const getStudioLyrics = () => studioLyricsRef.current;
 
   return (
     <LyricStoreContext.Provider value={{
@@ -831,6 +839,9 @@ export const LyricStoreProvider = ({ children }) => {
       updateLine,
       updateSectionMeta,
       getFullText,
+      getStudioText,
+      getStudioLyrics,
+      setStudioLyricsMirror,
       undo,
       redo,
       canUndo: undoStack.length > 0,

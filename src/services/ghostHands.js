@@ -336,6 +336,8 @@ const BEFORE = {
   songwriter_set_notes: [{ type: '[placeholder^="e.g. keep it clean"]', arg: 'notes' }],
   songwriter_write_song: [{ point: '[data-demo="sw-generate"]' }],
   songwriter_fill_blanks: [{ label: 'fill [blank]' }],
+  songwriter_send_to_studio: [{ point: '[data-demo="sw-send-studio"]' }],
+  songwriter_pull_from_studio: [{ point: '[data-demo="sw-pull-studio"]' }],
 
   ghostrider_study: [{ type: '[data-demo="gr-artist"]', arg: 'artist' }, { point: '[data-demo="gr-analyze"]' }],
   ghostrider_write: [
@@ -368,6 +370,7 @@ const BEFORE = {
   append_lyrics: [{ point: '[data-demo="omb-lyrics"]' }],
   restore_lyrics: [{ point: '[data-demo="omb-lyrics"]' }],
   blackhole_pull_from_songwriter: [{ point: '[data-demo="omb-pull"]' }],
+  blackhole_send_to_songwriter: [{ point: '[data-demo="omb-send-sw"]' }],
   lay_out_song: [{ point: '[data-demo="omb-shape"]' }],
   write_caption: [{ point: '[data-demo="omb-rewrite"]' }],
   set_caption: [{ point: '[data-demo="omb-caption"]' }],

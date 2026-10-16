@@ -45,6 +45,7 @@
 
 import { genres as SW_GENRES, subgenres as SW_SUBGENRES, moods as SW_MOODS } from '../context/LyricStore.jsx';
 import { MAX_PICKS } from '../utils/blend.js';
+import { ALL_VOICES } from './musicTaxonomy.js';
 
 /** Lowercase, punctuation to single spaces. "R&B / Soul" -> "r b soul". */
 const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -143,6 +144,31 @@ export function tagsFromText(text) {
   const subgenres = cap(subHits.filter((s) => genres.includes(s.genre)).map((s) => s.name));
 
   return { genres, subgenres, moods: cap(moods) };
+}
+
+/**
+ * The singer the tags describe, in Black Hole Studios' voice list.
+ *
+ * "raspy male vocals" is Raspy male, "smoky female vocals" is Smoky female
+ * contralto: the voice's own first word plus its gender, both whole words, in
+ * one tag. A voice named in full ("spoken word") counts too. NEVER an
+ * Instrumental voice: every pick instrumental sends the song with no words, and
+ * "instrumental break" in a tag line is not a request for that.
+ */
+const VOICE_PICKS = ALL_VOICES.filter((v) => !/^instrumental/i.test(v));
+export function voicesFromText(text) {
+  const tokens = tokenize(text);
+  if (!tokens.length) return [];
+  const out = [];
+  for (const v of VOICE_PICKS) {
+    const n = norm(v);
+    const words = n.split(' ');
+    const gender = words.find((w) => w === 'male' || w === 'female');
+    const hit = tokens.some((t) => hasPhrase(t, n)
+      || (gender && words[0] !== gender && hasPhrase(t, gender) && hasPhrase(t, words[0])));
+    if (hit) out.push(v);
+  }
+  return out.slice(0, 2);
 }
 
 /** Is this song tagged at all? Genre and mood are the two that decide a sound. */
