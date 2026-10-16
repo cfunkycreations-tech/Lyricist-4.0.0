@@ -336,6 +336,7 @@ const BEFORE = {
   songwriter_set_notes: [{ type: '[placeholder^="e.g. keep it clean"]', arg: 'notes' }],
   songwriter_write_song: [{ point: '[data-demo="sw-generate"]' }],
   songwriter_fill_blanks: [{ label: 'fill [blank]' }],
+  songwriter_send_to_studio: [{ point: '[data-demo="sw-send-studio"]' }],
 
   ghostrider_study: [{ type: '[data-demo="gr-artist"]', arg: 'artist' }, { point: '[data-demo="gr-analyze"]' }],
   ghostrider_write: [

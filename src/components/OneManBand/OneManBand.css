@@ -215,6 +215,19 @@
 }
 .omb-confirmbtns button:hover { color: #fff; }
 
+/* "Your song is in from Songwriter" — said where the words landed. */
+.omb-arrived {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin: 0 0 12px; padding: 10px 12px; border-radius: 9px;
+  background: hsla(150 60% 45% / .10); border: 1px solid hsla(150 60% 55% / .38);
+  font-size: 12.5px; line-height: 1.55; color: hsl(150 55% 74%);
+}
+.omb-arrived > span { flex: 1; min-width: 0; }
+.omb-arrived > button {
+  flex-shrink: 0; background: none; border: none; color: inherit; cursor: pointer;
+  font-size: 18px; line-height: 1; padding: 0 2px;
+}
+
 /* One press for the whole arrangement, and it says out loud what it will write
    so nobody has to press it to find out. */
 .omb-shape {

@@ -364,7 +364,7 @@ function picksForSkill({ genres = [], moods = [], voices = [], instrumental = fa
   return out.join(' ');
 }
 
-export default function OneManBand({ onNavigate } = {}) {
+export default function OneManBand({ onNavigate, incoming } = {}) {
   const store = useLyricStore();
   const [lyrics, setLyrics] = useState(
     '[Verse]\nSteel in my hands and the sun going down\n'
@@ -663,15 +663,54 @@ export default function OneManBand({ onNavigate } = {}) {
 
   /** Songwriter already stores lyrics as [SECTION] + lines, which is exactly
       the shape this tab wants, so nothing has to be reformatted. */
+  /**
+   * A SONG FROM SONGWRITER BECOMES THE INPUT LYRICS.
+   *
+   * One path for the Send button over there, Pull from Songwriter here and the
+   * Ghost. The picks came across in the store already; the length grows to fit
+   * the parts, and a different song gets a fresh caption drafted from its own
+   * tags instead of keeping the last song's. The same song, revised, keeps the
+   * caption he worked on.
+   */
+  const takeSong = (t) => {
+    const before = lyrics;
+    undoLyrics.current = before;
+    setLyrics(t);
+    fitLength(t);
+    setError('');
+    if (before.trim() && !sameSong(before, t) && caption.trim()) {
+      undoCaption.current = caption;
+      setCaptionEdited(false);
+      setCaption(joinCaption(draftCaption({ genres, moods, voices, seconds, tags: readSections(t), songTags: store.sunoTags })));
+      return true;
+    }
+    return false;
+  };
+
   const pullFromSongwriter = () => {
-    const text = store.getFullText?.() || '';
-    if (!text.trim()) {
+    const text = String(store.getStudioText?.() || '').trim();
+    if (!text) {
       setError('Songwriter is empty. Write something there first.');
       return;
     }
-    setLyrics(text);
-    setError('');
+    takeSong(text);
   };
+
+  // Sent from Songwriter's button. Keyed on the send, so it lands on the first
+  // open of this tab too, and never twice.
+  const [arrived, setArrived] = useState('');
+  const lastIncoming = useRef(null);
+  const writeCard = useRef(null);
+  useEffect(() => {
+    if (!incoming?.at || lastIncoming.current === incoming.at) return;
+    lastIncoming.current = incoming.at;
+    const t = String(incoming.lyrics || '').trim();
+    if (!t) return;
+    takeSong(t);
+    const parts = readSections(t).length;
+    setArrived(`Your song is in from Songwriter: ${parts} part${parts === 1 ? '' : 's'}, with its genre, mood and voice picked below. Press Make the song.`);
+    setTimeout(() => writeCard.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 80);
+  }, [incoming?.at]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
    * Rewrite the Input Caption using MiniMax's own caption writer, free on
@@ -1289,7 +1328,7 @@ export default function OneManBand({ onNavigate } = {}) {
     },
     /** Songwriter → Black Hole Studios: the song on Songwriter becomes the Input Lyrics. */
     blackhole_pull_from_songwriter: () => {
-      const t = String(store.getFullText?.() || '').trim();
+      const t = String(store.getStudioText?.() || '').trim();
       if (!t) throw new Error('Songwriter is empty, so there was nothing to bring over.');
       const before = lyrics;
       undoLyrics.current = before;
@@ -1578,7 +1617,7 @@ export default function OneManBand({ onNavigate } = {}) {
             beside it, which left a three minute song a 280 pixel slot to live
             in. Writing is what this tab is for, so writing gets the room and
             the knobs move underneath. */}
-        <section className="omb-card omb-write">
+        <section className="omb-card omb-write" ref={writeCard}>
           <header>
             <h2>Input Lyrics</h2>
             <div className="omb-writehd">
@@ -1605,6 +1644,12 @@ export default function OneManBand({ onNavigate } = {}) {
             </div>
           </header>
           <div className="omb-body">
+            {arrived && (
+              <div className="omb-arrived" role="status">
+                <span>{arrived}</span>
+                <button type="button" aria-label="Dismiss" onClick={() => setArrived('')}>×</button>
+              </div>
+            )}
             {confirmExample && (
               <div className="omb-confirm">
                 <span>

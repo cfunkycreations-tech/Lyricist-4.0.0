@@ -274,6 +274,13 @@ function MainLayout() {
     setActiveTab('songwriter');
   };
 
+  /** Songwriter → Black Hole Studios: the finished song, tags already on the store. */
+  const [studioIncoming, setStudioIncoming] = useState(null);
+  const handleSendToStudio = (data) => {
+    setStudioIncoming({ ...data, at: Date.now() });
+    setActiveTab('onemanband');
+  };
+
   /** Quantum Lab → Songwriter (one-click). Same shape as Ghost Rider. */
   const handleQuantumToSongwriter = (data) => {
     setGhostRiderData({
@@ -636,10 +643,10 @@ function MainLayout() {
             actually open it. */}
         <div style={{ flex: 1, minHeight: 'max(240px, calc(100vh - 200px - var(--brand-banner-h, 0px)))', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <TabPane id="songwriter" active={activeTab} opened={openedTabs}>
-            <SongwriterHub ghostRiderData={ghostRiderData} />
+            <SongwriterHub ghostRiderData={ghostRiderData} onSendToStudio={handleSendToStudio} />
           </TabPane>
           <TabPane id="onemanband" active={activeTab} opened={openedTabs}>
-            <OneManBand onNavigate={setActiveTab} />
+            <OneManBand onNavigate={setActiveTab} incoming={studioIncoming} />
           </TabPane>
           <TabPane id="screw" active={activeTab} opened={openedTabs}>
             <ScrewShop />

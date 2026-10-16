@@ -351,6 +351,8 @@ ACTION NOTES:
       songwriter_write_song {} writes the whole song from the picks and topic.
       songwriter_set_lyrics {"text":"[Verse]\\n..."} puts words you wrote on the page.
       songwriter_fill_blanks {}  songwriter_undo {}
+      songwriter_send_to_studio {} sends the song and its tags to Black Hole Studios
+        and opens that tab, ready for make_the_song.
     Ghost Rider (tab "analyzer"):
       ghostrider_study {"artist":"...","type":"style"|"flow"|"themes"|"full","focus":"..."}
       ghostrider_write {"artist":"...","topic":"..."} writes a verse and hook in that

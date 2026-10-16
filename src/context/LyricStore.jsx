@@ -4,6 +4,7 @@ import { useLogged } from '../services/useLogged.js';
 import { verifyModel, probeModel, why } from '../services/openrouter.js';
 import { DEFAULT_AI_MODEL, discoverFreeModels } from '../services/AIService.js';
 import { notify } from '../services/dialog.js';
+import { studioSheet } from '../services/studioSheet.js';
 import {
   toBlackHoleGenres, toSongwriterGenres, toBlackHoleMoods, toSongwriterMoods,
 } from '../services/styleBridge.js';
@@ -815,6 +816,8 @@ export const LyricStoreProvider = ({ children }) => {
       return `[${s.name.toUpperCase()}]\n${secLines}`;
     }).join('\n\n');
   };
+  // The same song with plain part names, for Black Hole Studios (studioSheet.js).
+  const getStudioText = () => studioSheet(latestLyrics.current);
 
   return (
     <LyricStoreContext.Provider value={{
@@ -831,6 +834,7 @@ export const LyricStoreProvider = ({ children }) => {
       updateLine,
       updateSectionMeta,
       getFullText,
+      getStudioText,
       undo,
       redo,
       canUndo: undoStack.length > 0,

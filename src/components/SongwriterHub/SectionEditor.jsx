@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { countLineSyllables, calculateReadability, calculateVocabRichness, getLastWord } from '../../utils/textAnalysis.js';
 import { refineLyrics, generateLineVariation, generateAdLibs, generateSection } from '../../services/AIService.js';
@@ -7,12 +7,42 @@ import { Icon } from '../common/Glyph.jsx';
 import { notify } from '../../services/dialog.js';
 import { useMobile } from '../../mobile/useMobile.js';
 
-/** A wrapping line field grows to fit its words. */
+/**
+ * A WRAPPING LINE FIELD GROWS TO FIT ITS WORDS, EVERY TIME THE WORDS CHANGE.
+ *
+ * Chris, 2026-10-16: "I need to be able to look at the screen and see the whole
+ * goddamn thing without having to tap into the box and scroll." The box was
+ * sized once, when it first appeared, often while the tab was still hidden, and
+ * never again: a Refine, a new line, Undo, the Ghost, or turning the phone left
+ * it one row tall with the rest of the line scrolled out of sight. Now it
+ * refits whenever the text changes, whenever its width changes (which is also
+ * when a hidden tab comes on screen), and once the lyric font has loaded.
+ */
 const fitHeight = (el) => {
   if (!el) return;
   el.style.height = 'auto';
-  el.style.height = `${el.scrollHeight}px`;
+  const h = el.scrollHeight;
+  // Hidden (display:none) measures 0. Leave it natural; it refits when shown.
+  // The theme's border counts too, or the last 2px of the line scroll.
+  el.style.height = h ? `${h + el.offsetHeight - el.clientHeight}px` : '';
 };
+
+function LineBox({ value, ...rest }) {
+  const ref = useRef(null);
+  useLayoutEffect(() => { fitHeight(ref.current); }, [value]);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    let w = el.clientWidth;
+    const ro = typeof ResizeObserver === 'function'
+      ? new ResizeObserver(() => { if (el.clientWidth !== w) { w = el.clientWidth; fitHeight(el); } })
+      : null;
+    ro?.observe(el);
+    document.fonts?.ready?.then(() => fitHeight(el)).catch(() => {});
+    return () => ro?.disconnect();
+  }, []);
+  return <textarea ref={ref} value={value} rows={1} {...rest} />;
+}
 
 const sectionStyles = {
   intro: { border: '1px solid rgba(155, 161, 170, 0.45)', bg: 'rgba(155, 161, 170, 0.04)', glow: 'rgba(155, 161, 170, 0.2)', pill: 'pill-purple' },
@@ -442,12 +472,10 @@ export default function SectionEditor({ section, index }) {
                     tapped (Chris, 2026-10-15). It is one lyric line still:
                     Return finishes it and pasted line breaks become spaces. */}
                 {isMobile ? (
-                  <textarea
+                  <LineBox
                     className="lyric-line-input"
-                    rows={1}
-                    ref={fitHeight}
                     value={activeText}
-                    onChange={(e) => { handleLineTextChange(lIdx, e.target.value.replace(/\s*\n\s*/g, ' ')); fitHeight(e.target); }}
+                    onChange={(e) => handleLineTextChange(lIdx, e.target.value.replace(/\s*\n\s*/g, ' '))}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
                     autoComplete="off"
                     spellCheck={false}

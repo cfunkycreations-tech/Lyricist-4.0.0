@@ -7,12 +7,12 @@ import SectionEditor from './SectionEditor.jsx';
 import StructureBuilder from './StructureBuilder.jsx';
 import { generateFullSong, fillBlank, generateBridgeVariations, lastGeneration, parseSectionsFromText } from '../../services/AIService.js';
 import { normalizeLineEndings, hasLineStructure, splitProseIntoLines, groupIntoSections, labelSections } from '../../utils/importLyrics.js';
-import { applySongTags, tagsFromText } from '../../services/songTags.js';
+import { applySongTags, tagsFromText, voicesFromText } from '../../services/songTags.js';
 import { saveSunoTags } from '../../services/ghostMemory.js';
 import { notify } from '../../services/dialog.js';
 import { saveText } from '../../services/saveText.js';
 import { track } from '../../services/analytics.js';
-import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, Upload, PenLine, GitBranch, X, Share2 } from 'lucide-react';
+import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, Upload, PenLine, GitBranch, X, Share2, Send } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
 // The logo and the founder photo were imported here but never rendered — a
 // leftover from the old in-tab header. Vite emits an imported asset whether or
@@ -24,7 +24,7 @@ const RAPPED_GENRES = [
   'Phonk', 'Conscious / Spoken Word', 'Hyperpop / Glitchcore', 'Latin / Reggaeton',
 ];
 
-export default function SongwriterHub({ ghostRiderData }) {
+export default function SongwriterHub({ ghostRiderData, onSendToStudio }) {
   const store = useLyricStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isFillingBlanks, setIsFillingBlanks] = useState(false);
@@ -268,6 +268,34 @@ export default function SongwriterHub({ ghostRiderData }) {
   // The phone's share sheet. Not in the desktop app, where Copy and Save do the job.
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function' && !window.lyricistAPI;
 
+  /**
+   * SEND THE FINISHED SONG TO BLACK HOLE STUDIOS, TAGS AND ALL.
+   *
+   * Chris, 2026-10-16: "add a button in the songwriter tab to send the
+   * finished, tweaked song to Black Hole Studios. Remember to carry the tags
+   * with the song." The genre, subgenre and mood picks are already the Studio's
+   * picks (styleBridge translates them in the store). What the Suno tags name
+   * that the pickers do not have yet is checked off first, empty pickers only,
+   * and an empty voice picker gets the singer the tags describe.
+   */
+  const sendToStudio = () => {
+    const sheet = store.getStudioText();
+    if (!sheet.trim()) { setErrorMsg('There are no lyrics to send yet.'); return false; }
+    const tagText = String(store.sunoTags || '').trim();
+    if (tagText) {
+      applySongTags(store, { text: tagText });
+      if (!(store.voiceList || []).length) {
+        const v = voicesFromText(tagText);
+        if (v.length) store.setVoiceList(v);
+      }
+      saveSunoTags(tagText, store.artistRef || '');
+    }
+    setErrorMsg('');
+    track('song_sent_to_studio', { sections: store.lyrics.length, tagged: Boolean(tagText) });
+    onSendToStudio?.({ lyrics: sheet });
+    return true;
+  };
+
   const handleCopyAll = () => {
     const fullText = store.getFullText();
     navigator.clipboard.writeText(fullText);
@@ -284,7 +312,7 @@ export default function SongwriterHub({ ghostRiderData }) {
    * the store's own undo, so it lands as a button next to what it did.
    */
   const ghost = useRef({});
-  ghost.current = { store, errorMsg, handleGenerate, handleFillBlanks, loadOwnLyrics };
+  ghost.current = { store, errorMsg, handleGenerate, handleFillBlanks, loadOwnLyrics, sendToStudio };
   const writeFailed = () => { if (ghost.current.errorMsg) throw new Error(ghost.current.errorMsg); };
   const hadWords = () => Boolean(ghost.current.store.getFullText().replace(/\[[^\]]*\]/g, '').trim());
   const undoWords = { action: 'songwriter_undo', label: 'Put my lyrics back' };
@@ -372,6 +400,11 @@ export default function SongwriterHub({ ghostRiderData }) {
       return { said: 'filled the blanks', undo: undoWords };
     },
     songwriter_undo: () => { ghost.current.store.undo(); return 'put the lyrics back'; },
+    songwriter_send_to_studio: async () => {
+      await ghostSettle();
+      if (!ghost.current.sendToStudio()) throw new Error('There are no lyrics on Songwriter to send.');
+      return 'sent the song and its tags to Black Hole Studios';
+    },
   }), []);
 
   // Words on the page: Generate rewrites them instead of starting over.
@@ -411,7 +444,13 @@ export default function SongwriterHub({ ghostRiderData }) {
           <textarea
             value={store.sunoTags || ''}
             onChange={(e) => store.setSunoTags(e.target.value)}
-            onBlur={(e) => { if (e.target.value.trim()) saveSunoTags(e.target.value.trim(), store.artistRef || ''); }}
+            onBlur={(e) => {
+              const t = e.target.value.trim();
+              if (!t) return;
+              saveSunoTags(t, store.artistRef || '');
+              // Typed tags check off the pickers they name. Empty pickers only.
+              applySongTags(store, { text: t });
+            }}
             placeholder="e.g. stoner rock, southern rock, fuzz guitar, gritty male vocals, 110 BPM"
             rows={3}
             style={{
@@ -1053,9 +1092,29 @@ export default function SongwriterHub({ ghostRiderData }) {
         {/* Workspace Body. overflowX hidden: nothing in it may slide sideways. */}
         <div ref={workRef} className="sw-work-body" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: 20 }}>
           {store.lyrics.length > 0 ? (
-            store.lyrics.map((section, idx) => (
-              <SectionEditor key={section.id} section={section} index={idx} />
-            ))
+            <>
+              {store.lyrics.map((section, idx) => (
+                <SectionEditor key={section.id} section={section} index={idx} />
+              ))}
+              {/* Where the song ends is where you finish it, so this is where it goes. */}
+              {hasWords && (
+                <button
+                  type="button"
+                  onClick={sendToStudio}
+                  data-demo="sw-send-studio"
+                  className="sw-send-studio"
+                  data-help="Done tweaking? This sends the whole song to Black Hole Studios as its Input Lyrics, with its genre, mood, voice and Suno tags, ready for Make the song."
+                  style={{
+                    width: '100%', marginTop: 6, padding: '13px 16px', borderRadius: 10,
+                    border: '1px solid rgba(231,165,64,0.65)', background: 'rgba(231,165,64,0.14)',
+                    color: '#FFD08A', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
+                  }}
+                >
+                  <Send size={16} /> Send to Black Hole Studios
+                </button>
+              )}
+            </>
           ) : (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyCenter: 'center', gap: 12, paddingBottom: 60, userSelect: 'none', justifyContent: 'center' }}>
               <div className="empty-glyph"><PenLine size={44} strokeWidth={1.25} /></div>
