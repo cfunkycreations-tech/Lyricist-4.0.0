@@ -25,7 +25,8 @@
     "copy:ort": "node scripts/copy-onnx-runtime.mjs",
     "fetch:voice": "node scripts/fetch-ghost-voice-model.mjs",
     "build:web": "node scripts/build-web.mjs",
-    "deploy:web": "node scripts/build-web.mjs && node scripts/deploy-web.mjs"
+    "deploy:web": "node scripts/build-web.mjs && node scripts/deploy-web.mjs",
+    "posthog:report": "node scripts/posthog-report.mjs"
   },
   "build": {
     "appId": "com.cfunkycreations.lyricist",

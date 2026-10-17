@@ -10,7 +10,7 @@ import { chatCompletion, listModels, noEndpointsHelp } from './openrouter.js';
 import { modelFit } from './modelFit.js';
 import { labelSections } from '../utils/importLyrics.js';
 
-export const lastGeneration = { model: null, provider: null, ok: true, reasons: [], dropped: 0, at: null, unfiltered: false, warn: '' };
+export const lastGeneration = { model: null, provider: null, ok: true, reasons: [], dropped: 0, at: null, unfiltered: false, warn: '', stats: null };
 
 /**
  * Default & fallback, CHECKED AGAINST THE LIVE CATALOGUE ON 2026-08-27.
@@ -591,8 +591,27 @@ export async function generateFullSong(store) {
    * when he asked for it, gets one more try with the reason spelled out.
    */
   const explicit = wantsExplicit(store);
+  /**
+   * THE PICKS ARE ORDERS, SAID LAST.
+   *
+   * Chris, 2026-10-17: "Do the added mood, sub genre, etc have any effect on
+   * how the song lyrics are rewritten? If not, that needs to work, otherwise
+   * why are they there." They were in the context block, above a long draft,
+   * where a model reads past them. Now every pick is named again after the
+   * draft, as what each line has to sound like.
+   */
+  const picks = (list) => (list || []).map((x) => String(x || '').trim()).filter(Boolean);
+  const sound = [
+    picks(store.genreList).length ? `Genre: ${picks(store.genreList).join(' + ')}` : '',
+    picks(store.subgenreList).length ? `Subgenre: ${picks(store.subgenreList).join(' + ')}` : '',
+    picks(store.moodList).length ? `Mood: ${picks(store.moodList).join(' + ')}` : '',
+    String(store.sunoTags || '').trim() ? `Style tags: ${String(store.sunoTags).trim()}` : '',
+  ].filter(Boolean);
+  const soundNow = sound.length
+    ? `\n\nWHAT THE REWRITE MUST SOUND LIKE NOW (every one of these, together):\n- ${sound.join('\n- ')}\nEach pick has to show in the words themselves: its slang, cadence, line length, rhyme style, imagery and attitude. Someone reading the lyrics cold should be able to name these picks. The draft's sound does not count.`
+    : '';
   const userPrompt = hasDraft
-    ? `Rewrite this song to fit the settings below. The genre, subgenre, mood, style tags and notes may have changed since this draft was written, and the rewrite must sound like the settings now, not like the draft: change the wording, slang, imagery, energy and rhymes to fit them. Keep its story, its point of view and its sections in the same order. Rewrite every line; do not hand back the draft's lines. Output the whole rewritten song.\n\nCONTEXT:\n${context}${ideas}\n\nTHE DRAFT TO REWRITE:\n${draft}${orders}`
+    ? `Rewrite this song to fit the settings below. The genre, subgenre, mood, style tags and notes may have changed since this draft was written, and the rewrite must sound like the settings now, not like the draft: change the wording, slang, imagery, energy and rhymes to fit them. Keep its story, its point of view and its sections in the same order. Rewrite every line; do not hand back the draft's lines. Output the whole rewritten song.\n\nCONTEXT:\n${context}${ideas}\n\nTHE DRAFT TO REWRITE:\n${draft}${soundNow}${orders}`
     : `Write the full song lyrics based on this context:\n${context}${ideas}\n\nSTRUCTURE:\n${structureSequence}${orders}`;
 
   const messages = [
@@ -612,25 +631,36 @@ export async function generateFullSong(store) {
   };
 
   lastGeneration.warn = '';
+  lastGeneration.stats = null;
   const resultText = await callAI(messages, store.config, store.config?.temperature, store.config?.maxTokens);
   let sections = read(resultText);
   // An empty reply never wipes the song on the page.
   if (!sections.length) throw new Error('The AI sent back no lyrics. Try again, or pick another model in Settings.');
 
+  // What happened, in numbers only, for PostHog (SongwriterHub sends it).
+  const share = (secs) => (hasDraft ? Math.round(keptShare(store.lyrics || [], secs) * 100) : 0);
+  const stats = { rewrite: hasDraft, explicit, keptFirst: share(sections), retried: false, warned: false };
   const first = faults(sections);
   if (first.length) {
+    stats.retried = true;
     try {
       const again = await callAI([
         ...messages,
         { role: 'assistant', content: resultText },
-        { role: 'user', content: `That is not right: ${first.join('; ')}. Write the whole song again and fix that.${orders}` },
+        { role: 'user', content: `That is not right: ${first.join('; ')}. Write the whole song again and fix that.${soundNow}${orders}` },
       ], store.config, store.config?.temperature, store.config?.maxTokens);
       const better = read(again);
       if (better.length) sections = better;
     } catch { /* the first answer stands */ }
     const still = faults(sections);
-    if (still.length) lastGeneration.warn = `Heads up: ${still[0].split('.')[0]}, even after a second try. Another model in Settings may do better.`;
+    if (still.length) {
+      stats.warned = true;
+      lastGeneration.warn = `Heads up: ${still[0].split('.')[0]}, even after a second try. Another model in Settings may do better.`;
+    }
   }
+  stats.keptFinal = share(sections);
+  stats.swore = PROFANITY.test(sections.flatMap((x) => x.lines.map((l) => l.text)).join('\n'));
+  lastGeneration.stats = stats;
   return sections;
 }
 
