@@ -791,6 +791,28 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio, incoming
             {isGenerating ? (hasWords ? 'Rewriting…' : 'Writing…') : (hasWords ? 'Rewrite Song' : 'Generate Full Song')}
           </button>
 
+          {/* Also right under Rewrite, where the bar's Generate lands you. The
+              one under the song is a long scroll down on a phone. */}
+          {hasWords && (
+            <button
+              type="button"
+              onClick={sendToStudio}
+              disabled={isGenerating}
+              data-demo="sw-send-studio-top"
+              className="sw-send-studio"
+              data-help="Sends the whole song to Black Hole Studios as its Input Lyrics, with its genre, mood, voice and Suno tags, ready for Make the song."
+              style={{
+                width: '100%', padding: '11px', borderRadius: 10,
+                border: '1px solid rgba(231,165,64,0.65)', background: 'rgba(231,165,64,0.14)',
+                color: '#FFD08A', fontWeight: 700, fontSize: '0.88rem', fontFamily: 'var(--faf-font)',
+                cursor: isGenerating ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              <Send size={16} /> Send to Black Hole Studios
+            </button>
+          )}
+
           {/* ── ALREADY WROTE ONE? ──────────────────────────────────────────
               This existed before as a bare icon and nobody could tell what it
               was for. It says what it does now, in words, with the file types

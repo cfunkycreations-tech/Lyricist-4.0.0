@@ -519,11 +519,20 @@ const unmask = (t) => String(t)
 
 /** How much of the draft came back word for word. */
 const lineKey = (t) => String(t || '').toLowerCase().replace(/[^a-z0-9' ]+/g, ' ').replace(/\s+/g, ' ').trim();
+// A draft line counts as handed back when an answer line has 70% of its words:
+// swapping one word per line is not a rewrite.
+const wordSet = (k) => new Set(k.split(' ').filter(Boolean));
 function keptShare(draftSections, sections) {
   const draft = draftSections.flatMap((s) => (s.lines || []).map((l) => lineKey(l.text))).filter(Boolean);
   if (!draft.length) return 0;
-  const out = new Set(sections.flatMap((s) => s.lines.map((l) => lineKey(l.text))));
-  return draft.filter((l) => out.has(l)).length / draft.length;
+  const out = sections.flatMap((s) => s.lines.map((l) => lineKey(l.text))).filter(Boolean);
+  const outSets = out.map(wordSet);
+  const kept = (k) => {
+    const w = wordSet(k);
+    if (w.size < 4) return out.includes(k);
+    return outSets.some((o) => { let n = 0; for (const x of w) if (o.has(x)) n += 1; return n / w.size >= 0.7; });
+  };
+  return draft.filter(kept).length / draft.length;
 }
 
 /**
@@ -595,7 +604,7 @@ export async function generateFullSong(store) {
   const faults = (secs) => {
     const out = [];
     const kept = hasDraft ? keptShare(store.lyrics || [], secs) : 0;
-    if (kept >= 0.5) out.push(`${Math.round(kept * 100)}% of the lines came back exactly as they were in the draft. Rewrite every line for the settings`);
+    if (kept >= 0.5) out.push(`${Math.round(kept * 100)}% of the lines came back the same or nearly the same as the draft. Rewrite every line for the settings`);
     if (explicit && !PROFANITY.test(secs.flatMap((s) => s.lines.map((l) => l.text)).join('\n'))) {
       out.push('the writer asked for expletives and there are none. Put real, uncensored profanity in every section');
     }

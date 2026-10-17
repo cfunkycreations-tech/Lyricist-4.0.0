@@ -503,6 +503,10 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
           <span className="mob-support-line">
             Lyricist Pro · Engine: Local/Hybrid · {analyticsEnabled() ? 'Anonymous Usage Stats' : 'Air-Gapped Safe'}
           </span>
+          {/* Which build the phone is running: the day it was put online. */}
+          <span className="mob-support-line">
+            Version {typeof __BUILD_STAMP__ === 'string' ? __BUILD_STAMP__ : 'dev'}
+          </span>
         </div>
       </div>
 

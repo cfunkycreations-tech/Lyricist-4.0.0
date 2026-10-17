@@ -1,9 +1,17 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
+import { execSync } from 'node:child_process';
+
+/* Which build this is, shown at the bottom of the phone's home screen, so "is
+   my phone on the new version?" has an answer you can read. */
+let commit = '';
+try { commit = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch { /* no git */ }
+const BUILD_STAMP = `${new Date().toISOString().slice(0, 10)}${commit ? ` · ${commit}` : ''}`;
 
 export default defineConfig({
   plugins: [react()],
+  define: { __BUILD_STAMP__: JSON.stringify(BUILD_STAMP) },
   base: './',
   // Honor an injected PORT so a second dev server can run alongside one
   // already holding 5173. Falls back to the normal Vite default.
