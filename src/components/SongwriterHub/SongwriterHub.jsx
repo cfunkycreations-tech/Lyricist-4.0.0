@@ -11,7 +11,7 @@ import { applySongTags, tagsFromText, voicesFromText } from '../../services/song
 import { saveSunoTags } from '../../services/ghostMemory.js';
 import { notify } from '../../services/dialog.js';
 import { saveText } from '../../services/saveText.js';
-import { track } from '../../services/analytics.js';
+import { track, slug } from '../../services/analytics.js';
 import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, Upload, PenLine, GitBranch, X, Share2, Send } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
 // The logo and the founder photo were imported here but never rendered — a
@@ -179,11 +179,34 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio, incoming
     }
     setIsGenerating(true);
     setErrorMsg('');
+    const startedAt = Date.now();
     try {
       const rewrite = hasWords;
       const generatedSections = await generateFullSong(store);
       store.setFullLyrics(generatedSections);
-      track('song_written', { mode: rewrite ? 'rewrite' : 'new', sections: generatedSections.length });
+      // Numbers and menu picks only (analytics.js drops anything else): enough
+      // to see from PostHog whether a rewrite followed the picks.
+      const st = lastGeneration.stats || {};
+      const pickProps = {};
+      [['genre', store.genreList], ['sub', store.subgenreList], ['mood', store.moodList]].forEach(([k, list]) => {
+        (list || []).slice(0, 5).forEach((v, i) => { pickProps[`${k}${i + 1}`] = slug(v); });
+        pickProps[`${k}_count`] = (list || []).length;
+      });
+      track('song_written', {
+        mode: rewrite ? 'rewrite' : 'new',
+        sections: generatedSections.length,
+        model: slug(lastGeneration.model),
+        has_tags: Boolean(String(store.sunoTags || '').trim()),
+        explicit_asked: Boolean(st.explicit),
+        swore: Boolean(st.swore),
+        kept_first_pct: st.keptFirst ?? 0,
+        kept_final_pct: st.keptFinal ?? 0,
+        retried: Boolean(st.retried),
+        warned: Boolean(st.warned),
+        dropped_lines: lastGeneration.dropped || 0,
+        seconds: Math.round((Date.now() - startedAt) / 1000),
+        ...pickProps,
+      });
       // Land on the first line of the new song, not wherever the last one was
       // scrolled to. On a phone held upright the whole tab is one scroll, so
       // bring the lyrics up instead.
@@ -203,6 +226,9 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio, incoming
       }
     } catch (e) {
       setErrorMsg(e.message);
+      const why = /no lyrics/i.test(e.message) ? 'empty_reply' : /key/i.test(e.message) ? 'no_key'
+        : /network|fetch|timed? ?out|429|rate/i.test(e.message) ? 'network' : 'other';
+      track('song_write_failed', { mode: hasWords ? 'rewrite' : 'new', why, model: slug(store.config?.model), seconds: Math.round((Date.now() - startedAt) / 1000) });
     } finally {
       setIsGenerating(false);
     }
@@ -790,6 +816,28 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio, incoming
             <Sparkles size={16} />
             {isGenerating ? (hasWords ? 'Rewriting…' : 'Writing…') : (hasWords ? 'Rewrite Song' : 'Generate Full Song')}
           </button>
+
+          {/* Also right under Rewrite, where the bar's Generate lands you. The
+              one under the song is a long scroll down on a phone. */}
+          {hasWords && (
+            <button
+              type="button"
+              onClick={sendToStudio}
+              disabled={isGenerating}
+              data-demo="sw-send-studio-top"
+              className="sw-send-studio"
+              data-help="Sends the whole song to Black Hole Studios as its Input Lyrics, with its genre, mood, voice and Suno tags, ready for Make the song."
+              style={{
+                width: '100%', padding: '11px', borderRadius: 10,
+                border: '1px solid rgba(231,165,64,0.65)', background: 'rgba(231,165,64,0.14)',
+                color: '#FFD08A', fontWeight: 700, fontSize: '0.88rem', fontFamily: 'var(--faf-font)',
+                cursor: isGenerating ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              <Send size={16} /> Send to Black Hole Studios
+            </button>
+          )}
 
           {/* ── ALREADY WROTE ONE? ──────────────────────────────────────────
               This existed before as a bare icon and nobody could tell what it

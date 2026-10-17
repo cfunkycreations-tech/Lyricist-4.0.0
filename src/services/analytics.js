@@ -128,6 +128,20 @@ function sanitize(props) {
   return out;
 }
 
+/** Which deploy sent the event ("2026-10-17_edb11c3"), so a report can tell
+ *  the phone that has a fix from the one that does not. */
+const BUILD = typeof __BUILD_STAMP__ === 'string' ? __BUILD_STAMP__.replace(/\s*·\s*/g, '_').replace(/\s+/g, '_') : 'dev';
+
+/**
+ * A pick or a model id as an event value: "Conscious / Spoken Word" ->
+ * "conscious-spoken-word", "anthropic/claude-sonnet-5.5" ->
+ * "anthropic-claude-sonnet-5.5". sanitize() drops anything with a space or a
+ * slash, and these are fixed menu entries, not anything the person typed.
+ */
+export function slug(v) {
+  return String(v || '').toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+}
+
 let client = null;         // the posthog module once it has loaded
 let loading = null;        // the in-flight load, shared by every caller
 let dead = false;          // load failed once; stop trying
@@ -219,7 +233,7 @@ export function initAnalytics() {
  */
 export function track(event, props = {}) {
   if (!loadPostHog || dead || optedOut()) return;
-  const clean = sanitize(props);
+  const clean = sanitize({ app_build: BUILD, ...props });
   if (client) {
     try { client.capture(event, clean); } catch { /* never break a feature */ }
     return;
