@@ -71,7 +71,7 @@ PALETTE = "gold"                     # "gold" or "ice"
 SBSAR = ""                           # a .sbsar path; "" = first one found in molten_tex
 SBSAR_GRAPH = 0                      # which graph inside the file
 SBSAR_TILES = 8                      # repeats across the pool
-SBSAR_SHINE = 0.8                    # gold reflection laid over it (0 = off)
+SBSAR_SHINE = 0.25                   # gold reflection laid over it (0 = off, 0.8 = mostly gold)
 SBSAR_DISPLACE = False               # True also pushes the surface; far slower to render
 
 FPS = 30
@@ -509,11 +509,19 @@ def substance_material(doc, path, env_path):
                 break
         except Exception:
             break
+    odd = None
+    if mat is not None:
+        try:
+            if mat.GetType() != c4d.Mmaterial:
+                odd, mat = mat.GetType(), None
+        except Exception:
+            pass
     if mat is None:
         shader = _call(sub.CreateSubstanceShader, (asset,))
         if shader is None:
             SKIPPED.append("Substance: couldn't make a material from {} [{}]".format(
-                stem, "; ".join(dict.fromkeys(WHY[-3:])) or "no answer"))
+                stem, "; ".join(dict.fromkeys(WHY[-3:])) or
+                ("got material type {}, Standard can't draw it".format(odd) if odd else "no answer")))
             return None
         mat = c4d.BaseMaterial(c4d.Mmaterial)
         mat.InsertShader(shader)
