@@ -59,6 +59,7 @@ import PushHeader from './components/PushHeader/PushHeader.jsx';
 import BrandBanner from './components/BrandBanner/BrandBanner.jsx';
 import { track, isEnabled as analyticsEnabled } from './services/analytics.js';
 import { Compass, Ghost, Play, Lightbulb, KeyRound, Lock } from 'lucide-react';
+import { hasWritingAI } from './services/customAI.js';
 // The still header art (profile.jpg, logo.jpg, header-medallion / -signature /
 // -chris / -wordmark .png) is no longer imported here. The header became the
 // whole uncropped video clip, and its <img> elements went with it, but the six
@@ -604,7 +605,7 @@ function MainLayout() {
             </button>
 
             <div
-              className={store.config.openRouterApiKey ? 'pill-green' : 'pill-red'}
+              className={hasWritingAI(store.config) ? 'pill-green' : 'pill-red'}
               style={{
                 fontSize: '0.7rem',
                 fontWeight: 600,
@@ -616,8 +617,8 @@ function MainLayout() {
               }}
               data-help="Shows whether your AI key is connected. Lyricist Pro uses your own key (add it on the Settings tab) to write lyrics. Green padlock = ready to go. Red = add a key first or nothing will generate."
             >
-              <span>{store.config.openRouterApiKey ? <KeyRound size={18} strokeWidth={1.6} /> : <Lock size={18} strokeWidth={1.6} />}</span>
-              {store.config.openRouterApiKey ? 'API Key Loaded' : 'API Key Required'}
+              <span>{hasWritingAI(store.config) ? <KeyRound size={18} strokeWidth={1.6} /> : <Lock size={18} strokeWidth={1.6} />}</span>
+              {store.config.openRouterApiKey ? 'API Key Loaded' : (hasWritingAI(store.config) ? 'Own AI Server' : 'API Key Required')}
             </div>
           </div>
         </div>
@@ -772,14 +773,14 @@ function MainLayout() {
           {/* RIGHT NODE — licence + routing, and the way to Settings. */}
           <button
             type="button"
-            className={`deck-node deck-right ${store.config.openRouterApiKey ? 'is-live' : 'is-idle'}`}
+            className={`deck-node deck-right ${hasWritingAI(store.config) ? 'is-live' : 'is-idle'}`}
             onClick={() => setActiveTab('settings')}
             data-help="Your licence state and where model calls are routed. Lyricist Pro is Bring-Your-Own-Key: requests go straight from this machine to the provider you configured. Click to open Settings."
           >
             <span className="deck-led" aria-hidden="true" />
             <span className="deck-text">
               <b>Commercial License Active</b>
-              <i>{store.config.openRouterApiKey ? 'BYOK Routing' : 'BYOK Key Required'}</i>
+              <i>{hasWritingAI(store.config) ? 'BYOK Routing' : 'BYOK Key Required'}</i>
             </span>
           </button>
         </div>

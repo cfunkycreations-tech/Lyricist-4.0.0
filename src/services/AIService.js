@@ -7,6 +7,7 @@ import { inspectGenerated, truncateAtCollapse } from '../utils/lyricSanity.js';
 import { stripReasoning, isMostlyReasoning } from '../utils/stripReasoning.js';
 import { blendPhrase } from '../utils/blend.js';
 import { chatCompletion, listModels, noEndpointsHelp } from './openrouter.js';
+import { activeCustomAI, customAIFrom, NO_OPENROUTER_KEY } from './customAI.js';
 import { modelFit } from './modelFit.js';
 import { labelSections } from '../utils/importLyrics.js';
 
@@ -245,6 +246,10 @@ async function singleCall(messages, config, modelId, customTemp, customMax, room
   let attempt = await postCompletion(body, config);
   let unfiltered = false;
 
+  // Their own server's message already names it and says what to do. None of
+  // the OpenRouter diagnoses below apply to it.
+  if (!attempt.ok && activeCustomAI()) throw new Error(attempt.message);
+
   if (!attempt.ok && isNoEndpointsError(attempt.status, attempt.message)) {
     const { provider, ...noFilter } = body;
     attempt = await postCompletion({ ...noFilter, provider: { allow_fallbacks: true } }, config);
@@ -320,8 +325,9 @@ async function guardedCall(messages, config, modelId, customTemp, customMax) {
     if (/data policy|settings\/privacy/i.test(err.message || '')) throw err;
 
     // A model they picked and pay for is never swapped for one they did not.
-    // Say what went wrong with THEIR model.
-    if (!isFreeSlug(chosen)) throw err;
+    // Say what went wrong with THEIR model. Their own server has one model,
+    // so there is nothing to walk to either.
+    if (!isFreeSlug(chosen) || activeCustomAI()) throw err;
 
     const candidates = [
       DEFAULT_AI_MODEL,
@@ -421,7 +427,7 @@ async function guardedCall(messages, config, modelId, customTemp, customMax) {
   const why = verdict.reasons.length ? ` (${verdict.reasons.join(', ')})` : '';
 
   // They picked this model. Do not swap in a different one behind their back.
-  if (!isFreeSlug(chosen)) {
+  if (!isFreeSlug(chosen) || activeCustomAI()) {
     throw new Error(
       `${model} sent back something that is not lyrics${why}. `
       + 'Nothing else was tried, because you picked this model. Pick a different one in Settings.'
@@ -453,6 +459,9 @@ async function guardedCall(messages, config, modelId, customTemp, customMax) {
 
 export function assertApiKey(config) {
   const key = normalizeApiKey(config?.openRouterApiKey);
+  // With their own AI server on, the writing calls go there and need no
+  // OpenRouter key. A real one still rides along for pictures and voices.
+  if (customAIFrom(config) && !/^sk-or-/i.test(key)) return NO_OPENROUTER_KEY;
   if (!key) {
     throw new Error("No API key configured. Enter your OpenRouter key in Settings.");
   }

@@ -6,6 +6,7 @@ import { Lock, Unlock, Sparkles, Trash2, RefreshCw, Volume2, Type, ArrowUp, Arro
 import { Icon } from '../common/Glyph.jsx';
 import { notify } from '../../services/dialog.js';
 import { useMobile } from '../../mobile/useMobile.js';
+import { hasWritingAI } from '../../services/customAI.js';
 
 /**
  * A WRAPPING LINE FIELD GROWS TO FIT ITS WORDS, EVERY TIME THE WORDS CHANGE.
@@ -124,7 +125,7 @@ export default function SectionEditor({ section, index }) {
   };
 
   const handleRegenerateLine = async (lineIndex) => {
-    if (!store.config.openRouterApiKey) {
+    if (!hasWritingAI(store.config)) {
       notify('Add your OpenRouter key in Settings first.', { tone: 'error' });
       return;
     }
@@ -150,7 +151,7 @@ export default function SectionEditor({ section, index }) {
   };
 
   const handleRefineLine = async (lineIndex, mode) => {
-    if (!store.config.openRouterApiKey) {
+    if (!hasWritingAI(store.config)) {
       notify('Add your OpenRouter key in Settings first.', { tone: 'error' });
       return;
     }
@@ -168,7 +169,7 @@ export default function SectionEditor({ section, index }) {
   };
 
   const handleRegenerateSection = async () => {
-    if (!store.config.openRouterApiKey) {
+    if (!hasWritingAI(store.config)) {
       notify('Add your OpenRouter key in Settings first.', { tone: 'error' });
       return;
     }
@@ -188,7 +189,7 @@ export default function SectionEditor({ section, index }) {
   };
 
   const handleRefineSection = async (mode) => {
-    if (!store.config.openRouterApiKey) {
+    if (!hasWritingAI(store.config)) {
       notify('Add your OpenRouter key in Settings first.', { tone: 'error' });
       return;
     }
@@ -226,7 +227,7 @@ export default function SectionEditor({ section, index }) {
   };
 
   const handleGenerateAdLibs = async () => {
-    if (!store.config.openRouterApiKey) {
+    if (!hasWritingAI(store.config)) {
       notify('Add your OpenRouter key in Settings first.', { tone: 'error' });
       return;
     }

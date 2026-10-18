@@ -6,6 +6,7 @@ import { assertApiKey } from '../../services/AIService.js';
 import { stripReasoning } from '../../utils/stripReasoning.js';
 import { chatCompletion } from '../../services/openrouter.js';
 import { Icon } from '../common/Glyph.jsx';
+import { hasWritingAI } from '../../services/customAI.js';
 
 export default function RhymeHelper() {
   const store = useLyricStore();
@@ -49,7 +50,7 @@ export default function RhymeHelper() {
   const fetchAISuggestions = async () => {
     const cleanWord = word.trim();
     if (!cleanWord) return;
-    if (!store.config.openRouterApiKey) {
+    if (!hasWritingAI(store.config)) {
       setErrorMsg('API Key is missing in Settings.');
       return;
     }

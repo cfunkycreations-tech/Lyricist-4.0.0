@@ -28,6 +28,7 @@ import { availableGhostActions } from './ghostBus.js';
 import { NO_CLICHES } from './cliches.js';
 import { examplesForPrompt } from './minimaxExamples.js';
 import { chatCompletion, listModels, noEndpointsHelp } from './openrouter.js';
+import { activeCustomAI } from './customAI.js';
 
 
 
@@ -735,10 +736,12 @@ export async function askGhost({ history = [], question, config, tab = 'songwrit
   }, { apiKey: key, signal });
 
   let res = await post(model, MAX_REPLY);
+  const own = activeCustomAI();
 
   // A busy shared model is the single most likely failure on the free router,
   // and it is not worth an error message when another one is sitting there.
-  if (res.status === 429 && free && free !== model) {
+  // Their own server has one model, so there is nowhere to move to.
+  if (res.status === 429 && free && free !== model && !own) {
     res = await post(free, MAX_REPLY);
   }
 
@@ -748,6 +751,8 @@ export async function askGhost({ history = [], question, config, tab = 'songwrit
     res = await post(model, SAFE_REPLY);
   }
 
+  // Their own server's message names it and says what to do.
+  if (!res.ok && own) throw new Error(res.message);
   if (res.status === 0) {
     throw new Error('I could not reach OpenRouter. Check the internet and try again.');
   }

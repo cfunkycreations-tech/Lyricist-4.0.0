@@ -238,6 +238,35 @@ ipcMain.handle('obs-launch', async (_event, { record = false } = {}) => {
   return { ok: true, recording: Boolean(record), ...ws };
 });
 
+/* THEIR OWN AI SERVER (Settings → "Your own AI server", src/services/customAI.js).
+   The call runs here because the window's CSP only lets it reach OpenRouter,
+   and a local server (OmniRoute, LM Studio, Ollama) rarely sends CORS headers.
+   Only the two OpenAI paths, http(s) only, no redirects, and the key never goes
+   back into an error. */
+const CUSTOM_AI_PATHS = new Set(['chat/completions', 'models']);
+ipcMain.handle('custom-ai', async (_event, { url, path: apiPath, key, body } = {}) => {
+  let target;
+  try { target = new URL(`${String(url || '').replace(/\/+$/, '')}/${apiPath}`); } catch { target = null; }
+  if (!target || !/^https?:$/.test(target.protocol) || !CUSTOM_AI_PATHS.has(apiPath)) {
+    return { status: 0, error: 'that is not an http or https address' };
+  }
+  const headers = { Accept: 'application/json' };
+  if (key) headers.Authorization = `Bearer ${String(key)}`;
+  if (body) headers['Content-Type'] = 'application/json';
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 170000);
+  try {
+    const res = await fetch(target, {
+      method: body ? 'POST' : 'GET', headers, body: body ? JSON.stringify(body) : undefined, redirect: 'error', signal: ctl.signal,
+    });
+    return { status: res.status, text: await res.text() };
+  } catch {
+    return { status: 0, error: ctl.signal.aborted ? 'it took too long to answer' : '' };
+  } finally {
+    clearTimeout(timer);
+  }
+});
+
 let ghostAwakeId = null;
 ipcMain.handle('ghost-keep-awake', async (_event, { on } = {}) => {
   if (!CREATOR_EDITION) return NOT_HERE;
