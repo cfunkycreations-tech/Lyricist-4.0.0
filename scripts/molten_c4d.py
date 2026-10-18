@@ -16,6 +16,9 @@ SUBSTANCE (.sbsar)
   on top, so you see it on the metal. Or set SBSAR below to a file path.
   Change its sliders: click MLT_Substance in the Material Manager, then the
   Attribute Manager. Swap the file, run again.
+  If Cinema 4D crashes on it, restart Cinema 4D and run the script again: it
+  remembers the call that crashed (molten_substance_trace.txt in your temp
+  folder) and walks round it. Each run gets one step further.
 
 RUN
   1. File -> New (start from an empty scene).
@@ -54,6 +57,7 @@ Console (Extensions -> Console, Shift+F10) instead of stopping the script.
 
 import math
 import os
+import tempfile
 
 import c4d
 from c4d import bitmaps, gui, storage, utils
@@ -73,6 +77,7 @@ SBSAR_GRAPH = 0                      # which graph inside the file
 SBSAR_TILES = 8                      # repeats across the pool
 SBSAR_SHINE = 0.25                   # gold reflection laid over it (0 = off, 0.8 = mostly gold)
 SBSAR_DISPLACE = False               # True also pushes the surface; far slower to render
+FORGET_CRASHES = False               # True once, to retry Substance calls that crashed Cinema 4D
 
 FPS = 30
 FRAMES = 240                         # 8 s loop; keep it a multiple of 4
@@ -138,6 +143,10 @@ METAL_BASE = c4d.Vector(0.02, 0.025, 0.035)
 SKIPPED = []
 SUBSTANCE = []                       # the .sbsar in use, if any
 WHY = []                             # why the last Substance step failed
+FACTS = []                           # the Substance constants this build has
+CRASHED = set()                      # Substance calls that took Cinema 4D down before
+_OPEN = []                           # Substance step still open (see _open_run)
+TRACE = os.path.join(tempfile.gettempdir(), "molten_substance_trace.txt")
 
 
 def deg(d):
@@ -364,18 +373,103 @@ def _why(err):
     return "{}: {}".format(type(err).__name__, str(err).strip().splitlines()[0] if str(err).strip() else "")[:90]
 
 
-def _call(fn, *attempts):
-    """Argument lists differ between versions: first one that works wins.
-    Failures are kept in WHY so the final pop-up can show the real reason."""
-    for args in attempts:
+# Breadcrumbs. A bad native call can take Cinema 4D down with no Python error,
+# so every Substance call is logged to a file first (B) and ticked off after
+# (E). The next run finds a B with no E, remembers that call as a crasher (X)
+# and walks round it, so each run gets one step further.
+
+class Crashed(Exception):
+    """A call that took Cinema 4D down on an earlier run; not tried again."""
+
+
+def _mark(tag, key):
+    try:
+        with open(TRACE, "a") as f:
+            f.write("{} {}\n".format(tag, key))
+            f.flush()
+            os.fsync(f.fileno())
+    except (OSError, IOError):
+        pass
+
+
+def _trace_load():
+    """Read last run's breadcrumbs into CRASHED and tidy the file."""
+    CRASHED.clear()
+    del _OPEN[:]
+    lines = []
+    if not FORGET_CRASHES:
         try:
-            result = fn(*args)
+            with open(TRACE) as f:
+                lines = f.read().splitlines()
+        except (OSError, IOError):
+            pass
+    stack = []
+    for line in lines:
+        tag, _, key = line.partition(" ")
+        if tag == "X":
+            CRASHED.add(key)
+        elif tag == "B":
+            stack.append(key)
+        elif tag == "E":
+            i = len(stack) - 1
+            while i >= 0 and stack[i] != key:
+                i -= 1
+            if i >= 0:
+                del stack[i]
+    if stack:
+        CRASHED.add(stack[-1])
+    try:
+        with open(TRACE, "w") as f:
+            for key in sorted(CRASHED):
+                f.write("X {}\n".format(key))
+    except (OSError, IOError):
+        pass
+
+
+def _native(key, fn, *args):
+    """fn(*args) between breadcrumbs. No finally: after a hard crash nothing
+    runs, and a Python error means the call came back."""
+    if key in CRASHED:
+        raise Crashed(key)
+    _mark("B", key)
+    try:
+        result = fn(*args)
+    except Exception:
+        _mark("E", key)
+        raise
+    _mark("E", key)
+    return result
+
+
+def _open_run(route):
+    """Held open until the pop-up is dismissed, so a crash while the viewport
+    first draws the Substance material is caught too."""
+    key = "run:" + route
+    _mark("B", key)
+    _OPEN.append(key)
+
+
+def _close_run():
+    for key in _OPEN:
+        _mark("E", key)
+    del _OPEN[:]
+
+
+def _shapes(tag, fn, shapes):
+    """Call fn with each argument shape in turn. Only a TypeError (wrong
+    shape) or a skipped crasher moves on to the next; anything else is the
+    real answer. Returns (answered, result)."""
+    for args in shapes:
+        try:
+            return True, _native("{}:{}".format(tag, len(args)), fn, *args)
+        except Crashed as err:
+            WHY.append("skipped {} (crashed Cinema 4D before)".format(err))
+        except TypeError as err:
+            WHY.append(_why(err))
         except Exception as err:
             WHY.append(_why(err))
-            continue
-        if result is not None:
-            return result
-    return None
+            return True, None
+    return False, None
 
 
 def _consts(sub, *words):
@@ -394,15 +488,24 @@ def _consts(sub, *words):
     return out
 
 
+def _facts(sub):
+    """The Substance constants this build really has, for the Console and,
+    when nothing worked, the pop-up."""
+    seen = ["{}={}".format(n.replace("SUBSTANCE_", "", 1), v)
+            for n, v in _consts(sub, "IMPORT") + _consts(sub, "MODE")]
+    FACTS[:] = [", ".join(seen)[:300]] if seen else []
+    print("Substance constants: " + (FACTS[0] if FACTS else "none found"))
+
+
 def _assets(sub, doc):
     """Every Substance asset in the document, whichever getter this version has."""
-    for name, args in (("GetSubstances", (doc, False)), ("GetSubstances", (doc,)),
+    for name, args in (("GetSubstances", (doc,)), ("GetSubstances", (doc, False)),
                        ("GetAllSubstances", (doc,))):
         fn = getattr(sub, name, None)
         if fn is None:
             continue
         try:
-            got = fn(*args)
+            got = _native("assets:{}:{}".format(name, len(args)), fn, *args)
         except Exception:
             continue
         if got is not None:
@@ -410,64 +513,100 @@ def _assets(sub, doc):
                 return list(got)
             except TypeError:
                 pass
-    found = []
     first = getattr(sub, "GetFirstSubstance", None)
-    try:
-        node = first(doc) if first else None
+    if first is None:
+        return []
+
+    def walk():
+        found, node = [], first(doc)
         while node is not None and len(found) < 500:
             found.append(node)
             node = node.GetNext()
+        return found
+    try:
+        return _native("assets:walk", walk)
     except Exception:
-        pass
-    return found
+        return []
+
+
+def _copy_values(sub):
+    """ImportSubstance's copy-file setting: the 'don't copy' constant, found by
+    name (a new scene has no project folder to copy into). A bare 0 only if
+    this build names none."""
+    named = [(n, v) for n, v in _consts(sub, "IMPORT", "COPY") if not n.endswith("ASK")]
+    keep = [v for n, v in named if n.split("_")[-1] in ("NO", "NOT", "DONT")]
+    if keep:
+        return keep[:1]
+    return [v for n, v in named][:1] or [0]
 
 
 def _import(sub, doc, path):
     """Import the .sbsar; returns the asset or None. 2024+ wants
     (doc, file, copyFile, errPopup, addUndo, createMaterial) and answers with
-    (result, asset, n); older builds take fewer arguments and answer nothing."""
-    copies = [v for n, v in _consts(sub, "COPY") if not n.endswith("ASK")]
-    copies = sorted(copies, key=lambda v: 0 if v in (0, False) else 1) + [0, 1]
+    (result, asset, n); older builds take fewer arguments and answer nothing.
+    One real call: once it ran, the answer stands."""
     ok = [v for n, v in _consts(sub, "IMPORT", "SUCCESS")]
     before = len(_assets(sub, doc))
-    tried = []
-    for copy in copies:
-        for args in ((doc, path, copy, False, False, False),
-                     (doc, path, copy, False, False),
-                     (doc, path, copy)):
-            key = repr(args[2:])
-            if key in tried:
-                continue
-            tried.append(key)
-            try:
-                res = sub.ImportSubstance(*args)
-            except Exception as err:
-                WHY.append(_why(err))
-                continue
-            if isinstance(res, (tuple, list)) and len(res) > 1:
-                code, asset = res[0], res[1]
-                if asset is not None and (not ok or code in ok):
-                    return asset
-                WHY.append("Import answered {!r}".format(code))
-            have = _assets(sub, doc)
-            if len(have) > before:
-                return have[-1]
+    for copy in _copy_values(sub):
+        answered, res = _shapes(
+            "import:{}".format(copy), sub.ImportSubstance,
+            [(doc, path, copy, False, False, False),
+             (doc, path, copy, False, False),
+             (doc, path, copy)])
+        if not answered:
+            continue
+        if isinstance(res, (tuple, list)) and len(res) > 1:
+            code, asset = res[0], res[1]
+            if asset is not None and (not ok or code in ok):
+                return asset
+            WHY.append("Import answered {!r}".format(code))
+        have = _assets(sub, doc)
+        return have[-1] if len(have) > before else None
     return None
 
 
-def _modes(sub):
-    """Material-creation modes, plain Cinema 4D materials first (Standard
-    renderer can't draw Redshift node materials)."""
-    named = _consts(sub, "MODE")
-    def rank(item):
-        n = item[0]
-        if any(w in n for w in ("REDSHIFT", "NODE", "RS")):
-            return 2
-        if any(w in n for w in ("STANDARD", "CLASSIC", "C4D", "LEGACY", "MATERIAL_MODE")):
-            return 0
-        return 1
-    modes = [v for n, v in sorted(named, key=rank)]
-    return modes + [m for m in (0, 1, 2) if m not in modes]
+def _kind(mat):
+    """None for a plain Standard-renderer material, else what it is."""
+    try:
+        kind = mat.GetType()
+    except Exception:
+        return None
+    if kind != c4d.Mmaterial:
+        return "material type {}".format(kind)
+    node = getattr(c4d, "NodeMaterial", None)
+    if isinstance(node, type) and isinstance(mat, node):
+        return "a node material"
+    return None
+
+
+def _discard(mat):
+    try:
+        if mat.GetDocument() is not None:
+            mat.Remove()
+    except Exception:
+        pass
+
+
+def _create(sub, asset):
+    """A Standard-renderer material from the asset: mode STANDARD, then AUTO
+    (never NONE), one real call each. Returns (material, what-else-it-was)."""
+    named = _consts(sub, "MATERIAL", "MODE")
+    modes = [(w, v) for w in ("STANDARD", "AUTO") for n, v in named if n.endswith("_" + w)]
+    if not modes:
+        modes = [(n, v) for n, v in named if not n.endswith("_NONE")][:2] or [("0", 0)]
+    graph, odd = SBSAR_GRAPH, None
+    for label, mode in modes:
+        answered, got = _shapes("create:{}:g{}".format(label, graph), sub.CreateMaterial,
+                                [(asset, graph, mode), (asset, graph), (asset,)])
+        if isinstance(got, (tuple, list)):
+            got = next((g for g in got if g is not None and hasattr(g, "SetName")), None)
+        if got is None:
+            continue
+        odd = _kind(got)
+        if odd is None:
+            return got, None
+        _discard(got)
+    return None, odd
 
 
 def substance_material(doc, path, env_path):
@@ -476,7 +615,11 @@ def substance_material(doc, path, env_path):
     if sub is None:
         SKIPPED.append("Substance: this Cinema 4D has no Substance module")
         return None
+    if "run:shader" in CRASHED:
+        SKIPPED.append("Substance: crashed Cinema 4D on both routes last time, skipped")
+        return None
     del WHY[:]
+    _facts(sub)
     stem = os.path.splitext(os.path.basename(path))[0]
     asset = None
     for have in _assets(sub, doc):
@@ -490,42 +633,22 @@ def substance_material(doc, path, env_path):
     if asset is None:
         SKIPPED.append("Substance: couldn't load {} [{}]".format(
             os.path.basename(path), "; ".join(dict.fromkeys(WHY[-3:])) or "no answer"))
-        print("  Substance module offers: " + ", ".join(n for n in dir(sub) if not n.startswith("_")))
         return None
 
-    graph = SBSAR_GRAPH
-    tries = [(asset, graph, mode) for mode in _modes(sub)] + [(asset, graph), (asset,)]
-    mat = None
-    for args in tries:
-        got = _call(sub.CreateMaterial, args)
-        if isinstance(got, (tuple, list)):
-            got = next((g for g in got if g is not None and hasattr(g, "SetName")), None)
-        if got is None:
-            continue
-        mat = mat or got
-        try:
-            if got.GetType() == c4d.Mmaterial:
-                mat = got
-                break
-        except Exception:
-            break
-    odd = None
-    if mat is not None:
-        try:
-            if mat.GetType() != c4d.Mmaterial:
-                odd, mat = mat.GetType(), None
-        except Exception:
-            pass
+    mat, odd = (None, None) if "run:material" in CRASHED else _create(sub, asset)
+    route = "material"
     if mat is None:
-        shader = _call(sub.CreateSubstanceShader, (asset,))
+        route = "shader"
+        shader = _shapes("shader", sub.CreateSubstanceShader, [(asset,)])[1]
         if shader is None:
             SKIPPED.append("Substance: couldn't make a material from {} [{}]".format(
                 stem, "; ".join(dict.fromkeys(WHY[-3:])) or
-                ("got material type {}, Standard can't draw it".format(odd) if odd else "no answer")))
+                ("got {}, Standard can't draw it".format(odd) if odd else "no answer")))
             return None
         mat = c4d.BaseMaterial(c4d.Mmaterial)
         mat.InsertShader(shader)
         put(mat, "MATERIAL_COLOR_SHADER", shader, "Texture")
+    _open_run(route)
     mat.SetName("MLT_Substance")
     try:
         if mat.GetDocument() is None:
@@ -906,6 +1029,14 @@ def build(doc, tex):
     return root, cam
 
 
+def use_standard_engine(doc):
+    """Before any Substance call: a new 2025+ scene is on Redshift, which
+    turns Substance imports into node materials."""
+    rd = doc.GetActiveRenderData()
+    if rd is not None:
+        put(rd, "RDATA_RENDERENGINE", const("RDATA_RENDERENGINE_STANDARD"))
+
+
 def configure_document(doc, cam):
     shot = SHOTS[MODE]
     res_x, res_y = shot["res"]
@@ -918,7 +1049,6 @@ def configure_document(doc, cam):
 
     rd = doc.GetActiveRenderData()
     if rd is not None:
-        put(rd, "RDATA_RENDERENGINE", const("RDATA_RENDERENGINE_STANDARD"))
         put(rd, "RDATA_XRES", float(res_x))
         put(rd, "RDATA_YRES", float(res_y))
         put(rd, "RDATA_FILMASPECT", res_x / float(res_y), "Film Aspect")
@@ -958,6 +1088,8 @@ def main():
     del SKIPPED[:]
     del SUBSTANCE[:]
     del _FONT[:]
+    del FACTS[:]
+    _trace_load()
     if MODE not in SHOTS:
         gui.MessageDialog("MODE must be one of: {}.".format(", ".join(sorted(SHOTS))))
         return
@@ -971,11 +1103,15 @@ def main():
     doc.StartUndo()
     try:
         clear_previous(doc)
+        use_standard_engine(doc)
         root, cam = build(doc, tex)
         configure_document(doc, cam)
         undo_new = const("UNDOTYPE_NEWOBJ", "UNDOTYPE_NEW")
         if undo_new is not None:
             doc.AddUndo(undo_new, root)
+    except Exception:
+        _close_run()
+        raise
     finally:
         doc.EndUndo()
         c4d.EventAdd()
@@ -983,14 +1119,22 @@ def main():
     print("Molten pool built ({} shot, {}), textures from {}".format(MODE, PALETTE, tex))
     for line in SKIPPED:
         print("  skipped - " + line)
+    extra = ""
+    if CRASHED:
+        extra += ("\nSkipped {} call(s) that crashed Cinema 4D last time: {}.\n"
+                  "FORGET_CRASHES = True retries them.\n".format(
+                      len(CRASHED), ", ".join(sorted(CRASHED))))
+    if FACTS and not SUBSTANCE and any(l.startswith("Substance: ") for l in SKIPPED):
+        extra += "\nThis build has: {}\n".format(FACTS[0])
     gui.MessageDialog(
         "Molten pool built. {} setting(s) skipped{}.\n"
-        "Substance: {}.\n\n"
+        "Substance: {}.\n{}\n"
         "Save the file, then Shift+R to render.".format(
             len(SKIPPED), " (see Console, Shift+F10)" if SKIPPED else "",
             SUBSTANCE[0] if SUBSTANCE else next(
                 (l[11:] for l in SKIPPED if l.startswith("Substance: ")),
-                "none (drop a .sbsar in molten_tex)")))
+                "none (drop a .sbsar in molten_tex)"), extra))
+    _close_run()
 
 
 if __name__ == "__main__":
