@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import './StartHere.css';
+import { hasWritingAI } from '../../services/customAI.js';
 
 /**
  * WHAT YOU NEED, SAID BEFORE YOU NEED IT.
@@ -29,7 +30,7 @@ import './StartHere.css';
  */
 export default function StartHere({ onGoToSettings }) {
   const store = useLyricStore();
-  if (store.config?.openRouterApiKey) return null;
+  if (hasWritingAI(store.config)) return null;
 
   return (
     <div className="sh" role="region" aria-label="Setup needed">

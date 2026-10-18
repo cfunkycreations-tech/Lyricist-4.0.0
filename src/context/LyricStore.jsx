@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext, useRef } from 'r
 import { registerDemoSnapshot } from '../services/demoSafety.js';
 import { useLogged } from '../services/useLogged.js';
 import { verifyModel, probeModel, why } from '../services/openrouter.js';
+import { setCustomAI, customAIFrom } from '../services/customAI.js';
 import { DEFAULT_AI_MODEL, discoverFreeModels } from '../services/AIService.js';
 import { notify } from '../services/dialog.js';
 import { studioSheet } from '../services/studioSheet.js';
@@ -203,6 +204,13 @@ export const DEFAULT_CONFIG = {
   // stranger running graphs on their GPU, so it is never baked into the build.
   modalUrl: '',
   modalToken: '',
+  // Their own AI server for the writing tools (services/customAI.js): any
+  // OpenAI-style address, e.g. OmniRoute, LM Studio or Ollama. Off until they
+  // switch it on, and only used once the address and model are both filled in.
+  customAiOn: false,
+  customAiUrl: '',
+  customAiKey: '',
+  customAiModel: '',
   // Where songs get made: 'cloud' | 'local'. Cloud is the default because it is
   // both the fastest AND the free one, which is not the usual trade.
   musicEngine: 'cloud',
@@ -535,6 +543,11 @@ export const LyricStoreProvider = ({ children }) => {
     localStorage.setItem('lyricistConfig', JSON.stringify(config));
   }, [config]);
 
+  // chatCompletion reads this; it is called from places that never see config.
+  // Set during render, not in an effect: children's effects run before ours,
+  // and one of them may write on mount. It is a plain assignment.
+  setCustomAI(config);
+
   // The saved model can vanish from OpenRouter (stealth models are pulled
   // without notice), and then every call dies with "No endpoints found". Each
   // model is checked once per launch; only a confirmed-dead one is replaced,
@@ -542,6 +555,9 @@ export const LyricStoreProvider = ({ children }) => {
   const modelCheckedRef = useRef('');
   useEffect(() => {
     const id = config.model;
+    // Their own AI server is writing, so the OpenRouter model is not in use,
+    // and the check's test call would go to their server instead.
+    if (customAIFrom(config)) return;
     if (!id || modelCheckedRef.current === id) return;
     modelCheckedRef.current = id;
     const key = String(config.openRouterApiKey || '').trim();
@@ -564,7 +580,7 @@ export const LyricStoreProvider = ({ children }) => {
       setConfigState((c) => (c.model === id ? { ...c, model: next } : c));
       notify(`${id} isn't on OpenRouter any more${why(r)}. Switched to ${next}. Pick another in Settings any time.`, { tone: 'error' });
     });
-  }, [config.model]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [config.model, config.customAiOn]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     localStorage.setItem('lyricistLyrics', JSON.stringify(lyrics));

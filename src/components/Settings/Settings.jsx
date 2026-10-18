@@ -13,6 +13,7 @@ import { isEnabled as analyticsEnabled, optIn, optOut } from '../../services/ana
 import { Icon } from '../common/Glyph.jsx';
 import PlayThrough from './PlayThrough.jsx';
 import VstPlugins from './VstPlugins.jsx';
+import CustomAIBox from './CustomAIBox.jsx';
 
 /* The names, the presets and the swatch colour all come from prismTheme.js
    now. There were two copies of PRISM_NAMES — one here and one there — and
@@ -472,9 +473,9 @@ export default function Settings() {
     const unquote = (v) => String(v ?? '').trim().replace(/^["'“”]|["'“”]$/g, '');
     const next = field === 'openRouterApiKey'
       ? normalizeApiKey(val)
-      : (field === 'huggingFaceToken' || field === 'modalToken'
+      : (field === 'huggingFaceToken' || field === 'modalToken' || field === 'customAiKey'
         ? unquote(val).replace(/^Bearer\s+/i, '')
-        : (field === 'modalUrl' ? unquote(val) : val));
+        : (field === 'modalUrl' || field === 'customAiUrl' ? unquote(val) : val));
 
     store.setConfig({ ...store.config, [field]: next });
 
@@ -578,6 +579,8 @@ export default function Settings() {
           </a>. Buy or load credits on OpenRouter to use premium models.
         </p>
       </div>
+
+      <CustomAIBox config={store.config} onUpdate={handleUpdate} />
 
       {/* ---- Black Hole Studios: free song quota ---------------------------------
           The free music server gives anonymous users only a few minutes of GPU

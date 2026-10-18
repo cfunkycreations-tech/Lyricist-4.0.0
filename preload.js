@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
     verify: (code) => ipcRenderer.invoke('license-verify', { code }),
     recheck: () => ipcRenderer.invoke('license-recheck'),
   },
+  // Their own AI server (src/services/customAI.js). Resolves { status, text } or { status: 0, error }.
+  customAI: (req) => ipcRenderer.invoke('custom-ai', req),
   // The Ghost's flight recorder (src/services/ghostRecorder.js).
   ghostLogAppend: (line) => ipcRenderer.invoke('ghost-log-append', line),
   ghostLogShot: (label) => ipcRenderer.invoke('ghost-log-shot', label),

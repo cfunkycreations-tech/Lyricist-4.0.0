@@ -89,6 +89,7 @@ import bhStill from '../../assets/blackhole/bh_still.webp';
 import bhAnim from '../../assets/blackhole/bh_loop.webp';
 import { Dices } from 'lucide-react';
 import { useLogged } from '../../services/useLogged.js';
+import { hasWritingAI } from '../../services/customAI.js';
 
 const REDUCED_MOTION = typeof window !== 'undefined'
   && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -863,7 +864,7 @@ export default function OneManBand({ onNavigate, incoming, onSendToSongwriter } 
      * fails the draft goes out as before and the reason is on screen.
      */
     let sendCaption = caption;
-    const hasKey = !!String(store.config?.openRouterApiKey || '').trim();
+    const hasKey = hasWritingAI(store.config);
     if (!captionEdited && caption.trim()) {
       if (hasKey) {
         try {

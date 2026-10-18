@@ -14,6 +14,7 @@
 import { OpenRouter, HTTPClient } from '@openrouter/sdk';
 import { noteModelFailure } from './modelFit.js';
 import { record, clipText } from './ghostRecorder.js';
+import { activeCustomAI, customChat, NO_OPENROUTER_KEY } from './customAI.js';
 
 export const APP_URL = 'https://cfunkycreationsllc.com';
 export const APP_TITLE = 'Lyricist Pro';
@@ -50,7 +51,7 @@ function client(apiKey, body) {
  * OpenRouter was never reached. An abort rejects, as fetch does.
  */
 async function run(apiKey, call, { body, signal, binary } = {}) {
-  const { sdk, seen } = client(apiKey, body);
+  const { sdk, seen } = client(apiKey === NO_OPENROUTER_KEY ? null : apiKey, body);
   try {
     await call(sdk, { signal });
   } catch (e) {
@@ -73,29 +74,38 @@ export async function chatCompletion(body, { apiKey, signal } = {}) {
   const asked = (body.messages || [])
     .map((m) => `${String(m.role).toUpperCase()}: ${typeof m.content === 'string' ? m.content : JSON.stringify(m.content)}`)
     .join('\n\n');
+  // Their own AI server takes the text calls (customAI.js). A picture request
+  // carries modalities and stays here.
+  const own = !body.modalities ? activeCustomAI() : null;
+  const label = own ? `${own.model} via your AI server` : body.model;
+  if (!own && apiKey === NO_OPENROUTER_KEY) {
+    return { ok: false, status: 401, json: null, res: null, message: 'Pictures and voices still run on OpenRouter. Add an OpenRouter key in Settings for this part.' };
+  }
   let r;
   try {
-    r = await run(apiKey, (sdk, o) => sdk.chat.send(
-      { chatRequest: { model: body.model, messages: [{ role: 'user', content: '' }] } },
-      { signal: o.signal },
-    ), { body, signal });
+    r = own
+      ? await customChat(body, { signal })
+      : await run(apiKey, (sdk, o) => sdk.chat.send(
+        { chatRequest: { model: body.model, messages: [{ role: 'user', content: '' }] } },
+        { signal: o.signal },
+      ), { body, signal });
   } catch (e) {
-    record('ai', `${body.model} ✗ ${e?.message || 'aborted'} (${((Date.now() - started) / 1000).toFixed(1)}s)`, `ASKED:\n${asked}`);
+    record('ai', `${label} ✗ ${e?.message || 'aborted'} (${((Date.now() - started) / 1000).toFixed(1)}s)`, `ASKED:\n${asked}`);
     throw e;
   }
   // The flight recorder: every AI call, what was asked and what came back.
   const reply = r.json?.choices?.[0]?.message?.content;
-  const served = r.json?.model && r.json.model !== body.model ? ` (served by ${r.json.model})` : '';
+  const served = !own && r.json?.model && r.json.model !== body.model ? ` (served by ${r.json.model})` : '';
   const secs = ((Date.now() - started) / 1000).toFixed(1);
   const lastAsk = (body.messages || []).filter((m) => m.role === 'user').pop()?.content;
   record(
     'ai',
-    `${body.model}${served} ${r.ok ? '✓' : `✗ ${r.status} ${r.message}`} ${secs}s · asked: ${clipText(typeof lastAsk === 'string' ? lastAsk.replace(/\s+/g, ' ') : '', 140)}`,
+    `${label}${served} ${r.ok ? '✓' : `✗ ${r.status} ${r.message}`} ${secs}s · asked: ${clipText(typeof lastAsk === 'string' ? lastAsk.replace(/\s+/g, ' ') : '', 140)}`,
     `ASKED:\n${asked}\n\nANSWERED:\n${typeof reply === 'string' ? reply : clipText(reply ?? r.message ?? '', 4000)}`,
   );
   // A model that can never work here (agent-only, no longer free) is
   // remembered, so the model list says so and the free chains skip it.
-  if (!r.ok) noteModelFailure(body.model, r.message);
+  if (!r.ok && !own) noteModelFailure(body.model, r.message);
   return r;
 }
 
@@ -214,7 +224,8 @@ export async function noEndpointsHelp(model, apiKey) {
  * other answer (even a 400 over the 1-token budget) means OpenRouter routed it.
  */
 export async function probeModel(model, apiKey) {
-  if (!apiKey) return 'unknown';
+  // With their own AI server on, chatCompletion would ask it, not OpenRouter.
+  if (!apiKey || activeCustomAI()) return 'unknown';
   const r = await chatCompletion({ model, max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] }, { apiKey });
   if (r.ok || (r.status && r.status !== 404)) return 'answers';
   return r.status === 404 ? 'no-endpoints' : 'unknown';

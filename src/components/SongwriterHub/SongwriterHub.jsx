@@ -14,6 +14,7 @@ import { saveText } from '../../services/saveText.js';
 import { track, slug } from '../../services/analytics.js';
 import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, Upload, PenLine, GitBranch, X, Share2, Send } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
+import { hasWritingAI } from '../../services/customAI.js';
 // The logo and the founder photo were imported here but never rendered — a
 // leftover from the old in-tab header. Vite emits an imported asset whether or
 // not it is used, so both were being copied into every build for nothing.
@@ -173,7 +174,7 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio, incoming
   }, [ghostRiderData]);
 
   const handleGenerate = async () => {
-    if (!store.config.openRouterApiKey) {
+    if (!hasWritingAI(store.config)) {
       setErrorMsg('API Key is missing. Please go to the Settings tab and configure it.');
       return;
     }
@@ -235,7 +236,7 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio, incoming
   };
 
   const handleFillBlanks = async () => {
-    if (!store.config.openRouterApiKey) {
+    if (!hasWritingAI(store.config)) {
       setErrorMsg('API Key is missing.');
       return;
     }
@@ -280,7 +281,7 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio, incoming
   };
 
   const handleBridgeVariationsGen = async () => {
-    if (!store.config.openRouterApiKey) {
+    if (!hasWritingAI(store.config)) {
       setErrorMsg('API Key is missing.');
       return;
     }

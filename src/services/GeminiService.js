@@ -8,6 +8,7 @@ import { callAI, buildPromptContext, parseSectionsFromText, assertApiKey, normal
 import { blendLabel } from '../utils/blend.js';
 import { NO_CLICHES } from './cliches.js';
 import { chatCompletion, listModels } from './openrouter.js';
+import { activeCustomAI } from './customAI.js';
 import { stripReasoning, isMostlyReasoning } from '../utils/stripReasoning.js';
 import { modelFit } from './modelFit.js';
 
@@ -149,7 +150,8 @@ async function openRouterChat({ apiKey, model, messages, temperature = 0.75, max
 
   const r = await chatCompletion(body, { apiKey: normalizeApiKey(apiKey) });
   if (!r.ok) {
-    throw new Error(r.status ? r.message || `OpenRouter error (${model}): status ${r.status}` : `Could not reach OpenRouter (${model}).`);
+    // Their own AI server's message always names it, so it goes out as is.
+    throw new Error(r.status || activeCustomAI() ? r.message || `OpenRouter error (${model}): status ${r.status}` : `Could not reach OpenRouter (${model}).`);
   }
   return r.json || {};
 }
@@ -465,8 +467,12 @@ Write the complete song lyrics. Ensure every section is clearly labeled. Output 
     const t = typeof raw === 'string' ? raw : Array.isArray(raw) ? raw.map((p) => p?.text || '').join('\n') : '';
     return stripReasoning(t, { aggressive: true });
   };
+  // Their own AI server has one model, so walking the chain would only ask it
+  // the same thing six times.
+  const own = activeCustomAI();
+  const tries = own ? chain.slice(0, 1) : chain.slice(0, 6);
   let first = null;
-  for (const model of chain.slice(0, 6)) {
+  for (const model of tries) {
     try {
       let result = await openRouterChat({ apiKey, model, temperature, max_tokens: cap, messages });
       let text = read(result);
@@ -484,8 +490,9 @@ Write the complete song lyrics. Ensure every section is clearly labeled. Output 
       console.warn(`[Lyricist] ${model} could not write from the picture:`, e.message);
     }
   }
+  if (own) throw new Error(`${first?.message || 'Your AI server came back empty.'} Writing from a picture needs a model on it that can see images.`);
   throw new Error(
-    `No model would write from that picture (tried ${chain.slice(0, 6).join(', ')}). `
+    `No model would write from that picture (tried ${tries.join(', ')}). `
     + `First answer: ${first?.message || 'empty'}. Try again in a minute, or pick a different model in Settings.`
   );
 }

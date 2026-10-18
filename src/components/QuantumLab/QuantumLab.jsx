@@ -24,6 +24,7 @@ import { useMobile } from '../../mobile/useMobile.js';
 import './QuantumLab.css';
 import { ListChecks, SlidersHorizontal, ScanSearch, ArrowDownToLine, Zap, Crosshair, Snowflake, Cpu, Lock, Unlock, Syringe, X, ChevronDown } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
+import { hasWritingAI } from '../../services/customAI.js';
 
 // ============================================================
 // Quantum Lab — "Lyricist Goes Quantum" (Lyricist 4.2.0)
@@ -623,7 +624,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
    */
   const doNeural = async (overrideSection = null) => {
     const src = overrideSection || section;
-    if (!store.config?.openRouterApiKey) {
+    if (!hasWritingAI(store.config)) {
       setStatus({
         lead: 'Need an API key.',
         rest: ' Open the Settings tab, paste your free OpenRouter key, save, then come back and try Generate Neural Lyrics again.',

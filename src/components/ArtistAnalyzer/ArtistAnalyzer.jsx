@@ -12,6 +12,7 @@ import { notify } from '../../services/dialog.js';
 import { Icon } from '../common/Glyph.jsx';
 import { useLogged } from '../../services/useLogged.js';
 import { track } from '../../services/analytics.js';
+import { hasWritingAI } from '../../services/customAI.js';
 
 const analysisTabs = [
   { id: 'style', label: 'Lyrical Style' },
@@ -138,7 +139,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
 
   const handleAnalyze = async () => {
     if (!artist.trim()) return;
-    if (!store.config.openRouterApiKey) {
+    if (!hasWritingAI(store.config)) {
       setErrorMsg('API Key is missing in Settings.');
       return;
     }
@@ -176,7 +177,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
    * in plain lines backs up the JSON one. `loud` throws the real reason.
    */
   const extractStyleDNA = async (reportText, artistName, { loud = false } = {}) => {
-    if (!reportText || !store.config.openRouterApiKey) {
+    if (!reportText || !hasWritingAI(store.config)) {
       if (loud) throw new Error(reportText ? 'API Key is missing in Settings.' : 'No style report yet. Study the artist first.');
       return null;
     }
@@ -217,7 +218,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
 
   const handleGhostWrite = async () => {
     if (!artist.trim()) return;
-    if (!store.config.openRouterApiKey) {
+    if (!hasWritingAI(store.config)) {
       setErrorMsg('API Key is missing in Settings.');
       return;
     }

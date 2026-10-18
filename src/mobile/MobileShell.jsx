@@ -5,6 +5,7 @@ import { Glyph } from '../components/common/Glyph.jsx';
 import { useLyricStore } from '../context/LyricStore.jsx';
 import { isEnabled as analyticsEnabled } from '../services/analytics.js';
 import { useInstallOffer } from './install.js';
+import { hasWritingAI } from '../services/customAI.js';
 
 /**
  * THE PHONE NAVIGATION, built from the approved landscape mockups.
@@ -135,7 +136,7 @@ function findVisible(hook) {
 
 export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
   const store = useLyricStore();
-  const hasKey = !!String(store.config?.openRouterApiKey || '').trim();
+  const hasKey = hasWritingAI(store.config);
   const installOffer = useInstallOffer();
   // The tool whose description card is showing, or null.
   const [helpFor, setHelpFor] = useState(null);
