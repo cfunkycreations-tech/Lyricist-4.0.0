@@ -344,9 +344,23 @@ def smooth(obj, angle=40.0):
 
 # ── SUBSTANCE ──────────────────────────────────────────────────────────────
 
+def _sbsar_nearby(root, depth=3, limit=400):
+    """First .sbsar in root or up to depth folders below it (an unzip often
+    nests molten_pack inside molten_pack)."""
+    seen = 0
+    for here, dirs, files in os.walk(root):
+        seen += 1
+        found = sorted(n for n in files if n.lower().endswith(".sbsar"))
+        if found:
+            return os.path.join(here, found[0])
+        if seen >= limit or here[len(root):].count(os.sep) >= depth:
+            dirs[:] = []
+    return None
+
+
 def substance_file(tex):
     """The .sbsar to use: SBSAR if set, else the first one beside the textures,
-    the script or the saved .c4d."""
+    the script or the saved .c4d, else one in a folder near the textures."""
     if SBSAR:
         if os.path.isfile(SBSAR):
             return SBSAR
@@ -366,7 +380,8 @@ def substance_file(tex):
             continue
         if found:
             return os.path.join(place, found[0])
-    return None
+    near = _sbsar_nearby(os.path.dirname(os.path.abspath(tex)))
+    return near
 
 
 def _why(err):
@@ -1127,13 +1142,13 @@ def main():
     if FACTS and not SUBSTANCE and any(l.startswith("Substance: ") for l in SKIPPED):
         extra += "\nThis build has: {}\n".format(FACTS[0])
     gui.MessageDialog(
-        "Molten pool built. {} setting(s) skipped{}.\n"
+        "Molten pool built (crash-safe build). {} setting(s) skipped{}.\n"
         "Substance: {}.\n{}\n"
         "Save the file, then Shift+R to render.".format(
             len(SKIPPED), " (see Console, Shift+F10)" if SKIPPED else "",
             SUBSTANCE[0] if SUBSTANCE else next(
                 (l[11:] for l in SKIPPED if l.startswith("Substance: ")),
-                "none (drop a .sbsar in molten_tex)"), extra))
+                "none found near {}".format(tex)), extra))
     _close_run()
 
 
