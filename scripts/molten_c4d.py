@@ -10,6 +10,13 @@ WHAT YOU NEED: this script and the molten_tex folder (molten_env_gold.jpg,
 molten_env_ice.jpg). Keep the folder next to this script or next to your saved
 .c4d; if the script can't find it, it asks you to pick molten_env_gold.jpg.
 
+SUBSTANCE (.sbsar)
+  Drop any .sbsar into the molten_tex folder (or next to this script or your
+  saved .c4d) and run the script. The pool wears it, with the gold reflection
+  on top, so you see it on the metal. Or set SBSAR below to a file path.
+  Change its sliders: click MLT_Substance in the Material Manager, then the
+  Attribute Manager. Swap the file, run again.
+
 RUN
   1. File -> New (start from an empty scene).
   2. Extensions -> Script Manager -> File -> Load Script -> this file -> Execute.
@@ -37,8 +44,7 @@ scripts/molten_textures.py, and this script only builds shapes and moves them.
   fog       an Environment object; far ground fades to dark ember.
   metal     near-black body with the gold image in the Environment channel.
 Set PALETTE = "ice" for the blue-white version.
-Substance: drag any .sbsar from the Content Browser onto the Molten Surface
-for extra surface detail. None ship with this script.
+Substance: none ship with this script; see SUBSTANCE above.
 Standard renderer (set here): Cinema 4D 2025+ starts in Redshift, which
 ignores these materials.
 
@@ -61,6 +67,12 @@ OUTPUT_PATH = "molten/molten_"       # relative to the saved .c4d
 
 MODE = "hero"                        # "hero", "phone" or "header"
 PALETTE = "gold"                     # "gold" or "ice"
+
+SBSAR = ""                           # a .sbsar path; "" = first one found in molten_tex
+SBSAR_GRAPH = 0                      # which graph inside the file
+SBSAR_TILES = 8                      # repeats across the pool
+SBSAR_SHINE = 0.8                    # gold reflection laid over it (0 = off)
+SBSAR_DISPLACE = False               # True also pushes the surface; far slower to render
 
 FPS = 30
 FRAMES = 240                         # 8 s loop; keep it a multiple of 4
@@ -124,6 +136,7 @@ METAL_BASE = c4d.Vector(0.02, 0.025, 0.035)
 # fits it notes it and keeps going rather than leaving a half-built scene.
 
 SKIPPED = []
+SUBSTANCE = []                       # the .sbsar in use, if any
 
 
 def deg(d):
@@ -297,11 +310,15 @@ def metal_material(doc, env_path):
     return mat
 
 
-def tag(obj, mat, projection=None):
+def tag(obj, mat, projection=None, tiles=None):
     t = c4d.TextureTag()
     t.SetMaterial(mat)
     put(t, "TEXTURETAG_PROJECTION",
         projection if projection is not None else const("TEXTURETAG_PROJECTION_UVW"))
+    if tiles:
+        put(t, "TEXTURETAG_TILE", True, "Tile")
+        put(t, "TEXTURETAG_TILESX", tiles, "Tiles U")
+        put(t, "TEXTURETAG_TILESY", tiles, "Tiles V")
     obj.InsertTag(t)
 
 
@@ -313,6 +330,104 @@ def smooth(obj, angle=40.0):
         put(t, "PHONGTAG_PHONG_ANGLE", deg(angle))
     except Exception:
         SKIPPED.append("{}: Phong tag".format(_who(obj)))
+
+
+# ── SUBSTANCE ──────────────────────────────────────────────────────────────
+
+def substance_file(tex):
+    """The .sbsar to use: SBSAR if set, else the first one beside the textures,
+    the script or the saved .c4d."""
+    if SBSAR:
+        if os.path.isfile(SBSAR):
+            return SBSAR
+        SKIPPED.append("Substance: SBSAR file not found ({})".format(SBSAR))
+        return None
+    places = [tex]
+    script = globals().get("__file__")
+    if script:
+        places.append(os.path.dirname(script))
+    doc_dir = c4d.documents.GetActiveDocument().GetDocumentPath()
+    if doc_dir:
+        places.append(doc_dir)
+    for place in places:
+        try:
+            found = sorted(n for n in os.listdir(place) if n.lower().endswith(".sbsar"))
+        except (OSError, TypeError):
+            continue
+        if found:
+            return os.path.join(place, found[0])
+    return None
+
+
+def _call(fn, *attempts):
+    """Argument lists differ between versions: first one that works wins."""
+    for args in attempts:
+        try:
+            result = fn(*args)
+        except Exception:
+            continue
+        if result is not None:
+            return result
+    return None
+
+
+def substance_material(doc, path, env_path):
+    """Import the .sbsar, build a material from it, add the gold reflection."""
+    sub = getattr(getattr(c4d, "modules", None), "substance", None)
+    if sub is None:
+        SKIPPED.append("Substance: this Cinema 4D has no Substance module")
+        return None
+    stem = os.path.splitext(os.path.basename(path))[0]
+    asset = None
+    try:
+        for have in sub.GetSubstances(doc, False) or []:
+            if have.GetName() == stem:
+                asset = have
+    except Exception:
+        pass
+    if asset is None:
+        try:
+            before = len(sub.GetSubstances(doc, False) or [])
+        except Exception:
+            before = 0
+        for args in ((doc, path, True), (doc, path, False), (doc, path)):
+            try:
+                sub.ImportSubstance(*args)
+                break
+            except Exception:
+                continue
+        try:
+            found = sub.GetSubstances(doc, False) or []
+            asset = found[-1] if len(found) > before else None
+        except Exception:
+            asset = None
+    if asset is None:
+        SKIPPED.append("Substance: couldn't load {}".format(os.path.basename(path)))
+        return None
+
+    mat = _call(sub.CreateMaterial, (asset, SBSAR_GRAPH, 0), (asset, SBSAR_GRAPH), (asset,))
+    if mat is None:
+        shader = _call(sub.CreateSubstanceShader, (asset,))
+        if shader is None:
+            SKIPPED.append("Substance: couldn't make a material from {}".format(stem))
+            return None
+        mat = c4d.BaseMaterial(c4d.Mmaterial)
+        mat.InsertShader(shader)
+        put(mat, "MATERIAL_COLOR_SHADER", shader, "Texture")
+    mat.SetName("MLT_Substance")
+    try:
+        if mat.GetDocument() is None:
+            doc.InsertMaterial(mat)
+    except Exception:
+        doc.InsertMaterial(mat)
+    if not SBSAR_DISPLACE:
+        put(mat, "MATERIAL_USE_DISPLACEMENT", False)
+    if SBSAR_SHINE > 0:
+        put(mat, "MATERIAL_USE_ENVIRONMENT", True, "Environment")
+        put(mat, "MATERIAL_ENVIRONMENT_SHADER", bitmap(mat, env_path))
+        put(mat, "MATERIAL_ENVIRONMENT_BRIGHTNESS", SBSAR_SHINE)
+    mat.Update(True, True)
+    return mat
 
 
 # ── SHAPES ─────────────────────────────────────────────────────────────────
@@ -569,7 +684,7 @@ def generator_code():
     return code
 
 
-def molten_surface(parent, mat):
+def molten_surface(parent, mat, tiles=None):
     gen = c4d.BaseObject(const("Opython") or 1023866)
     if gen is None:
         SKIPPED.append("Molten Surface: Python Generator (needs a Cinema 4D with Python Generator)")
@@ -578,7 +693,10 @@ def molten_surface(parent, mat):
     put(gen, "OPYTHON_CODE", generator_code(), "Code")
     put(gen, "OPYTHON_OPTIMIZE", False, "Optimize Cache")
     gen.InsertUnder(parent)
-    tag(gen, mat, const("TEXTURETAG_PROJECTION_FLAT"))
+    if tiles:
+        tag(gen, mat, const("TEXTURETAG_PROJECTION_CUBIC"), tiles)
+    else:
+        tag(gen, mat, const("TEXTURETAG_PROJECTION_FLAT"))
     return gen
 
 
@@ -632,7 +750,15 @@ def build(doc, tex):
     root.SetName(GROUP_NAME)
     doc.InsertObject(root)
 
-    metal = metal_material(doc, os.path.join(tex, env_name()))
+    env_path = os.path.join(tex, env_name())
+    metal = metal_material(doc, env_path)
+    skin, tiles = metal, None
+    sbsar = substance_file(tex)
+    if sbsar:
+        worn = substance_material(doc, sbsar, env_path)
+        if worn is not None:
+            skin, tiles = worn, SBSAR_TILES
+            SUBSTANCE.append(os.path.basename(sbsar))
 
     # Camera: low over the pool, aimed at the title, drifting one slow arc and
     # one slow push per loop.
@@ -653,7 +779,7 @@ def build(doc, tex):
     light("Key", c4d.Vector(-900, 1100, -1500), c4d.Vector(1.0, 0.82, 0.55), 1.0, root)
     light("Rim", c4d.Vector(1300, 500, 1200), c4d.Vector(1.0, 0.6, 0.3), 1.2, root)
 
-    molten_surface(root, metal)
+    molten_surface(root, skin, tiles)
     blobs(root, metal, shot["spread"])
     fog(doc)
 
@@ -718,6 +844,7 @@ def clear_previous(doc):
 
 def main():
     del SKIPPED[:]
+    del SUBSTANCE[:]
     del _FONT[:]
     if MODE not in SHOTS:
         gui.MessageDialog("MODE must be one of: {}.".format(", ".join(sorted(SHOTS))))
@@ -745,9 +872,11 @@ def main():
     for line in SKIPPED:
         print("  skipped - " + line)
     gui.MessageDialog(
-        "Molten pool built. {} setting(s) skipped{}.\n\n"
+        "Molten pool built. {} setting(s) skipped{}.\n"
+        "Substance: {}.\n\n"
         "Save the file, then Shift+R to render.".format(
-            len(SKIPPED), " (see Console, Shift+F10)" if SKIPPED else ""))
+            len(SKIPPED), " (see Console, Shift+F10)" if SKIPPED else "",
+            SUBSTANCE[0] if SUBSTANCE else "none (drop a .sbsar in molten_tex)"))
 
 
 if __name__ == "__main__":
