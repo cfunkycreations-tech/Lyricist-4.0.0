@@ -224,7 +224,8 @@ export async function noEndpointsHelp(model, apiKey) {
  * other answer (even a 400 over the 1-token budget) means OpenRouter routed it.
  */
 export async function probeModel(model, apiKey) {
-  if (!apiKey) return 'unknown';
+  // With their own AI server on, chatCompletion would ask it, not OpenRouter.
+  if (!apiKey || activeCustomAI()) return 'unknown';
   const r = await chatCompletion({ model, max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] }, { apiKey });
   if (r.ok || (r.status && r.status !== 404)) return 'answers';
   return r.status === 404 ? 'no-endpoints' : 'unknown';

@@ -136,8 +136,8 @@ export default function CustomAIBox({ config, onUpdate }) {
 
       <p style={{ fontSize: '0.65rem', color: 'rgba(155,161,170,0.45)', marginTop: 6, lineHeight: 1.55 }}>
         For OmniRoute, LM Studio, Ollama or any server with an OpenAI-style address. Tap your server above, press
-        Find models, pick one, then Test it. When it&rsquo;s on, Songwriter, Ghost Rider, The Matrix, Rhyme Helper,
-        Song Forge lyrics and the caption skill write with it. Pictures and voices still use your OpenRouter key.
+        Find models, pick one, then Test it. When it&rsquo;s on, Songwriter, Ghost Rider, The Matrix, Rhyme Helper
+        and the caption skill write with it. Song Forge, pictures and voices still need your OpenRouter key.
         On a phone the address has to start with https://.
       </p>
     </div>
