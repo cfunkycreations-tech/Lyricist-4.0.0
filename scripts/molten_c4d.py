@@ -137,6 +137,7 @@ METAL_BASE = c4d.Vector(0.02, 0.025, 0.035)
 
 SKIPPED = []
 SUBSTANCE = []                       # the .sbsar in use, if any
+WHY = []                             # why the last Substance step failed
 
 
 def deg(d):
@@ -359,16 +360,114 @@ def substance_file(tex):
     return None
 
 
+def _why(err):
+    return "{}: {}".format(type(err).__name__, str(err).strip().splitlines()[0] if str(err).strip() else "")[:90]
+
+
 def _call(fn, *attempts):
-    """Argument lists differ between versions: first one that works wins."""
+    """Argument lists differ between versions: first one that works wins.
+    Failures are kept in WHY so the final pop-up can show the real reason."""
     for args in attempts:
         try:
             result = fn(*args)
-        except Exception:
+        except Exception as err:
+            WHY.append(_why(err))
             continue
         if result is not None:
             return result
     return None
+
+
+def _consts(sub, *words):
+    """(name, value) of every Substance constant whose name has all of words."""
+    seen, out = set(), []
+    for mod in (sub, c4d):
+        for name in dir(mod):
+            if name in seen or not name.isupper() or "SUBSTANCE" not in name:
+                continue
+            if all(w in name for w in words):
+                seen.add(name)
+                try:
+                    out.append((name, getattr(mod, name)))
+                except Exception:
+                    pass
+    return out
+
+
+def _assets(sub, doc):
+    """Every Substance asset in the document, whichever getter this version has."""
+    for name, args in (("GetSubstances", (doc, False)), ("GetSubstances", (doc,)),
+                       ("GetAllSubstances", (doc,))):
+        fn = getattr(sub, name, None)
+        if fn is None:
+            continue
+        try:
+            got = fn(*args)
+        except Exception:
+            continue
+        if got is not None:
+            try:
+                return list(got)
+            except TypeError:
+                pass
+    found = []
+    first = getattr(sub, "GetFirstSubstance", None)
+    try:
+        node = first(doc) if first else None
+        while node is not None and len(found) < 500:
+            found.append(node)
+            node = node.GetNext()
+    except Exception:
+        pass
+    return found
+
+
+def _import(sub, doc, path):
+    """Import the .sbsar; returns the asset or None. 2024+ wants
+    (doc, file, copyFile, errPopup, addUndo, createMaterial) and answers with
+    (result, asset, n); older builds take fewer arguments and answer nothing."""
+    copies = [v for n, v in _consts(sub, "COPY") if not n.endswith("ASK")]
+    copies = sorted(copies, key=lambda v: 0 if v in (0, False) else 1) + [0, 1]
+    ok = [v for n, v in _consts(sub, "IMPORT", "SUCCESS")]
+    before = len(_assets(sub, doc))
+    tried = []
+    for copy in copies:
+        for args in ((doc, path, copy, False, False, False),
+                     (doc, path, copy, False, False),
+                     (doc, path, copy)):
+            key = repr(args[2:])
+            if key in tried:
+                continue
+            tried.append(key)
+            try:
+                res = sub.ImportSubstance(*args)
+            except Exception as err:
+                WHY.append(_why(err))
+                continue
+            if isinstance(res, (tuple, list)) and len(res) > 1:
+                code, asset = res[0], res[1]
+                if asset is not None and (not ok or code in ok):
+                    return asset
+                WHY.append("Import answered {!r}".format(code))
+            have = _assets(sub, doc)
+            if len(have) > before:
+                return have[-1]
+    return None
+
+
+def _modes(sub):
+    """Material-creation modes, plain Cinema 4D materials first (Standard
+    renderer can't draw Redshift node materials)."""
+    named = _consts(sub, "MODE")
+    def rank(item):
+        n = item[0]
+        if any(w in n for w in ("REDSHIFT", "NODE", "RS")):
+            return 2
+        if any(w in n for w in ("STANDARD", "CLASSIC", "C4D", "LEGACY", "MATERIAL_MODE")):
+            return 0
+        return 1
+    modes = [v for n, v in sorted(named, key=rank)]
+    return modes + [m for m in (0, 1, 2) if m not in modes]
 
 
 def substance_material(doc, path, env_path):
@@ -377,39 +476,44 @@ def substance_material(doc, path, env_path):
     if sub is None:
         SKIPPED.append("Substance: this Cinema 4D has no Substance module")
         return None
+    del WHY[:]
     stem = os.path.splitext(os.path.basename(path))[0]
     asset = None
-    try:
-        for have in sub.GetSubstances(doc, False) or []:
+    for have in _assets(sub, doc):
+        try:
             if have.GetName() == stem:
                 asset = have
-    except Exception:
-        pass
-    if asset is None:
-        try:
-            before = len(sub.GetSubstances(doc, False) or [])
         except Exception:
-            before = 0
-        for args in ((doc, path, True), (doc, path, False), (doc, path)):
-            try:
-                sub.ImportSubstance(*args)
-                break
-            except Exception:
-                continue
-        try:
-            found = sub.GetSubstances(doc, False) or []
-            asset = found[-1] if len(found) > before else None
-        except Exception:
-            asset = None
+            pass
     if asset is None:
-        SKIPPED.append("Substance: couldn't load {}".format(os.path.basename(path)))
+        asset = _import(sub, doc, path)
+    if asset is None:
+        SKIPPED.append("Substance: couldn't load {} [{}]".format(
+            os.path.basename(path), "; ".join(dict.fromkeys(WHY[-3:])) or "no answer"))
+        print("  Substance module offers: " + ", ".join(n for n in dir(sub) if not n.startswith("_")))
         return None
 
-    mat = _call(sub.CreateMaterial, (asset, SBSAR_GRAPH, 0), (asset, SBSAR_GRAPH), (asset,))
+    graph = SBSAR_GRAPH
+    tries = [(asset, graph, mode) for mode in _modes(sub)] + [(asset, graph), (asset,)]
+    mat = None
+    for args in tries:
+        got = _call(sub.CreateMaterial, args)
+        if isinstance(got, (tuple, list)):
+            got = next((g for g in got if g is not None and hasattr(g, "SetName")), None)
+        if got is None:
+            continue
+        mat = mat or got
+        try:
+            if got.GetType() == c4d.Mmaterial:
+                mat = got
+                break
+        except Exception:
+            break
     if mat is None:
         shader = _call(sub.CreateSubstanceShader, (asset,))
         if shader is None:
-            SKIPPED.append("Substance: couldn't make a material from {}".format(stem))
+            SKIPPED.append("Substance: couldn't make a material from {} [{}]".format(
+                stem, "; ".join(dict.fromkeys(WHY[-3:])) or "no answer"))
             return None
         mat = c4d.BaseMaterial(c4d.Mmaterial)
         mat.InsertShader(shader)
@@ -876,7 +980,9 @@ def main():
         "Substance: {}.\n\n"
         "Save the file, then Shift+R to render.".format(
             len(SKIPPED), " (see Console, Shift+F10)" if SKIPPED else "",
-            SUBSTANCE[0] if SUBSTANCE else "none (drop a .sbsar in molten_tex)"))
+            SUBSTANCE[0] if SUBSTANCE else next(
+                (l[11:] for l in SKIPPED if l.startswith("Substance: ")),
+                "none (drop a .sbsar in molten_tex)")))
 
 
 if __name__ == "__main__":
