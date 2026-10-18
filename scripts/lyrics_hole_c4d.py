@@ -107,6 +107,8 @@ STRETCH = 2.0                        # extra length at the horizon, as a multipl
 U_END = 0.9                          # share of the loop spent falling; the rest hidden
 FADE_IN = (0.015, 0.06)              # share of the loop over which a word grows in
 FADE_OUT = (0.9, 1.0)                # share of the fall over which a word is swallowed
+FACE = (0.1, 0.5)                    # a word shows once its front turns this far toward the lens
+                                     # (cosine of its heading); on the far side it reads backwards, so it hides
 HIDDEN = 0.001                       # scale of a word that is out of sight
 GOLDEN = 0.6180339887
 
@@ -310,12 +312,14 @@ def life(u):
 
 def word_state(shot, line, word, frame):
     """Everything about one word at one frame: position, heading, the three
-    scales, how grown it is (fade) and where it is in its loop (u)."""
+    scales, how grown it is (fade) and where it is in its loop (u). Words
+    whose back is to the lens are scaled away, so nothing shows mirrored."""
     u = ((frame + (line["phase"] - word["lag"]) * FRAMES) / float(FRAMES)) % 1.0
     p, fade = life(u)
     pos, heading, stretch = pose(shot, line["angle"], line["height"], p)
-    sx = max(HIDDEN, fade * stretch)
-    sy = max(HIDDEN, fade / math.sqrt(stretch))
+    shown = fade * smoothstep(FACE[0], FACE[1], math.cos(heading))
+    sx = max(HIDDEN, shown * stretch)
+    sy = max(HIDDEN, shown / math.sqrt(stretch))
     return dict(pos=pos, heading=heading, scale=(sx, sy, sy), fade=fade, u=u)
 
 
