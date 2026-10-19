@@ -40,8 +40,8 @@ scripts/blackhole_textures.py, and this script only builds shapes and moves them
             and grows again. Nothing pops.
   look      the words are lit from inside: one flat colour, no image, no
             lights, nothing that can render differently from version to version.
-It renders with the Standard engine (set here): Cinema 4D 2025+ starts new
-scenes in Redshift, which ignores these materials.
+It renders with the Standard engine and Standard materials only (the engine is
+set here).
 
 Anything this version of Cinema 4D refuses is skipped and listed in the
 Console instead of stopping the script.

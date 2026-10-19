@@ -47,8 +47,7 @@ scripts/orbit_textures.py, and this script only builds shapes and moves them.
             so names never go dark, and fog that fades the far side.
 Substance: drag any .sbsar from the Content Browser onto a name for extra
 surface detail. None ship with this script.
-Standard renderer (set here): Cinema 4D 2025+ starts in Redshift, which
-ignores these materials.
+Standard renderer and Standard materials only (the renderer is set here).
 
 MoGraph setting names change between versions. The script builds the ring,
 measures where the Cloner really put each name, and only keeps it if the ring
