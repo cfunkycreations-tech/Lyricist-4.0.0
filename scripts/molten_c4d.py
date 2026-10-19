@@ -86,15 +86,16 @@ START_FRAME = 0                      # raise this to resume after a crash
 # looks at, how far out the blobs sit
 SHOTS = {
     "hero":   dict(res=(1920, 1080), title="BLACK HOLE STUDIOS", title_h=120.0,
-                   dist=1900.0, cam_y=150.0, look_y=40.0, spread=1.0),
+                   dist=1900.0, cam_y=380.0, look_y=110.0, spread=1.0),
     "phone":  dict(res=(1080, 1920), title="BLACK HOLE\nSTUDIOS", title_h=150.0,
-                   dist=1500.0, cam_y=260.0, look_y=60.0, spread=0.5),
+                   dist=1500.0, cam_y=480.0, look_y=120.0, spread=0.5),
     "header": dict(res=(720, 720), title="BLACK HOLE\nSTUDIOS", title_h=150.0,
-                   dist=1750.0, cam_y=200.0, look_y=50.0, spread=0.7),
+                   dist=1750.0, cam_y=400.0, look_y=110.0, spread=0.7),
 }
 FOCAL = 36.0
 TITLE_DEPTH = 36.0
-TITLE_SINK = 0.12                    # title centre sits this x its height above the surface
+TITLE_SINK = 0.55                    # title centre sits this x its height above the surface
+TITLE_GOLD = c4d.Vector(1.0, 0.76, 0.30)
 
 FOG_COLOUR = c4d.Vector(0.05, 0.012, 0.0)
 FOG_DISTANCE = 6500.0
@@ -118,7 +119,7 @@ WAVES = [
 # sit in a quieter basin and the pool gets rougher toward the edges.
 GRID = dict(x_half=5200.0, z_lo=-2600.0, z_hi=9000.0, z_focus=-300.0,
             step=34.0, grow=3.0, reach=1800.0,
-            calm=0.28, calm_rx=1300.0, calm_rz=600.0)
+            calm=0.12, calm_rx=1500.0, calm_rz=1100.0)
 
 # Blobs: radius, x, z, rise height, rise cycles, drift, drift cycles, phase.
 # They sit to the sides and behind the title so it stays readable.
@@ -315,6 +316,21 @@ def metal_material(doc, env_path):
     put(mat, "MATERIAL_USE_ENVIRONMENT", True, "Environment")
     put(mat, "MATERIAL_ENVIRONMENT_SHADER", bitmap(mat, env_path))
     put(mat, "MATERIAL_ENVIRONMENT_BRIGHTNESS", 1.0)
+    mat.Update(True, True)
+    return mat
+
+
+def title_material(doc, env_path):
+    """Bright gold for the letters so they read against the dark pool."""
+    mat = new_material(doc, "MLT_Title")
+    put(mat, "MATERIAL_USE_COLOR", True)
+    put(mat, "MATERIAL_COLOR_COLOR", TITLE_GOLD)
+    put(mat, "MATERIAL_USE_LUMINANCE", True)
+    put(mat, "MATERIAL_LUMINANCE_COLOR", TITLE_GOLD)
+    put(mat, "MATERIAL_LUMINANCE_BRIGHTNESS", 0.45)
+    put(mat, "MATERIAL_USE_ENVIRONMENT", True, "Environment")
+    put(mat, "MATERIAL_ENVIRONMENT_SHADER", bitmap(mat, env_path))
+    put(mat, "MATERIAL_ENVIRONMENT_BRIGHTNESS", 0.5)
     mat.Update(True, True)
     return mat
 
@@ -1001,6 +1017,7 @@ def build(doc, tex):
 
     env_path = os.path.join(tex, env_name())
     metal = metal_material(doc, env_path)
+    gold = title_material(doc, env_path)
     skin, tiles = metal, None
     sbsar = substance_file(tex)
     if sbsar:
@@ -1036,7 +1053,7 @@ def build(doc, tex):
     # per loop so the waves keep cutting across it.
     pivot = null("Title", root)
     pivot.SetRelPos(c4d.Vector(0, shot["title_h"] * TITLE_SINK, 0))
-    title = metal_text("Title Letters", shot["title"], shot["title_h"], TITLE_DEPTH, pivot, metal)
+    title = metal_text("Title Letters", shot["title"], shot["title_h"], TITLE_DEPTH, pivot, gold)
     set_keys(pivot, pos_id("y"), cycle(shot["title_h"] * TITLE_SINK, 7.0, 1, math.pi))
     set_keys(pivot, rot_id("h"), cycle(0.0, deg(3.0), 1, 1.0))
     centre(doc, [title])
