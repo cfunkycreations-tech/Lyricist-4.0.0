@@ -6,7 +6,7 @@ Run: Extensions -> Script Manager -> File -> Load Script -> Execute. Console: Sh
 |---|---|---|
 | `blackhole_c4d.py` | The black hole rig | main |
 | `splash_c4d.py` | Opening splash, chrome title | main |
-| `follow_c4d.py` | Follow Spline particles spelling the title (Redshift scene) | this PR |
+| `follow_c4d.py` | Follow Spline particles spelling the title (Standard renderer) | this PR |
 | `molten_c4d.py` | Molten metal, MoGraph, Fields, Sound Effector, Substance | PR #78 |
 | `orbit_c4d.py`, `lyrics_hole_c4d.py` | Orbit camera, lyrics into the black hole | `claude/orbit-hole-c4d` |
 | `metaballs_c4d.py` | Liquid metaballs: 12 chrome droplets fuse and pour apart, looping | PR #82 |

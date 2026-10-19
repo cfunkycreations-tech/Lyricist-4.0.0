@@ -15,7 +15,7 @@ RUN
   2. Extensions -> Script Manager -> File -> Load Script -> this file -> Execute.
      A popup says what was set and what was skipped.
   3. Save the .c4d.
-  4. Render ONE frame first (frame 150, Shift+R) to check the look in Redshift.
+  4. Render ONE frame first (frame 150, Shift+R) to check the look.
   5. Shift+R for the full run. Frames go to follow/ next to the .c4d.
 
 IF IT CRASHES PART WAY: set START_FRAME below to the first missing frame, run
@@ -29,9 +29,11 @@ changes their settings:
   text      the Text Spline reads TEXT, in the first bold font this machine has.
   particles size of the Sphere (Particle Object).
   motion    Field Force Spline strength, Flock separation, Turbulence.
-  camera    slow push-in on the RS Camera.
-  document  30 fps, frame range, output folder, PNG. The renderer is left
-            alone: this scene is Redshift, so the Standard renderer is NOT forced.
+  look      Standard renderer and Standard materials only. The script sets the
+            renderer, adds one Standard material (FOL_Particle) on the particle
+            geometry, and two Standard lights.
+  camera    a Standard camera copied from the scene's camera, slow push-in.
+  document  30 fps, frame range, output folder, PNG.
   cache     presses the Simulation Scene's own Cache button (if it finds one).
 
 Anything this version of Cinema 4D refuses is skipped and listed in the
@@ -56,7 +58,11 @@ FORCE_STRENGTH = 15.0          # Field Force Spline.Strength (scene default 10)
 SEPARATION = 4.0               # Flock.Separation Radius, cm (scene default 5)
 TURBULENCE_STRENGTH = 4.0      # lower = cleaner letters
 
-CAMERA_NAME = "RS Camera"
+CAMERA_NAME = "camera"         # the scene's own camera is the first object with this in its name
+GROUP_NAME = "LYRICIST_FOLLOW_RIG"
+MATERIAL_NAME = "FOL_Particle"
+PARTICLE_COLOR = (1.0, 0.78, 0.32)   # warm gold
+GLOW = 0.35                          # Luminance brightness on the particles
 CAMERA_PUSH = 0.12             # start 12% farther out, glide in. 0 = leave the camera alone
 
 OUTPUT_PATH = "follow/follow_"       # relative to the saved .c4d
@@ -316,23 +322,86 @@ def _key(obj, desc_id, pairs):
         key.SetInterpolation(curve, c4d.CINTERPOLATION_LINEAR)
 
 
-def push_in(doc, cam):
-    """Start CAMERA_PUSH farther out along the line to the middle, glide in."""
-    if CAMERA_PUSH <= 0:
+def clear_previous(doc):
+    old = doc.SearchObject(GROUP_NAME)
+    while old is not None:
+        old.Remove()
+        old = doc.SearchObject(GROUP_NAME)
+    mat = doc.SearchMaterial(MATERIAL_NAME)
+    while mat is not None:
+        mat.Remove()
+        mat = doc.SearchMaterial(MATERIAL_NAME)
+
+
+def standard_material(doc):
+    mat = c4d.BaseMaterial(c4d.Mmaterial)
+    mat.SetName(MATERIAL_NAME)
+    color = c4d.Vector(*PARTICLE_COLOR)
+    put(mat, "MATERIAL_COLOR_COLOR", color)
+    put(mat, "MATERIAL_USE_LUMINANCE", True)
+    put(mat, "MATERIAL_LUMINANCE_COLOR", color)
+    put(mat, "MATERIAL_LUMINANCE_BRIGHTNESS", GLOW)
+    doc.InsertMaterial(mat)
+    return mat
+
+
+def dress_particles(doc, mat):
+    """Our Standard material on the particle geometry, in place of the scene's own."""
+    tex = const("Ttexture")
+    if tex is None:
+        SKIPPED.append("Particles: Standard material (no texture tag in this version)")
         return
-    touch(doc, cam)
-    # Re-running: park on the last frame (where the camera sits at its real
-    # position), drop our old keys, then read it.
+    done = []
+    for needle in ("particle object", "geo"):
+        node = find_obj(doc, needle)
+        if node is None or any(node is d for d in done):
+            continue
+        done.append(node)
+        tag = node.GetFirstTag()
+        while tag is not None:
+            nxt = tag.GetNext()
+            if tag.GetType() == tex:
+                tag.Remove()
+            tag = nxt
+        new = node.MakeTag(tex)
+        put(new, "TEXTURETAG_MATERIAL", mat)
+    if not done:
+        SKIPPED.append("Particles: not found (no material applied)")
+
+
+def standard_camera(doc, rig, src):
+    """A Standard camera on src's position and aim, with the push-in on it."""
+    cam = c4d.BaseObject(c4d.Ocamera)
+    cam.SetName("Follow Camera")
+    cam.InsertUnder(rig)
+    # Re-running: read the source on the last frame, where it sits at its real spot.
     doc.SetTime(c4d.BaseTime(LAST_FRAME, FPS))
     doc.ExecutePasses(None, True, True, True, c4d.BUILDFLAGS_0)
-    for axis in "xyz":
-        track = cam.FindCTrack(_pos_id(axis))
-        if track is not None:
-            track.Remove()
-    base = cam.GetRelPos()
-    far = base * (1.0 + CAMERA_PUSH)
-    for axis, a, b in (("x", far.x, base.x), ("y", far.y, base.y), ("z", far.z, base.z)):
-        _key(cam, _pos_id(axis), [(0, a), (LAST_FRAME, b)])
+    cam.SetMg(src.GetMg())
+    focus = const("CAMERA_FOCUS")
+    try:
+        cam[focus] = src[focus]
+    except Exception:
+        SKIPPED.append("Follow Camera: focal length (left at default)")
+    if CAMERA_PUSH > 0:
+        base = cam.GetRelPos()
+        far = base * (1.0 + CAMERA_PUSH)
+        for axis, a, b in (("x", far.x, base.x), ("y", far.y, base.y), ("z", far.z, base.z)):
+            _key(cam, _pos_id(axis), [(0, a), (LAST_FRAME, b)])
+    return cam
+
+
+def add_lights(rig, cam):
+    reach = max(cam.GetRelPos().GetLength(), 100.0)
+    for name, where, level in (("Follow Key", c4d.Vector(0.4, 0.7, 0.6), 1.0),
+                               ("Follow Fill", c4d.Vector(-0.8, 0.1, 0.5), 0.5)):
+        light = c4d.BaseObject(c4d.Olight)
+        light.SetName(name)
+        light.InsertUnder(rig)
+        light.SetRelPos(where * reach)
+        put(light, "LIGHT_TYPE", const("LIGHT_TYPE_OMNI"))
+        put(light, "LIGHT_BRIGHTNESS", level)
+        put(light, "LIGHT_SHADOWTYPE", const("LIGHT_SHADOW_NONE", "LIGHT_SHADOWTYPE_NONE"))
 
 
 def configure_document(doc, cam):
@@ -345,6 +414,7 @@ def configure_document(doc, cam):
 
     rd = doc.GetActiveRenderData()
     if rd is not None:
+        put(rd, "RDATA_RENDERENGINE", const("RDATA_RENDERENGINE_STANDARD"))
         put(rd, "RDATA_XRES", float(RES_X))
         put(rd, "RDATA_YRES", float(RES_Y))
         put(rd, "RDATA_FILMASPECT", RES_X / float(RES_Y), "Film Aspect")
@@ -406,9 +476,14 @@ def main():
                           "\"Follow Spline\" -> load it -> run this again.")
         return
 
-    cam = find_obj(doc, CAMERA_NAME)
-    if cam is None:
-        SKIPPED.append("{}: not in this scene (camera left alone)".format(CAMERA_NAME))
+    src = None
+    for obj in walk(doc.GetFirstObject()):
+        name = obj.GetName().lower()
+        if CAMERA_NAME in name and "follow" not in name:
+            src = obj
+            break
+    if src is None:
+        SKIPPED.append("scene camera: not found (no camera added)")
 
     dump_tree(doc)
     for node in (sim, spline):
@@ -421,10 +496,17 @@ def main():
     doc.StartUndo()
     cached = False
     try:
+        clear_previous(doc)
+        rig = c4d.BaseObject(c4d.Onull)
+        rig.SetName(GROUP_NAME)
+        doc.InsertObject(rig)
         set_text(doc, spline)
         apply_tuning(doc)
-        if cam is not None:
-            push_in(doc, cam)
+        dress_particles(doc, standard_material(doc))
+        cam = None
+        if src is not None:
+            cam = standard_camera(doc, rig, src)
+            add_lights(rig, cam)
         configure_document(doc, cam)
         doc.ExecutePasses(None, True, True, True, c4d.BUILDFLAGS_0)
         if CACHE_FIRST:
