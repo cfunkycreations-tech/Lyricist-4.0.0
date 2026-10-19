@@ -48,8 +48,7 @@ scripts/molten_textures.py, and this script only builds shapes and moves them.
   metal     near-black body with the gold image in the Environment channel.
 Set PALETTE = "ice" for the blue-white version.
 Substance: none ship with this script; see SUBSTANCE above.
-Standard renderer (set here): Cinema 4D 2025+ starts in Redshift, which
-ignores these materials.
+Standard renderer and Standard materials only (the renderer is set here).
 
 Anything this version of Cinema 4D refuses is skipped and listed in the
 Console (Extensions -> Console, Shift+F10) instead of stopping the script.
@@ -1045,8 +1044,8 @@ def build(doc, tex):
 
 
 def use_standard_engine(doc):
-    """Before any Substance call: a new 2025+ scene is on Redshift, which
-    turns Substance imports into node materials."""
+    """Before any Substance call: force the Standard renderer so imports stay
+    Standard materials."""
     rd = doc.GetActiveRenderData()
     if rd is not None:
         put(rd, "RDATA_RENDERENGINE", const("RDATA_RENDERENGINE_STANDARD"))
