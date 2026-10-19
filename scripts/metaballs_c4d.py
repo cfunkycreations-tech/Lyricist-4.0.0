@@ -29,8 +29,7 @@ HOW IT'S BUILT
                     middle swings far -> near -> far, so they fuse and split.
   camera pivot      a null that turns one full circle; the camera rides on it.
   metal             dark blue body with the reflection image in Environment.
-Standard renderer (set here): Cinema 4D 2025+ starts in Redshift, which
-ignores these materials.
+Standard renderer and Standard materials only (the renderer is set here).
 
 The Metaball object builds its skin from child objects, and the way it reads
 them differs between versions. The script tries three ways in order (nulls with

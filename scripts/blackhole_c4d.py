@@ -26,8 +26,8 @@ procedural shaders — nothing that can render differently or fall over.
             lensed far side of the disc arcing round the shadow, and the thin
             white-hot photon ring right at its edge.
 
-It renders with the Standard engine (set here): Cinema 4D 2025+ starts new
-scenes in Redshift, which ignores Standard materials and renders nothing.
+It renders with the Standard engine and Standard materials only (the engine is
+set here).
 
 Anything this version of Cinema 4D refuses is skipped and listed in the
 Console (Extensions → Console, Shift+F10) instead of stopping the script.
