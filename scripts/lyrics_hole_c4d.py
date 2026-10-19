@@ -3,12 +3,11 @@ BLACK HOLE STUDIOS — your lyrics spiral into a black hole, built by script, in
 
 Every line of LYRICS rides its own spiral arm toward the hole. The words enter
 at the rim one after another, nose to tail, speed up as they fall, stretch long
-and thin, and are swallowed at the horizon. The black hole is the same rig as
-blackhole_c4d.py: a black sphere, the spinning accretion disc and the lensed halo.
+and thin, and are swallowed at the horizon. The black hole is a black sphere, an accretion
+disc of glowing rings with hot spots that race round it, and glowing rings that
+always face the lens.
 
-WHAT YOU NEED: this script and the blackhole_tex folder (bh_disc.png,
-bh_halo.png). Keep the folder next to this script or next to your saved .c4d;
-if the script can't find it, it asks you to point at bh_disc.png.
+WHAT YOU NEED: this script. No images, no extra files.
 
 RUN
   1. File -> New (start from an empty scene).
@@ -30,9 +29,9 @@ IF IT CRASHES PART WAY: set START_FRAME below to the first missing frame, run
 the script again, and Shift+R. Finished frames are kept.
 
 HOW IT'S BUILT
-Same rules as the other rigs: the look of the hole is in two images made by
-scripts/blackhole_textures.py, and this script only builds shapes and moves them.
-  words     one null per word, holding the extruded text. The null does all
+  hole      plain shapes, lit from inside: a black sphere, flat rings from
+            white-hot to deep orange, and camera-facing rings round the rim.
+  words    one null per word, holding the extruded text. The null does all
             the moving: it follows the spiral, turns to point along it, and
             stretches along it. Every word is keyed over the whole loop.
   loop      each word's trip takes exactly one loop. It shrinks to a speck
@@ -48,10 +47,9 @@ Console instead of stopping the script.
 """
 
 import math
-import os
 
 import c4d
-from c4d import bitmaps, gui, storage, utils
+from c4d import bitmaps, gui, utils
 
 # ── CONFIG ─────────────────────────────────────────────────────────────────
 
@@ -61,12 +59,9 @@ LYRICS = [
     "Nothing here lets go",
     "Every word bends to you",
     "Time slows at the edge",
-    "Say it before it's gone",
-    "Where the silence lives",
 ]
 
 GROUP_NAME = "LYRICS_HOLE_RIG"       # re-running the script replaces this group
-TEX_FOLDER = "blackhole_tex"
 OUTPUT_PATH = "lyrics/lyrics_"       # relative to the saved .c4d
 
 MODE = "hero"                        # "hero", "phone" or "header"
@@ -76,25 +71,37 @@ FRAMES = 300                         # 10 s loop; the disc turns once per loop
 START_FRAME = 0                      # raise this to resume after a crash
 STEP = 4                             # frames between keys; FRAMES must divide by it
 
-# The hole. These match the textures: bh_disc.png's inner edge sits at 0.33 of
-# its half-width and bh_halo.png's dark edge at 0.5 of its. Change one, change
-# the other (scripts/blackhole_textures.py takes both as arguments).
+# The hole. The disc is DISC_RINGS flat rings from DISC_INNER to DISC_OUTER,
+# each with hot spots that orbit it (inner rings faster, whole turns per loop
+# so the loop closes). The rim rings always face the camera.
 HORIZON_RADIUS = 100.0
-DISC_OUTER = 460.0                   # half-width of the disc plane
-HALO_OUTER = 200.0                   # half-width of the halo plane = 2 x horizon
-DISC_TURNS = 1.0                     # disc rotations per loop
+DISC_INNER = 130.0
+DISC_OUTER = 460.0
+DISC_RINGS = 8
+DISC_FLAT = 0.07                     # ring thickness as a share of its width
+DISC_HOT = c4d.Vector(1.0, 0.95, 0.82)       # white-hot at the inner edge
+DISC_WARM = c4d.Vector(1.0, 0.52, 0.12)
+DISC_DEEP = c4d.Vector(0.42, 0.10, 0.03)     # dim at the outer edge
+SPOT = c4d.Vector(1.0, 0.98, 0.92)
+# Camera-facing rim: (radius as a multiple of the horizon, pipe radius, colour)
+RIM = [
+    (1.07, 4.5, c4d.Vector(1.0, 0.96, 0.86)),
+    (1.30, 9.0, c4d.Vector(1.0, 0.62, 0.20)),
+    (1.65, 14.0, c4d.Vector(0.55, 0.16, 0.05)),
+]
+HALO_OUTER = HORIZON_RADIUS * RIM[-1][0] + RIM[-1][1]
 
 # res; r_out the radius where words enter; text_h their letter height; spread
 # how far above and below the disc the arms start (they all end on it); dist,
 # view (degrees above the disc) and focal the camera; sway and push how far it
 # drifts (degrees, units) over a loop.
 SHOTS = {
-    "hero":   dict(res=(1920, 1080), r_out=500.0, text_h=60.0, spread=110.0,
-                   dist=1700.0, view=12.0, focal=34.0, sway=8.0, push=50.0),
-    "phone":  dict(res=(1080, 1920), r_out=480.0, text_h=66.0, spread=600.0,
-                   dist=1700.0, view=12.0, focal=40.0, sway=6.0, push=50.0),
-    "header": dict(res=(720, 720), r_out=330.0, text_h=34.0, spread=130.0,
-                   dist=1550.0, view=12.0, focal=50.0, sway=0.0, push=0.0),
+    "hero":   dict(res=(1920, 1080), r_out=560.0, text_h=100.0, spread=120.0,
+                   dist=2100.0, view=26.0, focal=34.0, sway=8.0, push=50.0),
+    "phone":  dict(res=(1080, 1920), r_out=480.0, text_h=100.0, spread=600.0,
+                   dist=1900.0, view=26.0, focal=40.0, sway=6.0, push=50.0),
+    "header": dict(res=(720, 720), r_out=330.0, text_h=42.0, spread=130.0,
+                   dist=1650.0, view=24.0, focal=50.0, sway=0.0, push=0.0),
 }
 
 # The fall. Progress p runs 0 (entering) to 1 (swallowed); radius and angle
@@ -103,10 +110,10 @@ TURNS = 1.5                          # turns round the hole between rim and hori
 SWIRL = 2.2                          # how much faster it turns near the hole
 FALL = 1.35                          # above 1: slow at the rim, fast at the hole
 END_RADIUS = 0.5                     # where a word ends, as a share of the horizon
-STRETCH = 2.0                        # extra length at the horizon, as a multiple
+STRETCH = 1.0                        # extra length at the horizon, as a multiple
 U_END = 0.9                          # share of the loop spent falling; the rest hidden
 FADE_IN = (0.015, 0.06)              # share of the loop over which a word grows in
-FADE_OUT = (0.9, 1.0)                # share of the fall over which a word is swallowed
+FADE_OUT = (0.6, 0.9)                # share of the fall over which a word is swallowed
 FACE = (0.1, 0.5)                    # a word shows once its front turns this far toward the lens
                                      # (cosine of its heading); on the far side it reads backwards, so it hides
 HIDDEN = 0.001                       # scale of a word that is out of sight
@@ -365,56 +372,12 @@ def bake_word(shot, line, word):
     return out
 
 
-# ── TEXTURES AND MATERIALS ─────────────────────────────────────────────────
-
-def find_textures(doc):
-    """The folder holding the hole's images: beside the script, beside the .c4d, or ask."""
-    places = []
-    script = globals().get("__file__")
-    if script:
-        places.append(os.path.join(os.path.dirname(script), TEX_FOLDER))
-    doc_dir = doc.GetDocumentPath()
-    if doc_dir:
-        places.append(os.path.join(doc_dir, TEX_FOLDER))
-        places.append(doc_dir)
-    for place in places:
-        if all(os.path.isfile(os.path.join(place, name)) for name in ("bh_disc.png", "bh_halo.png")):
-            return place
-    picked = storage.LoadDialog(type=c4d.FILESELECTTYPE_IMAGES,
-                                title="Where is bh_disc.png?")
-    if picked and os.path.isfile(picked):
-        return os.path.dirname(picked)
-    return None
-
+# ── MATERIALS ─────────────────────────────────────────────────
 
 def new_material(doc, name):
     mat = c4d.BaseMaterial(c4d.Mmaterial)
     mat.SetName(name)
     doc.InsertMaterial(mat)
-    return mat
-
-
-def image_material(doc, name, path):
-    """Emits the image's colour; the image's own alpha cuts the shape out."""
-    mat = new_material(doc, name)
-    put(mat, "MATERIAL_USE_COLOR", False)
-    put(mat, "MATERIAL_USE_REFLECTION", False)
-    put(mat, "MATERIAL_USE_LUMINANCE", True)
-
-    lum = c4d.BaseShader(c4d.Xbitmap)
-    put(lum, "BITMAPSHADER_FILENAME", path)
-    mat.InsertShader(lum)
-    put(mat, "MATERIAL_LUMINANCE_SHADER", lum)
-
-    alpha = c4d.BaseShader(c4d.Xbitmap)
-    put(alpha, "BITMAPSHADER_FILENAME", path)
-    mat.InsertShader(alpha)
-    put(mat, "MATERIAL_USE_ALPHA", True)
-    put(mat, "MATERIAL_ALPHA_SHADER", alpha)
-    put(mat, "MATERIAL_ALPHA_IMAGEALPHA", True, "Image Alpha")
-    put(mat, "MATERIAL_ALPHA_SOFT", True, "Soft")
-
-    mat.Update(True, True)
     return mat
 
 
@@ -467,17 +430,31 @@ def null(name, parent):
     return obj
 
 
-def image_plane(name, half, parent):
-    """A square plane lying in its own XY, so its parent alone aims it."""
-    plane = c4d.BaseObject(c4d.Oplane)
-    plane.SetName(name)
-    put(plane, "PRIM_PLANE_WIDTH", half * 2.0, "Width")
-    put(plane, "PRIM_PLANE_HEIGHT", half * 2.0, "Height")
-    put(plane, "PRIM_PLANE_SUBW", 1, "Width Segments")
-    put(plane, "PRIM_PLANE_SUBH", 1, "Height Segments")
-    put(plane, "PRIM_AXIS", const("PRIM_AXIS_ZP"), "Orientation")
-    plane.InsertUnder(parent)
-    return plane
+def torus(name, radius, pipe, parent, facing=False):
+    """A ring. Flat in XZ by default; facing=True stands it in its own XY so its
+    parent alone aims it."""
+    ring = c4d.BaseObject(c4d.Otorus)
+    ring.SetName(name)
+    put(ring, ("PRIM_TORUS_OUTERRAD", "PRIM_TORUS_OUTRAD"), radius, "Ring Radius")
+    put(ring, "PRIM_TORUS_INNERRAD", pipe, "Pipe Radius")
+    put(ring, ("PRIM_TORUS_CSUB", "PRIM_TORUS_SEG"), 128, "Ring Segments")
+    put(ring, ("PRIM_TORUS_SUB", "PRIM_TORUS_PSUB"), 16, "Pipe Segments")
+    put(ring, "PRIM_AXIS", const("PRIM_AXIS_ZP") if facing else const("PRIM_AXIS_YP"), "Orientation")
+    ring.InsertUnder(parent)
+    return ring
+
+
+def blob(name, radius, parent):
+    spot = c4d.BaseObject(c4d.Osphere)
+    spot.SetName(name)
+    spot[c4d.PRIM_SPHERE_RAD] = radius
+    put(spot, "PRIM_SPHERE_SUB", 24, "Segments")
+    spot.InsertUnder(parent)
+    return spot
+
+
+def mix(a, b, t):
+    return c4d.Vector(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t)
 
 
 _FONT = []
@@ -661,17 +638,16 @@ def animate_word(unit, baked):
     set_keys(unit, rot_id("h"), baked["h"])
 
 
-def build(doc, tex_dir):
+def build(doc):
     shot = SHOTS[MODE]
     root = c4d.BaseObject(c4d.Onull)
     root.SetName(GROUP_NAME)
     doc.InsertObject(root)
 
-    uvw = const("TEXTURETAG_PROJECTION_UVW")
     view = math.radians(shot["view"])
 
-    # Camera: low, just above the disc plane, aimed at the hole, one slow arc
-    # and one slow push per loop.
+    # Camera: just above the disc plane, aimed at the hole, one slow arc and
+    # one slow push per loop.
     orbit = null("Camera Orbit", root)
     cam = c4d.BaseObject(c4d.Ocamera)
     cam.SetName("Lyrics Camera")
@@ -695,26 +671,41 @@ def build(doc, tex_dir):
     if shot["push"]:
         set_keys(cam, pos_id("z"), cycle(-shot["dist"] * math.cos(view), shot["push"], 1, math.pi / 2.0))
 
-    # Disc: the plane is laid flat by its parent and only spins about its
-    # own axis, so it turns in place instead of wobbling.
-    plane = null("Disc Plane", root)
-    plane.SetRelRot(c4d.Vector(0, deg(90), 0))
-    disc = image_plane("Accretion Disc", DISC_OUTER, plane)
-    tag(disc, image_material(doc, "LYR_Disc", os.path.join(tex_dir, "bh_disc.png")), uvw)
+    # Disc: flat rings, white-hot inside to deep orange outside. Each ring has
+    # two hot spots on a null that turns in place; whole turns per loop, inner
+    # rings fastest, in the direction the words fall (they cross the front of
+    # the hole toward +X, which is a negative heading).
+    disc = null("Accretion Disc", root)
+    spot_mat = lit_material(doc, "LYR_Spot", SPOT)
+    width = (DISC_OUTER - DISC_INNER) / float(DISC_RINGS)
+    for k in range(DISC_RINGS):
+        t = k / float(DISC_RINGS - 1)
+        colour = mix(DISC_HOT, DISC_WARM, t * 2.0) if t < 0.5 else mix(DISC_WARM, DISC_DEEP, (t - 0.5) * 2.0)
+        radius = DISC_INNER + width * (k + 0.5)
+        pipe = width * 0.6
+        spin = null("Ring {} Spin".format(k + 1), disc)
+        ring = torus("Ring {}".format(k + 1), radius, pipe, spin)
+        ring.SetRelScale(c4d.Vector(1.0, DISC_FLAT, 1.0))
+        tag(ring, lit_material(doc, "LYR_Ring{}".format(k + 1), colour))
+        for j in range(2):
+            angle = math.radians(k * 47.0 + j * 180.0)
+            spot = blob("Hot Spot {}.{}".format(k + 1, j + 1), pipe * 0.8, spin)
+            spot.SetRelPos(c4d.Vector(radius * math.cos(angle), 0.0, radius * math.sin(angle)))
+            spot.SetRelScale(c4d.Vector(1.4, DISC_FLAT * 3.0, 1.0))
+            spot.SetRelRot(c4d.Vector(-angle - math.pi / 2.0, 0.0, 0.0))
+            tag(spot, spot_mat)
+        turns = max(1, int(round(4.0 - 3.0 * t)))
+        set_keys(spin, rot_id("h"), [(0, 0.0), (FRAMES, -deg(360.0 * turns))])
 
-    # Halo + photon ring: always square-on to the camera, whatever the angle.
+    # Rim: rings that stand square-on to the camera, whatever the angle. The
+    # first is the photon ring, hugging the horizon; the others fade outward.
     facing = null("Faces Camera", root)
     face = c4d.BaseTag(c4d.Ttargetexpression)
     face[c4d.TARGETEXPRESSIONTAG_LINK] = cam
     facing.InsertTag(face)
-    halo = image_plane("Lensed Halo", HALO_OUTER, facing)
-    tag(halo, image_material(doc, "LYR_Halo", os.path.join(tex_dir, "bh_halo.png")), uvw)
-
-    # One full turn per loop: frame FRAMES is frame 0 again. The disc turns the
-    # way the words fall; the halo runs the other way, it is the far side.
-    turn = deg(360.0 * DISC_TURNS)
-    set_keys(disc, rot_id("b"), [(0, 0.0), (FRAMES, turn)])
-    set_keys(halo, rot_id("b"), [(0, 0.0), (FRAMES, -turn)])
+    for k, (scale, pipe, colour) in enumerate(RIM):
+        rim = torus("Rim {}".format(k + 1), HORIZON_RADIUS * scale, pipe, facing, facing=True)
+        tag(rim, lit_material(doc, "LYR_Rim{}".format(k + 1), colour))
 
     # The words.
     plan = make_plan(shot)
@@ -801,16 +792,11 @@ def main():
         gui.MessageDialog("FRAMES must be a multiple of STEP ({}).".format(STEP))
         return
     doc = c4d.documents.GetActiveDocument()
-    tex_dir = find_textures(doc)
-    if not tex_dir:
-        gui.MessageDialog("Couldn't find bh_disc.png. Put the {} folder next to this "
-                          "script or your saved .c4d and run it again.".format(TEX_FOLDER))
-        return
 
     doc.StartUndo()
     try:
         clear_previous(doc)
-        root, cam = build(doc, tex_dir)
+        root, cam = build(doc)
         configure_document(doc, cam)
         undo_new = const("UNDOTYPE_NEWOBJ", "UNDOTYPE_NEW")
         if undo_new is not None:
@@ -823,7 +809,7 @@ def main():
     if fit >= 0.95:
         NOTES.append("The shot is tight: the scene reaches {:.0f}% of the frame. Lower r_out "
                      "or text_h in SHOTS.".format(fit * 100))
-    print("Lyrics hole built ({} shot, {} lines), textures from {}".format(MODE, len(LYRICS), tex_dir))
+    print("Lyrics hole built ({} shot, {} lines)".format(MODE, len(LYRICS)))
     print("  fit - the scene reaches {:.0f}% of the frame".format(fit * 100))
     for line in NOTES:
         print("  note - " + line)
