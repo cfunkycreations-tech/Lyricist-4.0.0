@@ -9,5 +9,6 @@ Run: Extensions -> Script Manager -> File -> Load Script -> Execute. Console: Sh
 | `follow_c4d.py` | Follow Spline particles spelling the title (Redshift scene) | this PR |
 | `molten_c4d.py` | Molten metal, MoGraph, Fields, Sound Effector, Substance | PR #78 |
 | `orbit_c4d.py`, `lyrics_hole_c4d.py` | Orbit camera, lyrics into the black hole | `claude/orbit-hole-c4d` |
+| `metaballs_c4d.py` | Liquid metaballs: 12 chrome droplets fuse and pour apart, looping | PR #82 |
 
-Still to build: every other Cinema 4D feature Chris wants used (Metaballs, Python Generator, more simulation scenes). Add new ones here.
+Still to build: every other Cinema 4D feature Chris wants used (Python Generator, more simulation scenes). Add new ones here.
