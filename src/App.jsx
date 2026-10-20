@@ -13,7 +13,6 @@ import Dictionary from './components/Dictionary/Dictionary.jsx';
 import Settings from './components/Settings/Settings.jsx';
 import HelpLayer from './components/common/HelpLayer.jsx';
 import OnboardingWizard from './components/Onboarding/OnboardingWizard.jsx';
-import RotatePrompt from './web/RotatePrompt.jsx';
 import GhostDemo from './components/Onboarding/GhostDemo.jsx';
 import { registerGhostAction, PILOT_ENABLED } from './services/ghostBus.js';
 import { record, installRecorder, setTabNames } from './services/ghostRecorder.js';
@@ -386,11 +385,6 @@ function MainLayout() {
           onWizard={WIZARD_ENABLED ? () => setShowWizard(true) : null}
         />
       )}
-
-      {/* iPhone cannot be told to rotate — Apple has never supported orientation
-          locking — so on a portrait phone where the lock was refused, we ask.
-          Renders on nothing else: not Android, not desktop, not Electron. */}
-      <RotatePrompt />
 
       {/* App-wide hover-help engine: hovering any element with data-help shows a bubble. */}
       <HelpLayer />

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
  * "PUT IT ON YOUR HOME SCREEN", for the phone build.
  *
  * Opened in a browser tab the app is a web page: the address bar eats a fifth
- * of a landscape screen, it does not lock sideways, and it is one swipe away
+ * of a phone screen, and it is one swipe away
  * from being closed. Installed, it opens full screen from its own icon. PHONE.md
  * tells buyers how, but nobody reads that on a phone, so the launcher says it.
  *
