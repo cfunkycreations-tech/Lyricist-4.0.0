@@ -16,6 +16,7 @@ import LandscapeSplash from './web/LandscapeSplash.jsx';
 import NetStatus from './web/NetStatus.jsx';
 import DesktopUpdate from './web/DesktopUpdate.jsx';
 import PurchaseLock from './web/PurchaseLock.jsx';
+import PhoneInvite from './web/PhoneInvite.jsx';
 import DialogHost from './components/common/DialogHost.jsx';
 import { initAnalytics, track } from './services/analytics.js';
 import { APP_VERSION, BUILD_NUMBER } from './buildInfo.js';
@@ -91,6 +92,8 @@ try {
             straight through in the desktop app and on the dev server. */}
         <PurchaseLock>
           <App />
+          {/* Desktop only: how to put it on the phone, first thing, once. */}
+          <PhoneInvite />
         </PurchaseLock>
         {/* In-app alert / confirm / prompt (services/dialog.js). */}
         <DialogHost />
