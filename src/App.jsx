@@ -58,7 +58,8 @@ import GhostPilotLayer from './components/Ghost/GhostPilotLayer.jsx';
 import PushHeader from './components/PushHeader/PushHeader.jsx';
 import BrandBanner from './components/BrandBanner/BrandBanner.jsx';
 import { track, isEnabled as analyticsEnabled } from './services/analytics.js';
-import { Compass, Ghost, Play, Lightbulb, KeyRound, Lock } from 'lucide-react';
+import { Compass, Ghost, Play, Lightbulb, KeyRound, Lock, Smartphone } from 'lucide-react';
+import { OPEN_EVENT as PHONE_INVITE_EVENT } from './web/PhoneInvite.jsx';
 import { hasWritingAI } from './services/customAI.js';
 // The still header art (profile.jpg, logo.jpg, header-medallion / -signature /
 // -chris / -wordmark .png) is no longer imported here. The header became the
@@ -570,6 +571,31 @@ function MainLayout() {
               >
                 <span><Play size={18} strokeWidth={1.6} /></span>
                 Play Demo
+              </button>
+            )}
+
+            {/* Desktop app only: reopens the "put it on your phone" screen */}
+            {typeof window !== 'undefined' && window.lyricistAPI && (
+              <button
+                onClick={() => window.dispatchEvent(new Event(PHONE_INVITE_EVENT))}
+                data-help="Shows how to put Lyricist Pro on your phone: a QR code, the link, and the steps for Android and iPhone. Your purchase includes the phone version."
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  padding: '4px 12px',
+                  borderRadius: 9999,
+                  cursor: 'pointer',
+                  background: 'linear-gradient(135deg, rgba(255,138,61,0.22), rgba(255,138,61,0.1))',
+                  color: '#FFF4E2',
+                  border: '1px solid rgba(255,138,61,0.6)',
+                  transition: 'all 0.15s'
+                }}
+              >
+                <span><Smartphone size={18} strokeWidth={1.6} /></span>
+                Phone
               </button>
             )}
 
