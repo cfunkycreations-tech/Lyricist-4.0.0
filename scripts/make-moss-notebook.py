@@ -16,7 +16,7 @@ Makes pictures with **MOSS-Image** on Kaggle's GPUs. Your PC only types the prom
 3. Press **Run All**. The first run downloads about 11 GB (7.3 GB of that is the text reader).
 4. Pictures show up below and sit in the **Output** tab on the right. Download them to your PC.
 
-It uses the smallest community model (4-bit GGUF) and paints on both T4 cards at once, two pictures at a time. If that fails it falls back to the official files by itself.
+It uses the smallest community model (4-bit GGUF) and paints on both T4 cards at once, two pictures at a time. If that fails it tries the official files by itself. Every option reads your prompt with the same 7.3 GB text reader.
 A T4 is a slow card: expect minutes per picture, not seconds.
 
 Want ComfyUI itself, in your PC's browser, running on Kaggle's GPU? Set `TUNNEL = True` in the box and Run All.
@@ -105,8 +105,9 @@ MODELS = COMFY + "/models"
 WORKING = "/kaggle/working"
 OFFICIAL = "Comfy-Org/MOSS-Image"
 VARIANT = VARIANT.lower().strip()
-GGUF_REPOS = ["realrebelai/MOSS-Image_GGUFs",
-              "axiomofmind/Moss-Image-SFT-GGUF" if VARIANT == "sft" else "axiomofmind/Moss-Image-base-GGUF"]
+def gguf_repos(variant):
+    return ["realrebelai/MOSS-Image_GGUFs",
+            "axiomofmind/Moss-Image-SFT-GGUF" if variant == "sft" else "axiomofmind/Moss-Image-base-GGUF"]
 
 if not HF_TOKEN:
     try:
@@ -137,36 +138,45 @@ def pick(folder, *words, exact=None):
 
 TE = pick("text_encoders", "w4a8", exact="qwen3.5_9b_w4a8_gptq.safetensors") or pick("text_encoders", "qwen3.5_9b")
 VAE = pick("vae", "flux2-vae_small", exact="flux2-vae_small.safetensors") or pick("vae", "flux2-vae")
+ALT_TE = next((f for f in sorted(OFF, key=len) if f.startswith("text_encoders/") and f.endswith(".safetensors") and f != TE), None)
 if not (TE and VAE):
     raise SystemExit("Could not find the text reader or VAE in " + OFFICIAL + ". Files:\n" + "\n".join(OFF))
 
 def squash(t):
     return re.sub(r"[^a-z0-9]", "", t.lower())
 
-def find_gguf():
-    want = squash(QUANT)
+def find_gguf(variant, quant):
+    want = squash(quant)
     seen = []
-    for repo in GGUF_REPOS:
+    for repo in gguf_repos(variant):
         names = [f for f in repo_files(repo) if f.lower().endswith(".gguf")]
         seen += [f"{repo}/{f}" for f in names]
-        hits = [f for f in names if (VARIANT in f.lower() or VARIANT in repo.lower()) and want in squash(os.path.basename(f))]
+        hits = [f for f in names if (variant in f.lower() or variant in repo.lower()) and want in squash(os.path.basename(f))]
         if hits:
             return repo, sorted(hits, key=len)[0]
-    print(f"No {VARIANT} {QUANT} GGUF found. Community files seen:")
+    print(f"No {variant} {quant} GGUF found. Community files seen:")
     print("\n".join("  " + f for f in seen) or "  (none)")
     return None
 
 def plan():
     modes = []
     if QUANT.lower() != "official":
-        g = find_gguf()
-        if g:
-            modes.append({"name": f"{VARIANT} {QUANT} (community GGUF)", "kind": "rebel", "repo": g[0], "unet": g[1]})
+        tries = [(VARIANT, QUANT)]
+        if VARIANT == "sft":
+            tries.append(("base", "Q4_K_S"))   # the one setup the loader's author tested end to end
+        for v, q in tries:
+            g = find_gguf(v, q)
+            if g:
+                modes.append({"name": f"{v} {q} (community GGUF)", "kind": "rebel", "repo": g[0], "unet": g[1]})
     for q in ["int8", "bf16"]:
         u = pick("diffusion_models", f"moss_image_{VARIANT}_", q,
                  exact=f"moss_image_{VARIANT}_{'int8_convrot' if q == 'int8' else 'bf16'}.safetensors")
         if u:
             modes.append({"name": f"{VARIANT} {q} (official)", "kind": "native", "repo": OFFICIAL, "unet": u})
+    if ALT_TE and modes:
+        last = dict(modes[0], te=ALT_TE)
+        last["name"] += f" with text reader {os.path.basename(ALT_TE)}"
+        modes.append(last)
     return modes
 
 def fetch(repo, path, into):
@@ -195,9 +205,13 @@ def stop_servers(keep=0):
 def spawn(gpu):
     port = 8188 + gpu
     log = f"/kaggle/temp/comfy{gpu}.log"
+    own = f"/kaggle/temp/gpu{gpu}"
+    for d in ("temp", "user"):
+        os.makedirs(f"{own}/{d}", exist_ok=True)
     proc = subprocess.Popen(
         [sys.executable, "main.py", "--listen", "127.0.0.1", "--port", str(port),
-         "--output-directory", WORKING, "--disable-auto-launch"],
+         "--output-directory", WORKING, "--temp-directory", f"{own}/temp", "--user-directory", f"{own}/user",
+         "--database-url", f"sqlite:///{own}/comfy.db", "--disable-auto-launch"],
         cwd=COMFY, env=dict(os.environ, CUDA_VISIBLE_DEVICES=str(gpu)),
         stdout=open(log, "w"), stderr=subprocess.STDOUT)
     SERVERS.append({"gpu": gpu, "api": f"http://127.0.0.1:{port}", "proc": proc, "log": log})
@@ -234,7 +248,8 @@ def check_nodes(s, mode):
         raise RuntimeError(f"ComfyUI is missing {gone}. " + " | ".join(bad[-4:]))
 
 def pick_label(s, node, field, path):
-    options = call(s, "/object_info/" + node)[node]["input"]["required"][field][0]
+    spec = call(s, "/object_info/" + node)[node]["input"]["required"][field]
+    options = spec[1]["options"] if spec[0] == "COMBO" else spec[0]
     base = os.path.basename(path)
     for o in options:
         if o == path or o == base or o.endswith("/" + base):
@@ -242,12 +257,13 @@ def pick_label(s, node, field, path):
     raise RuntimeError(f"{base} is not in the {node} list: {options[:5]}")
 
 def get_labels(s, mode):
+    te = mode.get("te", TE)
     if mode["kind"] == "rebel":
         return {"unet": pick_label(s, "RebelMossGGUFV4", "gguf", mode["unet"]),
-                "te": pick_label(s, "RebelMossEncoderV4", "encoder", TE),
+                "te": pick_label(s, "RebelMossEncoderV4", "encoder", te),
                 "vae": pick_label(s, "RebelMossVAEV4", "vae", VAE)}
     return {"unet": pick_label(s, "UNETLoader", "unet_name", mode["unet"]),
-            "te": pick_label(s, "CLIPLoader", "clip_name", TE),
+            "te": pick_label(s, "CLIPLoader", "clip_name", te),
             "vae": pick_label(s, "VAELoader", "vae_name", VAE)}
 
 # ---------- the two ComfyUI recipes ----------
@@ -316,7 +332,7 @@ def worker(s, mode, L, todo, made):
         try:
             wait_ready(s)
         except Exception:
-            print(f"GPU {s['gpu']} would not start. GPU 0 carries on.")
+            print(f"GPU {s['gpu']} would not start, so this run uses ONE card (slower). Log:\n{tail(s, 12)}")
             return
     while True:
         with LOCK:
@@ -348,7 +364,7 @@ for mode in modes:
     made, todo = [], list(seeds)
     try:
         fetch(mode["repo"], mode["unet"], MODELS + "/diffusion_models" if mode["kind"] == "rebel" else MODELS)
-        fetch(OFFICIAL, TE, MODELS)
+        fetch(OFFICIAL, mode.get("te", TE), MODELS)
         fetch(OFFICIAL, VAE, MODELS)
         stop_servers()
         for gpu in range(max(1, min(N_GPU, len(seeds)))):
