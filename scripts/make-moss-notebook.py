@@ -37,7 +37,7 @@ STEPS = 25                   # 50 = slower, a little cleaner
 CFG = 2.5                    # 3 = follows the prompt a little harder
 
 VARIANT = "sft"              # "sft" = sharper text and layout. "base" = plain base model
-QUANT = "auto"               # "auto" tries the small int8 model, then bf16 if that fails
+QUANT = "auto"               # "auto" tries the small int8 model, then bf16 (slow on a T4) if that fails
 TUNNEL = False               # True = open ComfyUI in your PC browser (stays on until you press Stop)
 HF_TOKEN = ""                # optional Hugging Face token
 ''')
@@ -239,7 +239,7 @@ md(r'''
 
 Only runs when `TUNNEL = True`. Prints a link. Open it on your PC and you are in ComfyUI, drawing on Kaggle's GPU.
 In ComfyUI open **Templates** and pick **MOSS-Image** for the ready-made workflow. Everything you make lands in the **Output** tab here.
-It uses a Cloudflare quick tunnel, so keep this tab open while you work and press **Stop** on the cell when you are done.
+It uses a Cloudflare quick tunnel, so keep this tab open while you work and press **Stop** on the cell when you are done. Kaggle's rules on tunnels are unclear, so Run All and download from **Output** is the safe route.
 ''')
 code(r'''
 if not TUNNEL:
