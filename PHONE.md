@@ -65,7 +65,7 @@ and Scratchpad all work on the phone.
 - In the installed app, every Download button opens the share sheet: Save to Files, AirDrop, Messages.
 - Recordings work in the iPhone's own format.
 - The big MIDI soundfont is split so the free host takes it, then put back together on the phone.
-- Holding the phone upright asks you to turn it sideways, with a "Use it anyway" button.
+- The phone works upright (9:16) or sideways. It follows how you hold it.
 
 ## Tap test on a real iPhone (5 minutes)
 

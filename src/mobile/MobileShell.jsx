@@ -520,7 +520,7 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
 
       {openId && WIDE.has(openId) && !wideHintOff && (
         <div className="mob-wide-hint" role="note">
-          <span>Turn your phone sideways for the whole grid.</span>
+          <span>Turn your phone sideways for more room.</span>
           <button onClick={() => setWideHintOff(true)} aria-label="Hide this">
             <X size={14} strokeWidth={2} aria-hidden="true" />
           </button>

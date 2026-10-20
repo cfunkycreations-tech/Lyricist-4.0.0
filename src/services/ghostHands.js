@@ -348,6 +348,7 @@ const BEFORE = {
   ghostrider_send_to_songwriter: [{ point: '[data-demo="gr-send"]' }],
   ghostrider_save_song: [{ point: '[data-demo="gr-save-song"]' }],
   ghostrider_send_dna_to_matrix: [{ label: 'send to matrix' }],
+  ghostrider_send_words_to_matrix: [{ point: '[data-demo="gr-matrix-words"] button' }],
 
   songforge_forge: [{ point: '[data-demo="sf-forge"]' }],
   songforge_surprise: [{ label: 'surprise me' }],

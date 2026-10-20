@@ -365,6 +365,9 @@ ACTION NOTES:
       ghostrider_save_song {} saves the song and its Suno tags as a .txt in
         Documents\\Lyricist Style Reports (the Save Song & Tags button).
       ghostrider_send_dna_to_matrix {} sends the artist's Style DNA to The Matrix.
+      ghostrider_send_words_to_matrix {} sends the 20 words written with the Suno
+        tags (drawn from the report, not random) into The Matrix's 20 tiles.
+        Write in the style first.
       No artist named? Leave "artist" out and it picks one itself. NEVER ask.
     Song Forge (tab "songforge"):
       songforge_forge {"topic":"..."} writes a whole song and paints its cover art.

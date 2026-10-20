@@ -100,7 +100,7 @@ export default function PhoneInvite() {
 
         <p className="pinv-note">
           It asks for your purchase code once. It is the same code as on your computer, in your Gumroad receipt.
-          Add your OpenRouter key again in Settings on the phone. Hold the phone sideways.
+          Add your OpenRouter key again in Settings on the phone. Hold the phone either way.
         </p>
 
         <button type="button" className="pinv-go" onClick={close}>Got it</button>

@@ -12,7 +12,6 @@ import { startWheelControls } from './services/wheelControls.js';
 import { registerPWA } from './web/registerPWA.js';
 import { installPhoneAudio } from './web/iosAudio.js';
 import { installPhoneSave } from './web/iosSave.js';
-import LandscapeSplash from './web/LandscapeSplash.jsx';
 import NetStatus from './web/NetStatus.jsx';
 import DesktopUpdate from './web/DesktopUpdate.jsx';
 import PurchaseLock from './web/PurchaseLock.jsx';
@@ -85,9 +84,6 @@ try {
   ReactDOM.createRoot(rootEl).render(
     <React.StrictMode>
       <BootErrorBoundary>
-        {/* Web only. Turns the phone sideways and locks it, then gets out of
-            the way. Renders nothing inside the desktop app. */}
-        <LandscapeSplash />
         {/* Phone build: asks for the Gumroad purchase code once. Passes
             straight through in the desktop app and on the dev server. */}
         <PurchaseLock>
