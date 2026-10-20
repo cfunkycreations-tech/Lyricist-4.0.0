@@ -16,6 +16,7 @@ import {
   buildNeuralConstraints,
   checkContracts,
   readStylePressure,
+  takeMatrixWords,
   QUANTUM_SECTIONS,
 } from './quantumFeatures.js';
 import { registerDemoSnapshot } from '../../services/demoSafety.js';
@@ -356,8 +357,8 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   }, [cells]);
 
   // ---- actions ----
-  const loadKeywords = useCallback(() => {
-    const raw = keywordDraft.trim();
+  const loadFromRaw = useCallback((text, lead = 'Your grid.') => {
+    const raw = String(text || '').trim();
     if (!raw) {
       setStatus({
         lead: 'Type something first.',
@@ -376,10 +377,28 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     const count = raw.split(/[,\n|;]+/).map((t) => t.trim()).filter(Boolean).length
       || raw.split(/\s+/).filter(Boolean).length;
     setStatus({
-      lead: 'Your grid.',
+      lead,
       rest: ` Loaded your keywords into the grid (${count} token${count === 1 ? '' : 's'} — cycles to fill 20 tiles). These stay YOUR words. Now: Spotlight, Run 12 gens, Crystallize, Generate Neural Lyrics.`,
     });
-  }, [keywordDraft]);
+  }, []);
+  const loadKeywords = useCallback(() => loadFromRaw(keywordDraft), [keywordDraft, loadFromRaw]);
+
+  // Ghost Rider's twenty words: drawn from the artist's analysis, they fill the
+  // keyword box and the grid. Sent while this tab was still closed? They were
+  // kept, and are taken once, here, on first open.
+  useEffect(() => {
+    const land = (words, artist) => {
+      if (!words?.length) return;
+      const raw = words.join(', ');
+      setKeywordDraft(raw);
+      loadFromRaw(raw, `${artist || 'Ghost Rider'}'s ${words.length} words.`);
+    };
+    const waiting = takeMatrixWords();
+    if (waiting) land(waiting.words, waiting.artist);
+    const onWords = (e) => { const w = takeMatrixWords(); land(w?.words || e.detail?.words, w?.artist || e.detail?.artist); };
+    window.addEventListener('lyricist:matrix-words', onWords);
+    return () => window.removeEventListener('lyricist:matrix-words', onWords);
+  }, [loadFromRaw]);
 
   const applyCellEdit = useCallback(() => {
     if (!selectedId) return;

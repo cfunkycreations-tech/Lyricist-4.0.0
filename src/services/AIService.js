@@ -2,7 +2,7 @@
 // Enforces: Law of Subtext, Law of Human Paradox, Conversational Cadence
 
 import { cleanRefineOutput } from '../utils/refineClean.js';
-import { NO_CLICHES } from './cliches.js';
+import { NO_CLICHES, clicheFree } from './cliches.js';
 import { inspectGenerated, truncateAtCollapse } from '../utils/lyricSanity.js';
 import { stripReasoning, isMostlyReasoning } from '../utils/stripReasoning.js';
 import { blendPhrase } from '../utils/blend.js';
@@ -976,9 +976,12 @@ function parseBridgeVariations(text) {
  * @param {string} artist - Artist whose style to imitate.
  * @param {string} topic - What the song is about; blank lets the model choose.
  * @param {Object} store - LyricStore, for the API key and model config.
- * @returns {Promise<{lyrics: string, sunoTags: string}>}
+ * @param {{report?: string, kind?: string, motifs?: string[]}} [analysis] - What
+ *   Ghost Rider has learned about the artist (the report on screen, which kind
+ *   it is, the Style DNA image clusters). The twenty Matrix words come from it.
+ * @returns {Promise<{lyrics: string, sunoTags: string, matrixWords: string[]}>}
  */
-export async function writeInArtistStyle(artist, topic, store) {
+export async function writeInArtistStyle(artist, topic, store, analysis = {}) {
   assertApiKey(store?.config);
   const name = String(artist || '').trim();
   if (!name) throw new Error('Name an artist first.');
@@ -1001,7 +1004,7 @@ Match their rhyme schemes, vocabulary, and flow. Do NOT mention the artist's nam
 
 After the lyrics, on a new line write exactly this separator and nothing else:
 ---SUNO TAGS---
-Then on the very next line write 10-14 comma-separated Suno AI style keywords. STRICT RULES for the tags: NO artist names, NO real person names, NO celebrity names whatsoever. Only include: genre, subgenre, production style, mood, tempo, instruments, vocal style, era. One line only.`;
+Then on the very next line write 10-14 comma-separated Suno AI style keywords. STRICT RULES for the tags: NO artist names, NO real person names, NO celebrity names whatsoever. Only include: genre, subgenre, production style, mood, tempo, instruments, vocal style, era. One line only.${matrixWordsPrompt(analysis)}`;
 
   const system = 'You are an elite ghostwriter who captures the raw, authentic artistic voice, flow, cadence, vocabulary, and stylistic nuances of specific musical artists. You despise generic AI-sounding imitations. Focus on subtext, friction, and rhythm.\n' + NO_CLICHES;
   // A whole song with every chorus written out needs the room.
@@ -1012,6 +1015,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
   ], store.config, null, room);
 
   const parts = String(rawResult).split('---SUNO TAGS---');
+  const [tagBlock = '', wordBlock = ''] = (parts[1] || '').split('---MATRIX WORDS---');
   let lyrics = labelSections(parts[0]?.trim() || '', 'Verse 1');
 
   // Still short? One more pass: keep what is there, write what is missing.
@@ -1027,13 +1031,60 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
 
   // Strip the artist's name out of the tags even if the model ignored the rule.
   const artistClean = name.toLowerCase();
-  const sunoTags = (parts[1]?.trim().split('\n')[0] || '')
+  const sunoTags = (tagBlock.trim().split('\n')[0] || '')
     .split(',')
     .map(t => t.trim())
     .filter(t => t.length > 2 && t.toLowerCase() !== artistClean && !t.toLowerCase().includes(artistClean))
     .join(', ');
 
-  return { lyrics, sunoTags };
+  return { lyrics, sunoTags, matrixWords: cleanMatrixWords(wordBlock, name, analysis) };
+}
+
+/** Number of words Ghost Rider hands The Matrix: one per tile. */
+export const MATRIX_WORD_COUNT = 20;
+
+/**
+ * The twenty Matrix words ride on the song's own request, no extra call. They
+ * are not random: every one comes out of the analysis Ghost Rider already did
+ * (Full, Lyrical Style, Flow & Cadence or Common Themes), so The Matrix grid
+ * starts from the artist's own material.
+ */
+function matrixWordsPrompt({ report = '', kind = '', motifs = [] } = {}) {
+  const text = String(report || '').trim().slice(0, 3500);
+  const source = text
+    ? `the ${kind ? `${kind} analysis` : 'analysis'} below`
+    : (motifs.length ? 'the image motifs below' : 'this artist and this topic');
+  const material = text
+    ? `\n\nANALYSIS:\n${text}`
+    : (motifs.length ? `\n\nMOTIFS: ${motifs.join(', ')}` : '');
+  return `
+
+After the tags, on a new line write exactly this separator and nothing else:
+---MATRIX WORDS---
+Then on the very next line write ${MATRIX_WORD_COUNT + 4} comma-separated words or short phrases (1-3 words each) pulled from ${source}: its themes, images, objects, places, vocabulary and flow terms. They seed a word grid for writing, so make them concrete and varied, not random. NO artist names, NO real person names. One line only.${material}`;
+}
+
+/** Split, de-banned, de-named, de-duplicated, trimmed to one per tile. */
+function cleanMatrixWords(block, artistName, { motifs = [] } = {}) {
+  const artistLc = String(artistName || '').toLowerCase();
+  const seen = new Set();
+  const words = clicheFree(
+    String(block || '').trim().split('\n')[0].split(',')
+      .map((w) => w.replace(/^["'\s]+|["'.\s]+$/g, ''))
+      .filter((w) => w.length > 1 && w.length < 40 && !w.toLowerCase().includes(artistLc))
+  ).filter((w) => {
+    const k = w.toLowerCase();
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  // Short list: top up from the Style DNA image clusters rather than send fewer.
+  for (const m of clicheFree(motifs)) {
+    if (words.length >= MATRIX_WORD_COUNT) break;
+    const k = String(m).toLowerCase().trim();
+    if (k && !seen.has(k) && !k.includes(artistLc)) { seen.add(k); words.push(String(m).trim()); }
+  }
+  return words.slice(0, MATRIX_WORD_COUNT);
 }
 
 const FULL_SONG_SHAPE = `It must be a whole song, never a sketch. Label every section in square brackets, in this order:
