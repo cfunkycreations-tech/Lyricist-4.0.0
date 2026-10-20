@@ -1,15 +1,14 @@
 """
 BLACK HOLE STUDIOS — the 18 tools orbit the studio, built by script, in Cinema 4D.
 
-The studio name stands in the middle and pulses. The other 18 tab names ride a
-slow helix around it. A MoGraph Cloner places them, a Plain effector with a
-spherical Field sends a lift travelling through them, and a Sound Effector is
-ready for music. Every name turns against the spin, so each one keeps facing
-the camera the whole way round.
+The studio name stands in the middle and pulses, inside a black hole ringed
+with glowing orange-white light. The other 18 tab names ride a staggered helix
+round it: neighbours sit several rows apart, so no two crowd each other. A
+MoGraph Cloner places them, a Plain effector with a spherical Field sends a lift
+travelling through them, and a Sound Effector is ready for music. Every name
+turns against the spin, so each one keeps facing the camera the whole way round.
 
-WHAT YOU NEED: this script and the orbit_tex folder (orbit_env.jpg). Keep the
-folder next to this script or next to your saved .c4d; if the script can't
-find it, it asks you to pick orbit_env.jpg.
+WHAT YOU NEED: this script. No images, no extra folders.
 
 RUN
   1. File -> New (start from an empty scene).
@@ -23,7 +22,8 @@ SHOTS  (MODE below)
   "header"  720x720, for the tab header.
 All three loop: the last frame leads straight back into the first. The Console
 (Extensions -> Console, Shift+F10) prints how close the names come to the edge
-of each shot; keep that under 95% if you change SHOTS.
+of each shot and whether any two names overlap; keep the first under 95% and the
+second at 0 if you change SHOTS.
 
 SOUND  The Sound Effector does nothing until it has audio. Select it in the
 Object Manager, load a sound in the Attribute Manager, and trim the sound to
@@ -33,18 +33,20 @@ IF IT CRASHES PART WAY: set START_FRAME below to the first missing frame, run
 the script again, and Shift+R. Finished frames are kept.
 
 HOW IT'S BUILT
-Same rules as the other rigs: the look is in an image made by
-scripts/orbit_textures.py, and this script only builds shapes and moves them.
-  ring      one null per name, stacked up a helix and holding the extruded
-            text. The Cloner takes the nulls as its children and spreads them
-            round a circle. Each null counter-rotates (0 to -360 degrees while
-            the ring turns 0 to +360), which is what keeps the text upright.
+Shapes, flat glowing colours and motion only: no image files anywhere.
+  ring      one null per name, set on a staggered helix and holding the
+            extruded text. The Cloner takes the nulls as its children and
+            spreads them round a circle. Each null counter-rotates (0 to -360
+            degrees while the ring turns 0 to +360), which keeps the text upright.
   motion    Plain effector + spherical Field ("Orbit Field", sweeping up and
             down the helix) and a Sound Effector, both on the Cloner.
   core      the studio name, centred, with a slow pulse and bob.
+  hole      a black disc behind the core, always square to the camera, ringed
+            by glowing orange-white rims. A flat disc of glowing rings turns
+            round it, with bright spots riding each ring.
   rails     two thin rings marking the top and bottom of the helix.
-  look      near-black body, a violet and amber reflection image, a soft glow
-            so names never go dark, and fog that fades the far side.
+  look      black space, names that light themselves so they never go dark,
+            and fog that fades the far side.
 Substance: drag any .sbsar from the Content Browser onto a name for extra
 surface detail. None ship with this script.
 Standard renderer and Standard materials only (the renderer is set here).
@@ -59,10 +61,9 @@ Console instead of stopping the script.
 """
 
 import math
-import os
 
 import c4d
-from c4d import bitmaps, gui, storage, utils
+from c4d import bitmaps, gui, utils
 
 # ── CONFIG ─────────────────────────────────────────────────────────────────
 
@@ -77,7 +78,6 @@ CORE = "BLACK HOLE\nSTUDIOS"
 
 GROUP_NAME = "ORBIT_RIG"             # re-running the script replaces this group
 FOG_NAME = "ORBIT_FOG"
-TEX_FOLDER = "orbit_tex"
 OUTPUT_PATH = "orbit/orbit_"         # relative to the saved .c4d
 
 MODE = "hero"                        # "hero", "phone" or "header"
@@ -87,18 +87,19 @@ FRAMES = 240                         # 8 s loop; keep it a multiple of 4
 START_FRAME = 0                      # raise this to resume after a crash
 
 # res; ring_r the circle the names ride; label_h their letter height; rise the
-# height of the helix; lift and sound how far the effectors push a name up;
+# height of the helix; stagger how many rows apart neighbours sit (coprime to 18:
+# 1, 5, 7, 11, 13 or 17); lift and sound how far the effectors push a name up;
 # dist, cam_y, look_y the camera; core_h the letter height of the centre.
 SHOTS = {
-    "hero":   dict(res=(1920, 1080), ring_r=1000.0, label_h=60.0, rise=300.0,
-                   lift=80.0, sound=60.0, dist=3100.0, cam_y=1100.0, look_y=0.0,
-                   core_h=110.0),
+    "hero":   dict(res=(1920, 1080), ring_r=1000.0, label_h=90.0, rise=600.0,
+                   stagger=7, lift=80.0, sound=60.0, dist=3100.0, cam_y=1500.0,
+                   look_y=0.0, core_h=110.0),
     "phone":  dict(res=(1080, 1920), ring_r=600.0, label_h=44.0, rise=1700.0,
-                   lift=40.0, sound=30.0, dist=2400.0, cam_y=800.0, look_y=0.0,
-                   core_h=90.0),
+                   stagger=7, lift=40.0, sound=30.0, dist=2400.0, cam_y=800.0,
+                   look_y=0.0, core_h=90.0),
     "header": dict(res=(720, 720), ring_r=700.0, label_h=48.0, rise=700.0,
-                   lift=50.0, sound=30.0, dist=2600.0, cam_y=900.0, look_y=0.0,
-                   core_h=80.0),
+                   stagger=7, lift=50.0, sound=30.0, dist=2600.0, cam_y=900.0,
+                   look_y=0.0, core_h=80.0),
 }
 FOCAL = 36.0
 LABEL_DEPTH = 0.22                   # extrusion, as a share of letter height
@@ -107,8 +108,9 @@ RAIL_TUBE = 0.08                     # rail thickness, as a share of label heigh
 CHAR_W = 0.62                        # label width per letter, as a share of its height
 RAIL_OUT = 1.05                      # rail radius, as a multiple of the ring radius
 REACH = 1.35                         # room kept round a label for font width and depth
+OVERLAP_PAD = 1.08                   # names closer than this much extra count as touching
 
-FOG_COLOUR = c4d.Vector(0.02, 0.012, 0.05)
+FOG_COLOUR = c4d.Vector(0.004, 0.003, 0.012)
 FOG_PER_DIST = 3.5                   # fog distance, as a multiple of the camera distance
 
 # Bold fonts to try, in order. Bahnschrift ships with Windows 10 and 11.
@@ -121,6 +123,23 @@ LABEL_BASE = c4d.Vector(0.86, 0.88, 1.0)
 LABEL_GLOW = c4d.Vector(0.80, 0.84, 1.0)
 RAIL_BASE = c4d.Vector(0.14, 0.08, 0.3)
 RAIL_GLOW = c4d.Vector(0.46, 0.28, 1.0)
+
+HOLE_K = 0.4                         # black hole radius, as a share of the ring radius
+DISC_INNER = 1.3                     # inner edge of the glowing disc, as a multiple of the hole radius
+DISC_OUTER = 0.85                    # outer edge, as a share of the ring radius
+DISC_RINGS = 8
+DISC_FLAT = 0.07                     # ring thickness, as a share of its width
+DISC_HOT = c4d.Vector(1.0, 0.95, 0.82)       # white-hot at the inner edge
+DISC_WARM = c4d.Vector(1.0, 0.52, 0.12)
+DISC_DEEP = c4d.Vector(0.42, 0.10, 0.03)     # dim at the outer edge
+SPOT = c4d.Vector(1.0, 0.98, 0.92)
+# The rims stand square to the camera: (radius as a multiple of the hole's,
+# tube as a share of the hole's radius, colour). The first hugs the hole's edge.
+RIM = [
+    (1.07, 0.045, c4d.Vector(1.0, 0.96, 0.86)),
+    (1.30, 0.09, c4d.Vector(1.0, 0.62, 0.20)),
+    (1.65, 0.14, c4d.Vector(0.55, 0.16, 0.05)),
+]
 
 
 # ── SAFE SETTERS ───────────────────────────────────────────────────────────
@@ -252,33 +271,6 @@ def cycle(mid, amp, cycles, phase=0.0, step=4):
 # ── MATERIALS ──────────────────────────────────────────────────────────────
 
 
-def find_textures(doc):
-    """The folder holding the env image: beside the script, beside the .c4d, or ask."""
-    places = []
-    script = globals().get("__file__")
-    if script:
-        places.append(os.path.join(os.path.dirname(script), TEX_FOLDER))
-    doc_dir = doc.GetDocumentPath()
-    if doc_dir:
-        places.append(os.path.join(doc_dir, TEX_FOLDER))
-        places.append(doc_dir)
-    for place in places:
-        if os.path.isfile(os.path.join(place, env_name())):
-            return place
-    picked = storage.LoadDialog(type=c4d.FILESELECTTYPE_IMAGES,
-                                title="Where is {}?".format(env_name()))
-    if picked and os.path.isfile(picked):
-        return os.path.dirname(picked)
-    return None
-
-
-def bitmap(mat, path):
-    sh = c4d.BaseShader(c4d.Xbitmap)
-    put(sh, "BITMAPSHADER_FILENAME", path)
-    mat.InsertShader(sh)
-    return sh
-
-
 def new_material(doc, name):
     mat = c4d.BaseMaterial(c4d.Mmaterial)
     mat.SetName(name)
@@ -405,8 +397,10 @@ def text_size(text, height):
 
 
 def helix_y(i, shot):
-    """Height of name i: the names climb the helix from bottom to top."""
-    return -shot["rise"] / 2.0 + shot["rise"] * i / float(len(LABELS) - 1)
+    """Height of name i. The helix has one row per name, but neighbours are
+    `stagger` rows apart, so names that sit side by side never share a height."""
+    row = (i * shot["stagger"]) % len(LABELS)
+    return -shot["rise"] / 2.0 + shot["rise"] * row / float(len(LABELS) - 1)
 
 
 def _fit_boxes(shot):
@@ -518,18 +512,14 @@ def passes(doc):
 
 # ── MATERIALS, CONTINUED ───────────────────────────────────────────────────
 
-def glow_material(doc, name, base, glow, level, env_path):
-    """A dark body that lights itself, with the reflection image over it."""
+def glow_material(doc, name, base, glow, level):
+    """A dark body that lights itself, so names never go dark."""
     mat = new_material(doc, name)
     put(mat, "MATERIAL_USE_COLOR", True)
     put(mat, "MATERIAL_COLOR_COLOR", base)
     put(mat, "MATERIAL_USE_LUMINANCE", True)
     put(mat, "MATERIAL_LUMINANCE_COLOR", glow)
     put(mat, "MATERIAL_LUMINANCE_BRIGHTNESS", level)
-    if env_path:
-        put(mat, "MATERIAL_USE_ENVIRONMENT", True, "Environment")
-        put(mat, "MATERIAL_ENVIRONMENT_SHADER", bitmap(mat, env_path))
-        put(mat, "MATERIAL_ENVIRONMENT_BRIGHTNESS", 0.7)
     mat.Update(True, True)
     return mat
 
@@ -578,6 +568,159 @@ def rail(name, y, shot, mat, parent):
     tag(ring, mat)
     smooth(ring, 60.0)
     return ring
+
+
+def black_material(doc):
+    mat = new_material(doc, "ORB_Horizon")
+    put(mat, "MATERIAL_USE_COLOR", True)
+    put(mat, "MATERIAL_COLOR_COLOR", c4d.Vector(0, 0, 0))
+    put(mat, "MATERIAL_USE_REFLECTION", False)
+    put(mat, "MATERIAL_USE_LUMINANCE", False)
+    mat.Update(True, True)
+    return mat
+
+
+def lit_material(doc, name, colour):
+    """One flat colour that lights itself: no image, no lights needed."""
+    mat = new_material(doc, name)
+    put(mat, "MATERIAL_USE_COLOR", False)
+    put(mat, "MATERIAL_USE_REFLECTION", False)
+    put(mat, "MATERIAL_USE_LUMINANCE", True)
+    put(mat, "MATERIAL_LUMINANCE_COLOR", colour)
+    put(mat, "MATERIAL_LUMINANCE_BRIGHTNESS", 1.0)
+    mat.Update(True, True)
+    return mat
+
+
+def torus(name, radius, pipe, parent, facing=False):
+    """A ring. Flat in XZ by default; facing=True stands it in its own XY so its
+    parent alone aims it."""
+    ring = c4d.BaseObject(c4d.Otorus)
+    ring.SetName(name)
+    put(ring, ("PRIM_TORUS_OUTERRAD", "PRIM_TORUS_OUTRAD"), radius, "Ring Radius")
+    put(ring, "PRIM_TORUS_INNERRAD", pipe, "Pipe Radius")
+    put(ring, ("PRIM_TORUS_CSUB", "PRIM_TORUS_SEG"), 128, "Ring Segments")
+    put(ring, ("PRIM_TORUS_SUB", "PRIM_TORUS_PSUB"), 16, "Pipe Segments")
+    put(ring, "PRIM_AXIS", const("PRIM_AXIS_ZP") if facing else const("PRIM_AXIS_YP"), "Orientation")
+    ring.InsertUnder(parent)
+    return ring
+
+
+def blob(name, radius, parent):
+    spot = c4d.BaseObject(c4d.Osphere)
+    spot.SetName(name)
+    spot[c4d.PRIM_SPHERE_RAD] = radius
+    put(spot, "PRIM_SPHERE_SUB", 24, "Segments")
+    spot.InsertUnder(parent)
+    return spot
+
+
+def mix(a, b, t):
+    return c4d.Vector(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t)
+
+
+def hole(doc, root, cam, shot):
+    """The black hole behind the name: a flat glowing disc round the middle, a
+    black sphere that hides the far half of it, and glowing rings round the
+    sphere. No images anywhere, so it renders the same in every version."""
+    hole_r = shot["ring_r"] * HOLE_K
+    inner = hole_r * DISC_INNER
+    outer = shot["ring_r"] * DISC_OUTER
+    width = (outer - inner) / float(DISC_RINGS)
+
+    # Disc: flat rings, white-hot inside to deep orange outside. Each ring has
+    # two hot spots on a null that turns in place; whole turns per loop, inner
+    # rings fastest, the way the names go round (a positive heading).
+    disc = null("Accretion Disc", root)
+    spot_mat = lit_material(doc, "ORB_Spot", SPOT)
+    for k in range(DISC_RINGS):
+        t = k / float(DISC_RINGS - 1)
+        colour = mix(DISC_HOT, DISC_WARM, t * 2.0) if t < 0.5 else mix(DISC_WARM, DISC_DEEP, (t - 0.5) * 2.0)
+        radius = inner + width * (k + 0.5)
+        pipe = width * 0.6
+        spin = null("Ring {} Spin".format(k + 1), disc)
+        ring = torus("Ring {}".format(k + 1), radius, pipe, spin)
+        ring.SetRelScale(c4d.Vector(1.0, DISC_FLAT, 1.0))
+        tag(ring, lit_material(doc, "ORB_Ring{}".format(k + 1), colour))
+        for j in range(2):
+            angle = math.radians(k * 47.0 + j * 180.0)
+            spot = blob("Hot Spot {}.{}".format(k + 1, j + 1), pipe * 0.8, spin)
+            spot.SetRelPos(c4d.Vector(radius * math.cos(angle), 0.0, radius * math.sin(angle)))
+            spot.SetRelScale(c4d.Vector(1.4, DISC_FLAT * 3.0, 1.0))
+            spot.SetRelRot(c4d.Vector(-angle - math.pi / 2.0, 0.0, 0.0))
+            tag(spot, spot_mat)
+        turns = max(1, int(round(4.0 - 3.0 * t)))
+        set_keys(spin, rot_id("h"), [(0, 0.0), (FRAMES, deg(360.0 * turns))])
+
+    # The horizon and the rim rings stand square-on to the camera, whatever the
+    # angle, and sit just behind the core's letters so the name stays in front.
+    # Looking down the line of sight the sphere still lands in the middle of
+    # the frame, and it hides the far half of the disc.
+    facing = null("Faces Camera", root)
+    face = c4d.BaseTag(c4d.Ttargetexpression)
+    face[c4d.TARGETEXPRESSIONTAG_LINK] = cam
+    facing.InsertTag(face)
+    behind = hole_r + shot["core_h"] * CORE_DEPTH * 1.2
+    horizon = c4d.BaseObject(c4d.Osphere)
+    horizon.SetName("Event Horizon")
+    horizon[c4d.PRIM_SPHERE_RAD] = hole_r
+    put(horizon, "PRIM_SPHERE_SUB", 64, "Segments")
+    horizon.SetRelPos(c4d.Vector(0, 0, -behind))
+    horizon.InsertUnder(facing)
+    tag(horizon, black_material(doc), const("TEXTURETAG_PROJECTION_SPHERICAL"))
+    for k, (scale, share, colour) in enumerate(RIM):
+        rim = torus("Rim {}".format(k + 1), hole_r * scale, hole_r * share, facing, facing=True)
+        rim.SetRelPos(c4d.Vector(0, 0, -behind))
+        tag(rim, lit_material(doc, "ORB_Rim{}".format(k + 1), colour))
+
+
+def overlap_report(shot):
+    """How many names cover each other on screen: (average, worst) over the
+    loop, camera sway and push included. 0 is clean. (99.0, 99) means a name
+    passes behind the lens."""
+    n = len(LABELS)
+    aspect = shot["res"][0] / float(shot["res"][1])
+    look = (0.0, shot["look_y"], 0.0)
+    ring = shot["ring_r"]
+    sizes = [text_size(wrap(name), shot["label_h"]) for name in LABELS]
+    total, worst, count = 0, 0, 0
+    for sway in (-6.0, 0.0, 6.0):
+        for push in (-60.0, 0.0, 60.0):
+            a = math.radians(sway)
+            d = shot["dist"] + push
+            cam = (-d * math.sin(a), shot["cam_y"], -d * math.cos(a))
+            fwd = _unit(_sub(look, cam))
+            right = _unit(_cross((0.0, 1.0, 0.0), fwd))
+            up = _cross(fwd, right)
+            for spin in range(0, 360, 15):
+                rects = []
+                for i in range(n):
+                    ang = math.radians(spin) + 2.0 * math.pi * i / n
+                    c = (ring * math.sin(ang), helix_y(i, shot), ring * math.cos(ang))
+                    xs, ys = [], []
+                    for sx in (-1.0, 1.0):
+                        for sy in (-1.0, 1.0):
+                            # the names stay square to the camera, so their
+                            # corners run along the world's X and Y
+                            p = (c[0] + sx * sizes[i][0] * OVERLAP_PAD / 2.0,
+                                 c[1] + sy * sizes[i][1] * OVERLAP_PAD / 2.0, c[2])
+                            rel = _sub(p, cam)
+                            z = _dot(rel, fwd)
+                            if z < 50.0:
+                                return 99.0, 99
+                            xs.append(_dot(rel, right) / z / 0.5)
+                            ys.append(_dot(rel, up) / z / (0.5 / aspect))
+                    rects.append((min(xs), max(xs), min(ys), max(ys)))
+                hits = 0
+                for i in range(n):
+                    for j in range(i + 1, n):
+                        p, q = rects[i], rects[j]
+                        if p[0] < q[1] and q[0] < p[1] and p[2] < q[3] and q[2] < p[3]:
+                            hits += 1
+                total += hits
+                worst = max(worst, hits)
+                count += 1
+    return total / float(count), worst
 
 
 def fog(doc, distance):
@@ -795,10 +938,6 @@ def hand_ring(root, units, shot):
 
 # ── SCENE ──────────────────────────────────────────────────────────────────
 
-def env_name():
-    return "orbit_env.jpg"
-
-
 def clear_track(obj, desc_id):
     track = obj.FindCTrack(desc_id)
     if track is not None:
@@ -826,16 +965,15 @@ def make_ring(doc, root, units, shot):
     SKIPPED.append("Cloner ring: " + why)
 
 
-def build(doc, tex):
+def build(doc):
     shot = SHOTS[MODE]
     root = c4d.BaseObject(c4d.Onull)
     root.SetName(GROUP_NAME)
     doc.InsertObject(root)
 
-    env = os.path.join(tex, env_name())
-    label_mat = glow_material(doc, "ORB_Label", LABEL_BASE, LABEL_GLOW, 0.55, env)
-    core_mat = glow_material(doc, "ORB_Core", CORE_BASE, CORE_GLOW, 1.2, env)
-    rail_mat = glow_material(doc, "ORB_Rail", RAIL_BASE, RAIL_GLOW, 0.9, None)
+    label_mat = glow_material(doc, "ORB_Label", LABEL_BASE, LABEL_GLOW, 0.55)
+    core_mat = glow_material(doc, "ORB_Core", CORE_BASE, CORE_GLOW, 1.2)
+    rail_mat = glow_material(doc, "ORB_Rail", RAIL_BASE, RAIL_GLOW, 0.9)
 
     # Camera: a little above the ring, aimed at the centre, one slow arc and
     # one slow push per loop.
@@ -856,6 +994,8 @@ def build(doc, tex):
     light("Key", c4d.Vector(-900, 1100, -1500), c4d.Vector(0.85, 0.88, 1.0), 1.0, root)
     light("Rim", c4d.Vector(1300, 500, 1200), c4d.Vector(0.7, 0.55, 1.0), 1.2, root)
     light("Core Glow", c4d.Vector(0, 0, 0), CORE_GLOW, 0.9, root)
+
+    hole(doc, root, cam, shot)
 
     # The 18 names, one unit each: a null at the name's height holding its text.
     stage = null("Names", root)
@@ -940,16 +1080,11 @@ def main():
         gui.MessageDialog("MODE must be one of: {}.".format(", ".join(sorted(SHOTS))))
         return
     doc = c4d.documents.GetActiveDocument()
-    tex = find_textures(doc)
-    if not tex:
-        gui.MessageDialog("Couldn't find {}. Put the {} folder next to this script "
-                          "or your saved .c4d and run it again.".format(env_name(), TEX_FOLDER))
-        return
 
     doc.StartUndo()
     try:
         clear_previous(doc)
-        root, cam = build(doc, tex)
+        root, cam = build(doc)
         configure_document(doc, cam)
         undo_new = const("UNDOTYPE_NEWOBJ", "UNDOTYPE_NEW")
         if undo_new is not None:
@@ -958,7 +1093,11 @@ def main():
         doc.EndUndo()
         c4d.EventAdd()
 
-    print("Orbit built ({} shot, {}), textures from {}".format(MODE, RING[0], tex))
+    shot = SHOTS[MODE]
+    over, worst = overlap_report(shot)
+    print("Orbit built ({} shot, {})".format(MODE, RING[0]))
+    print("  frame use {:.2f} (under 0.95 is clear)".format(fit_report(shot)))
+    print("  names covering each other: {:.1f} on average, {} at worst (0 is clean)".format(over, worst))
     for line in SKIPPED:
         print("  skipped - " + line)
     gui.MessageDialog(
