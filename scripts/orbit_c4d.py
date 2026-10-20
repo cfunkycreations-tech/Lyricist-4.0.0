@@ -94,11 +94,11 @@ SHOTS = {
     "hero":   dict(res=(1920, 1080), ring_r=1000.0, label_h=60.0, rise=1100.0,
                    stagger=11, lift=80.0, sound=60.0, dist=3994.0, cam_y=2694.0,
                    look_y=0.0, core_h=110.0),
-    "phone":  dict(res=(1080, 1920), ring_r=600.0, label_h=44.0, rise=1700.0,
-                   stagger=7, lift=40.0, sound=30.0, dist=2400.0, cam_y=800.0,
+    "phone":  dict(res=(1080, 1920), ring_r=600.0, label_h=36.0, rise=660.0,
+                   stagger=11, lift=40.0, sound=30.0, dist=1631.0, cam_y=1100.0,
                    look_y=0.0, core_h=90.0),
-    "header": dict(res=(720, 720), ring_r=700.0, label_h=48.0, rise=700.0,
-                   stagger=7, lift=50.0, sound=30.0, dist=2600.0, cam_y=900.0,
+    "header": dict(res=(720, 720), ring_r=700.0, label_h=42.0, rise=770.0,
+                   stagger=11, lift=50.0, sound=30.0, dist=1899.0, cam_y=1281.0,
                    look_y=0.0, core_h=80.0),
 }
 FOCAL = 36.0
