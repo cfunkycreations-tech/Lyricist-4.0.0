@@ -91,8 +91,8 @@ START_FRAME = 0                      # raise this to resume after a crash
 # 1, 5, 7, 11, 13 or 17); lift and sound how far the effectors push a name up;
 # dist, cam_y, look_y the camera; core_h the letter height of the centre.
 SHOTS = {
-    "hero":   dict(res=(1920, 1080), ring_r=1000.0, label_h=90.0, rise=600.0,
-                   stagger=7, lift=80.0, sound=60.0, dist=3100.0, cam_y=1500.0,
+    "hero":   dict(res=(1920, 1080), ring_r=1000.0, label_h=60.0, rise=1100.0,
+                   stagger=11, lift=80.0, sound=60.0, dist=3994.0, cam_y=2694.0,
                    look_y=0.0, core_h=110.0),
     "phone":  dict(res=(1080, 1920), ring_r=600.0, label_h=44.0, rise=1700.0,
                    stagger=7, lift=40.0, sound=30.0, dist=2400.0, cam_y=800.0,
