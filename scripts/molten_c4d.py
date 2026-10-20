@@ -85,7 +85,7 @@ START_FRAME = 0                      # raise this to resume after a crash
 # res, title, letter height, camera distance and height, point the camera
 # looks at, how far out the blobs sit
 SHOTS = {
-    "hero":   dict(res=(1920, 1080), title="BLACK HOLE STUDIOS", title_h=120.0,
+    "hero":   dict(res=(1920, 1080), title="BLACK HOLE STUDIOS", title_h=150.0,
                    dist=1900.0, cam_y=380.0, look_y=110.0, spread=1.0),
     "phone":  dict(res=(1080, 1920), title="BLACK HOLE\nSTUDIOS", title_h=150.0,
                    dist=1500.0, cam_y=480.0, look_y=120.0, spread=0.5),
@@ -94,8 +94,8 @@ SHOTS = {
 }
 FOCAL = 36.0
 TITLE_DEPTH = 36.0
-TITLE_SINK = 0.55                    # title centre sits this x its height above the surface
-TITLE_GOLD = c4d.Vector(1.0, 0.76, 0.30)
+TITLE_SINK = 0.75                    # title centre sits this x its height above the surface
+TITLE_BODY = c4d.Vector(0.012, 0.010, 0.008)    # near-black so the letters read on the gold pool
 
 FOG_COLOUR = c4d.Vector(0.05, 0.012, 0.0)
 FOG_DISTANCE = 6500.0
@@ -321,16 +321,15 @@ def metal_material(doc, env_path):
 
 
 def title_material(doc, env_path):
-    """Bright gold for the letters so they read against the dark pool."""
+    """Near-black polished letters: dark against the bright gold pool, with the
+    gold reflection image catching along the edges."""
     mat = new_material(doc, "MLT_Title")
     put(mat, "MATERIAL_USE_COLOR", True)
-    put(mat, "MATERIAL_COLOR_COLOR", TITLE_GOLD)
-    put(mat, "MATERIAL_USE_LUMINANCE", True)
-    put(mat, "MATERIAL_LUMINANCE_COLOR", TITLE_GOLD)
-    put(mat, "MATERIAL_LUMINANCE_BRIGHTNESS", 0.45)
+    put(mat, "MATERIAL_COLOR_COLOR", TITLE_BODY)
+    put(mat, "MATERIAL_USE_LUMINANCE", False)
     put(mat, "MATERIAL_USE_ENVIRONMENT", True, "Environment")
     put(mat, "MATERIAL_ENVIRONMENT_SHADER", bitmap(mat, env_path))
-    put(mat, "MATERIAL_ENVIRONMENT_BRIGHTNESS", 0.5)
+    put(mat, "MATERIAL_ENVIRONMENT_BRIGHTNESS", 0.8)
     mat.Update(True, True)
     return mat
 
