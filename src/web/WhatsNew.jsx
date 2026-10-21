@@ -25,6 +25,21 @@ import './WhatsNew.css';
  * the app, so returning from the background does not throw it back up — a PWA
  * that interrupts you every time you switch apps is a PWA people delete.
  */
+/**
+ * Phones get the change list at all. Chris, 2026-10-21, looking at the phone:
+ * "Take down the changes list". The desktop app and desktop browsers keep it;
+ * flip this to true to put it back on phones.
+ */
+const SHOW_ON_PHONE = false;
+
+/** Phone-shaped, the same test the mobile shell and the opener use. */
+function isPhone() {
+  if (typeof window === 'undefined') return false;
+  if (window.lyricistAPI) return false;                       // the desktop app
+  if (!/^https?:$/.test(window.location.protocol)) return false;
+  return window.matchMedia('(max-height: 560px), (max-width: 560px)').matches;
+}
+
 export default function WhatsNew() {
   const [open, setOpen] = useState(true);
 
@@ -39,6 +54,7 @@ export default function WhatsNew() {
 
   const days = changes?.days || [];
   if (!open || !days.length) return null;
+  if (!SHOW_ON_PHONE && isPhone()) return null;
 
   return (
     <div className="wnew" role="dialog" aria-modal="true" aria-label="What changed">
