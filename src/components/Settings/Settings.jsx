@@ -610,7 +610,7 @@ export default function Settings() {
           }}
         />
         <p style={{ fontSize: '0.65rem', color: 'rgba(155,161,170,0.45)', marginTop: 5, lineHeight: 1.5 }}>
-          Making songs is free either way. A free account at{' '}
+          Making songs works either way. A free account at{' '}
           <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" style={{ color: '#FFD08A', textDecoration: 'underline' }}>
             huggingface.co/settings/tokens
           </a>{' '}

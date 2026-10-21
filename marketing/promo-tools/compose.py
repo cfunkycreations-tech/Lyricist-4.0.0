@@ -428,7 +428,7 @@ CLIPS = {
         "I'm a singer-songwriter.",
         'Everything I wanted cost so much money.',
         'So I taught myself to code and built it myself.',
-        'I use Suno too. I build my lyrics and Suno tags here first. Free.',
+        'I use Suno too. I build my lyrics and Suno tags here first.',
         "Now I'm passing the savings on to you.",
     ], tag='Link in bio', outro_s=4.0)),
     'youtube-promo-16x9': scene('ghost', lambda: horizontal('youtube-promo-16x9')),
