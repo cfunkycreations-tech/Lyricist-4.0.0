@@ -45,7 +45,7 @@ import './SplashIntro.css';
  * app and desktop browsers keep it while every phone goes straight to the app.
  * Nothing else needs touching.
  */
-const PLAY_ON_PHONE = false;
+const PLAY_ON_PHONE = true;
 
 const REDUCED_MOTION = typeof window !== 'undefined'
   && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
