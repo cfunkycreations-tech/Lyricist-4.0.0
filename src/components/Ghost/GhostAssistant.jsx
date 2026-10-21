@@ -104,6 +104,7 @@ const REDO_NAMES = {
   ghostrider_study: /stud|analy/i,
   ghostrider_send_to_songwriter: /songwriter/i,
   matrix_send_to_songwriter: /songwriter/i,
+  matrix_write_full_songs: /full songs?|whole songs?/i,
   blackhole_pull_from_songwriter: /pull|bring|black hole/i,
   songwriter_send_to_studio: /send|black hole|studio/i,
   songwriter_pull_from_studio: /pull|bring|studio/i,

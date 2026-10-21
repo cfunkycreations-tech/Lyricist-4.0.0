@@ -12,7 +12,7 @@
     "release:creator": "node scripts/preflight.mjs && node scripts/release.mjs --creator",
     "copy:model": "node scripts/copy-basic-pitch-model.mjs",
     "postinstall": "node scripts/copy-basic-pitch-model.mjs && node scripts/copy-onnx-runtime.mjs && node scripts/fetch-ghost-voice-model.mjs",
-    "build": "npm run copy:model && npm run copy:ort && npm run fetch:voice && vite build",
+    "build": "npm run changes && npm run copy:model && npm run copy:ort && npm run fetch:voice && vite build",
     "release": "node scripts/preflight.mjs && node scripts/release.mjs",
     "release:customer": "node scripts/preflight.mjs && node scripts/release.mjs --customer",
     "publish:update": "node scripts/publish-update.mjs",
@@ -24,9 +24,10 @@
     "check:kaggle-video": "python3 scripts/kaggle-video-check.py",
     "copy:ort": "node scripts/copy-onnx-runtime.mjs",
     "fetch:voice": "node scripts/fetch-ghost-voice-model.mjs",
-    "build:web": "node scripts/build-web.mjs",
+    "build:web": "node scripts/gen-changes.mjs && node scripts/build-web.mjs",
     "deploy:web": "node scripts/build-web.mjs && node scripts/deploy-web.mjs",
-    "posthog:report": "node scripts/posthog-report.mjs"
+    "posthog:report": "node scripts/posthog-report.mjs",
+    "changes": "node scripts/gen-changes.mjs"
   },
   "build": {
     "appId": "com.cfunkycreations.lyricist",

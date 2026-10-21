@@ -138,9 +138,9 @@ const TAB_NOTES = {
   midistudio: 'MIDI Studio: turns audio into editable notes, with a piano roll and real synthesis.',
   mastering: 'Mastering Studio: EQ, compression, limiter and export.',
   screw: 'Chopped & Screwed: slows a track down, chops it and adds sub bass.',
-  rhyme: 'Rhyme Helper: perfect and slant rhymes, free, no key needed.',
-  thesaurus: 'Thesaurus: better words, free.',
-  dictionary: 'Dictionary: meanings and pronunciation, free.',
+  rhyme: 'Rhyme Helper: perfect and slant rhymes, no key needed.',
+  thesaurus: 'Thesaurus: better words.',
+  dictionary: 'Dictionary: meanings and pronunciation.',
   toolshub: 'AI Tools Hub: links to other tools.',
   scratchpad: 'Scratch Pad: a plain notebook that saves itself.',
   settings: 'Settings: your BYOK routing key, the model picker, the voice, and the "Accent colour" slider (fill it with a number 0 to 100, or press a named colour under it).',
@@ -365,6 +365,9 @@ ACTION NOTES:
       ghostrider_save_song {} saves the song and its Suno tags as a .txt in
         Documents\\Lyricist Style Reports (the Save Song & Tags button).
       ghostrider_send_dna_to_matrix {} sends the artist's Style DNA to The Matrix.
+      ghostrider_send_words_to_matrix {} sends the 20 words pulled from the analysis
+        (drawn from the report, not random) into The Matrix.
+        Analyze the artist first.
       No artist named? Leave "artist" out and it picks one itself. NEVER ask.
     Song Forge (tab "songforge"):
       songforge_forge {"topic":"..."} writes a whole song and paints its cover art.
@@ -375,6 +378,8 @@ ACTION NOTES:
       matrix_load_keywords {"keywords":"pawn shop, parking lot, promise"}
       matrix_autocraft {"keywords":"..."} loads them, spreads, locks and writes verses A and B.
       matrix_pick {"state":"A"|"B"}  matrix_send_to_songwriter {"state":"A"}
+      matrix_write_full_songs {"state":"A"|"B"?} writes a whole song for each state, side by
+        side, from the Matrix DNA and keywords; "state" also sends that song to Songwriter.
       matrix_load_dna {} loads the Style DNA Ghost Rider sent and writes verses
         A and B under it, seeded from the DNA's images.
       matrix_send_to_forge {}  matrix_reset {}

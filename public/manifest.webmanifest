@@ -6,7 +6,7 @@
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
-  "orientation": "landscape",
+  "orientation": "any",
   "background_color": "#04060f",
   "theme_color": "#04060f",
   "categories": ["music", "productivity", "entertainment"],

@@ -237,7 +237,7 @@ export const GHOST_DEMOS = {
       },
       {
         target: '.stemmer-mode-bar',
-        say: 'Engine is optional. Offline is free, light CPU, no key, no GPU. Cloud uses a Replicate key for Demucs if your PC is light.',
+        say: 'Engine is optional. Offline is light CPU, no key, no GPU. Cloud uses a Replicate key for Demucs if your PC is light.',
         action: 'point',
         wait: 4000,
       },

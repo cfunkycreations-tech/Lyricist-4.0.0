@@ -386,6 +386,30 @@ export function writeStylePressure(styleDNA, artist = '') {
   );
 }
 
+// ─── 8b. Words from Ghost Rider ───────────────────────────────
+// Twenty words drawn from the artist's analysis, kept so The Matrix finds them
+// even when its tab was not open yet when they were sent.
+const MATRIX_WORDS_KEY = 'lyricistMatrixWords';
+
+export function writeMatrixWords(words, artist = '') {
+  try {
+    if (!words || !words.length) { localStorage.removeItem(MATRIX_WORDS_KEY); return; }
+    localStorage.setItem(MATRIX_WORDS_KEY, JSON.stringify({ words, artist, taken: false }));
+  } catch { /* private mode: the live event still carries them */ }
+}
+
+/** The words that were sent and not yet loaded into the grid; marks them loaded so a reload never wipes the grid again. */
+export function takeMatrixWords() {
+  try {
+    const v = JSON.parse(localStorage.getItem(MATRIX_WORDS_KEY) || 'null');
+    if (!v || v.taken || !Array.isArray(v.words) || !v.words.length) return null;
+    localStorage.setItem(MATRIX_WORDS_KEY, JSON.stringify({ ...v, taken: true }));
+    return v;
+  } catch {
+    return null;
+  }
+}
+
 /** Bias lattice energy / freeze density from Style DNA. */
 export function applyStylePressureToSection(section, style) {
   if (!style) return { section, ok: false };

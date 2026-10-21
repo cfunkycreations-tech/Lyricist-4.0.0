@@ -148,8 +148,8 @@
     "words": 15
   },
   "stemmer-1-say": {
-    "text": "Engine is optional. Offline is free, light CPU, no key, no GPU. Cloud uses a Replicate key for Demucs if your PC is light.",
-    "words": 24
+    "text": "Engine is optional. Offline is light CPU, no key, no GPU. Cloud uses a Replicate key for Demucs if your PC is light.",
+    "words": 23
   },
   "stemmer-2-say": {
     "text": "Load Mix opens your file picker. Drop a WAV or MP3 of a finished song.",
