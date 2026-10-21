@@ -392,13 +392,13 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       || raw.split(/\s+/).filter(Boolean).length;
     setStatus({
       lead,
-      rest: ` Loaded your keywords into the grid (${count} token${count === 1 ? '' : 's'} — cycles to fill 20 tiles). These stay YOUR words. Now: Spotlight, Run 12 gens, Crystallize, Generate Neural Lyrics.`,
+      rest: ` Loaded your keywords into the grid (${count} token${count === 1 ? '' : 's'} — the first 20 sit on the grid, all of them guide the lyrics). These stay YOUR words. Now: Spotlight, Run 12 gens, Crystallize, Generate Neural Lyrics.`,
     });
   }, []);
   const loadKeywords = useCallback(() => loadFromRaw(keywordDraft), [keywordDraft, loadFromRaw]);
 
-  // Ghost Rider's twenty words: drawn from the artist's analysis, they fill the
-  // keyword box and the grid. Sent while this tab was still closed? They were
+  // Ghost Rider's thirty words: drawn from the artist's analysis, they fill the
+  // keyword box and the grid (its first 20 tiles). Sent while this tab was still closed? They were
   // kept, and are taken once, here, on first open.
   useEffect(() => {
     const land = (words, artist) => {

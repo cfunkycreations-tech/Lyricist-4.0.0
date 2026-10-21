@@ -5,7 +5,7 @@ import { randomArtist, saveSunoTags } from '../../services/ghostMemory.js';
 import { applySongTags } from '../../services/songTags.js';
 import { writeStylePressure, writeMatrixWords } from '../QuantumLab/quantumFeatures.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
-import { callAI, writeInArtistStyle, writeSunoKit, refineLyrics, analyzeClichés, checkSimilarity, checkThemeConsistency } from '../../services/AIService.js';
+import { callAI, writeInArtistStyle, writeAnalysisWords, writeSunoKit, refineLyrics, analyzeClichés, checkSimilarity, checkThemeConsistency } from '../../services/AIService.js';
 import { parseStyleDNA } from '../../utils/styleDNA.js';
 import { Search, Sparkles, BookOpen, AlertTriangle, ShieldCheck, Check, Copy, Save, Heart, Send, TrendingUp, Dna, Grid3x3, Ghost, Tags } from 'lucide-react';
 import { notify } from '../../services/dialog.js';
@@ -29,7 +29,7 @@ const promptBuilders = {
   full: (artist) => `Comprehensive analysis of ${artist} as a lyricist: style, flow, themes, era, influences, and what makes them unique. Use catalog examples.`
 };
 
-// How each report is named when the 20 Matrix words are drawn from it.
+// How each report is named when the 30 Matrix words are drawn from it.
 const KIND_NAME = { style: 'lyrical style', flow: 'flow and cadence', themes: 'common themes', full: 'full' };
 
 /**
@@ -62,9 +62,11 @@ export default function ArtistAnalyzer({ onGhostSend }) {
   const [ghostTopic, setGhostTopic] = useState(boot.ghostTopic || '');
   const [ghostLyrics, setGhostLyrics] = useState(boot.ghostLyrics || '');
   const [sunoTags, setSunoTags] = useState(boot.sunoTags || '');
-  // The 20 words written with the tags, drawn from the report, for The Matrix.
+  // The 30 words drawn from the report on screen, for The Matrix. They arrive with the analysis.
   const [matrixWords, setMatrixWords] = useState(Array.isArray(boot.matrixWords) ? boot.matrixWords : []);
   const [wordsSent, setWordsSent] = useState(false);
+  const [loadingWords, setLoadingWords] = useState(false);
+  const [wordsError, setWordsError] = useState('');
   // Suno's Voice and description lines, written in the same pass as the song.
   const [voice, setVoice] = useState(boot.voice || '');
   const [songDesc, setSongDesc] = useState(boot.songDesc || '');
@@ -172,9 +174,12 @@ export default function ArtistAnalyzer({ onGhostSend }) {
       ], store.config);
       setAnalysis(result);
       setStyleDNA(null);
+      setMatrixWords([]); setWordsSent(false); setWordsError('');
       if (autoSaveReports) saveReportToDisk(result);
       // Kick Style DNA extract in the background (does not block the report)
       extractStyleDNA(result, artist.trim());
+      // And the 30 words for The Matrix, from the same report, in parallel.
+      makeAnalysisWords(result, artist.trim());
     } catch (e) {
       setErrorMsg(e.message);
     } finally {
@@ -231,6 +236,25 @@ export default function ArtistAnalyzer({ onGhostSend }) {
     }
   };
 
+  /** The 30 Matrix words, pulled from the analysis on screen. Returns them; a failure shows on the card, with Try again. */
+  const makeAnalysisWords = async (reportText = analysis, artistName = artist.trim()) => {
+    if (!reportText || !hasWritingAI(store.config)) return null;
+    setLoadingWords(true);
+    setWordsError('');
+    setWordsSent(false);
+    try {
+      const words = await writeAnalysisWords({ artist: artistName, report: reportText, kind: KIND_NAME[tab], motifs: styleDNA?.imageClusters }, store);
+      if (!words.length) throw new Error('No words came back.');
+      setMatrixWords(words);
+      return words;
+    } catch (e) {
+      setWordsError(e?.message || 'The words did not come back.');
+      return null;
+    } finally {
+      setLoadingWords(false);
+    }
+  };
+
   const handleGhostWrite = async () => {
     if (!artist.trim()) return;
     if (!hasWritingAI(store.config)) {
@@ -241,21 +265,20 @@ export default function ArtistAnalyzer({ onGhostSend }) {
     setErrorMsg('');
     setGhostLyrics('');
     setSunoTags('');
-    setMatrixWords([]);
-    setWordsSent(false);
     setVoice(''); setSongDesc(''); setKitError('');
     setGhostSent(false);
 
     try {
       // The one writer (AIService): a whole song every time, never a verse and a hook.
-      // The report rides along so the 20 Matrix words come out of it, not out of thin air.
+      // The report rides along so the Matrix words come out of it, not out of thin air.
       const { lyrics, sunoTags: tags, matrixWords: words, voice: v, description } = await writeInArtistStyle(artist, ghostTopic, store, {
         report: analysis, kind: KIND_NAME[tab], motifs: styleDNA?.imageClusters,
       });
 
       setGhostLyrics(lyrics);
       setSunoTags(tags);
-      setMatrixWords(words || []);
+      // The 30 words from the analysis stay; the song's own words only fill an empty list.
+      setMatrixWords((have) => (have.length ? have : (words || [])));
       setVoice(v || '');
       setSongDesc(description || '');
       track('ghostrider_song_written', { sections: (lyrics.match(/^\[[^\]]+\]\s*$/gm) || []).length });
@@ -380,7 +403,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
   };
 
   /**
-   * THE 20 WORDS GO TO THE MATRIX ON A TAP, never on their own: loading a grid
+   * THE 30 WORDS GO TO THE MATRIX ON A TAP, never on their own: loading a grid
    * once wiped one Chris had filled. Saved first, so The Matrix picks them up
    * even if it has not been opened yet; the event covers the open one.
    */
@@ -469,10 +492,10 @@ export default function ArtistAnalyzer({ onGhostSend }) {
       if (!g.ghostLyrics) throw new Error('The write came back empty. Try it again.');
       return `wrote a verse and hook in the style of ${g.artist}${g.sunoTags ? `. Suno tags: ${g.sunoTags}` : ''}${g.matrixWords.length ? `. ${g.matrixWords.length} Matrix words ready: ${g.matrixWords.join(', ')}` : ''}${g.voice ? `. Suno voice: ${g.voice}` : ''}${g.songDesc ? `. Suno song description: ${g.songDesc}` : ''}`;
     },
-    /** The Send 20 words button: the words written with the tags, into The Matrix grid. */
+    /** The Send words button: the 30 words pulled from the analysis, into The Matrix. */
     ghostrider_send_words_to_matrix: () => {
       const g = ghost.current;
-      if (!g.matrixWords.length) throw new Error('No Matrix words yet. Write in the style first.');
+      if (!g.matrixWords.length) throw new Error('No Matrix words yet. Analyze an artist first.');
       g.sendWordsToMatrix();
       return `sent ${g.matrixWords.length} words from ${g.artist.trim() || 'Ghost Rider'}'s analysis to The Matrix: ${g.matrixWords.join(', ')}`;
     },
@@ -857,6 +880,68 @@ export default function ArtistAnalyzer({ onGhostSend }) {
             </div>
           )}
 
+          {/* The 30 Matrix words, pulled from the analysis on screen. One tap into The Matrix. */}
+          {analysis && (
+            <div
+              data-demo="gr-matrix-words"
+              style={{ background: 'rgba(16,18,21,0.85)', border: '1px solid rgba(155,161,170,0.3)', borderRadius: 12, padding: 18 }}
+              data-help="Thirty words and phrases pulled from the analysis above, not random ones. Send them to The Matrix: the first 20 fill its tiles and all of them guide the lyrics."
+            >
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e7a540', marginBottom: 10 }}>
+                <Icon i={Grid3x3} />{matrixWords.length || 30} Words for The Matrix {loadingWords ? '(pulling…)' : ''}
+              </h4>
+              {matrixWords.length > 0 && (
+                <>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                    {matrixWords.map((w, idx) => (
+                      <span key={idx} className="suno-chip" style={{ fontSize: '0.7rem' }}>{w}</span>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={sendWordsToMatrix}
+                    data-help="Sends these words to The Matrix. The first 20 fill its tiles, all of them go in its keyword box. It replaces the grid that is there, so it only happens when you tap."
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: 8,
+                      border: '1px solid rgba(231,165,64,0.5)',
+                      background: 'rgba(33,34,36,0.5)',
+                      color: '#e6e8eb',
+                      fontWeight: 700,
+                      fontSize: '0.82rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Icon i={Grid3x3} />{wordsSent ? 'Sent to The Matrix' : `Send ${matrixWords.length} words to The Matrix`}
+                  </button>
+                </>
+              )}
+              {wordsError && <div style={{ color: '#ff8a8a', fontSize: '0.78rem', marginBottom: 8 }}>{wordsError}</div>}
+              {!loadingWords && (!matrixWords.length || wordsError) && (
+                <button
+                  type="button"
+                  onClick={() => makeAnalysisWords()}
+                  data-help="Pulls 30 words and phrases out of the analysis on screen."
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: 8,
+                    border: '1px solid rgba(231,165,64,0.5)',
+                    background: 'rgba(33,34,36,0.5)',
+                    color: '#e6e8eb',
+                    fontWeight: 700,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {wordsError ? 'Try again' : 'Pull 30 words from this analysis'}
+                </button>
+              )}
+              {loadingWords && !matrixWords.length && <div style={{ color: 'rgba(155,161,170,0.7)', fontSize: '0.78rem' }}>Reading the analysis…</div>}
+            </div>
+          )}
+
           {/* Ghost Rider Mimic section */}
           {artist.trim() && (
             <div style={{ background: 'rgba(16,18,21,0.85)', border: '1px solid rgba(231,165,64,0.22)', borderRadius: 12, padding: 18 }}>
@@ -980,56 +1065,6 @@ export default function ArtistAnalyzer({ onGhostSend }) {
                           </span>
                         ))}
                       </div>
-                    </div>
-                  )}
-
-                  {/* 20 words from the report, one tap into The Matrix */}
-                  {matrixWords.length > 0 && (
-                    <div data-demo="gr-matrix-words" style={{ background: 'rgba(16,18,21,0.9)', border: '1px solid rgba(155,161,170,0.3)', borderRadius: 8, padding: 12 }}>
-                      <div style={{ marginBottom: 8 }}>
-                        <span
-                          style={{ fontSize: '0.62rem', fontWeight: 700, color: '#9ba1aa', textTransform: 'uppercase', letterSpacing: '0.12em' }}
-                          data-help="Twenty words and phrases pulled from the report above, not random ones. Send them to The Matrix and they fill its 20 tiles."
-                        >
-                          <Icon i={Grid3x3} />{matrixWords.length} Words for The Matrix
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-                        {matrixWords.map((w, idx) => (
-                          <span
-                            key={idx}
-                            style={{
-                              padding: '2px 8px',
-                              borderRadius: 12,
-                              fontSize: '0.68rem',
-                              fontWeight: 600,
-                              background: 'rgba(155,161,170,0.1)',
-                              border: '1px solid rgba(155,161,170,0.2)',
-                              color: '#e6e8eb'
-                            }}
-                          >
-                            {w}
-                          </span>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={sendWordsToMatrix}
-                        data-help="Fills The Matrix's 20 tiles with these words. It replaces the grid that is there, so it only happens when you tap."
-                        style={{
-                          width: '100%',
-                          padding: '9px',
-                          borderRadius: 8,
-                          border: '1px solid rgba(231,165,64,0.5)',
-                          background: 'rgba(33,34,36,0.5)',
-                          color: '#e6e8eb',
-                          fontWeight: 700,
-                          fontSize: '0.78rem',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <Icon i={Grid3x3} />{wordsSent ? 'Sent to The Matrix' : `Send ${matrixWords.length} words to The Matrix`}
-                      </button>
                     </div>
                   )}
 
