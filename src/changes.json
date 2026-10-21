@@ -1,10 +1,11 @@
 {
   "generated": "2026-10-21",
-  "total": 339,
+  "total": 340,
   "days": [
     {
       "date": "2026-10-21",
       "items": [
+        "C4D clips: mp4 first, webm fallback, so Safari plays them on the phone",
         "Phone landscape: Cinema 4D strip on the launcher; Auto banner opens on Orbit; picked scene plays under reduced motion",
         "Banner: Cinema 4D orbit, lyrics and molten renders play as scenes",
         "Ghost demo: fold the top banner while the Ghost works; aim only after scroll settles",

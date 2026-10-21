@@ -15,11 +15,9 @@
    two thirds of the window spent on a title card. The tab strip is 3325px
    wide, which is what the launcher replaces. Both go. */
 body.lyricist-mobile .tab-nav-scroll { display: none !important; }
-/* Held sideways (landscape, 640px+) the phone keeps the desktop header: the
-   Push pads, the pills and their animations. Upright there is no room for it. */
-@media (orientation: portrait), (max-width: 639px) {
-  body.lyricist-mobile .header-cosmic { display: none !important; }
-}
+/* The pads header is desktop chrome, on every phone size and both ways up. The
+   launcher carries the animations (Cinema 4D strip) and the shell bar is the nav. */
+body.lyricist-mobile .header-cosmic { display: none !important; }
 
 /* Push the whole app column below the 44px bar. The shell is position:fixed so
    it takes no space in the flow of its own accord.
@@ -788,44 +786,14 @@ body.lyricist-mobile .mob-wrap > input { min-width: 0; flex-basis: 100% !importa
    they could only be filled in and then do nothing. */
 body.lyricist-mobile .desktop-only { display: none !important; }
 
-/* ── landscape: the desktop header stays ─────────────────────────────────
-   96px header on top (sticky, so it never scrolls away from under the bar), the
-   44px shell bar directly beneath it, the tool below that. The header's bottom
-   margin is the slot the fixed bar sits in. */
+/* ── landscape: the 44px bar sits a hand's width below the top edge ───────
+   Flush at y=0 it gets clipped by the browser chrome and rounded corners, so it
+   drops by the notch or 8px, whichever is more. Everything under it follows. */
 @media (orientation: landscape) and (min-width: 640px) {
-  /* --hd-z shrinks the whole header to fit narrower phones: the pad row just
-     re-flows to the width it gets, so every size shows the same header. */
-  :root { --hd-z: 1; }
-  body.lyricist-mobile .min-h-screen { padding-top: env(safe-area-inset-top, 0px); }
-  body.lyricist-mobile .header-cosmic {
-    position: sticky !important;
-    top: 0;
-    z-index: 60;
-    zoom: var(--hd-z);
-    margin-bottom: calc(44px / var(--hd-z));
-  }
-  /* An opened instrument panel covers the bar and tool instead of growing the
-     header under them; it scrolls inside itself when taller than the screen. */
-  body.lyricist-mobile .header-cosmic.push-open {
-    position: fixed !important;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    margin-bottom: 0;
-    max-height: calc(100dvh / var(--hd-z));
-    overflow-y: auto !important;
-  }
-  .mob-root { top: calc(96px * var(--hd-z)); }
-  .mob-sheet { top: calc(96px * var(--hd-z) + 44px + env(safe-area-inset-top, 0px) + 6px); }
-}
-@media (orientation: landscape) and (min-width: 780px) and (max-width: 914px) { :root { --hd-z: .85; } }
-@media (orientation: landscape) and (min-width: 700px) and (max-width: 779px) { :root { --hd-z: .76; } }
-@media (orientation: landscape) and (min-width: 640px) and (max-width: 699px) { :root { --hd-z: .7; } }
-
-/* While a pad's instrument is open the shell steps aside so the panel is the
-   whole screen; the Pads pad in its top row closes it. */
-@media (orientation: landscape) and (min-width: 640px) {
-  body.lyricist-mobile:has(.header-cosmic.push-open) .mob-root { visibility: hidden; }
+  :root { --mob-top: max(env(safe-area-inset-top, 0px), 8px); }
+  body.lyricist-mobile .min-h-screen { padding-top: calc(44px + var(--mob-top)); }
+  .mob-root { padding-top: var(--mob-top); }
+  .mob-sheet { top: calc(44px + var(--mob-top) + 6px); }
 }
 
 /* ── the Cinema 4D strip on the launcher (phone held sideways) ───────────── */

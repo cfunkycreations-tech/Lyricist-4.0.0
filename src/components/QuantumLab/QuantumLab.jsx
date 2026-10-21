@@ -169,7 +169,7 @@ function sparkPath(seed, w = 150, h = 40) {
   return 'M' + pts.join(' L');
 }
 
-export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
+export default function QuantumLab({ onSendToSongwriter, onSendToForge, onGoToSettings }) {
   const store = useLyricStore();
   const [section, setSection] = useState(() => buildSection());
   // Manual contract links MUST be declared before the links useMemo (TDZ black-screen fix)
@@ -224,6 +224,19 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   // Tier 2 section. Closed on arrival, deliberately — see the note above the
   // Advanced Studio block in the render.
   const [advOpen, setAdvOpen] = useState(false);
+  // No key: say so under the button that was tapped, with a button that goes
+  // to the key box. It clears itself the moment a key is saved.
+  const [needKey, setNeedKey] = useState(false);
+  const statusRef = useRef(null);
+  const keyMissing = needKey && !hasWritingAI(store.config);
+  const showNeedKey = (what) => {
+    setNeedKey(true);
+    setStatus({
+      lead: 'Add your OpenRouter key.',
+      rest: ` ${what} needs it. Tap the button below, paste the key, save, then come back.`,
+    });
+    if (mobile) setTimeout(() => statusRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+  };
   const [busy, setBusy] = useState(false);
   const [isNarrow, setIsNarrow] = useState(false);
   const [vidFailed, setVidFailed] = useState(false);
@@ -683,10 +696,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const doNeural = async (overrideSection = null) => {
     const src = overrideSection || section;
     if (!hasWritingAI(store.config)) {
-      setStatus({
-        lead: 'Need an API key.',
-        rest: ' Open the Settings tab, paste your free OpenRouter key, save, then come back and try Generate Neural Lyrics again.',
-      });
+      showNeedKey('Generate Neural Lyrics');
       return null;
     }
     const audit = checkContracts(src, contracts);
@@ -789,10 +799,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
 
   const writeFullSongs = async ({ section: srcSection = null, verseA = neuralA, verseB = neuralB } = {}) => {
     if (!hasWritingAI(store.config)) {
-      setStatus({
-        lead: 'Need an API key.',
-        rest: ' Open the Settings tab, paste your free OpenRouter key, save, then come back and write the songs again.',
-      });
+      showNeedKey('Writing the songs');
       return null;
     }
     if (!verseA) {
@@ -1078,6 +1085,116 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const dominant = dna?.rhymeScheme ? [...new Set(dna.rhymeScheme.split(''))].join(' · ') : '—';
 
   const rootCls = ['ql-root', mobile && 'ql-mob'].filter(Boolean).join(' ');
+
+  // The Quick Path result (A/B verses, full songs). Phone: directly under Auto-Craft.
+  // Desktop: after the Advanced block, as before.
+  const resultPanels = (
+    <>
+        {/* Multi-state neural output A / B + one-click handoffs.
+            OUTSIDE Advanced on purpose: this is the Quick Path's result, and it
+            has to be visible to somebody who never opens Advanced Studio. */}
+        {(neuralA || neuralB) && (
+          <div
+            ref={neuralRef}
+            className="ql-panel ql-neural-out"
+            style={{ marginTop: 12, borderColor: 'rgba(234,255,43,0.4)' }}
+            data-help="Two multi-state verses from the same grid. Pick A or B (collapse), then Send to Songwriter or Song Forge in one click."
+          >
+            <h4 style={{ color: YLW }}>Neural Lyrics — multi-state</h4>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+              <button
+                type="button"
+                className={`ql-mini ${neuralPick === 'A' ? 'ylw' : ''}`}
+                onClick={() => setNeuralPick('A')}
+                data-help="Collapse to State A (more direct/emotional take)."
+              >
+                State A {neuralPick === 'A' ? '✓' : ''}
+              </button>
+              <button
+                type="button"
+                className={`ql-mini ${neuralPick === 'B' ? 'ylw' : ''}`}
+                onClick={() => setNeuralPick('B')}
+                data-help="Collapse to State B (more abstract/image-heavy take)."
+              >
+                State B {neuralPick === 'B' ? '✓' : ''}
+              </button>
+              <button type="button" className="ql-mini grn" onClick={sendToSongwriter} data-help="One-click: open Songwriter with the picked state as a verse.">
+                → Send to Songwriter
+              </button>
+              <button type="button" className="ql-mini" onClick={sendToForge} data-help="One-click: open Song Forge with this grid as the seed for a full song + cover.">
+                → Send to Song Forge
+              </button>
+              <button
+                type="button"
+                className="ql-mini ylw"
+                onClick={() => writeFullSongs()}
+                disabled={busy || autoBusy}
+                data-demo="ql-write-songs"
+                data-help="Write a whole song for State A and a whole song for State B, side by side. Uses your Matrix DNA and your keywords."
+              >
+                {busy ? 'Writing…' : 'Write full songs (A + B)'}
+              </button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap: 12 }}>
+              <div style={{ opacity: neuralPick === 'A' ? 1 : 0.55, border: neuralPick === 'A' ? '1px solid rgba(234,255,43,0.5)' : '1px solid transparent', borderRadius: 10, padding: 8 }}>
+                <div style={{ fontSize: mobile ? '0.78rem' : '0.7rem', color: YLW, marginBottom: 6 }}>STATE A</div>
+                <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'var(--faf-font)', fontSize: '0.92rem', lineHeight: 1.55, color: '#e6e8eb' }}>{neuralA || '—'}</pre>
+              </div>
+              <div style={{ opacity: neuralPick === 'B' ? 1 : 0.55, border: neuralPick === 'B' ? '1px solid rgba(234,255,43,0.5)' : '1px solid transparent', borderRadius: 10, padding: 8 }}>
+                <div style={{ fontSize: mobile ? '0.78rem' : '0.7rem', color: YLW, marginBottom: 6 }}>STATE B</div>
+                <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'var(--faf-font)', fontSize: '0.92rem', lineHeight: 1.55, color: '#e6e8eb' }}>{neuralB || '—'}</pre>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Two full songs, side by side. One panel, one scroll. On the phone the
+            two songs stack, and Write full songs scrolls here when they land. */}
+        {(songA || songB || songErrB) && (
+          <div
+            ref={songsRef}
+            className="ql-panel ql-songs-out"
+            data-help="A whole song for State A and a whole song for State B, written from your Matrix DNA and keywords. Send either one to Songwriter."
+          >
+            <div className="ql-songs-head">
+              <h4 style={{ color: YLW }}>Full songs — A and B</h4>
+            </div>
+            <div className="ql-songs-cols">
+              <div className="ql-song-col">
+                <div className="ql-song-label">SONG A</div>
+                <pre className="ql-song-text">{songA || '—'}</pre>
+                <button
+                  type="button"
+                  className="ql-mini grn"
+                  onClick={() => sendSongToSongwriter('A')}
+                  disabled={!songA}
+                  data-demo="ql-send-song-a"
+                  data-help="Open Songwriter with Song A as a full song."
+                >
+                  → Send Song A to Songwriter
+                </button>
+              </div>
+              <div className="ql-song-col">
+                <div className="ql-song-label">SONG B</div>
+                {songB ? <pre className="ql-song-text">{songB}</pre> : (
+                  <p className="ql-song-err">{songErrB ? `Song B did not finish: ${songErrB}` : '—'}</p>
+                )}
+                <button
+                  type="button"
+                  className="ql-mini grn"
+                  onClick={() => sendSongToSongwriter('B')}
+                  disabled={!songB}
+                  data-demo="ql-send-song-b"
+                  data-help="Open Songwriter with Song B as a full song."
+                >
+                  → Send Song B to Songwriter
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+    </>
+  );
 
   return (
     <div className={rootCls}>
@@ -1371,12 +1488,22 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       </label>
 
       <p
+        ref={statusRef}
         className="ql-status"
         data-help="Live feedback after each action — what just happened and what to try next."
       >
         <b>{status.lead}</b>{status.rest}
         <span className="ql-caret" />
       </p>
+      {keyMissing && onGoToSettings && (
+        <button type="button" className="ql-keybtn" onClick={onGoToSettings}>
+          Add your OpenRouter key
+        </button>
+      )}
+
+      {/* PHONE: the result sits right under the button and the status, so a tap on
+          Generate shows something on the same screen. */}
+      {mobile && resultPanels}
 
       {/* ══ TIER 2 — ADVANCED STUDIO ══════════════════════════════════════
           Everything below is the granular path: the six numbered steps and the
@@ -1587,109 +1714,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       )}
       {/* ══ END TIER 2 ═══════════════════════════════════════════════════ */}
 
-      {/* Multi-state neural output A / B + one-click handoffs.
-          OUTSIDE Advanced on purpose: this is the Quick Path's result, and it
-          has to be visible to somebody who never opens Advanced Studio. */}
-      {(neuralA || neuralB) && (
-        <div
-          ref={neuralRef}
-          className="ql-panel ql-neural-out"
-          style={{ marginTop: 12, borderColor: 'rgba(234,255,43,0.4)' }}
-          data-help="Two multi-state verses from the same grid. Pick A or B (collapse), then Send to Songwriter or Song Forge in one click."
-        >
-          <h4 style={{ color: YLW }}>Neural Lyrics — multi-state</h4>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
-            <button
-              type="button"
-              className={`ql-mini ${neuralPick === 'A' ? 'ylw' : ''}`}
-              onClick={() => setNeuralPick('A')}
-              data-help="Collapse to State A (more direct/emotional take)."
-            >
-              State A {neuralPick === 'A' ? '✓' : ''}
-            </button>
-            <button
-              type="button"
-              className={`ql-mini ${neuralPick === 'B' ? 'ylw' : ''}`}
-              onClick={() => setNeuralPick('B')}
-              data-help="Collapse to State B (more abstract/image-heavy take)."
-            >
-              State B {neuralPick === 'B' ? '✓' : ''}
-            </button>
-            <button type="button" className="ql-mini grn" onClick={sendToSongwriter} data-help="One-click: open Songwriter with the picked state as a verse.">
-              → Send to Songwriter
-            </button>
-            <button type="button" className="ql-mini" onClick={sendToForge} data-help="One-click: open Song Forge with this grid as the seed for a full song + cover.">
-              → Send to Song Forge
-            </button>
-            <button
-              type="button"
-              className="ql-mini ylw"
-              onClick={() => writeFullSongs()}
-              disabled={busy || autoBusy}
-              data-demo="ql-write-songs"
-              data-help="Write a whole song for State A and a whole song for State B, side by side. Uses your Matrix DNA and your keywords."
-            >
-              {busy ? 'Writing…' : 'Write full songs (A + B)'}
-            </button>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap: 12 }}>
-            <div style={{ opacity: neuralPick === 'A' ? 1 : 0.55, border: neuralPick === 'A' ? '1px solid rgba(234,255,43,0.5)' : '1px solid transparent', borderRadius: 10, padding: 8 }}>
-              <div style={{ fontSize: mobile ? '0.78rem' : '0.7rem', color: YLW, marginBottom: 6 }}>STATE A</div>
-              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'var(--faf-font)', fontSize: '0.92rem', lineHeight: 1.55, color: '#e6e8eb' }}>{neuralA || '—'}</pre>
-            </div>
-            <div style={{ opacity: neuralPick === 'B' ? 1 : 0.55, border: neuralPick === 'B' ? '1px solid rgba(234,255,43,0.5)' : '1px solid transparent', borderRadius: 10, padding: 8 }}>
-              <div style={{ fontSize: mobile ? '0.78rem' : '0.7rem', color: YLW, marginBottom: 6 }}>STATE B</div>
-              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'var(--faf-font)', fontSize: '0.92rem', lineHeight: 1.55, color: '#e6e8eb' }}>{neuralB || '—'}</pre>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Two full songs, side by side. One panel, one scroll. On the phone the
-          two songs stack, and Write full songs scrolls here when they land. */}
-      {(songA || songB || songErrB) && (
-        <div
-          ref={songsRef}
-          className="ql-panel ql-songs-out"
-          data-help="A whole song for State A and a whole song for State B, written from your Matrix DNA and keywords. Send either one to Songwriter."
-        >
-          <div className="ql-songs-head">
-            <h4 style={{ color: YLW }}>Full songs — A and B</h4>
-          </div>
-          <div className="ql-songs-cols">
-            <div className="ql-song-col">
-              <div className="ql-song-label">SONG A</div>
-              <pre className="ql-song-text">{songA || '—'}</pre>
-              <button
-                type="button"
-                className="ql-mini grn"
-                onClick={() => sendSongToSongwriter('A')}
-                disabled={!songA}
-                data-demo="ql-send-song-a"
-                data-help="Open Songwriter with Song A as a full song."
-              >
-                → Send Song A to Songwriter
-              </button>
-            </div>
-            <div className="ql-song-col">
-              <div className="ql-song-label">SONG B</div>
-              {songB ? <pre className="ql-song-text">{songB}</pre> : (
-                <p className="ql-song-err">{songErrB ? `Song B did not finish: ${songErrB}` : '—'}</p>
-              )}
-              <button
-                type="button"
-                className="ql-mini grn"
-                onClick={() => sendSongToSongwriter('B')}
-                disabled={!songB}
-                data-demo="ql-send-song-b"
-                data-help="Open Songwriter with Song B as a full song."
-              >
-                → Send Song B to Songwriter
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {!mobile && resultPanels}
 
       {/* Panels */}
       <div className="ql-panels">
