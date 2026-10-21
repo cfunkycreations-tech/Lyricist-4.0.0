@@ -4,6 +4,9 @@ import bhLoop from '../../assets/blackhole/bh_loop.webm';
 import c4dOrbit from '../../assets/c4d/orbit.webm';
 import c4dLyrics from '../../assets/c4d/lyrics.webm';
 import c4dMolten from '../../assets/c4d/molten.webm';
+import c4dOrbitMp4 from '../../assets/c4d/orbit.mp4';
+import c4dLyricsMp4 from '../../assets/c4d/lyrics.mp4';
+import c4dMoltenMp4 from '../../assets/c4d/molten.mp4';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { getAudioContext, getMasterBus } from '../../services/audioEngine.js';
 import { buildSkyline, drawSkyline } from './skyline.js';
@@ -40,7 +43,13 @@ const MODES = ['auto', 'bars', 'disc', 'orbit', 'lyrics', 'molten', 'skyline', '
 const LABEL = { auto: 'Auto', bars: 'Bars', disc: 'Disc', orbit: 'Orbit', lyrics: 'Lyrics', molten: 'Molten', skyline: 'Skyline', info: 'Song info', off: 'Off' };
 const ROTATION = ['orbit', 'bars', 'disc', 'lyrics', 'skyline', 'molten', 'info'];
 // The scenes that are a video, and which clip each one plays.
-const VIDEO_SRC = { disc: bhLoop, orbit: c4dOrbit, lyrics: c4dLyrics, molten: c4dMolten };
+// Each is [mp4, webm]: Safari wants the mp4, and the browser takes the first it can play.
+const VIDEO_SRC = {
+  disc: [null, bhLoop],
+  orbit: [c4dOrbitMp4, c4dOrbit],
+  lyrics: [c4dLyricsMp4, c4dLyrics],
+  molten: [c4dMoltenMp4, c4dMolten],
+};
 const VIDEO_SCENES = Object.keys(VIDEO_SRC);
 const ROTATE_MS = 20000;
 const FADE_MS = 1400;
@@ -280,11 +289,13 @@ export default function BrandBanner() {
           ref={(el) => { videoRefs.current[name] = el; }}
           className={`bb-layer bb-video bb-${name}`}
           data-on={scene === name}
-          src={VIDEO_SRC[name]}
           loop muted playsInline disablePictureInPicture
           preload={name === 'disc' ? 'auto' : 'metadata'}
           aria-hidden="true"
-        />
+        >
+          {VIDEO_SRC[name][0] && <source src={VIDEO_SRC[name][0]} type="video/mp4" />}
+          <source src={VIDEO_SRC[name][1]} type="video/webm" />
+        </video>
       ))}
       <canvas ref={skyRef} className="bb-layer" data-on={scene === 'skyline'} aria-hidden="true" />
       <div className="bb-layer bb-info" data-on={scene === 'info'}>

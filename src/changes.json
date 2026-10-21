@@ -1,10 +1,11 @@
 {
   "generated": "2026-10-21",
-  "total": 338,
+  "total": 339,
   "days": [
     {
       "date": "2026-10-21",
       "items": [
+        "Phone landscape: Cinema 4D strip on the launcher; Auto banner opens on Orbit; picked scene plays under reduced motion",
         "Banner: Cinema 4D orbit, lyrics and molten renders play as scenes",
         "Ghost demo: fold the top banner while the Ghost works; aim only after scroll settles",
         "dist-web: rebuild phone bundle with the launch splash and landscape header",

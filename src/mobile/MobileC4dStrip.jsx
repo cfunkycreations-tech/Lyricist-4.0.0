@@ -2,11 +2,15 @@ import React, { useEffect, useRef, useState } from 'react';
 import c4dOrbit from '../assets/c4d/orbit.webm';
 import c4dLyrics from '../assets/c4d/lyrics.webm';
 import c4dMolten from '../assets/c4d/molten.webm';
+import c4dOrbitMp4 from '../assets/c4d/orbit.mp4';
+import c4dLyricsMp4 from '../assets/c4d/lyrics.mp4';
+import c4dMoltenMp4 from '../assets/c4d/molten.mp4';
 
 // The Cinema 4D renders, for the phone held sideways. The desktop banner is
 // switched off on windows this short, so this is where a phone shows them: one
 // strip at the top of the launcher, scrolling away with it.
-const CLIPS = [c4dOrbit, c4dLyrics, c4dMolten];
+// [mp4, webm]: Safari wants the mp4, and the browser takes the first it can play.
+const CLIPS = [[c4dOrbitMp4, c4dOrbit], [c4dLyricsMp4, c4dLyrics], [c4dMoltenMp4, c4dMolten]];
 const SWAP_MS = 14000;
 const FADE_MS = 1200;
 const LANDSCAPE = '(orientation: landscape) and (min-width: 640px)';
@@ -48,19 +52,21 @@ export default function MobileC4dStrip({ active }) {
   if (!landscape || matches(REDUCED)) return null;
   return (
     <div className="mob-c4d" aria-hidden="true">
-      {CLIPS.map((src, i) => (
+      {CLIPS.map(([mp4, webm], i) => (
         <video
-          key={src}
+          key={webm}
           ref={(el) => { refs.current[i] = el; }}
           className="mob-c4d-v"
           data-on={i === idx}
-          src={src}
           loop
           muted
           playsInline
           preload={i === 0 ? 'auto' : 'metadata'}
           tabIndex={-1}
-        />
+        >
+          <source src={mp4} type="video/mp4" />
+          <source src={webm} type="video/webm" />
+        </video>
       ))}
     </div>
   );
