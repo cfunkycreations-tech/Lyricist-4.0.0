@@ -124,7 +124,9 @@ LABEL_GLOW = c4d.Vector(0.80, 0.84, 1.0)
 RAIL_BASE = c4d.Vector(0.14, 0.08, 0.3)
 RAIL_GLOW = c4d.Vector(0.46, 0.28, 1.0)
 
-HOLE_K = 0.4                         # black hole radius, as a share of the ring radius
+HOLE_K = 0.44                        # black hole radius, as a share of the ring radius.
+                                     # Under 0.42 the title's ends sit on the white-hot
+                                     # inner edge; over 0.46 the disc swallows the names.
 DISC_INNER = 1.3                     # inner edge of the glowing disc, as a multiple of the hole radius
 DISC_OUTER = 0.85                    # outer edge, as a share of the ring radius
 DISC_RINGS = 8
@@ -756,7 +758,12 @@ def new_cloner(shot):
     put(cloner, "ID_MG_MOTIONGENERATOR_MODE", 2)          # Radial
     put(cloner, ("MG_RADIAL_COUNT", "MG_POLY_COUNT"), len(LABELS))
     put(cloner, ("MG_RADIAL_RADIUS", "MG_POLY_RADIUS"), shot["ring_r"])
-    put(cloner, ("MG_RADIAL_PLANE", "MG_POLY_PLANE"), 2)  # XZ, the floor plane
+    # The floor plane. 2026 calls it MG_RADIAL_AXIS and takes a named constant;
+    # older builds call it MG_RADIAL_PLANE and take a plain 2.
+    put_either(cloner,
+               [("MG_RADIAL_AXIS", const("MG_RADIAL_AXIS_XZ")),
+                (("MG_RADIAL_PLANE", "MG_POLY_PLANE"), 2)],
+               "radial plane (XZ)")
     return cloner
 
 
