@@ -68,6 +68,7 @@ RENDER_SUB = 3.0                        # skin detail in the render (smaller = f
 
 CAM_DISTANCE = 1500.0
 CAM_HEIGHT = 220.0
+LOOK_HEIGHT = 0.0                       # height the camera aims at, in the middle of the liquid
 FOCAL = 50.0
 
 BODY = c4d.Vector(0.02, 0.07, 0.20)
@@ -388,8 +389,14 @@ def build(doc, env_path):
     cam.SetName("Metaballs Camera")
     put(cam, "CAMERA_FOCUS", FOCAL, "Focal Length")
     cam.SetRelPos(c4d.Vector(0, CAM_HEIGHT, -CAM_DISTANCE))
-    cam.SetRelRot(c4d.Vector(0, math.atan2(CAM_HEIGHT, CAM_DISTANCE), 0))
     cam.InsertUnder(pivot)
+    # Aim with a Target tag, the way the other rigs do. Pitching the camera by
+    # hand tilted it the wrong way and pushed the liquid off the bottom edge.
+    look = null("Look At", root)
+    look.SetRelPos(c4d.Vector(0, LOOK_HEIGHT, 0))
+    aim = c4d.BaseTag(c4d.Ttargetexpression)
+    aim[c4d.TARGETEXPRESSIONTAG_LINK] = look
+    cam.InsertTag(aim)
     set_keys(pivot, rot_id("h"), [(0, 0.0), (FRAMES, deg(360.0))])
 
     light("Key", c4d.Vector(-900, 900, -1200), c4d.Vector(1, 1, 1), 1.0, root)
