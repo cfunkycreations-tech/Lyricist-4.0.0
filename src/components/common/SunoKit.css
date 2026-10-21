@@ -1,0 +1,33 @@
+/* Suno kit: Styles, Voice, Song description, Matrix words. One column, one
+   scroll. It borrows the app's chrome-and-glass look so it sits in the
+   Songwriter sidebar, Black Hole Studios, Song Forge and Ghost Rider alike. */
+
+.sk { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 12px; border-radius: 8px;
+  background: rgba(16, 18, 21, 0.9); border: 1px solid rgba(155, 161, 170, 0.3); }
+
+.sk-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.sk-title { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9ba1aa; }
+
+.sk-row { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.sk-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sk-label b { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #cfd3d9; }
+.sk-hint { font-size: 0.64rem; color: rgba(155, 161, 170, 0.75); line-height: 1.35; }
+.sk-text { margin: 0; padding: 8px 10px; border-radius: 6px; font: inherit; font-size: 0.78rem; line-height: 1.45;
+  color: #e6e8eb; background: rgba(155, 161, 170, 0.08); border: 1px solid rgba(155, 161, 170, 0.2);
+  white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.sk-words { display: flex; flex-wrap: wrap; gap: 6px; }
+.sk-words span { padding: 2px 8px; border-radius: 12px; font-size: 0.68rem; font-weight: 600; color: #e6e8eb;
+  background: rgba(155, 161, 170, 0.1); border: 1px solid rgba(155, 161, 170, 0.2); overflow-wrap: anywhere; }
+
+.sk-btn { padding: 6px 10px; min-height: 32px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; cursor: pointer;
+  color: #e6e8eb; background: rgba(33, 34, 36, 0.5); border: 1px solid rgba(155, 161, 170, 0.4); }
+.sk-btn:disabled { opacity: 0.55; cursor: default; }
+.sk-btn.is-main { width: 100%; padding: 10px; min-height: 40px; font-size: 0.8rem; border-color: rgba(231, 165, 64, 0.5); }
+.sk-btn.is-small { padding: 3px 8px; min-height: 26px; font-size: 0.65rem; }
+.sk-err { margin: 0; font-size: 0.72rem; color: #e8a0a0; }
+
+@media (max-width: 560px), (max-height: 560px) {
+  .sk-btn { min-height: 40px; }
+  .sk-btn.is-small { min-height: 34px; padding: 4px 10px; }
+}
