@@ -40,8 +40,11 @@ Anything this version of Cinema 4D refuses is skipped and listed in the
 Console instead of stopping the script.
 """
 
+import glob
 import math
 import os
+import shutil
+import tempfile
 
 import c4d
 from c4d import gui, storage, utils
@@ -230,6 +233,42 @@ def new_material(doc, name):
     return mat
 
 
+FRESH_DIR = os.path.join(tempfile.gettempdir(), "lyricist_c4d_tex")
+
+
+def fresh_copy(path):
+    """Hand the shader a path Cinema 4D has not read before.
+
+    Cinema 4D keeps a texture in memory keyed on its file path for the whole
+    session, so regenerating the image and running this script again renders the
+    OLD picture. The copy below is named after the source's timestamp and size:
+    an unchanged image keeps the same name and costs nothing, a regenerated one
+    gets a name C4D has never seen and is read fresh.
+    """
+    try:
+        info = os.stat(path)
+    except OSError:
+        return path
+    stem, ext = os.path.splitext(os.path.basename(path))
+    copy = os.path.join(FRESH_DIR, "{}~{}-{}{}".format(
+        stem, int(info.st_mtime), info.st_size, ext))
+    if os.path.isfile(copy):
+        return copy
+    try:
+        if not os.path.isdir(FRESH_DIR):
+            os.makedirs(FRESH_DIR)
+        shutil.copyfile(path, copy)
+    except OSError:
+        return path                      # read-only temp: fall back, stale but working
+    for old in glob.glob(os.path.join(FRESH_DIR, stem + "~*" + ext)):
+        if old != copy:
+            try:
+                os.remove(old)
+            except OSError:
+                pass
+    return copy
+
+
 def metal_material(doc, env_path):
     """Dark blue liquid metal. With the image it reflects the molten bands;
     without it, the material's own gloss still reads as wet."""
@@ -239,7 +278,7 @@ def metal_material(doc, env_path):
     put(mat, "MATERIAL_USE_LUMINANCE", False)
     if env_path:
         sh = c4d.BaseShader(c4d.Xbitmap)
-        put(sh, "BITMAPSHADER_FILENAME", env_path)
+        put(sh, "BITMAPSHADER_FILENAME", fresh_copy(env_path))
         mat.InsertShader(sh)
         put(mat, "MATERIAL_USE_ENVIRONMENT", True, "Environment")
         put(mat, "MATERIAL_ENVIRONMENT_SHADER", sh)
