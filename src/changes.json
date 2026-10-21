@@ -1,10 +1,11 @@
 {
   "generated": "2026-10-21",
-  "total": 341,
+  "total": 342,
   "days": [
     {
       "date": "2026-10-21",
       "items": [
+        "Phone: solid top bar, no backdrop blur anywhere on the phone",
         "Phone: hide pads header on all phones, drop shell bar 8px, Matrix results print under Auto-Craft, tappable key prompt",
         "C4D clips: mp4 first, webm fallback, so Safari plays them on the phone",
         "Phone landscape: Cinema 4D strip on the launcher; Auto banner opens on Orbit; picked scene plays under reduced motion",

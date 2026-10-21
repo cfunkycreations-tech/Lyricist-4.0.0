@@ -30,8 +30,12 @@ body.lyricist-mobile .header-cosmic { display: none !important; }
 
    100dvh, not the inline 100vh: in a phone browser 100vh is the height with
    the address bar hidden, so the bottom of every tool sat behind it. */
+/* Held upright the bar sits 14px below the notch / status bar, so it never
+   hugs the clock or the island. Landscape redefines this further down. */
+:root { --mob-top: calc(env(safe-area-inset-top, 0px) + 14px); }
+
 body.lyricist-mobile .min-h-screen {
-  padding-top: calc(44px + env(safe-area-inset-top, 0px));
+  padding-top: calc(44px + var(--mob-top));
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -100,7 +104,7 @@ body.lyricist-mobile .app-footer  { display: none !important; }
   overflow: hidden;
   z-index: 800;
   /* Paint under the notch and the gesture bar. */
-  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+  padding: var(--mob-top) env(safe-area-inset-right)
            env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
@@ -141,7 +145,7 @@ body.lyricist-mobile .app-footer  { display: none !important; }
   top: 0;
   left: 0;
   right: 0;
-  height: var(--mob-top, env(safe-area-inset-top, 0px));
+  height: var(--mob-top);
   background: #08090b;
   z-index: 904;
   pointer-events: none;
@@ -401,7 +405,7 @@ body.lyricist-mobile .app-footer  { display: none !important; }
   bottom: 0;
   /* Everything under the bar: there is barely any height to give away in
      landscape, and the bar stays usable above it. */
-  top: calc(44px + env(safe-area-inset-top, 0px) + 6px);
+  top: calc(44px + var(--mob-top) + 6px);
   z-index: 901;
   display: flex;
   flex-direction: column;
@@ -737,7 +741,7 @@ body.lyricist-mobile .mob-wrap > input { min-width: 0; flex-basis: 100% !importa
 /* ── wide tools held upright ────────────────────────────────────────────── */
 .mob-wide-hint {
   position: fixed;
-  top: calc(44px + env(safe-area-inset-top, 0px));
+  top: calc(44px + var(--mob-top));
   left: 0;
   right: 0;
   z-index: 801;
