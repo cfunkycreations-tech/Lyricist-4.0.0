@@ -36,8 +36,7 @@ scripts/splash_textures.py, and this script only builds shapes and moves them.
             axes like a gyroscope.
   hud       a flat blue instrument dial behind everything, turning slowly.
   sweep     a soft vertical bar of light that crosses the title at the end.
-Standard renderer (set here): Cinema 4D 2025+ starts in its other renderer,
-which ignores these materials.
+Standard renderer and Standard materials only (the renderer is set here).
 
 Anything this version of Cinema 4D refuses is skipped and listed in the
 Console (Extensions -> Console, Shift+F10) instead of stopping the script.
