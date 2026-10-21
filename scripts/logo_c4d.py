@@ -2,8 +2,8 @@
 BLACK HOLE STUDIOS — the logo intro that runs before the splash.
 
 The Lyricist Pro badge arrives first: the painted black hole lights up, the
-badge lands with a small overshoot, a bar of light crosses it, and then it
-pushes past the lens. splash_c4d.py picks up from there, so the two cut
+badge lands with a small overshoot, a bar of light crosses it, and then the
+whole thing is pulled into its own black hole. splash_c4d.py picks up from there, so the two cut
 together with no gap.
 
 WHAT YOU NEED: this script and the logo_tex folder (lyricist_logo.png,
@@ -36,6 +36,7 @@ HOW IT'S BUILT
   glow      a soft disc behind the badge, lined up with the painted black hole,
             that flares as the badge lands.
   sweep     the same disc squeezed into a bar, crossing the badge once.
+  exit      the badge turns and is pulled into its own black hole.
   loop      this one does NOT loop: it is an intro and ends on black.
 Standard renderer and Standard materials only (the renderer is set here).
 
@@ -67,7 +68,13 @@ START_FRAME = 0                      # raise this to resume after a crash
 
 # The badge. Height in scene units; the width follows the art's own shape so
 # nothing is stretched. lyricist_logo.png is 605 x 660.
-BADGE_H = 900.0
+#
+# Keep this under the frame. A 50 mm lens on the 36 mm aperture sees
+# CAM_DISTANCE * (36 / (RES_X / RES_Y)) / 2 / FOCAL either side of the middle,
+# which at 1500 away is about 304 up and 304 down: a 607 tall frame. At 470 the
+# badge fills about three quarters of it and nothing is cut off. 900 cropped
+# the LYRICIST PRO arc off the top and the banner off the bottom.
+BADGE_H = 470.0
 BADGE_ASPECT = 605.0 / 660.0
 
 # Where the painted black hole sits inside the art, as a share of the badge
@@ -376,8 +383,14 @@ def build(doc, tex):
         glow = image_plane("Hole Glow", size, size, stage)
         glow.SetRelPos(c4d.Vector(badge_w * HOLE_X, BADGE_H * HOLE_Y, 40.0))
         tag(glow, glow_mat)
-        set_keys(glow, scale_id("x"), ease(0, LAND, 0.15, 1.0, out_cubic))
-        set_keys(glow, scale_id("y"), ease(0, LAND, 0.15, 1.0, out_cubic))
+        # Up as the badge lands, then away again before the push. Without the
+        # fade the glow is dragged through the lens and smears orange over the
+        # whole frame, which is not the black the splash opens on.
+        for axis in ("x", "y"):
+            set_keys(glow, scale_id(axis),
+                     ease(0, LAND, 0.15, 1.0, out_cubic)
+                     + [(PUSH_FROM, 1.0)]
+                     + ease(PUSH_FROM, PUSH_FROM + 10, 1.0, 0.0, out_cubic)[1:])
         # one slow breath after it lands, then a bloom as the badge leaves
         set_keys(glow, scale_id("z"), [(0, 1.0)])
         set_keys(glow, rot_id("b"), ease(0, FRAMES - 1, 0.0, deg(26.0), in_out_sine, step=3))
@@ -395,7 +408,7 @@ def build(doc, tex):
     # Sweep: the glow squeezed into a bar of light, crossing the badge once.
     if has_glow:
         sweep_mat = image_material(doc, "LOGO_Sweep", glow_path)
-        sweep = image_plane("Light Sweep", BADGE_H * 0.30, BADGE_H * 1.5, stage)
+        sweep = image_plane("Light Sweep", BADGE_H * 0.16, BADGE_H * 1.5, stage)
         sweep.SetRelPos(c4d.Vector(-badge_w, 0.0, -30.0))
         sweep.SetRelRot(c4d.Vector(0, 0, deg(-14.0)))
         tag(sweep, sweep_mat)
@@ -407,15 +420,20 @@ def build(doc, tex):
                  [(0, 0.0), (SWEEP_FROM - 1, 0.0), (SWEEP_FROM, 1.0),
                   (SWEEP_TO, 1.0), (SWEEP_TO + 1, 0.0)])
 
-    # The hand-off: the whole stage pushes past the lens and the frame clears,
-    # which is where splash_c4d.py opens.
+    # The hand-off: the badge is pulled into its own black hole, turning as it
+    # goes, and the frame clears. Dragging it through the lens instead
+    # magnified the logo's orange rim across the whole screen for half a
+    # second, which is not the black the splash opens on.
     set_keys(stage, pos_id("z"),
              [(0, 0.0), (PUSH_FROM, 0.0)] +
-             ease(PUSH_FROM, FRAMES - 1, 0.0, -CAM_DISTANCE * 1.15, out_cubic)[1:])
+             ease(PUSH_FROM, FRAMES - 1, 0.0, 420.0, out_cubic)[1:])
     for axis in ("x", "y"):
         set_keys(stage, scale_id(axis),
                  [(0, 1.0), (PUSH_FROM, 1.0)] +
-                 ease(PUSH_FROM, FRAMES - 1, 1.0, 1.9, out_cubic)[1:])
+                 ease(PUSH_FROM, FRAMES - 6, 1.0, 0.0, out_cubic)[1:])
+    set_keys(stage, rot_id("b"),
+             [(0, 0.0), (PUSH_FROM, 0.0)] +
+             ease(PUSH_FROM, FRAMES - 1, 0.0, deg(150.0), out_cubic)[1:])
 
     # Camera: a slow push in, so the badge is never still.
     cam = c4d.BaseObject(c4d.Ocamera)
