@@ -22,6 +22,7 @@ const WORK = [
   'lyricistPicks',                               // genre, subgenre, mood, voice, topic, artist, notes, Suno tags
   'lyricist.ghost.sunoTags',                     // the saved Suno tags the caption starts from
   'lyricistStyleDNAPressure',                    // Style DNA sent to The Matrix
+  'lyricistSunoKit_songwriter', 'lyricistSunoKit_bhs', 'lyricistSunoKit_songforge',  // the Suno kits written for each tab
   'lyricistMatrixWords',                         // the 20 words Ghost Rider sent to The Matrix
   'lyricistGhostRiderSession',                   // Ghost Rider's artist, report, song
   'lyricistQuantumJournal', 'lyricistLoopHandshake',

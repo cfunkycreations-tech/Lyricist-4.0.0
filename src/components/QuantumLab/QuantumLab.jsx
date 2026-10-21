@@ -191,7 +191,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
      They become two drawers behind two labelled buttons instead. Both are
      closed on arrival, so the grid opens full width. */
   const mobile = useMobile();
-  const [drawer, setDrawer] = useState(null);      // null | 'controls' | 'panels'
+  const [drawer, setDrawer] = useState(null);      // null | 'controls' | 'adv' | 'panels' | 'songs'
   /* The linked-pairs readout floats over the grid and covers four tiles.
      It is a glance, not a panel: a chip that opens on hover, and on tap for
      touch screens where hover does not exist. */
@@ -205,6 +205,18 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const [neuralA, setNeuralA] = useState(null);
   const [neuralB, setNeuralB] = useState(null);
   const [neuralPick, setNeuralPick] = useState('A'); // which state is active
+  // Full songs: one whole song per state, written from the verse + the grid DNA
+  // + the keywords. `songErrB` is B's own failure, never a copy of A.
+  const [songA, setSongA] = useState(null);
+  const [songB, setSongB] = useState(null);
+  const [songErrB, setSongErrB] = useState('');
+  // "Also write full songs" next to Auto-Craft. Remembered per browser.
+  const [fullSongsOpt, setFullSongsOpt] = useState(() => {
+    try { return localStorage.getItem('ql.fullSongs') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('ql.fullSongs', fullSongsOpt ? '1' : '0'); } catch { /* private mode */ }
+  }, [fullSongsOpt]);
   // Tier 1 Quick Path. `autoStage` is what the button says while it works, so a
   // 15 second run is never a dead control with a spinner on it.
   const [autoBusy, setAutoBusy] = useState(false);
@@ -265,7 +277,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const liveRef = useRef({});
   liveRef.current = {
     section, manualLinks, selectedId, gen, spotlightMode, crystallized,
-    neuralA, neuralB, neuralPick, keywordDraft, contracts, dnaUsed, status,
+    neuralA, neuralB, neuralPick, songA, songB, keywordDraft, contracts, dnaUsed, status,
   };
 
   useEffect(() => registerDemoSnapshot('quantum-lab', {
@@ -281,6 +293,8 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       setNeuralA(s.neuralA);
       setNeuralB(s.neuralB);
       setNeuralPick(s.neuralPick);
+      setSongA(s.songA ?? null);
+      setSongB(s.songB ?? null);
       setKeywordDraft(s.keywordDraft);
       setContracts(s.contracts);
       setDnaUsed(s.dnaUsed);
@@ -425,6 +439,9 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     setCrystallized(false);
     setNeuralA(null);
     setNeuralB(null);
+    setSongA(null);
+    setSongB(null);
+    setSongErrB('');
     setKeywordDraft('');
     setEditingId(null);
     setStatus({
@@ -604,12 +621,19 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
    * grid as it looked BEFORE any of that — a verse for a board that never
    * existed. Each step hands the next one its actual result instead.
    */
-  const buildNeuralMessages = (variant, srcSection = null) => {
+  const gridContext = (srcSection = null) => {
     const sec = srcSection || section;
     const secCells = sec.lines.flatMap((l) => l.cells);
-    const secDna = srcSection ? dnaOf(sec, gen + 12) : dna;
-    const endWords = sec.lines.map((l) => l.cells[l.cells.length - 1].text);
-    const palette = clicheFree([...new Set(secCells.map((c) => c.text))]).join(', ');
+    return {
+      sec,
+      secDna: srcSection ? dnaOf(sec, gen + 12) : dna,
+      endWords: sec.lines.map((l) => l.cells[l.cells.length - 1].text),
+      palette: clicheFree([...new Set(secCells.map((c) => c.text))]).join(', '),
+    };
+  };
+
+  const buildNeuralMessages = (variant, srcSection = null) => {
+    const { sec, secDna, endWords, palette } = gridContext(srcSection);
     const spin = variant === 'B'
       ? 'Variant B: lean more abstract/image-heavy, slightly different angle on the same end-words.'
       : 'Variant A: lean more direct and emotional, plain language.';
@@ -648,7 +672,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         lead: 'Need an API key.',
         rest: ' Open the Settings tab, paste your free OpenRouter key, save, then come back and try Generate Neural Lyrics again.',
       });
-      return;
+      return null;
     }
     const audit = checkContracts(src, contracts);
     if (!audit.ok) {
@@ -656,7 +680,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         lead: 'Contracts block generate.',
         rest: ` Fix ${audit.violations.length} broken contract(s) first (panel → 2 Contracts → Audit), or remove them.`,
       });
-      return;
+      return null;
     }
     setBusy(true);
     setStatus({ lead: 'Writing A + B…', rest: ' Generating two multi-state verses under grid + DNA + style pressure. Pick A or B, run Truth Meter, then send.' });
@@ -693,12 +717,100 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       setNeuralB((outB || '').trim());
       setNeuralPick('A');
       setTruthReport(null);
+      // New verses make any earlier full songs stale.
+      setSongA(null);
+      setSongB(null);
+      setSongErrB('');
       setStatus({
         lead: 'Two states ready.',
-        rest: ' Pick A or B, open panel → 5 Truth Meter, then snapshot Journal (9) before you send.',
+        rest: ' Pick A or B, open panel → 5 Truth Meter, then snapshot Journal (9) before you send. Or write a full song for each.',
       });
+      return { a: (outA || '').trim(), b: (outB || '').trim() };
     } catch (e) {
       setStatus({ lead: 'Could not generate.', rest: ' ' + (e?.message || String(e)) + ' Check Settings and your internet, then try again.' });
+      return null;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /**
+   * FULL SONGS, ONE PER STATE.
+   *
+   * Takes the verse each state already wrote and builds a whole song around it
+   * under the same grid DNA, contracts and style pressure, with every keyword
+   * (Ghost Rider's 20 or the ones typed) woven across the song rather than
+   * forced into one verse. `srcSection` and the verses are passed in by
+   * Auto-Craft for the same stale-closure reason as doNeural.
+   */
+  const buildSongMessages = (variant, verse, srcSection = null) => {
+    const { sec, secDna, palette } = gridContext(srcSection);
+    const keywords = clicheFree(parseKeywords(keywordDraft));
+    const spin = variant === 'B'
+      ? 'Variant B: lean more abstract and image-heavy, a different angle on the same idea.'
+      : 'Variant A: lean more direct and emotional, plain language.';
+    const pressure = buildNeuralConstraints({
+      stylePressure: stylePressure || sec.stylePressure,
+      contracts,
+      section: sec,
+      dnaUsed,
+    });
+    return [
+      {
+        role: 'system',
+        content:
+          'You are a surgical lyricist. Write ONE complete song around the verse you are given. Use exactly these sections, each header in [brackets] on its own line: [Verse 1] [Chorus] [Verse 2] [Bridge] [Chorus]. [Verse 1] is the given verse, kept word for word. Every section is 4 lines. Verse 2 keeps the rhyme scheme and rhythm of Verse 1. The Chorus is a hook that repeats. The Bridge turns the song. Honor the constraints. No clichés, no explanations — output only the song. Never copy any real artist lyrics.\n' + NO_CLICHES,
+      },
+      {
+        role: 'user',
+        content: `Verse 1 (keep exactly):\n${verse}\n\nSeed palette: ${palette}\nRhyme scheme: ${secDna?.rhymeScheme || 'AABB'}\nStress signature: ${secDna?.stressSignature || ''}\n${pressure ? `CONSTRAINTS:\n${pressure}\n` : ''}${keywords.length ? `KEYWORDS — use every one of these at least once across the whole song: ${keywords.join(', ')}\n` : ''}${spin}\nWrite the full song now.`,
+      },
+    ];
+  };
+
+  const tidySong = (out) => String(out || '').replace(/^\s*```\w*\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
+
+  const writeFullSongs = async ({ section: srcSection = null, verseA = neuralA, verseB = neuralB } = {}) => {
+    if (!hasWritingAI(store.config)) {
+      setStatus({
+        lead: 'Need an API key.',
+        rest: ' Open the Settings tab, paste your free OpenRouter key, save, then come back and write the songs again.',
+      });
+      return null;
+    }
+    if (!verseA) {
+      setStatus({ lead: 'Nothing to build on.', rest: ' Auto-Craft or Generate the two verses first, then write the songs.' });
+      return null;
+    }
+    setBusy(true);
+    setSongA(null);
+    setSongB(null);
+    setSongErrB('');
+    try {
+      setStatus({ lead: 'Writing Song A…', rest: ' A whole song from State A, then one from State B, under the grid DNA and your keywords.' });
+      const outA = tidySong(await callAI(buildSongMessages('A', verseA, srcSection), store.config, 0.88, 1200));
+      setSongA(outA);
+
+      await new Promise((r) => setTimeout(r, 400));
+
+      setStatus({ lead: 'Writing Song B…', rest: ' Song A is done.' });
+      let outB = null;
+      try {
+        outB = tidySong(await callAI(buildSongMessages('B', verseB || verseA, srcSection), store.config, 0.95, 1200));
+        setSongB(outB);
+      } catch (errB) {
+        // B on its own is not a failed run. Say so; never hand back A as B.
+        console.warn('[The Matrix] Song B failed:', errB);
+        setSongErrB(errB?.message || String(errB));
+      }
+      setStatus(outB
+        ? { lead: 'Two songs ready.', rest: ' Song A and Song B side by side. Send either one to Songwriter.' }
+        : { lead: 'Song A ready.', rest: ' Song B could not be written. Press Write full songs again to retry both.' });
+      if (mobile) setDrawer('songs');
+      return { a: outA, b: outB };
+    } catch (e) {
+      setStatus({ lead: 'Could not write songs.', rest: ' ' + (e?.message || String(e)) + ' Check Settings and your internet, then try again.' });
+      return null;
     } finally {
       setBusy(false);
     }
@@ -751,7 +863,14 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       }
 
       setAutoStage('Writing both states…');
-      await doNeural(locked.section);
+      const verses = await doNeural(locked.section);
+
+      // "Also write full songs": same hand-off, the locked grid and the two
+      // fresh verses go straight in rather than through stale state.
+      if (fullSongsOpt && verses) {
+        setAutoStage('Writing full songs…');
+        await writeFullSongs({ section: locked.section, verseA: verses.a, verseB: verses.b });
+      }
     } finally {
       setAutoBusy(false);
       setAutoStage('');
@@ -764,6 +883,8 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   useLogged('The Matrix · Verse B', neuralB);
   useLogged('The Matrix · Picked', neuralPick);
   useLogged('The Matrix · Keywords', keywordDraft);
+  useLogged('The Matrix · Song A', songA);
+  useLogged('The Matrix · Song B', songB);
 
   const sendToSongwriter = () => {
     if (!activeNeural) {
@@ -778,6 +899,24 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         notes: `Quantum palette: ${[...new Set(cells.map((c) => c.text))].join(', ')}`,
       });
       setStatus({ lead: 'Sent to Songwriter.', rest: ` State ${neuralPick} is in Songwriter as “Matrix Verse”.` });
+    }
+  };
+
+  // A whole song goes in as its own [Verse 1]/[Chorus]/... sections.
+  const sendSongToSongwriter = (which) => {
+    const song = which === 'B' ? songB : songA;
+    if (!song) {
+      setStatus({ lead: 'Nothing to send.', rest: ` Song ${which} is not written yet. Press Write full songs first.` });
+      return;
+    }
+    if (onSendToSongwriter) {
+      onSendToSongwriter({
+        lyrics: song,
+        artist: 'The Matrix',
+        source: 'quantum',
+        notes: `Quantum palette: ${[...new Set(cells.map((c) => c.text))].join(', ')}`,
+      });
+      setStatus({ lead: 'Sent to Songwriter.', rest: ` Song ${which} is in Songwriter as a full song.` });
     }
   };
 
@@ -804,9 +943,10 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const ghost = useRef({});
   ghost.current = {
     keywordDraft, neuralA, neuralB, neuralPick, status, gen, crystallized, activeNeural,
-    loadKeywords, autoCraftVerse, sendToSongwriter, sendToForge, resetDemo,
+    songA, songB, songErrB,
+    loadKeywords, autoCraftVerse, writeFullSongs, sendToSongwriter, sendSongToSongwriter, sendToForge, resetDemo,
   };
-  const MATRIX_FAILED = /^(could not generate|need an api key|contracts block|spread and locked — but|type something first)/i;
+  const MATRIX_FAILED = /^(could not generate|could not write|nothing to build on|need an api key|contracts block|spread and locked — but|type something first)/i;
   const loadForGhost = async (keywords) => {
     const words = Array.isArray(keywords) ? keywords.join(', ') : String(keywords || '');
     if (!words.trim()) return;
@@ -822,6 +962,8 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         `THE MATRIX TAB: keywords "${g.keywordDraft}", ${g.gen} generations run, ${g.crystallized ? 'locked' : 'not locked'}. Status: ${g.status.lead}`,
         g.neuralA ? `State A:\n${g.neuralA}` : 'No verses written yet.',
         g.neuralB ? `State B:\n${g.neuralB}\nPicked: ${g.neuralPick}` : '',
+        g.songA ? `Full song A:\n${g.songA}` : '',
+        g.songB ? `Full song B:\n${g.songB}` : '',
       ].filter(Boolean).join('\n');
     },
     matrix_load_keywords: async ({ keywords } = {}) => {
@@ -847,6 +989,23 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       if (!ghost.current.activeNeural) throw new Error('No Matrix verse yet. Auto-Craft one first.');
       ghost.current.sendToSongwriter();
       return 'sent the verse to Songwriter';
+    },
+    /**
+     * WRITE THE FULL SONGS. One whole song per state from the verses already
+     * on the grid; optionally sends one to Songwriter.
+     */
+    matrix_write_full_songs: async ({ state } = {}) => {
+      if (!ghost.current.neuralA) throw new Error('No Matrix verse yet. Auto-Craft one first.');
+      await ghost.current.writeFullSongs();
+      await ghostSettle();
+      const s = ghost.current.status;
+      if (MATRIX_FAILED.test(s.lead)) throw new Error(s.lead + s.rest);
+      if (state) {
+        const which = String(state).toUpperCase() === 'B' ? 'B' : 'A';
+        ghost.current.sendSongToSongwriter(which);
+        return `wrote the full songs and sent Song ${which} to Songwriter`;
+      }
+      return ghost.current.songErrB ? 'wrote full Song A; Song B failed' : 'wrote a full song for State A and State B';
     },
     /**
      * USE THE STYLE DNA. Loads what Ghost Rider sent as the Matrix's style
@@ -1175,7 +1334,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         aria-busy={autoBusy}
         disabled={autoBusy || busy || running}
         data-demo="matrix-autocraft"
-        data-help="ONE CLICK. Spreads energy across the grid for 12 generations, locks the field, then writes two complete verses (State A and State B). Everything the six numbered buttons do, in the right order, without you having to remember it. Needs a free OpenRouter key in Settings."
+        data-help="ONE CLICK. Spreads energy across the grid for 12 generations, locks the field, then writes two complete verses (State A and State B). Tick 'Also write full songs' and it goes on to write a whole song for each state, side by side. Everything the six numbered buttons do, in the right order, without you having to remember it. Needs a free OpenRouter key in Settings."
         style={{
           width: '100%',
           display: 'flex',
@@ -1216,6 +1375,19 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           </span>
         </span>
       </button>
+
+      <label
+        className="ql-fullopt"
+        data-demo="ql-fullsongs-opt"
+        data-help="After the two verses, write a whole song for each state, side by side. Each song uses your Matrix DNA and your keywords. Takes a little longer."
+      >
+        <input
+          type="checkbox"
+          checked={fullSongsOpt}
+          onChange={(e) => setFullSongsOpt(e.target.checked)}
+        />
+        <span>Also write full songs (A + B)</span>
+      </label>
 
       <p
         className="ql-status"
@@ -1467,6 +1639,21 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             <button type="button" className="ql-mini" onClick={sendToForge} data-help="One-click: open Song Forge with this grid as the seed for a full song + cover.">
               → Send to Song Forge
             </button>
+            <button
+              type="button"
+              className="ql-mini ylw"
+              onClick={() => writeFullSongs()}
+              disabled={busy || autoBusy}
+              data-demo="ql-write-songs"
+              data-help="Write a whole song for State A and a whole song for State B, side by side. Uses your Matrix DNA and your keywords."
+            >
+              {busy ? 'Writing…' : 'Write full songs (A + B)'}
+            </button>
+            {mobile && (songA || songB || songErrB) && (
+              <button type="button" className="ql-mini grn" onClick={() => setDrawer('songs')} data-help="Open the two full songs side by side.">
+                View full songs
+              </button>
+            )}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div style={{ opacity: neuralPick === 'A' ? 1 : 0.55, border: neuralPick === 'A' ? '1px solid rgba(234,255,43,0.5)' : '1px solid transparent', borderRadius: 10, padding: 8 }}>
@@ -1476,6 +1663,56 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             <div style={{ opacity: neuralPick === 'B' ? 1 : 0.55, border: neuralPick === 'B' ? '1px solid rgba(234,255,43,0.5)' : '1px solid transparent', borderRadius: 10, padding: 8 }}>
               <div style={{ fontSize: '0.7rem', color: YLW, marginBottom: 6 }}>STATE B</div>
               <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'var(--faf-font)', fontSize: '0.92rem', lineHeight: 1.55, color: '#e6e8eb' }}>{neuralB || '—'}</pre>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Two full songs, side by side. One panel, one scroll. On the phone it
+          is its own full-width drawer with a close button, not a fourth tab. */}
+      {(songA || songB || songErrB) && (
+        <div
+          className="ql-panel ql-songs-out"
+          data-help="A whole song for State A and a whole song for State B, written from your Matrix DNA and keywords. Send either one to Songwriter."
+        >
+          <div className="ql-songs-head">
+            <h4 style={{ color: YLW }}>Full songs — A and B</h4>
+            {mobile && (
+              <button type="button" className="ql-mini" onClick={() => setDrawer(null)} aria-label="Close full songs">
+                ✕ Close
+              </button>
+            )}
+          </div>
+          <div className="ql-songs-cols">
+            <div className="ql-song-col">
+              <div className="ql-song-label">SONG A</div>
+              <pre className="ql-song-text">{songA || '—'}</pre>
+              <button
+                type="button"
+                className="ql-mini grn"
+                onClick={() => sendSongToSongwriter('A')}
+                disabled={!songA}
+                data-demo="ql-send-song-a"
+                data-help="Open Songwriter with Song A as a full song."
+              >
+                → Send Song A to Songwriter
+              </button>
+            </div>
+            <div className="ql-song-col">
+              <div className="ql-song-label">SONG B</div>
+              {songB ? <pre className="ql-song-text">{songB}</pre> : (
+                <p className="ql-song-err">{songErrB ? `Song B did not finish: ${songErrB}` : '—'}</p>
+              )}
+              <button
+                type="button"
+                className="ql-mini grn"
+                onClick={() => sendSongToSongwriter('B')}
+                disabled={!songB}
+                data-demo="ql-send-song-b"
+                data-help="Open Songwriter with Song B as a full song."
+              >
+                → Send Song B to Songwriter
+              </button>
             </div>
           </div>
         </div>

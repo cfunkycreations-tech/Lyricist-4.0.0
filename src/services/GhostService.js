@@ -378,6 +378,8 @@ ACTION NOTES:
       matrix_load_keywords {"keywords":"pawn shop, parking lot, promise"}
       matrix_autocraft {"keywords":"..."} loads them, spreads, locks and writes verses A and B.
       matrix_pick {"state":"A"|"B"}  matrix_send_to_songwriter {"state":"A"}
+      matrix_write_full_songs {"state":"A"|"B"?} writes a whole song for each state, side by
+        side, from the Matrix DNA and keywords; "state" also sends that song to Songwriter.
       matrix_load_dna {} loads the Style DNA Ghost Rider sent and writes verses
         A and B under it, seeded from the DNA's images.
       matrix_send_to_forge {}  matrix_reset {}

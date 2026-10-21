@@ -15,6 +15,7 @@ import { track, slug } from '../../services/analytics.js';
 import { Sparkles, RefreshCw, Trash2, Undo, Redo, Copy, Check, FileText, HelpCircle, Layers, Upload, PenLine, GitBranch, X, Share2, Send } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
 import { hasWritingAI } from '../../services/customAI.js';
+import SunoKitPanel, { useSunoKit } from '../common/SunoKit.jsx';
 // The logo and the founder photo were imported here but never rendered — a
 // leftover from the old in-tab header. Vite emits an imported asset whether or
 // not it is used, so both were being copied into every build for nothing.
@@ -36,6 +37,19 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio, incoming
   const [pasteDraft, setPasteDraft] = useState('');
   const lyricsFileRef = useRef(null);
   const workRef = useRef(null);
+  // Suno's Voice, Song description and 20 Matrix words, written from the song on screen.
+  const songText = store.getFullText();
+  const songHasWords = Boolean(songText.replace(/\[[^\]]*\]/g, '').trim());
+  const sunoKit = useSunoKit('songwriter', songHasWords ? songText : '');
+  const writeKit = async () => {
+    const out = await sunoKit.write(store, { lyrics: songText, tags: store.sunoTags, topic: store.topic, artist: store.artistRef });
+    // The tags box is the song's own; a kit only fills it when it is still empty.
+    if (out?.sunoTags && !String(store.sunoTags || '').trim()) {
+      store.setSunoTags(out.sunoTags);
+      saveSunoTags(out.sunoTags, store.artistRef || '');
+      applySongTags(store, { text: out.sunoTags });
+    }
+  };
 
   /**
    * Take lyrics the user wrote themselves and put them in the workspace.
@@ -526,6 +540,16 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio, incoming
             }}
           />
         </div>
+
+        <SunoKitPanel
+          kit={sunoKit.kit}
+          busy={sunoKit.busy}
+          error={sunoKit.error}
+          onWrite={writeKit}
+          canWrite={songHasWords}
+          show={{ tags: false }}
+          artist={store.artistRef || ''}
+        />
 
         {/* GENRE, SUBGENRE AND MOOD ARE BLENDS NOW — up to five each, mixed into
             one song, lead pick first. See MultiPick for why this is chips and a
