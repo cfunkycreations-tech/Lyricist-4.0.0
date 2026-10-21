@@ -1128,6 +1128,39 @@
    with a word on it, and tapping the lattice closes whatever is open.
    ══════════════════════════════════════════════════════════════════════════ */
 
+/* ── "Also write full songs" tick, under Auto-Craft ──────────────────────── */
+.ql-fullopt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: #cfd3d8;
+  cursor: pointer;
+  user-select: none;
+}
+.ql-fullopt input { width: 18px; height: 18px; accent-color: var(--accent-neon, #e7a540); cursor: pointer; }
+
+/* ── Two full songs, side by side ────────────────────────────────────────
+   One panel, one scroll: the page scrolls, the columns do not. */
+.ql-songs-out { margin-top: 12px; border-color: rgba(234, 255, 43, 0.4); }
+.ql-songs-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ql-songs-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+.ql-song-col { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.ql-song-label { font-size: 0.7rem; color: #eaff2b; letter-spacing: 0.08em; }
+.ql-song-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--faf-font);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: #e6e8eb;
+}
+.ql-song-err { margin: 0; font-size: 0.8rem; color: #ff9a8a; overflow-wrap: anywhere; }
+.ql-song-col .ql-mini { align-self: flex-start; }
+
 .ql-mob {
   display: block;
   position: relative;
@@ -1210,7 +1243,7 @@
   transition: transform 0.22s cubic-bezier(0.3, 0.8, 0.3, 1);
 }
 .ql-mob .ql-keywords  { top: 30px; height: 118px; overflow: hidden; padding: 5px 7px; }
-.ql-mob .ql-actionbar { top: 148px; bottom: 22px; overflow-y: auto; padding: 6px; }
+.ql-mob .ql-actionbar { top: 148px; bottom: 50px; overflow-y: auto; padding: 6px; }
 .ql-mob .ql-status    { bottom: 0; height: 22px; padding: 2px 8px; font-size: 0.55rem;
                         overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
@@ -1230,6 +1263,29 @@
 .ql-draw-controls .ql-keywords,
 .ql-draw-controls .ql-actionbar,
 .ql-draw-controls .ql-status { transform: none; }
+
+/* The Auto-Craft tick lives in the same drawer as the words, just above the
+   status line, so it is reachable on the phone where Auto-Craft itself is a
+   shell button. */
+.ql-mob .ql-fullopt {
+  position: absolute;
+  left: 0;
+  bottom: 22px;
+  width: 274px;
+  height: 28px;
+  z-index: 7;
+  margin: 0;
+  padding: 0 8px;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  font-size: 0.6rem;
+  background: rgba(10, 12, 15, 0.97);
+  border-right: 1px solid rgba(231, 165, 64, 0.35);
+  transform: translateX(-108%);
+  transition: transform 0.22s cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+.ql-mob .ql-fullopt input { width: 16px; height: 16px; }
+.ql-draw-controls .ql-fullopt { transform: none; }
 
 .ql-mob .ql-keywords textarea {
   min-height: 40px !important;
@@ -1309,6 +1365,28 @@
 .ql-draw-panels .ql-panels,
 .ql-draw-panels .ql-neural-out { transform: none; }
 
+/* ── DRAWER 4, full width: the two full songs ─────────────────────────────
+   Opens from the neural panel's "View full songs" button, closes with its own
+   X. Two columns, one scroll. */
+.ql-mob .ql-songs-out {
+  position: absolute;
+  top: 30px; left: 0; right: 0; bottom: 0;
+  z-index: 7;
+  margin: 0;
+  box-sizing: border-box;
+  overflow-y: auto;
+  border-radius: 0;
+  /* .ql-panel paints a translucent !important background; this drawer must be solid. */
+  background: #0a0c0f !important;
+  transform: translateY(108%);
+  transition: transform 0.22s cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+.ql-draw-songs .ql-songs-out { transform: none; }
+.ql-mob .ql-songs-cols { gap: 8px; }
+.ql-mob .ql-song-text  { font-size: 0.7rem; line-height: 1.45; }
+.ql-mob .ql-song-err   { font-size: 0.62rem; }
+.ql-mob .ql-song-label { font-size: 0.58rem; }
+
 /* The how-to is 339px of instructions — bigger than the tool it explains. The
    six step buttons carry the same six steps, in order, with the same words. */
 .ql-mob .ql-howto { display: none !important; }
@@ -1353,8 +1431,8 @@
 .ql-mob .ql-ent-panel.is-open { width: 210px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .ql-mob .ql-keywords, .ql-mob .ql-actionbar, .ql-mob .ql-status,
-  .ql-mob .ql-adv, .ql-mob .ql-panels, .ql-mob .ql-neural-out { transition: none; }
+  .ql-mob .ql-keywords, .ql-mob .ql-actionbar, .ql-mob .ql-status, .ql-mob .ql-fullopt,
+  .ql-mob .ql-adv, .ql-mob .ql-panels, .ql-mob .ql-neural-out, .ql-mob .ql-songs-out { transition: none; }
 }
 /* ══════════════════════════════════════════════════════════════════════════
    THE FIRE CANVAS.

@@ -98,7 +98,7 @@ One place to spark a whole release-ready idea fast.`
 
 Type your own keywords, up to a full grid of words and short phrases. They stay yours through every transform.
 
-Then press Auto-Craft Verse. One button spreads the energy across the grid, locks the field, and writes two neural verses from it: State A and State B. Pick the one you like. One click sends it to Songwriter. Another click sends the grid seed to Song Forge.
+Then press Auto-Craft Verse. One button spreads the energy across the grid, locks the field, and writes two neural verses from it: State A and State B. Pick the one you like. Tick Also write full songs and it writes a whole song for each state, side by side, using your DNA and keywords. One click sends any of them to Songwriter. Another click sends the grid seed to Song Forge.
 
 Want to drive it yourself? Open Advanced Studio underneath. Spotlight heats a tile, Run twelve gens spreads energy, Crystallize settles the field without stealing your words, and the nine-suite feature hub and the inspectors are all in there.
 

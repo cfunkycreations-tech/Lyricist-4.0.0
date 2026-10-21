@@ -362,6 +362,7 @@ const BEFORE = {
     { point: '[data-demo="matrix-autocraft"]' },
   ],
   matrix_send_to_songwriter: [{ point: '[data-demo="ql-send-songwriter"]' }],
+  matrix_write_full_songs: [{ point: '[data-demo="ql-write-songs"]' }],
   matrix_send_to_forge: [{ point: '[data-demo="ql-send-forge"]' }],
 
   // Black Hole Studios. None of these had an entry, so on that tab the Ghost
