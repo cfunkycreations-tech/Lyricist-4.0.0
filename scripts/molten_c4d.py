@@ -100,8 +100,15 @@ SHOTS = {
 }
 FOCAL = 36.0
 TITLE_DEPTH = 36.0
-TITLE_SINK = 0.75                    # title centre sits this x its height above the surface
-TITLE_BODY = c4d.Vector(0.012, 0.010, 0.008)    # near-black so the letters read on the gold pool
+TITLE_SINK = 1.9                     # title centre, this x its height above the surface. Low
+                                     # enough to straddle the waterline and the letters have no
+                                     # background to read against: dark sky above, bright gold
+                                     # below, and the title lost in the join.
+TITLE_BODY = c4d.Vector(0.80, 0.82, 0.86)     # pale chrome: the only value that reads over the pool
+TITLE_SHINE = 0.55                   # gold caught along the letters
+                                     # a full mirror of the same image, so anything
+                                     # near it (0.8 did this) makes the letters wear
+                                     # the pool and the title disappears into it.
 
 FOG_COLOUR = c4d.Vector(0.05, 0.012, 0.0)
 FOG_DISTANCE = 6500.0
@@ -372,7 +379,7 @@ def title_material(doc, env_path):
     put(mat, "MATERIAL_USE_LUMINANCE", False)
     put(mat, "MATERIAL_USE_ENVIRONMENT", True, "Environment")
     put(mat, "MATERIAL_ENVIRONMENT_SHADER", bitmap(mat, env_path))
-    put(mat, "MATERIAL_ENVIRONMENT_BRIGHTNESS", 0.8)
+    put(mat, "MATERIAL_ENVIRONMENT_BRIGHTNESS", TITLE_SHINE)
     mat.Update(True, True)
     return mat
 
