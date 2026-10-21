@@ -23,7 +23,7 @@ import { registerDemoSnapshot } from '../../services/demoSafety.js';
 import { registerGhostActions, ghostSettle } from '../../services/ghostBus.js';
 import { useMobile } from '../../mobile/useMobile.js';
 import './QuantumLab.css';
-import { ListChecks, SlidersHorizontal, ScanSearch, ArrowDownToLine, Zap, Crosshair, Snowflake, Cpu, Lock, Unlock, Syringe, X, ChevronDown } from 'lucide-react';
+import { SlidersHorizontal, ArrowDownToLine, Zap, Crosshair, Snowflake, Cpu, Lock, Unlock, Syringe } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
 import { hasWritingAI } from '../../services/customAI.js';
 
@@ -185,16 +185,14 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const [crystallized, setCrystallized] = useState(false);
   const [entView, setEntView] = useState(true);
 
-  /* PHONE ONLY. In landscape the grid is the tool; the keyword box, the
-     step buttons and the three inspector panels were eating 400 of the 915
-     available pixels and sitting on top of the thing you came here to see.
-     They become two drawers behind two labelled buttons instead. Both are
-     closed on arrival, so the grid opens full width. */
+  /* PHONE ONLY. One column, one scroll: keywords, grid, Auto-Craft, Advanced,
+     results, inspector, in that order, all in the normal flow. Nothing is
+     hidden off-canvas and nothing scrolls on its own. The layout lives in
+     the `.ql-mob` block at the end of QuantumLab.css. */
   const mobile = useMobile();
-  const [drawer, setDrawer] = useState(null);      // null | 'controls' | 'adv' | 'panels' | 'songs'
-  /* The linked-pairs readout floats over the grid and covers four tiles.
-     It is a glance, not a panel: a chip that opens on hover, and on tap for
-     touch screens where hover does not exist. */
+  /* The linked-pairs readout is a glance, not a panel: a chip that opens on
+     hover, and on tap for touch screens where hover does not exist. On the
+     desktop it floats over the grid; on the phone it sits above it. */
   const [entOpen, setEntOpen] = useState(false);
   const [status, setStatus] = useState({
     lead: 'Your words first.',
@@ -221,7 +219,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   // 15 second run is never a dead control with a spinner on it.
   const [autoBusy, setAutoBusy] = useState(false);
   const [autoStage, setAutoStage] = useState('');
-  // Tier 2 drawer. Closed on arrival, deliberately — see the note above the
+  // Tier 2 section. Closed on arrival, deliberately — see the note above the
   // Advanced Studio block in the render.
   const [advOpen, setAdvOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -232,7 +230,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
    *
    * It used to default open, which put a six-step manual above the fold on a
    * tab whose entire point is now one button. The steps it explains all live in
-   * the Advanced Studio drawer; somebody using the Quick Path never needs them.
+   * the Advanced Studio section; somebody using the Quick Path never needs them.
    * Still one click away, and still remembered per browser.
    */
   const [howtoOpen, setHowtoOpen] = useState(() => {
@@ -242,8 +240,17 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     try { localStorage.setItem('ql.howtoOpen', howtoOpen ? '1' : '0'); } catch { /* private mode */ }
   }, [howtoOpen]);
   const howtoRef = useRef(null);
+  const kwRef = useRef(null);
+  const songsRef = useRef(null);
   // Freeform keywords Chris types — commas/newlines keep multi-word phrases together
   const [keywordDraft, setKeywordDraft] = useState('');
+  // Phone: the keyword box grows with what you type instead of scrolling inside itself.
+  useEffect(() => {
+    const el = kwRef.current;
+    if (!el || !mobile) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [keywordDraft, mobile]);
   // Inline edit for the selected tile
   const [editDraft, setEditDraft] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -804,9 +811,10 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         setSongErrB(errB?.message || String(errB));
       }
       setStatus(outB
-        ? { lead: 'Two songs ready.', rest: ' Song A and Song B side by side. Send either one to Songwriter.' }
+        ? { lead: 'Two songs ready.', rest: (mobile ? ' Song A and Song B below. Send either one to Songwriter.' : ' Song A and Song B side by side. Send either one to Songwriter.') }
         : { lead: 'Song A ready.', rest: ' Song B could not be written. Press Write full songs again to retry both.' });
-      if (mobile) setDrawer('songs');
+      // The songs land far below the button on a phone; take the reader to them.
+      if (mobile) setTimeout(() => songsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
       return { a: outA, b: outB };
     } catch (e) {
       setStatus({ lead: 'Could not write songs.', rest: ' ' + (e?.message || String(e)) + ' Check Settings and your internet, then try again.' });
@@ -833,7 +841,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
    * takes the previous step's return value instead. This is the same reason
    * buildNeuralMessages accepts srcSection.
    *
-   * The manual Step 3/4/5/6 buttons are untouched and still in the drawer.
+   * The manual Step 3/4/5/6 buttons are untouched and still in Advanced.
    * This does not replace them; it is the same transforms with nothing to
    * remember.
    */
@@ -1058,49 +1066,10 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const stress01 = (s) => (s > 0 ? 'strong' : 'weak');
   const dominant = dna?.rhymeScheme ? [...new Set(dna.rhymeScheme.split(''))].join(' · ') : '—';
 
-  const rootCls = ['ql-root', mobile && 'ql-mob', drawer && `ql-draw-${drawer}`]
-    .filter(Boolean).join(' ');
+  const rootCls = ['ql-root', mobile && 'ql-mob'].filter(Boolean).join(' ');
 
   return (
     <div className={rootCls}>
-      {/* ── PHONE: the two drawer buttons ──────────────────────────────────
-          Labelled, always visible, sitting above the grid. No swipe-from-
-          the-edge gesture, no hidden handle: if a control exists it has a
-          button with a word on it. */}
-      {mobile && (
-        <div className="ql-mobbar">
-          <button
-            type="button"
-            className={`ql-mobtab ${drawer === 'controls' ? 'is-open' : ''}`}
-            onClick={() => setDrawer((d) => (d === 'controls' ? null : 'controls'))}
-            data-help="Your keywords and all six step buttons. Slides over the grid, then closes again."
-          >
-            <Icon i={ListChecks} />Words &amp; steps <Icon i={drawer === 'controls' ? X : ChevronDown} />
-          </button>
-          <button
-            type="button"
-            className={`ql-mobtab ql-mobtab-mid ${drawer === 'adv' ? 'is-open' : ''}`}
-            onClick={() => setDrawer((d) => (d === 'adv' ? null : 'adv'))}
-            data-help="The advanced set: DNA, contracts, measure, multi-section, truth meter, stress, loop, style pressure and the collapse journal."
-          >
-            <Icon i={SlidersHorizontal} />Advanced
-          </button>
-          <button
-            type="button"
-            className={`ql-mobtab ${drawer === 'panels' ? 'is-open' : ''}`}
-            onClick={() => setDrawer((d) => (d === 'panels' ? null : 'panels'))}
-            data-help="Word Inspector, Section DNA and the scores for the grid as it stands."
-          >
-            <Icon i={drawer === 'panels' ? X : ChevronDown} /><Icon i={ScanSearch} />Inspector
-          </button>
-        </div>
-      )}
-
-      {/* Tapping the grid closes whichever drawer is open. */}
-      {mobile && drawer && (
-        <div className="ql-mobscrim" onClick={() => setDrawer(null)} aria-hidden="true" />
-      )}
-
       {/* YOUR KEYWORDS — primary entry point (user owns the grid) */}
       <div
         className="ql-keywords"
@@ -1112,6 +1081,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         </label>
         <textarea
           id="ql-kw-input"
+          ref={kwRef}
           className="ql-keywords-input"
           rows={3}
           placeholder={'Example:\npawn shop, borrowed truck, last paycheck\ncounty line, empty cup, fire\n\nComma or new line between phrases. As many as you want.'}
@@ -1273,7 +1243,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             their own heat ramp, which is the part that actually carries
             meaning; the particle layer on top was decoration. */}
 
-        <div className="ql-lattice" ref={gridRef} style={{ gridTemplateColumns: `repeat(${cols}, minmax(72px, 1fr))` }}>
+        <div className="ql-lattice" ref={gridRef} style={{ gridTemplateColumns: `repeat(${cols}, minmax(${mobile ? 0 : 72}px, 1fr))` }}>
           {section.lines.map((line) =>
             line.cells.map((cell) => {
               const isSel = cell.id === selectedId;
@@ -1326,7 +1296,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       {/* ══ TIER 1 — THE QUICK PATH ═══════════════════════════════════════
           One button, directly under the grid, doing the whole job. This is the
           default view and it is what the tab is FOR. Everything else lives in
-          the drawer below and nobody has to open it to get a verse. */}
+          the Advanced section below and nobody has to open it to get a verse. */}
       <button
         type="button"
         className="ql-quickpath"
@@ -1366,8 +1336,8 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           </span>
           <span className="ql-mono" style={{
             display: 'block',
-            fontSize: '0.68rem',
-            letterSpacing: '0.16em',
+            fontSize: mobile ? '0.75rem' : '0.68rem',
+            letterSpacing: mobile ? '0.08em' : '0.16em',
             opacity: 0.75,
             marginTop: 3,
           }}>
@@ -1572,7 +1542,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       {/* The status line used to sit here, between the action bar and the
           feature panels. It moved up next to Auto-Craft: it reports what the
           Quick Path is doing too, and a progress line hidden inside a closed
-          drawer is a progress line nobody reads. */}
+          closed section is a progress line nobody reads. */}
 
       {/* Features 1–9: DNA, rhyme links, measure, multi-section, truth, stress, loop, style, journal */}
       <QuantumFeaturesPanel
@@ -1607,7 +1577,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       {/* ══ END TIER 2 ═══════════════════════════════════════════════════ */}
 
       {/* Multi-state neural output A / B + one-click handoffs.
-          OUTSIDE the drawer on purpose: this is the Quick Path's result, and it
+          OUTSIDE Advanced on purpose: this is the Quick Path's result, and it
           has to be visible to somebody who never opens Advanced Studio. */}
       {(neuralA || neuralB) && (
         <div
@@ -1649,39 +1619,30 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             >
               {busy ? 'Writing…' : 'Write full songs (A + B)'}
             </button>
-            {mobile && (songA || songB || songErrB) && (
-              <button type="button" className="ql-mini grn" onClick={() => setDrawer('songs')} data-help="Open the two full songs side by side.">
-                View full songs
-              </button>
-            )}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap: 12 }}>
             <div style={{ opacity: neuralPick === 'A' ? 1 : 0.55, border: neuralPick === 'A' ? '1px solid rgba(234,255,43,0.5)' : '1px solid transparent', borderRadius: 10, padding: 8 }}>
-              <div style={{ fontSize: '0.7rem', color: YLW, marginBottom: 6 }}>STATE A</div>
+              <div style={{ fontSize: mobile ? '0.78rem' : '0.7rem', color: YLW, marginBottom: 6 }}>STATE A</div>
               <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'var(--faf-font)', fontSize: '0.92rem', lineHeight: 1.55, color: '#e6e8eb' }}>{neuralA || '—'}</pre>
             </div>
             <div style={{ opacity: neuralPick === 'B' ? 1 : 0.55, border: neuralPick === 'B' ? '1px solid rgba(234,255,43,0.5)' : '1px solid transparent', borderRadius: 10, padding: 8 }}>
-              <div style={{ fontSize: '0.7rem', color: YLW, marginBottom: 6 }}>STATE B</div>
+              <div style={{ fontSize: mobile ? '0.78rem' : '0.7rem', color: YLW, marginBottom: 6 }}>STATE B</div>
               <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'var(--faf-font)', fontSize: '0.92rem', lineHeight: 1.55, color: '#e6e8eb' }}>{neuralB || '—'}</pre>
             </div>
           </div>
         </div>
       )}
 
-      {/* Two full songs, side by side. One panel, one scroll. On the phone it
-          is its own full-width drawer with a close button, not a fourth tab. */}
+      {/* Two full songs, side by side. One panel, one scroll. On the phone the
+          two songs stack, and Write full songs scrolls here when they land. */}
       {(songA || songB || songErrB) && (
         <div
+          ref={songsRef}
           className="ql-panel ql-songs-out"
           data-help="A whole song for State A and a whole song for State B, written from your Matrix DNA and keywords. Send either one to Songwriter."
         >
           <div className="ql-songs-head">
             <h4 style={{ color: YLW }}>Full songs — A and B</h4>
-            {mobile && (
-              <button type="button" className="ql-mini" onClick={() => setDrawer(null)} aria-label="Close full songs">
-                ✕ Close
-              </button>
-            )}
           </div>
           <div className="ql-songs-cols">
             <div className="ql-song-col">
