@@ -87,6 +87,10 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
 
+  // Video asks for byte ranges (iOS Safari insists). A cached whole-file answer
+  // to a range request stops the clip playing, so ranges go straight out.
+  if (req.headers.has('range')) return;
+
   const url = new URL(req.url);
 
   // Someone else's server is not ours to cache. Kaggle, the relay and
