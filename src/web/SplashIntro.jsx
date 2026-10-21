@@ -39,6 +39,14 @@ import './SplashIntro.css';
  * opener you cannot escape is an opener people uninstall.
  */
 
+/**
+ * Phones get the opener at all. Chris, 2026-10-21: "if i don't like it, we'll
+ * just keep them on the desktop version." Flip this to false and the desktop
+ * app and desktop browsers keep it while every phone goes straight to the app.
+ * Nothing else needs touching.
+ */
+const PLAY_ON_PHONE = true;
+
 const REDUCED_MOTION = typeof window !== 'undefined'
   && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
@@ -59,7 +67,10 @@ function isPortrait() {
 function shouldPlay() {
   if (typeof window === 'undefined') return false;
   if (REDUCED_MOTION) return false;
-  if (isPhone() && isPortrait()) return false;                // sideways only on a phone
+  if (isPhone()) {
+    if (!PLAY_ON_PHONE) return false;                         // desktop only
+    if (isPortrait()) return false;                           // sideways only on a phone
+  }
   return true;
 }
 
