@@ -37,7 +37,7 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio, incoming
   const [pasteDraft, setPasteDraft] = useState('');
   const lyricsFileRef = useRef(null);
   const workRef = useRef(null);
-  // Suno's Voice, Song description and 30 Matrix words, written from the song on screen.
+  // Suno's Voice, Song description and 20 Matrix words, written from the song on screen.
   const songText = store.getFullText();
   const songHasWords = Boolean(songText.replace(/\[[^\]]*\]/g, '').trim());
   const sunoKit = useSunoKit('songwriter', songHasWords ? songText : '');

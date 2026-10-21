@@ -12,7 +12,7 @@ import './SunoKit.css';
  * THE SUNO KIT PANEL.
  *
  * Suno's new create screen asks for Styles, a Voice, and a description of the
- * song. Lyricist writes all three (plus thirty words for The Matrix) from the
+ * song. Lyricist writes all three (plus twenty words for The Matrix) from the
  * song on screen, and every one has a Copy button. One component, four tabs.
  *
  * `useSunoKit(tabKey, source)` keeps the kit across tab switches. It is tied to
@@ -134,7 +134,7 @@ export default function SunoKitPanel({ kit, busy, error, onWrite, show = {}, art
           <div className="sk-label"><b>{words.length} Matrix words</b></div>
           <div className="sk-words">{words.map((w, i) => <span key={i}>{w}</span>)}</div>
           <button type="button" className="sk-btn" onClick={() => setSent(sendKitWordsToMatrix(words, artist))}
-            data-help="Sends these words to The Matrix: the first 20 fill its tiles, all of them go in its keyword box. It replaces the grid that is there, so it only happens when you tap.">
+            data-help="Fills The Matrix's 20 tiles with these words. It replaces the grid that is there, so it only happens when you tap.">
             <Icon i={Grid3x3} />{sent ? 'Sent to The Matrix' : `Send ${words.length} words to The Matrix`}
           </button>
         </div>

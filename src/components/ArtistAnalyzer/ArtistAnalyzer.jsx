@@ -29,7 +29,7 @@ const promptBuilders = {
   full: (artist) => `Comprehensive analysis of ${artist} as a lyricist: style, flow, themes, era, influences, and what makes them unique. Use catalog examples.`
 };
 
-// How each report is named when the 30 Matrix words are drawn from it.
+// How each report is named when the 20 Matrix words are drawn from it.
 const KIND_NAME = { style: 'lyrical style', flow: 'flow and cadence', themes: 'common themes', full: 'full' };
 
 /**
@@ -62,7 +62,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
   const [ghostTopic, setGhostTopic] = useState(boot.ghostTopic || '');
   const [ghostLyrics, setGhostLyrics] = useState(boot.ghostLyrics || '');
   const [sunoTags, setSunoTags] = useState(boot.sunoTags || '');
-  // The 30 words drawn from the report on screen, for The Matrix. They arrive with the analysis.
+  // The 20 words drawn from the report on screen, for The Matrix. They arrive with the analysis.
   const [matrixWords, setMatrixWords] = useState(Array.isArray(boot.matrixWords) ? boot.matrixWords : []);
   const [wordsSent, setWordsSent] = useState(false);
   const [loadingWords, setLoadingWords] = useState(false);
@@ -178,7 +178,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
       if (autoSaveReports) saveReportToDisk(result);
       // Kick Style DNA extract in the background (does not block the report)
       extractStyleDNA(result, artist.trim());
-      // And the 30 words for The Matrix, from the same report, in parallel.
+      // And the 20 words for The Matrix, from the same report, in parallel.
       makeAnalysisWords(result, artist.trim());
     } catch (e) {
       setErrorMsg(e.message);
@@ -236,7 +236,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
     }
   };
 
-  /** The 30 Matrix words, pulled from the analysis on screen. Returns them; a failure shows on the card, with Try again. */
+  /** The 20 Matrix words, pulled from the analysis on screen. Returns them; a failure shows on the card, with Try again. */
   const makeAnalysisWords = async (reportText = analysis, artistName = artist.trim()) => {
     if (!reportText || !hasWritingAI(store.config)) return null;
     setLoadingWords(true);
@@ -277,7 +277,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
 
       setGhostLyrics(lyrics);
       setSunoTags(tags);
-      // The 30 words from the analysis stay; the song's own words only fill an empty list.
+      // The 20 words from the analysis stay; the song's own words only fill an empty list.
       setMatrixWords((have) => (have.length ? have : (words || [])));
       setVoice(v || '');
       setSongDesc(description || '');
@@ -403,7 +403,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
   };
 
   /**
-   * THE 30 WORDS GO TO THE MATRIX ON A TAP, never on their own: loading a grid
+   * THE 20 WORDS GO TO THE MATRIX ON A TAP, never on their own: loading a grid
    * once wiped one Chris had filled. Saved first, so The Matrix picks them up
    * even if it has not been opened yet; the event covers the open one.
    */
@@ -492,7 +492,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
       if (!g.ghostLyrics) throw new Error('The write came back empty. Try it again.');
       return `wrote a verse and hook in the style of ${g.artist}${g.sunoTags ? `. Suno tags: ${g.sunoTags}` : ''}${g.matrixWords.length ? `. ${g.matrixWords.length} Matrix words ready: ${g.matrixWords.join(', ')}` : ''}${g.voice ? `. Suno voice: ${g.voice}` : ''}${g.songDesc ? `. Suno song description: ${g.songDesc}` : ''}`;
     },
-    /** The Send words button: the 30 words pulled from the analysis, into The Matrix. */
+    /** The Send words button: the 20 words pulled from the analysis, into The Matrix. */
     ghostrider_send_words_to_matrix: () => {
       const g = ghost.current;
       if (!g.matrixWords.length) throw new Error('No Matrix words yet. Analyze an artist first.');
@@ -880,15 +880,15 @@ export default function ArtistAnalyzer({ onGhostSend }) {
             </div>
           )}
 
-          {/* The 30 Matrix words, pulled from the analysis on screen. One tap into The Matrix. */}
+          {/* The 20 Matrix words, pulled from the analysis on screen. One tap into The Matrix. */}
           {analysis && (
             <div
               data-demo="gr-matrix-words"
               style={{ background: 'rgba(16,18,21,0.85)', border: '1px solid rgba(155,161,170,0.3)', borderRadius: 12, padding: 18 }}
-              data-help="Thirty words and phrases pulled from the analysis above, not random ones. Send them to The Matrix: the first 20 fill its tiles and all of them guide the lyrics."
+              data-help="Twenty words and phrases pulled from the analysis above, not random ones. Send them to The Matrix: they fill its 20 tiles and guide the lyrics."
             >
               <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e7a540', marginBottom: 10 }}>
-                <Icon i={Grid3x3} />{matrixWords.length || 30} Words for The Matrix {loadingWords ? '(pulling…)' : ''}
+                <Icon i={Grid3x3} />{matrixWords.length || 20} Words for The Matrix {loadingWords ? '(pulling…)' : ''}
               </h4>
               {matrixWords.length > 0 && (
                 <>
@@ -922,7 +922,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
                 <button
                   type="button"
                   onClick={() => makeAnalysisWords()}
-                  data-help="Pulls 30 words and phrases out of the analysis on screen."
+                  data-help="Pulls 20 words and phrases out of the analysis on screen."
                   style={{
                     width: '100%',
                     padding: '10px',
@@ -935,7 +935,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
                     cursor: 'pointer',
                   }}
                 >
-                  {wordsError ? 'Try again' : 'Pull 30 words from this analysis'}
+                  {wordsError ? 'Try again' : 'Pull 20 words from this analysis'}
                 </button>
               )}
               {loadingWords && !matrixWords.length && <div style={{ color: 'rgba(155,161,170,0.7)', fontSize: '0.78rem' }}>Reading the analysis…</div>}

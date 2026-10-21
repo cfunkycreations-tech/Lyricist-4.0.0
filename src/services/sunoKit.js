@@ -2,16 +2,12 @@ import { CLICHE_RE, clicheFree } from './cliches.js';
 
 /**
  * THE SUNO KIT: everything Suno's create screen asks for, written for the song.
- * Styles tags, a Voice line, a short Song description, and thirty Matrix words.
+ * Styles tags, a Voice line, a short Song description, and twenty Matrix words.
  * Pure helpers only (no network); AIService writes the kit, SunoKit.jsx shows it.
  */
 
-/**
- * Number of words handed to The Matrix. Chris, 2026-10-21: thirty. The grid shows
- * its 20 tiles from the front of the list; all thirty ride in the keyword box and
- * into the lyric constraints.
- */
-export const MATRIX_WORD_COUNT = 30;
+/** Number of words handed to The Matrix: one per tile. */
+export const MATRIX_WORD_COUNT = 20;
 
 const MARKER_RE = /^[ \t]*[-=*#]{2,}[ \t]*(SUNO TAGS|MATRIX WORDS|VOICE(?: DESCRIPTION)?|SONG DESCRIPTION)[ \t]*[-=*#:]*[ \t]*$/gim;
 

@@ -979,7 +979,7 @@ function parseBridgeVariations(text) {
  * @param {Object} store - LyricStore, for the API key and model config.
  * @param {{report?: string, kind?: string, motifs?: string[]}} [analysis] - What
  *   Ghost Rider has learned about the artist (the report on screen, which kind
- *   it is, the Style DNA image clusters). The thirty Matrix words come from it.
+ *   it is, the Style DNA image clusters). The twenty Matrix words come from it.
  * @returns {Promise<{lyrics: string, sunoTags: string, matrixWords: string[], voice: string, description: string}>}
  */
 export async function writeInArtistStyle(artist, topic, store, analysis = {}) {
@@ -1042,7 +1042,7 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
 
 /**
  * The Suno kit for a song that is already written, on any tab: Styles tags, a
- * Voice line, a Song description and thirty Matrix words, in one call.
+ * Voice line, a Song description and twenty Matrix words, in one call.
  *
  * With an Input Caption (Black Hole Studios) the description is a short version
  * of it: same facts, nothing new. Without one it comes from the lyrics.
@@ -1118,7 +1118,7 @@ export async function writeAnalysisWords({ artist = '', report = '', kind = '', 
 export { MATRIX_WORD_COUNT };
 
 /**
- * The thirty Matrix words ride on the song's own request, no extra call. They
+ * The twenty Matrix words ride on the song's own request, no extra call. They
  * are not random: every one comes out of the analysis Ghost Rider already did
  * (Full, Lyrical Style, Flow & Cadence or Common Themes), so The Matrix grid
  * starts from the artist's own material.

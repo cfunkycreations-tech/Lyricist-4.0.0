@@ -365,7 +365,7 @@ ACTION NOTES:
       ghostrider_save_song {} saves the song and its Suno tags as a .txt in
         Documents\\Lyricist Style Reports (the Save Song & Tags button).
       ghostrider_send_dna_to_matrix {} sends the artist's Style DNA to The Matrix.
-      ghostrider_send_words_to_matrix {} sends the 30 words pulled from the analysis
+      ghostrider_send_words_to_matrix {} sends the 20 words pulled from the analysis
         (drawn from the report, not random) into The Matrix.
         Analyze the artist first.
       No artist named? Leave "artist" out and it picks one itself. NEVER ask.

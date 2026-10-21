@@ -387,7 +387,7 @@ export function writeStylePressure(styleDNA, artist = '') {
 }
 
 // ─── 8b. Words from Ghost Rider ───────────────────────────────
-// Thirty words drawn from the artist's analysis, kept so The Matrix finds them
+// Twenty words drawn from the artist's analysis, kept so The Matrix finds them
 // even when its tab was not open yet when they were sent.
 const MATRIX_WORDS_KEY = 'lyricistMatrixWords';
 
