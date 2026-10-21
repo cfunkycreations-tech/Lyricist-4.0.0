@@ -16,6 +16,7 @@ import NetStatus from './web/NetStatus.jsx';
 import DesktopUpdate from './web/DesktopUpdate.jsx';
 import PurchaseLock from './web/PurchaseLock.jsx';
 import WhatsNew from './web/WhatsNew.jsx';
+import SplashIntro from './web/SplashIntro.jsx';
 import PhoneInvite from './web/PhoneInvite.jsx';
 import DialogHost from './components/common/DialogHost.jsx';
 import { initAnalytics, track } from './services/analytics.js';
@@ -89,6 +90,9 @@ try {
             straight through in the desktop app and on the dev server. */}
         <PurchaseLock>
           <App />
+          {/* The 8s opener, over everything until it ends. Phones get it
+              sideways only - see SplashIntro.jsx. */}
+          <SplashIntro />
           {/* Every fresh open, for everyone: what changed. See WhatsNew.jsx. */}
           <WhatsNew />
           {/* Desktop only: how to put it on the phone, first thing, once. */}
