@@ -112,7 +112,12 @@ def gguf_repos(variant):
 if not HF_TOKEN:
     try:
         from kaggle_secrets import UserSecretsClient
-        HF_TOKEN = UserSecretsClient().get_secret("HF_TOKEN")
+        for _name in ("HF_TOKEN", "huggingface", "HUGGINGFACE", "hf_token"):
+            try:
+                HF_TOKEN = UserSecretsClient().get_secret(_name)
+                break
+            except Exception:
+                pass
     except Exception:
         pass
 
