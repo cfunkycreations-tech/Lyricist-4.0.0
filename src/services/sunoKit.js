@@ -87,12 +87,13 @@ export function cleanTags(block, artist = '') {
 
 /** Split, de-banned, de-named, de-duplicated, trimmed to one per tile. */
 export function cleanMatrixWords(block, artistName, { motifs = [] } = {}) {
-  const artistLc = String(artistName || '').toLowerCase();
+  const terms = nameTerms(artistName);
+  const named = (w) => terms.some((t) => String(w).toLowerCase().includes(t));
   const seen = new Set();
   const words = clicheFree(
     String(block || '').trim().split('\n')[0].split(',')
       .map((w) => w.replace(/^["'\s]+|["'.\s]+$/g, ''))
-      .filter((w) => w.length > 1 && w.length < 40 && !w.toLowerCase().includes(artistLc))
+      .filter((w) => w.length > 1 && w.length < 40 && !named(w))
   ).filter((w) => {
     const k = w.toLowerCase();
     if (seen.has(k)) return false;
@@ -103,7 +104,7 @@ export function cleanMatrixWords(block, artistName, { motifs = [] } = {}) {
   for (const m of clicheFree(motifs)) {
     if (words.length >= MATRIX_WORD_COUNT) break;
     const k = String(m).toLowerCase().trim();
-    if (k && !seen.has(k) && !k.includes(artistLc)) { seen.add(k); words.push(String(m).trim()); }
+    if (k && !seen.has(k) && !named(k)) { seen.add(k); words.push(String(m).trim()); }
   }
   return words.slice(0, MATRIX_WORD_COUNT);
 }
