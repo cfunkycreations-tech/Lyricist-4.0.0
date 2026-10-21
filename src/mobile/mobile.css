@@ -128,9 +128,23 @@ body.lyricist-mobile .app-footer  { display: none !important; }
   align-items: center;
   gap: 8px;
   padding: 0 8px;
-  background: rgba(8,9,11,0.72);
-  backdrop-filter: blur(10px);
+  /* Solid, never see-through: a translucent blurred bar smears whatever scrolls
+     under it. */
+  background: #08090b;
   border-bottom: 1px solid rgba(231, 165, 64, 0.22);
+}
+
+/* The notch strip above the bar is solid too, so nothing shows through it. */
+.mob-root.is-tool::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--mob-top, env(safe-area-inset-top, 0px));
+  background: #08090b;
+  z-index: 904;
+  pointer-events: none;
 }
 
 .mob-wordmark {
@@ -817,3 +831,12 @@ body.lyricist-mobile .desktop-only { display: none !important; }
   pointer-events: none;
 }
 .mob-c4d-v[data-on="true"] { opacity: 1; }
+
+/* No backdrop blur anywhere on the phone: the floor is flat black, so it only
+   smears panel edges and the strip under the bar. Panels keep their colour. */
+body.lyricist-mobile *,
+body.lyricist-mobile *::before,
+body.lyricist-mobile *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
