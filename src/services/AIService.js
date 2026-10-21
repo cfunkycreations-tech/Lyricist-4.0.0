@@ -980,7 +980,7 @@ function parseBridgeVariations(text) {
  * @param {{report?: string, kind?: string, motifs?: string[]}} [analysis] - What
  *   Ghost Rider has learned about the artist (the report on screen, which kind
  *   it is, the Style DNA image clusters). The twenty Matrix words come from it.
- * @returns {Promise<{lyrics: string, sunoTags: string, matrixWords: string[], voice: string, description: string}>}
+ * @returns {Promise<{lyrics: string, sunoTags: string, matrixWords: string[]}>}
  */
 export async function writeInArtistStyle(artist, topic, store, analysis = {}) {
   assertApiKey(store?.config);
@@ -1006,7 +1006,7 @@ Match their rhyme schemes, vocabulary, and flow. Do NOT mention the artist's nam
 
 After the lyrics, on a new line write exactly this separator and nothing else:
 ---SUNO TAGS---
-Then on the very next line write 10-14 comma-separated Suno AI style keywords. STRICT RULES for the tags: NO artist names, NO real person names, NO celebrity names whatsoever. Only include: genre, subgenre, production style, mood, tempo, instruments, vocal style, era. One line only.${matrixAsk}${KIT_PROSE_ASK}${matrixMaterial}`;
+Then on the very next line write 10-14 comma-separated Suno AI style keywords. STRICT RULES for the tags: NO artist names, NO real person names, NO celebrity names whatsoever. Only include: genre, subgenre, production style, mood, tempo, instruments, vocal style, era. One line only.${matrixAsk}${matrixMaterial}`;
 
   const system = 'You are an elite ghostwriter who captures the raw, authentic artistic voice, flow, cadence, vocabulary, and stylistic nuances of specific musical artists. You despise generic AI-sounding imitations. Focus on subtext, friction, and rhythm.\n' + NO_CLICHES;
   // A whole song with every chorus written out needs the room.
@@ -1035,8 +1035,6 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
     // The artist's name comes out of everything, even if the model ignored the rule.
     sunoTags: cleanTags(marked.tags, name),
     matrixWords: cleanMatrixWords(marked.words, name, analysis),
-    voice: cleanProse(marked.voice, name, 300),
-    description: cleanProse(marked.description, name),
   };
 }
 
@@ -1113,6 +1111,29 @@ export async function writeAnalysisWords({ artist = '', report = '', kind = '', 
   const lines = String(raw || '').split('\n').map((l) => l.trim()).filter(Boolean);
   const best = lines.reduce((a, l) => ((l.match(/,/g) || []).length > (a.match(/,/g) || []).length ? l : a), lines[0] || '');
   return cleanMatrixWords(best, artist, { motifs: dna });
+}
+
+/**
+ * THE DNA TAGS, FROM THE ANALYSIS. Chris, 2026-10-21: "Where is DNA TAGS???"
+ * The Suno style tags used to exist only after a song was written. Now they come
+ * with the Matrix words the moment an analysis is on screen, so they sit right
+ * under the Style DNA, ready to paste into Suno's Styles box.
+ *
+ * @param {{artist?: string, report?: string, kind?: string}} input
+ * @param {Object} store - LyricStore, for the API key and model config.
+ * @returns {Promise<string>} one line of 10-14 comma-separated style tags.
+ */
+export async function writeAnalysisTags({ artist = '', report = '', kind = '' } = {}, store) {
+  assertApiKey(store?.config);
+  const text = String(report || '').trim();
+  if (!text) throw new Error('Study the artist first.');
+  const raw = await callAI([
+    { role: 'system', content: 'You write the Styles line a songwriter pastes into Suno\'s create screen. Short, plain, specific. Never name a real artist or person.\n' + NO_CLICHES },
+    { role: 'user', content: `Read the ${kind ? `${kind} analysis` : 'analysis'} below and write 10-14 comma-separated Suno style tags that capture how this sound is made: genre, subgenre, production style, mood, tempo, instruments, vocal style, era. STRICT RULES: NO artist names, NO real person names, NO celebrity names whatsoever. Reply with one line of tags and nothing else.\n\nANALYSIS:\n${text.slice(0, 6000)}` },
+  ], store.config, 0.5, 400);
+  const lines = String(raw || '').split('\n').map((l) => l.trim()).filter(Boolean);
+  const best = lines.reduce((a, l) => ((l.match(/,/g) || []).length > (a.match(/,/g) || []).length ? l : a), lines[0] || '');
+  return cleanTags(best, artist);
 }
 
 export { MATRIX_WORD_COUNT };
