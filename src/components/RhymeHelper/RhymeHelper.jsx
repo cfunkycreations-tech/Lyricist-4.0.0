@@ -207,7 +207,7 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
             aria-busy={loadingLocal}
             disabled={loadingLocal || !word.trim()}
             className="btn-neon-purple"
-            data-help="Instantly look up a big list of real rhyming words from a free rhyming dictionary. No AI key needed for this one — it's always free and fast."
+            data-help="Instantly look up a big list of real rhyming words from a free rhyming dictionary. No AI key needed for this one — it's fast."
             style={{
               padding: '7px 18px',
               borderRadius: 8,
@@ -405,7 +405,7 @@ Plain lists under each heading. Focus on what sounds great in lyrics.`;
             onClick={handleScanRhymes}
             disabled={!scanText.trim()}
             className="btn-neon-cyan"
-            data-help="Reads the lyrics you pasted and highlights the rhyming words in matching colors, so you can see your internal rhymes at a glance. Free — no AI key needed."
+            data-help="Reads the lyrics you pasted and highlights the rhyming words in matching colors, so you can see your internal rhymes at a glance. No AI key needed."
             style={{
               padding: '8px',
               borderRadius: 6,

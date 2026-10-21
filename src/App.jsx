@@ -130,10 +130,10 @@ const tabs = [
   // Sits after Mastering because it is something you do TO a finished track.
   { id: 'screw', icon: 'scissors', label: 'Chopped & Screwed', blurb: 'slow it and chop it', help: 'Slow a song down until the voice sinks with it, then chop it back up on the beat. The sound DJ Screw invented in Houston. Works on any audio file or any of your own recordings, runs entirely on your computer, and saves straight back to Recordings.' },
   { id: 'rhyme', icon: 'book-open', label: 'Rhyme Helper', blurb: 'find rhymes that fit', help: 'A rhyming dictionary and rhyme finder. Look up words that rhyme, and check the rhymes inside lines you have already written.' },
-  { id: 'thesaurus', icon: 'library', label: 'Thesaurus', blurb: 'better words', help: 'A word finder: type a word to get other words that mean the same, words that mean the opposite, and related ideas. Free, no AI key needed.' },
-  { id: 'dictionary', icon: 'book-a', label: 'Dictionary', blurb: 'what it means', help: 'Look up what a word means, how to say it, and example sentences — in English or Spanish. Free, no AI key needed.' },
+  { id: 'thesaurus', icon: 'library', label: 'Thesaurus', blurb: 'better words', help: 'A word finder: type a word to get other words that mean the same, words that mean the opposite, and related ideas. No AI key needed.' },
+  { id: 'dictionary', icon: 'book-a', label: 'Dictionary', blurb: 'what it means', help: 'Look up what a word means, how to say it, and example sentences — in English or Spanish. No AI key needed.' },
   { id: 'toolshub', icon: 'blocks', label: 'AI Tools Hub', blurb: 'every AI tool in one place', help: 'A shared shelf of AI tools — browse them, upvote the ones that earn it, and add the ones you rely on.' },
-  { id: 'scratchpad', icon: 'sticky-note', label: 'Scratchpad', blurb: 'dump your ideas', help: 'A free, blank notepad for jotting ideas, hooks, or lines. Press Save to keep what you wrote: closing the app clears it.' },
+  { id: 'scratchpad', icon: 'sticky-note', label: 'Scratchpad', blurb: 'dump your ideas', help: 'A blank notepad for jotting ideas, hooks, or lines. Press Save to keep what you wrote: closing the app clears it.' },
   { id: 'settings', icon: 'settings', label: 'Settings', blurb: 'your key and your setup', help: 'Where you connect your AI key and choose which AI model writes your lyrics. Set this up first so the rest of the app works.' }
 ];
 

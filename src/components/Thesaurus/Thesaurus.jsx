@@ -11,7 +11,7 @@ import { Library } from 'lucide-react';
  *  - Related words (ideas that go WITH it)
  *
  * Powered by the free Datamuse word API (already allowed in the app's
- * security policy). No AI key required — always free and instant.
+ * security policy). No AI key required — instant.
  * Click any word to copy it.
  */
 export default function Thesaurus() {

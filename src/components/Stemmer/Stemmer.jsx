@@ -381,14 +381,14 @@ export default function Stemmer() {
       <div className="tab-video-content">
     <div
       className="stemmer-root"
-      data-help="Stemmer splits a mix into Vocals, Drums, Bass, Guitar, Keys, and Other. Offline = free, light CPU, no key. Cloud = optional Replicate Demucs API for pro quality (no local GPU)."
+      data-help="Stemmer splits a mix into Vocals, Drums, Bass, Guitar, Keys, and Other. Offline = light CPU, no key. Cloud = optional Replicate Demucs API for pro quality (no local GPU)."
     >
       <div className="stemmer-header">
         <div>
           <h2 className="chrome-title stemmer-title">Stemmer</h2>
           <p className="stemmer-sub">
             Separate a full mix into playable, exportable tracks. Offline runs on your own machine (GPU or CPU),
-            free and no key. Cloud Demucs is an optional API key that runs on remote servers.
+            no key. Cloud Demucs is an optional API key that runs on remote servers.
           </p>
         </div>
         <div className="stemmer-actions">
@@ -702,7 +702,7 @@ export default function Stemmer() {
       </div>
 
       <p className="stemmer-note">
-        <strong>Offline</strong> (default): spectral mid-side split on your own machine — free, private, no API key.
+        <strong>Offline</strong> (default): spectral mid-side split on your own machine — private, no API key.
         Runs on your <strong>GPU</strong> (fast, needs enough video memory) or <strong>CPU</strong> (always works,
         slower). <strong>Auto</strong> uses the GPU and falls back to the CPU if the card runs short on memory.
         A weak GPU or CPU just means a longer wait — a very long song can outrun a small GPU's memory, and that's
