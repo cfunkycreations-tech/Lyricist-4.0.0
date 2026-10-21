@@ -10,6 +10,7 @@ import './styles/opsec.css';
 import './styles/materials.css';
 import { startWheelControls } from './services/wheelControls.js';
 import { registerPWA } from './web/registerPWA.js';
+import PhoneSplash from './web/PhoneSplash.jsx';
 import { installPhoneAudio } from './web/iosAudio.js';
 import { installPhoneSave } from './web/iosSave.js';
 import NetStatus from './web/NetStatus.jsx';
@@ -85,6 +86,8 @@ try {
   ReactDOM.createRoot(rootEl).render(
     <React.StrictMode>
       <BootErrorBoundary>
+        {/* Phone only: the title card, once per launch, tap to skip. */}
+        <PhoneSplash />
         {/* Phone build: asks for the Gumroad purchase code once. Passes
             straight through in the desktop app and on the dev server. */}
         <PurchaseLock>
