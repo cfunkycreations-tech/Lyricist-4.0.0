@@ -6,11 +6,13 @@ import './SplashIntro.css';
 /**
  * THE OPENING ANIMATION.
  *
- * Eight seconds, built in Cinema 4D by scripts/logo_c4d.py (90 frames) and
- * scripts/splash_c4d.py (150 frames), rendered on the Standard engine and cut
- * together: the Lyricist Pro badge lands, a bar of light crosses it, it is
- * pulled into its own black hole, and the chrome title grows back out of the
- * same point. Both halves open and close on black, so it is one piece.
+ * 15.4 seconds with Chris's splash track under it. The picture is Cinema 4D:
+ * scripts/logo_c4d.py for the first 90 frames and scripts/splash_c4d.py for
+ * the next 373, rendered on the Standard engine and cut together. The badge
+ * lands, a bar of light crosses it, it is pulled into its own black hole, and
+ * the chrome title grows back out of the same point. The splash half runs long
+ * so the picture ends exactly with the music: 463 frames at 30 fps against a
+ * 15.418 s track, nothing trimmed off either.
  *
  * WHERE IT PLAYS. The desktop app and a desktop browser always get it. On a
  * phone it plays only SIDEWAYS — Chris, 2026-10-21: "The animations will show
@@ -20,11 +22,19 @@ import './SplashIntro.css';
  * arc off, which is the exact bug that had to be fixed in the render. So
  * upright phones skip it and go straight to the app.
  *
- * Once per launch, not once per version: it is mounted with the app and never
- * remounts, so switching tabs or coming back from the background does not
+ * SOUND. The desktop app plays it out loud: main.js sets autoplayPolicy to
+ * no-user-gesture-required, because the window only exists because somebody
+ * launched the app. A browser is different — it refuses to autoplay anything
+ * audible until the visitor has interacted with the page, and a rejected
+ * play() would leave the whole opener dead. So the audible attempt comes
+ * first, and if the browser says no the clip restarts muted and offers sound
+ * as a button. The animation always runs; only the sound is ever in question.
+ *
+ * Once per launch, not once per version: mounted with the app and never
+ * remounted, so switching tabs or coming back from the background does not
  * replay it.
  *
- * It can always be left early — tap, click, Escape, or the Skip button — and
+ * It can always be left early — tap, click, Escape, space, or Skip — and
  * anyone who has asked their system for less motion never sees it at all. An
  * opener you cannot escape is an opener people uninstall.
  */
@@ -56,6 +66,7 @@ function shouldPlay() {
 export default function SplashIntro() {
   const [show, setShow] = useState(shouldPlay);
   const [leaving, setLeaving] = useState(false);
+  const [silenced, setSilenced] = useState(false);            // browser refused the sound
   const timer = useRef(null);
   const video = useRef(null);
 
@@ -78,16 +89,40 @@ export default function SplashIntro() {
     if (!show) return undefined;
     const el = video.current;
     if (!el) return undefined;
-    // Autoplay is allowed only while muted, and iOS additionally needs
-    // playsInline or it takes the video fullscreen on its own. If the browser
-    // still refuses, do not sit on a black screen - get out of the way.
-    const p = el.play?.();
-    if (p && typeof p.catch === 'function') p.catch(() => finish());
+
+    let dead = false;
+    // React does not reliably reflect `muted` as an attribute, and iOS needs
+    // playsInline or it takes the video fullscreen on its own.
+    el.muted = false;
+    el.playsInline = true;
+
+    const audible = el.play?.();
+    if (audible && typeof audible.catch === 'function') {
+      audible.catch(() => {
+        // Not allowed to make noise yet. Keep the picture, drop the sound,
+        // and let them ask for it.
+        if (dead) return;
+        el.muted = true;
+        setSilenced(true);
+        const quiet = el.play?.();
+        if (quiet && typeof quiet.catch === 'function') quiet.catch(() => finish());
+      });
+    }
+
     // Belt and braces: if 'ended' never arrives (a decode failure, a tab
     // throttled in the background) the app must not stay behind a dead video.
-    const bail = setTimeout(finish, 11000);
-    return () => clearTimeout(bail);
+    const bail = setTimeout(finish, 19000);
+    return () => { dead = true; clearTimeout(bail); };
   }, [show, finish]);
+
+  const unmute = useCallback((e) => {
+    e.stopPropagation();
+    const el = video.current;
+    if (!el) return;
+    el.muted = false;
+    setSilenced(false);
+    el.play?.();
+  }, []);
 
   if (!show) return null;
 
@@ -101,13 +136,17 @@ export default function SplashIntro() {
         ref={video}
         src={introMp4}
         poster={introPoster}
-        muted
         autoPlay
         playsInline
         preload="auto"
         onEnded={finish}
         onError={finish}
       />
+      {silenced && (
+        <button type="button" className="sintro-sound" onClick={unmute}>
+          Tap for sound
+        </button>
+      )}
       <button
         type="button"
         className="sintro-skip"

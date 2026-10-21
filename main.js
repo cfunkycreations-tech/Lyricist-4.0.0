@@ -1581,6 +1581,13 @@ function createWindow() {
       // wasted CPU — we just want to be the ones deciding, not the occlusion
       // detector.
       backgroundThrottling: false,
+      // The opening animation carries Chris's splash track, and a splash with
+      // no sound is a bug people report as "the music is broken". Electron is
+      // not a browser tab and the window only exists because the user launched
+      // the app, so there is no surprise-noise problem to protect against.
+      // Stated explicitly rather than relying on the Electron default, which
+      // has changed between versions.
+      autoplayPolicy: 'no-user-gesture-required',
     },
     autoHideMenuBar: true,
     // Don't put an empty frame on screen. A window painted before its content

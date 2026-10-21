@@ -30,6 +30,17 @@
 }
 .sintro-skip:hover { background: rgba(255, 255, 255, .22); }
 
+/* Only ever shown when the browser refused to autoplay the sound. */
+.sintro-sound {
+  position: absolute;
+  left: max(14px, env(safe-area-inset-left));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  padding: 8px 16px; border: 0; border-radius: 999px; cursor: pointer;
+  background: #FF8A3D; color: #160a02;
+  font-family: var(--faf-font, sans-serif);
+  font-size: 13px; letter-spacing: .08em; text-transform: uppercase;
+}
+
 @media (max-height: 520px) {
-  .sintro-skip { padding: 6px 12px; font-size: 12px; }
+  .sintro-skip, .sintro-sound { padding: 6px 12px; font-size: 12px; }
 }
