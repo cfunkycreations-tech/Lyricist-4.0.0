@@ -1357,6 +1357,8 @@
   max-height: 46%;
   overflow-y: auto;
   border-radius: 0;
+  /* .ql-panel paints a translucent !important background; the verses must sit on a solid one. */
+  background: #0a0c0f !important;
 }
 /* .ql-neural-out precedes .ql-panels in the markup, so this only applies when
    there is actually a generated verse to show. */
