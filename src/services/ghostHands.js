@@ -348,6 +348,7 @@ const BEFORE = {
   ghostrider_send_to_songwriter: [{ point: '[data-demo="gr-send"]' }],
   ghostrider_save_song: [{ point: '[data-demo="gr-save-song"]' }],
   ghostrider_send_dna_to_matrix: [{ label: 'send to matrix' }],
+  ghostrider_send_words_to_matrix: [{ point: '[data-demo="gr-matrix-words"] button' }],
 
   songforge_forge: [{ point: '[data-demo="sf-forge"]' }],
   songforge_surprise: [{ label: 'surprise me' }],
@@ -361,6 +362,7 @@ const BEFORE = {
     { point: '[data-demo="matrix-autocraft"]' },
   ],
   matrix_send_to_songwriter: [{ point: '[data-demo="ql-send-songwriter"]' }],
+  matrix_write_full_songs: [{ point: '[data-demo="ql-write-songs"]' }],
   matrix_send_to_forge: [{ point: '[data-demo="ql-send-forge"]' }],
 
   // Black Hole Studios. None of these had an entry, so on that tab the Ghost

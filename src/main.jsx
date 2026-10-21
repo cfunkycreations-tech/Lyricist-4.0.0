@@ -12,10 +12,11 @@ import { startWheelControls } from './services/wheelControls.js';
 import { registerPWA } from './web/registerPWA.js';
 import { installPhoneAudio } from './web/iosAudio.js';
 import { installPhoneSave } from './web/iosSave.js';
-import LandscapeSplash from './web/LandscapeSplash.jsx';
 import NetStatus from './web/NetStatus.jsx';
 import DesktopUpdate from './web/DesktopUpdate.jsx';
 import PurchaseLock from './web/PurchaseLock.jsx';
+import WhatsNew from './web/WhatsNew.jsx';
+import PhoneInvite from './web/PhoneInvite.jsx';
 import DialogHost from './components/common/DialogHost.jsx';
 import { initAnalytics, track } from './services/analytics.js';
 import { APP_VERSION, BUILD_NUMBER } from './buildInfo.js';
@@ -84,13 +85,14 @@ try {
   ReactDOM.createRoot(rootEl).render(
     <React.StrictMode>
       <BootErrorBoundary>
-        {/* Web only. Turns the phone sideways and locks it, then gets out of
-            the way. Renders nothing inside the desktop app. */}
-        <LandscapeSplash />
         {/* Phone build: asks for the Gumroad purchase code once. Passes
             straight through in the desktop app and on the dev server. */}
         <PurchaseLock>
           <App />
+          {/* Every fresh open, for everyone: what changed. See WhatsNew.jsx. */}
+          <WhatsNew />
+          {/* Desktop only: how to put it on the phone, first thing, once. */}
+          <PhoneInvite />
         </PurchaseLock>
         {/* In-app alert / confirm / prompt (services/dialog.js). */}
         <DialogHost />

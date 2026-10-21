@@ -3,6 +3,7 @@
 
 import { cleanRefineOutput } from '../utils/refineClean.js';
 import { NO_CLICHES } from './cliches.js';
+import { MATRIX_WORD_COUNT, KIT_PROSE_ASK, parseMarked, cleanProse, cleanTags, cleanMatrixWords } from './sunoKit.js';
 import { inspectGenerated, truncateAtCollapse } from '../utils/lyricSanity.js';
 import { stripReasoning, isMostlyReasoning } from '../utils/stripReasoning.js';
 import { blendPhrase } from '../utils/blend.js';
@@ -976,9 +977,12 @@ function parseBridgeVariations(text) {
  * @param {string} artist - Artist whose style to imitate.
  * @param {string} topic - What the song is about; blank lets the model choose.
  * @param {Object} store - LyricStore, for the API key and model config.
- * @returns {Promise<{lyrics: string, sunoTags: string}>}
+ * @param {{report?: string, kind?: string, motifs?: string[]}} [analysis] - What
+ *   Ghost Rider has learned about the artist (the report on screen, which kind
+ *   it is, the Style DNA image clusters). The twenty Matrix words come from it.
+ * @returns {Promise<{lyrics: string, sunoTags: string, matrixWords: string[], voice: string, description: string}>}
  */
-export async function writeInArtistStyle(artist, topic, store) {
+export async function writeInArtistStyle(artist, topic, store, analysis = {}) {
   assertApiKey(store?.config);
   const name = String(artist || '').trim();
   if (!name) throw new Error('Name an artist first.');
@@ -995,13 +999,14 @@ export async function writeInArtistStyle(artist, topic, store) {
    * the chorus is written out every time it comes back, because Suno sings
    * only what is on the page.
    */
+  const { ask: matrixAsk, material: matrixMaterial } = matrixWordsPrompt(analysis);
   const prompt = `Write a COMPLETE original song in the style of ${name}. ${topicPrompt}
 ${FULL_SONG_SHAPE}
 Match their rhyme schemes, vocabulary, and flow. Do NOT mention the artist's name anywhere in the lyrics.
 
 After the lyrics, on a new line write exactly this separator and nothing else:
 ---SUNO TAGS---
-Then on the very next line write 10-14 comma-separated Suno AI style keywords. STRICT RULES for the tags: NO artist names, NO real person names, NO celebrity names whatsoever. Only include: genre, subgenre, production style, mood, tempo, instruments, vocal style, era. One line only.`;
+Then on the very next line write 10-14 comma-separated Suno AI style keywords. STRICT RULES for the tags: NO artist names, NO real person names, NO celebrity names whatsoever. Only include: genre, subgenre, production style, mood, tempo, instruments, vocal style, era. One line only.${matrixAsk}${KIT_PROSE_ASK}${matrixMaterial}`;
 
   const system = 'You are an elite ghostwriter who captures the raw, authentic artistic voice, flow, cadence, vocabulary, and stylistic nuances of specific musical artists. You despise generic AI-sounding imitations. Focus on subtext, friction, and rhythm.\n' + NO_CLICHES;
   // A whole song with every chorus written out needs the room.
@@ -1011,8 +1016,8 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
     { role: 'user', content: prompt }
   ], store.config, null, room);
 
-  const parts = String(rawResult).split('---SUNO TAGS---');
-  let lyrics = labelSections(parts[0]?.trim() || '', 'Verse 1');
+  const marked = parseMarked(rawResult);
+  let lyrics = labelSections(marked.head.trim(), 'Verse 1');
 
   // Still short? One more pass: keep what is there, write what is missing.
   const missing = missingSections(lyrics);
@@ -1021,19 +1026,122 @@ Then on the very next line write 10-14 comma-separated Suno AI style keywords. S
       { role: 'system', content: system },
       { role: 'user', content: `This song is not finished. It is missing: ${missing.join(', ')}.\n${FULL_SONG_SHAPE}\nKeep every line already written, add what is missing, and output the WHOLE song with every section labelled. Lyrics only, nothing else.\n\n${lyrics}` }
     ], store.config, null, room);
-    const done = labelSections(String(more).split('---SUNO TAGS---')[0].trim(), 'Verse 1');
+    const done = labelSections(parseMarked(more).head.trim(), 'Verse 1');
     if (missingSections(done).length < missing.length) lyrics = done;
   }
 
-  // Strip the artist's name out of the tags even if the model ignored the rule.
-  const artistClean = name.toLowerCase();
-  const sunoTags = (parts[1]?.trim().split('\n')[0] || '')
-    .split(',')
-    .map(t => t.trim())
-    .filter(t => t.length > 2 && t.toLowerCase() !== artistClean && !t.toLowerCase().includes(artistClean))
-    .join(', ');
+  return {
+    lyrics,
+    // The artist's name comes out of everything, even if the model ignored the rule.
+    sunoTags: cleanTags(marked.tags, name),
+    matrixWords: cleanMatrixWords(marked.words, name, analysis),
+    voice: cleanProse(marked.voice, name, 300),
+    description: cleanProse(marked.description, name),
+  };
+}
 
-  return { lyrics, sunoTags };
+/**
+ * The Suno kit for a song that is already written, on any tab: Styles tags, a
+ * Voice line, a Song description and twenty Matrix words, in one call.
+ *
+ * With an Input Caption (Black Hole Studios) the description is a short version
+ * of it: same facts, nothing new. Without one it comes from the lyrics.
+ *
+ * @param {{lyrics?: string, tags?: string, caption?: string, topic?: string, artist?: string}} input
+ * @param {Object} store - LyricStore, for the API key and model config.
+ * @returns {Promise<{sunoTags: string, voice: string, description: string, matrixWords: string[]}>}
+ */
+export async function writeSunoKit({ lyrics = '', tags = '', caption = '', topic = '', artist = '' } = {}, store) {
+  assertApiKey(store?.config);
+  const song = String(lyrics || '').trim();
+  const brief = String(caption || '').trim();
+  if (!song && !brief) throw new Error('Write or paste the lyrics first.');
+
+  const parts = [];
+  if (brief) parts.push(`INPUT CAPTION, the full brief for how this song sounds. The song description you write is a short version of it: the same facts, nothing new, no invented tempo, key or singer details:\n${brief.slice(0, 3500)}`);
+  if (String(tags || '').trim()) parts.push(`STYLE TAGS ALREADY CHOSEN, keep every one: ${String(tags).trim()}`);
+  if (String(topic || '').trim()) parts.push(`TOPIC: ${String(topic).trim()}`);
+  if (song) parts.push(`LYRICS:\n${song.slice(0, 4000)}`);
+
+  const prompt = `Write the Suno kit for this song.
+
+${parts.join('\n\n')}
+
+Reply in exactly this format and nothing else. Each separator sits on its own line.
+---SUNO TAGS---
+${String(tags || '').trim() ? 'The tags above, then up to 4 more' : '10-14'} comma-separated Suno style tags on one line: genre, subgenre, production style, mood, tempo, instruments, vocal style, era. NO artist names, NO real person names.
+---MATRIX WORDS---
+${MATRIX_WORD_COUNT + 4} comma-separated words or short phrases (1-3 words each) pulled from this song's own material: images, objects, places, vocabulary. They seed a word grid for writing, so make them concrete and varied, not random. One line. NO artist names.
+${KIT_PROSE_ASK}`;
+
+  const raw = await callAI([
+    { role: 'system', content: 'You prepare the text a songwriter pastes into Suno\'s create screen. Short, plain, specific. Never name a real artist or person.\n' + NO_CLICHES },
+    { role: 'user', content: prompt }
+  ], store.config, 0.7, 900);
+
+  const marked = parseMarked(raw);
+  const who = artist || store?.artistRef || '';
+  return {
+    sunoTags: cleanTags(marked.tags, who),
+    matrixWords: cleanMatrixWords(marked.words, who),
+    voice: cleanProse(marked.voice, who, 300),
+    description: cleanProse(marked.description, who),
+  };
+}
+
+/**
+ * THE THIRTY MATRIX WORDS, FROM THE ANALYSIS. Chris, 2026-10-21: "Where are the
+ * fucking 30 random not fucking random key words/phrases for the matrix?" They
+ * used to appear only after a song was written. Now they come the moment a
+ * Ghost Rider analysis (Full, Lyrical Style, Flow & Cadence or Common Themes)
+ * is on screen, drawn from that text, so they sit with the Style DNA.
+ *
+ * @param {{artist?: string, report?: string, kind?: string, motifs?: string[]}} input
+ * @param {Object} store - LyricStore, for the API key and model config.
+ * @returns {Promise<string[]>} up to MATRIX_WORD_COUNT words and short phrases.
+ */
+export async function writeAnalysisWords({ artist = '', report = '', kind = '', motifs = [] } = {}, store) {
+  assertApiKey(store?.config);
+  const text = String(report || '').trim();
+  if (!text) throw new Error('Study the artist first.');
+  const dna = (motifs || []).filter(Boolean);
+  const raw = await callAI([
+    { role: 'system', content: 'You pull seed words for a songwriter\'s word grid out of a style analysis. Plain, concrete, specific. Never name a real artist or person.\n' + NO_CLICHES },
+    { role: 'user', content: `Read the ${kind ? `${kind} analysis` : 'analysis'} below and pull ${MATRIX_WORD_COUNT + 6} comma-separated words or short phrases (1-3 words each) out of it: its themes, images, objects, places, vocabulary and flow terms. They seed a word grid for writing, so make them concrete and varied, not random. NO artist names, NO real person names. Reply with one line of words and nothing else.\n\nANALYSIS:\n${text.slice(0, 6000)}${dna.length ? `\n\nMOTIFS: ${dna.join(', ')}` : ''}` },
+  ], store.config, 0.6, 900);
+  // The word line is the one with the most commas, whatever the model put around it.
+  const lines = String(raw || '').split('\n').map((l) => l.trim()).filter(Boolean);
+  const best = lines.reduce((a, l) => ((l.match(/,/g) || []).length > (a.match(/,/g) || []).length ? l : a), lines[0] || '');
+  return cleanMatrixWords(best, artist, { motifs: dna });
+}
+
+export { MATRIX_WORD_COUNT };
+
+/**
+ * The twenty Matrix words ride on the song's own request, no extra call. They
+ * are not random: every one comes out of the analysis Ghost Rider already did
+ * (Full, Lyrical Style, Flow & Cadence or Common Themes), so The Matrix grid
+ * starts from the artist's own material.
+ */
+function matrixWordsPrompt({ report = '', kind = '', motifs = [] } = {}) {
+  const text = String(report || '').trim().slice(0, 3500);
+  const source = text
+    ? `the ${kind ? `${kind} analysis` : 'analysis'} below`
+    : (motifs.length ? 'the image motifs below' : 'this artist and this topic');
+  const material = text
+    ? `\n\nANALYSIS:\n${text}`
+    : (motifs.length ? `\n\nMOTIFS: ${motifs.join(', ')}` : '');
+  return {
+    ask: `
+
+After the tags, on a new line write exactly this separator and nothing else:
+---MATRIX WORDS---
+Then on the very next line write ${MATRIX_WORD_COUNT + 4} comma-separated words or short phrases (1-3 words each) pulled from ${source}: its themes, images, objects, places, vocabulary and flow terms. They seed a word grid for writing, so make them concrete and varied, not random. NO artist names, NO real person names. One line only.
+
+After the words, write these two sections, each starting with its separator on its own line:
+`,
+    material,
+  };
 }
 
 const FULL_SONG_SHAPE = `It must be a whole song, never a sketch. Label every section in square brackets, in this order:

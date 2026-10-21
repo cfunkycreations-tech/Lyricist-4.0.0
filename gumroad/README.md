@@ -52,10 +52,11 @@ Upload the `Setup.exe` from step 1, then paste this under it:
 
 > **Thanks for grabbing Lyricist Pro.**
 >
-> 1. Run the installer. Windows shows a blue box that says "Windows protected your PC". That isn't a virus warning. It shows because the installer isn't signed with a paid certificate. Click **More info**, then **Run anyway**. The first time Lyricist opens, paste the **license key** from this receipt.
-> 2. Open **Settings** in the app and paste a free OpenRouter key (openrouter.ai, about two minutes, no card). That switches on the writing tools.
+> **Your purchase includes the phone version.** On your phone, open **lyricist-pro.pages.dev** in Chrome (Android) or Safari (iPhone), then add it to your home screen: Chrome ⋮ → **Install app**, Safari Share → **Add to Home Screen**. Paste the **license key** from this receipt when it asks. The app on your computer shows a QR code for it too (Phone button, top right).
+>
+> 1. Run the installer. Windows shows a blue box that says "Windows protected your PC". That isn't a virus warning. It shows because the installer isn't signed with a paid certificate. Click **More info**, then **Run anyway**. The first time Lyricist opens, paste the same **license key**.
+> 2. Open **Settings** in the app and paste a free OpenRouter key (openrouter.ai, about two minutes, no card). That switches on the writing tools. Do the same once on your phone.
 > 3. Press **Play Demo** on any tab and the Ghost walks you through it.
-> 4. On your phone too: open **lyricist-pro.pages.dev** in Safari (iPhone) or Chrome (Android), add it to your home screen, and enter the **license key** from this receipt as your purchase code.
 >
 > New versions show up right here in your library. Stuck? Email cfunkycreations@gmail.com.
 >
@@ -87,5 +88,9 @@ It's live at `lyricist-pro.pages.dev` and asks for the buyer's license key
 once. Add this line to the description under "What you need":
 
 > Also on iPhone and Android: open lyricist-pro.pages.dev in Safari or Chrome, add it to your home screen, and unlock it with the license key from your receipt.
+
+The Windows app also shows a "Put it on your phone" screen (QR code, link,
+Android and iPhone steps) the first time it opens, and a Phone button in the
+header brings it back.
 
 To unlock your own phone, make an offer code for 100% off and buy a copy.

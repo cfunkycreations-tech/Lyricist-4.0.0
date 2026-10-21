@@ -91,7 +91,7 @@ So let's write.
 One Man Band. Where your words become a real song.
 Write your Input Lyrics, pick a genre, a mood and a voice, and it writes the Input Caption for you. Then it sings it back with a full band behind it.
 The words in square brackets are the shape of the song. Verse, chorus, bridge. Those tags are what the music actually follows, so move them around and the song changes with them.
-Every part of this is free. Press Make the song and the free cloud sings it, with no account and nothing to set up, up to about forty five seconds. For a full three minute song, open Set this up at the top of the tab and connect Kaggle. Kaggle is free too, and it is one long code that you copy from their page and paste into the box.
+Press Make the song and the free cloud sings it, with no account and nothing to set up, up to about forty five seconds. For a full three minute song, open Set this up at the top of the tab and connect Kaggle. Kaggle is free too, and it is one long code that you copy from their page and paste into the box.
 Longer songs take longer, and it tells you exactly how long before you start, so you are never left wondering whether it broke. Good songs are worth the wait.
 
 ---
@@ -158,7 +158,7 @@ Need to pull a finished mix apart? Open Stemmer next door: vocals, drums, bass, 
 
 Stemmer. For taking a finished song back apart.
 Load any mix and it separates into vocals, drums, bass, guitar, keys and other. Mute them, solo them, and export whichever ones you want as WAV files for your own projects.
-Offline mode is the default. It is free, it is light on your computer, it needs no key and no graphics card, and nothing ever leaves your machine.
+Offline mode is the default. It is light on your computer, it needs no key and no graphics card, and nothing ever leaves your machine.
 If you want the pro quality separation instead, Cloud mode uses your own Replicate key. That one is optional, and it is the only part of this tab that costs anything.
 
 ---
@@ -209,7 +209,7 @@ Feed it any audio file, or any recording you have already made in here. It all r
 *Rhyme Helper: never stuck on a rhyme*
 
 Rhyme Helper. You will never get stuck on a rhyme again.
-Type any word for perfect rhymes, slant rhymes, surprises. Paste lyrics and highlight rhymes already hiding in your lines. Free. No AI key required.
+Type any word for perfect rhymes, slant rhymes, surprises. Paste lyrics and highlight rhymes already hiding in your lines. No AI key required.
 
 ---
 
@@ -218,7 +218,7 @@ Type any word for perfect rhymes, slant rhymes, surprises. Paste lyrics and high
 *Thesaurus: find a better word*
 
 Thesaurus. Find a better word.
-Stuck on something flat? Get synonyms, opposites, and related sparks. Free. No AI key needed. You are welcome.
+Stuck on something flat? Get synonyms, opposites, and related ideas. No AI key needed. You are welcome.
 
 ---
 
@@ -227,7 +227,7 @@ Stuck on something flat? Get synonyms, opposites, and related sparks. Free. No A
 *Dictionary: what does it mean?*
 
 Dictionary. What does it mean?
-Meaning, pronunciation, example sentence, English or Spanish. Free. No AI key needed.
+Meaning, pronunciation, example sentence, English or Spanish. No AI key needed.
 
 ---
 
@@ -255,7 +255,7 @@ Dump hooks, bars, stray lines. No AI, no rules. Saves automatically on your comp
 
 One more thing. About the person who built this.
 He is a singer-songwriter. Everything he wanted to make music with cost so much money that he taught himself to code and built it himself.
-He uses Suno too. He builds every song here first, for free: the lyrics, the structure and the Suno tags. Then he runs it on Suno.
+He uses Suno too. He builds every song here first: the lyrics, the structure and the Suno tags. Then he runs it on Suno.
 Now he is passing the savings on to you.
 Go make great music.
 

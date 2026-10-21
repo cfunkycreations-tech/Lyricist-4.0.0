@@ -12,28 +12,17 @@ import { useEffect, useState } from 'react';
  *   - not Electron. window.lyricistAPI is the bridge; if it exists this is the
  *     installed desktop app and nothing here applies.
  *   - actually served over http(s). file:// is Electron.
- *   - the window is phone-shaped: short. The app locks to landscape at roughly
- *     915 x 412, so HEIGHT is the tell, not width. A 1280x800 desktop browser
- *     window is wider than a phone in landscape but twice as tall.
+ *   - the window is phone-shaped: short or narrow. A phone sideways is about
+ *     915 x 412, so HEIGHT is the tell there; held upright (9:16) it is about
+ *     412 x 915, so WIDTH is. A 1280x800 desktop browser window is wider than
+ *     a phone in landscape but twice as tall.
  *
  * 560px is the cut. A Pixel sideways is 412 tall; the smallest laptop is 600+.
  *
- * ============================================================================
- * WHY WIDTH IS CHECKED TOO, AND WHY iOS BREAKS WITHOUT IT
- * ============================================================================
- * Height alone was right for Android, where the app locks itself to landscape
- * on launch: the window becomes 915 x 412, the height test passes, the phone
- * shell appears.
- *
- * iOS CANNOT LOCK ORIENTATION. Apple has never supported it. So an iPhone held
- * upright stays 390 x 844 — the height test fails, the phone shell never
- * renders, and the user gets the full desktop layout, tab strip and all,
- * crammed into 390 points. That is the exact broken state the phone build
- * exists to prevent, and it would have hit every iPhone user.
- *
- * Either dimension being phone-sized is now enough. A desktop browser narrowed
- * below 560px gets the phone shell too, which is the better layout there
- * anyway.
+ * Either dimension being phone-sized is enough. The app does not lock the
+ * phone's orientation: it follows however the phone is held, and the shell
+ * stays on in both. A desktop browser narrowed below 560px gets the phone
+ * shell too, which is the better layout there anyway.
  */
 const SHORT = '(max-height: 560px), (max-width: 560px)';
 

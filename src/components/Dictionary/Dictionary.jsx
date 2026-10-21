@@ -108,7 +108,7 @@ export default function Dictionary() {
           aria-busy={loading}
           disabled={loading || !word.trim()}
           className="btn-neon-purple"
-          data-help="Looks up the meaning of your word in the chosen language. Free — no AI key needed."
+          data-help="Looks up the meaning of your word in the chosen language. No AI key needed."
           style={{
             padding: '7px 20px',
             borderRadius: 8,

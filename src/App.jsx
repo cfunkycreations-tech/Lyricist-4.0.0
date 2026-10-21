@@ -13,7 +13,6 @@ import Dictionary from './components/Dictionary/Dictionary.jsx';
 import Settings from './components/Settings/Settings.jsx';
 import HelpLayer from './components/common/HelpLayer.jsx';
 import OnboardingWizard from './components/Onboarding/OnboardingWizard.jsx';
-import RotatePrompt from './web/RotatePrompt.jsx';
 import GhostDemo from './components/Onboarding/GhostDemo.jsx';
 import { registerGhostAction, PILOT_ENABLED } from './services/ghostBus.js';
 import { record, installRecorder, setTabNames } from './services/ghostRecorder.js';
@@ -58,7 +57,8 @@ import GhostPilotLayer from './components/Ghost/GhostPilotLayer.jsx';
 import PushHeader from './components/PushHeader/PushHeader.jsx';
 import BrandBanner from './components/BrandBanner/BrandBanner.jsx';
 import { track, isEnabled as analyticsEnabled } from './services/analytics.js';
-import { Compass, Ghost, Play, Lightbulb, KeyRound, Lock } from 'lucide-react';
+import { Compass, Ghost, Play, Lightbulb, KeyRound, Lock, Smartphone } from 'lucide-react';
+import { OPEN_EVENT as PHONE_INVITE_EVENT } from './web/PhoneInvite.jsx';
 import { hasWritingAI } from './services/customAI.js';
 // The still header art (profile.jpg, logo.jpg, header-medallion / -signature /
 // -chris / -wordmark .png) is no longer imported here. The header became the
@@ -119,7 +119,7 @@ const tabs = [
   { id: 'onemanband', icon: 'orbit', label: 'Black Hole Studios', blurb: 'lyrics into a real song', help: 'Turns your lyrics into a real song with vocals and a full band. Pick a genre, a mood and a voice, and it writes the Input Caption for you. Free on the cloud engine, no key needed. Longer songs take longer, and it tells you how long before you start.' },
   { id: 'analyzer', icon: 'radar', label: 'Ghost Rider', blurb: 'analyse any artist\'s style', help: 'Studies any artist you name and breaks down how they write, then helps you write a NEW song in that same style. (It does not copy their actual lyrics.)' },
   { id: 'songforge', icon: 'hammer', label: 'Song Forge', blurb: 'a full song from one idea', help: 'Auto-generate a full song and cover art using your single OpenRouter key (lyrics + Nano Banana image models on OpenRouter). Song First or Art First. No Google AI Studio key.' },
-  { id: 'quantum', icon: 'grid', label: 'The Matrix', blurb: 'engineer verse structure', help: 'Build a verse from a 20-tile semantic grid. Load your keywords, then hit Auto-Craft Verse for the one-click path — it spreads the energy, locks the field and writes both neural states for you. Everything granular (manual steps, the 9-suite feature hub, the analytical inspectors) lives in the Advanced Studio drawer underneath. Needs your BYOK routing key for generation.' },
+  { id: 'quantum', icon: 'grid', label: 'The Matrix', blurb: 'engineer verse structure', help: 'Build a verse from a 20-tile semantic grid. Load your keywords, then hit Auto-Craft Verse for the one-click path — it spreads the energy, locks the field and writes both neural states for you. Tick Also write full songs and it goes on to write a whole song for each state, side by side, from your Matrix DNA and keywords. Everything granular (manual steps, the 9-suite feature hub, the analytical inspectors) lives in the Advanced Studio drawer underneath. Needs your BYOK routing key for generation.' },
   { id: 'collab', icon: 'users', label: 'Collaboration', blurb: 'write with someone live', help: 'Write a song with someone else at the same time, wherever they are. Start a session, send them the code, and you are both typing on the same page. Peer to peer — the words go straight between your two computers. No account, no server holding your song, nothing extra to pay.' },
   { id: 'loopstation', icon: 'repeat', label: 'RC-Funk 5000', blurb: 'drum machine and looper', help: 'Live multi-track loop station (Boss RC-style). Record loops on up to 4 tracks, stack layers, control volume, undo a track. Fully offline. Great for riffs and vocal hooks while you write.' },
   { id: 'stemmer', icon: 'audio-lines', label: 'Cloud Stem Extraction', blurb: 'BYO Replicate key', help: 'Splits a full mix into Vocals, Drums, Bass, Guitar, Keys, and Other. Local mode runs on your own CPU with no key and no GPU. High-fidelity Demucs separation offloads to the Replicate API using your own key, so a 4 GB VRAM machine is never asked to hold the model.' },
@@ -130,10 +130,10 @@ const tabs = [
   // Sits after Mastering because it is something you do TO a finished track.
   { id: 'screw', icon: 'scissors', label: 'Chopped & Screwed', blurb: 'slow it and chop it', help: 'Slow a song down until the voice sinks with it, then chop it back up on the beat. The sound DJ Screw invented in Houston. Works on any audio file or any of your own recordings, runs entirely on your computer, and saves straight back to Recordings.' },
   { id: 'rhyme', icon: 'book-open', label: 'Rhyme Helper', blurb: 'find rhymes that fit', help: 'A rhyming dictionary and rhyme finder. Look up words that rhyme, and check the rhymes inside lines you have already written.' },
-  { id: 'thesaurus', icon: 'library', label: 'Thesaurus', blurb: 'better words', help: 'A word finder: type a word to get other words that mean the same, words that mean the opposite, and related ideas. Free, no AI key needed.' },
-  { id: 'dictionary', icon: 'book-a', label: 'Dictionary', blurb: 'what it means', help: 'Look up what a word means, how to say it, and example sentences — in English or Spanish. Free, no AI key needed.' },
+  { id: 'thesaurus', icon: 'library', label: 'Thesaurus', blurb: 'better words', help: 'A word finder: type a word to get other words that mean the same, words that mean the opposite, and related ideas. No AI key needed.' },
+  { id: 'dictionary', icon: 'book-a', label: 'Dictionary', blurb: 'what it means', help: 'Look up what a word means, how to say it, and example sentences — in English or Spanish. No AI key needed.' },
   { id: 'toolshub', icon: 'blocks', label: 'AI Tools Hub', blurb: 'every AI tool in one place', help: 'A shared shelf of AI tools — browse them, upvote the ones that earn it, and add the ones you rely on.' },
-  { id: 'scratchpad', icon: 'sticky-note', label: 'Scratchpad', blurb: 'dump your ideas', help: 'A free, blank notepad for jotting ideas, hooks, or lines. Press Save to keep what you wrote: closing the app clears it.' },
+  { id: 'scratchpad', icon: 'sticky-note', label: 'Scratchpad', blurb: 'dump your ideas', help: 'A blank notepad for jotting ideas, hooks, or lines. Press Save to keep what you wrote: closing the app clears it.' },
   { id: 'settings', icon: 'settings', label: 'Settings', blurb: 'your key and your setup', help: 'Where you connect your AI key and choose which AI model writes your lyrics. Set this up first so the rest of the app works.' }
 ];
 
@@ -386,11 +386,6 @@ function MainLayout() {
         />
       )}
 
-      {/* iPhone cannot be told to rotate — Apple has never supported orientation
-          locking — so on a portrait phone where the lock was refused, we ask.
-          Renders on nothing else: not Android, not desktop, not Electron. */}
-      <RotatePrompt />
-
       {/* App-wide hover-help engine: hovering any element with data-help shows a bubble. */}
       <HelpLayer />
 
@@ -570,6 +565,31 @@ function MainLayout() {
               >
                 <span><Play size={18} strokeWidth={1.6} /></span>
                 Play Demo
+              </button>
+            )}
+
+            {/* Desktop app only: reopens the "put it on your phone" screen */}
+            {typeof window !== 'undefined' && window.lyricistAPI && (
+              <button
+                onClick={() => window.dispatchEvent(new Event(PHONE_INVITE_EVENT))}
+                data-help="Shows how to put Lyricist Pro on your phone: a QR code, the link, and the steps for Android and iPhone. Your purchase includes the phone version."
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  padding: '4px 12px',
+                  borderRadius: 9999,
+                  cursor: 'pointer',
+                  background: 'linear-gradient(135deg, rgba(255,138,61,0.22), rgba(255,138,61,0.1))',
+                  color: '#FFF4E2',
+                  border: '1px solid rgba(255,138,61,0.6)',
+                  transition: 'all 0.15s'
+                }}
+              >
+                <span><Smartphone size={18} strokeWidth={1.6} /></span>
+                Phone
               </button>
             )}
 

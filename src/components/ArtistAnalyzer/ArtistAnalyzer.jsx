@@ -3,9 +3,9 @@ import TabBackground from '../common/TabBackground.jsx';
 import { registerGhostActions, ghostSettle } from '../../services/ghostBus.js';
 import { randomArtist, saveSunoTags } from '../../services/ghostMemory.js';
 import { applySongTags } from '../../services/songTags.js';
-import { writeStylePressure } from '../QuantumLab/quantumFeatures.js';
+import { writeStylePressure, writeMatrixWords } from '../QuantumLab/quantumFeatures.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
-import { callAI, writeInArtistStyle, refineLyrics, analyzeClichés, checkSimilarity, checkThemeConsistency } from '../../services/AIService.js';
+import { callAI, writeInArtistStyle, writeAnalysisWords, writeSunoKit, refineLyrics, analyzeClichés, checkSimilarity, checkThemeConsistency } from '../../services/AIService.js';
 import { parseStyleDNA } from '../../utils/styleDNA.js';
 import { Search, Sparkles, BookOpen, AlertTriangle, ShieldCheck, Check, Copy, Save, Heart, Send, TrendingUp, Dna, Grid3x3, Ghost, Tags } from 'lucide-react';
 import { notify } from '../../services/dialog.js';
@@ -13,6 +13,7 @@ import { Icon } from '../common/Glyph.jsx';
 import { useLogged } from '../../services/useLogged.js';
 import { track } from '../../services/analytics.js';
 import { hasWritingAI } from '../../services/customAI.js';
+import SunoKitPanel from '../common/SunoKit.jsx';
 
 const analysisTabs = [
   { id: 'style', label: 'Lyrical Style' },
@@ -27,6 +28,9 @@ const promptBuilders = {
   themes: (artist) => `Analyze the common themes in ${artist}'s music. Cover recurring motifs, emotional tone, life experiences, and how their themes evolved over time.`,
   full: (artist) => `Comprehensive analysis of ${artist} as a lyricist: style, flow, themes, era, influences, and what makes them unique. Use catalog examples.`
 };
+
+// How each report is named when the 20 Matrix words are drawn from it.
+const KIND_NAME = { style: 'lyrical style', flow: 'flow and cadence', themes: 'common themes', full: 'full' };
 
 /**
  * THE WORK STAYS PUT. The artist, report, Style DNA and the song written in
@@ -58,6 +62,16 @@ export default function ArtistAnalyzer({ onGhostSend }) {
   const [ghostTopic, setGhostTopic] = useState(boot.ghostTopic || '');
   const [ghostLyrics, setGhostLyrics] = useState(boot.ghostLyrics || '');
   const [sunoTags, setSunoTags] = useState(boot.sunoTags || '');
+  // The 20 words drawn from the report on screen, for The Matrix. They arrive with the analysis.
+  const [matrixWords, setMatrixWords] = useState(Array.isArray(boot.matrixWords) ? boot.matrixWords : []);
+  const [wordsSent, setWordsSent] = useState(false);
+  const [loadingWords, setLoadingWords] = useState(false);
+  const [wordsError, setWordsError] = useState('');
+  // Suno's Voice and description lines, written in the same pass as the song.
+  const [voice, setVoice] = useState(boot.voice || '');
+  const [songDesc, setSongDesc] = useState(boot.songDesc || '');
+  const [loadingKit, setLoadingKit] = useState(false);
+  const [kitError, setKitError] = useState('');
   const [loadingGhost, setLoadingGhost] = useState(false);
   const [copied, setCopied] = useState('');
   const [ghostSent, setGhostSent] = useState(false);
@@ -68,6 +82,9 @@ export default function ArtistAnalyzer({ onGhostSend }) {
   useLogged('Ghost Rider · Topic', ghostTopic);
   useLogged('Ghost Rider · Verse', ghostLyrics);
   useLogged('Ghost Rider · Suno tags', sunoTags);
+  useLogged('Ghost Rider · Matrix words', matrixWords.join(', '));
+  useLogged('Ghost Rider · Suno voice', voice);
+  useLogged('Ghost Rider · Suno song description', songDesc);
 
   // Checks & Intelligence
   const [clichés, setClichés] = useState([]);
@@ -96,9 +113,9 @@ export default function ArtistAnalyzer({ onGhostSend }) {
 
   useEffect(() => {
     try {
-      localStorage.setItem(SESSION_KEY, JSON.stringify({ artist, tab, focus, analysis, styleDNA, ghostTopic, ghostLyrics, sunoTags }));
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ artist, tab, focus, analysis, styleDNA, ghostTopic, ghostLyrics, sunoTags, matrixWords, voice, songDesc }));
     } catch { /* storage full or blocked: the work is still on screen */ }
-  }, [artist, tab, focus, analysis, styleDNA, ghostTopic, ghostLyrics, sunoTags]);
+  }, [artist, tab, focus, analysis, styleDNA, ghostTopic, ghostLyrics, sunoTags, matrixWords, voice, songDesc]);
 
   // Write the current report to a .txt file in Documents\Lyricist Style Reports
   // (in the desktop app). In a plain browser it falls back to a normal download.
@@ -157,9 +174,12 @@ export default function ArtistAnalyzer({ onGhostSend }) {
       ], store.config);
       setAnalysis(result);
       setStyleDNA(null);
+      setMatrixWords([]); setWordsSent(false); setWordsError('');
       if (autoSaveReports) saveReportToDisk(result);
       // Kick Style DNA extract in the background (does not block the report)
       extractStyleDNA(result, artist.trim());
+      // And the 20 words for The Matrix, from the same report, in parallel.
+      makeAnalysisWords(result, artist.trim());
     } catch (e) {
       setErrorMsg(e.message);
     } finally {
@@ -216,6 +236,25 @@ export default function ArtistAnalyzer({ onGhostSend }) {
     }
   };
 
+  /** The 20 Matrix words, pulled from the analysis on screen. Returns them; a failure shows on the card, with Try again. */
+  const makeAnalysisWords = async (reportText = analysis, artistName = artist.trim()) => {
+    if (!reportText || !hasWritingAI(store.config)) return null;
+    setLoadingWords(true);
+    setWordsError('');
+    setWordsSent(false);
+    try {
+      const words = await writeAnalysisWords({ artist: artistName, report: reportText, kind: KIND_NAME[tab], motifs: styleDNA?.imageClusters }, store);
+      if (!words.length) throw new Error('No words came back.');
+      setMatrixWords(words);
+      return words;
+    } catch (e) {
+      setWordsError(e?.message || 'The words did not come back.');
+      return null;
+    } finally {
+      setLoadingWords(false);
+    }
+  };
+
   const handleGhostWrite = async () => {
     if (!artist.trim()) return;
     if (!hasWritingAI(store.config)) {
@@ -226,14 +265,22 @@ export default function ArtistAnalyzer({ onGhostSend }) {
     setErrorMsg('');
     setGhostLyrics('');
     setSunoTags('');
+    setVoice(''); setSongDesc(''); setKitError('');
     setGhostSent(false);
 
     try {
       // The one writer (AIService): a whole song every time, never a verse and a hook.
-      const { lyrics, sunoTags: tags } = await writeInArtistStyle(artist, ghostTopic, store);
+      // The report rides along so the Matrix words come out of it, not out of thin air.
+      const { lyrics, sunoTags: tags, matrixWords: words, voice: v, description } = await writeInArtistStyle(artist, ghostTopic, store, {
+        report: analysis, kind: KIND_NAME[tab], motifs: styleDNA?.imageClusters,
+      });
 
       setGhostLyrics(lyrics);
       setSunoTags(tags);
+      // The 20 words from the analysis stay; the song's own words only fill an empty list.
+      setMatrixWords((have) => (have.length ? have : (words || [])));
+      setVoice(v || '');
+      setSongDesc(description || '');
       track('ghostrider_song_written', { sections: (lyrics.match(/^\[[^\]]+\]\s*$/gm) || []).length });
 
       /**
@@ -256,6 +303,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
   const clearGhostRider = () => {
     setArtist(''); setFocus(''); setAnalysis(''); setStyleDNA(null);
     setGhostTopic(''); setGhostLyrics(''); setSunoTags(''); setGhostSent(false);
+    setMatrixWords([]); setWordsSent(false); setVoice(''); setSongDesc(''); setKitError('');
     setClichés([]); setPlagiarismRisk(null); setThemeCheck(null);
     setErrorMsg(''); setSaveNote(''); setSongSaveNote('');
   };
@@ -296,6 +344,8 @@ export default function ArtistAnalyzer({ onGhostSend }) {
       `Saved: ${now.toLocaleString()}\n` +
       `${'='.repeat(50)}\n\n` +
       `SUNO TAGS\n${tags || '(none)'}\n\n` +
+      (voice ? `SUNO VOICE\n${voice}\n\n` : '') +
+      (songDesc ? `SUNO SONG DESCRIPTION\n${songDesc}\n\n` : '') +
       `LYRICS\n${song}\n`;
     if (tags) saveSunoTags(tags, who);
     let note;
@@ -352,6 +402,41 @@ export default function ArtistAnalyzer({ onGhostSend }) {
     setGhostSent(true);
   };
 
+  /**
+   * THE 20 WORDS GO TO THE MATRIX ON A TAP, never on their own: loading a grid
+   * once wiped one Chris had filled. Saved first, so The Matrix picks them up
+   * even if it has not been opened yet; the event covers the open one.
+   */
+  const sendWordsToMatrix = () => {
+    if (!matrixWords.length) return false;
+    writeMatrixWords(matrixWords, artist.trim());
+    window.dispatchEvent(new CustomEvent('lyricist:matrix-words', { detail: { words: matrixWords, artist: artist.trim() } }));
+    setWordsSent(true);
+    track('ghostrider_words_to_matrix', { count: matrixWords.length });
+    notify(`${matrixWords.length} words sent. Open The Matrix.`, { tone: 'ok' });
+    return true;
+  };
+
+  // For a song written before the voice and description lines existed, or when
+  // that part of the reply came back empty: one more call fills just those two.
+  const writeVoiceAndDescription = async () => {
+    if (!ghostLyrics.trim()) return null;
+    setLoadingKit(true);
+    setKitError('');
+    try {
+      const out = await writeSunoKit({ lyrics: ghostLyrics, tags: sunoTags, topic: ghostTopic, artist }, store);
+      setVoice(out.voice);
+      setSongDesc(out.description);
+      if (!out.voice && !out.description) setKitError('Nothing came back. Tap Write again.');
+      return out;
+    } catch (e) {
+      setKitError(e?.message || 'Could not write them. Tap Write again.');
+      return null;
+    } finally {
+      setLoadingKit(false);
+    }
+  };
+
   const handleCopy = (text, key) => {
     navigator.clipboard.writeText(text);
     setCopied(key);
@@ -369,8 +454,8 @@ export default function ArtistAnalyzer({ onGhostSend }) {
    */
   const ghost = useRef({});
   ghost.current = {
-    artist, tab, analysis, ghostTopic, ghostLyrics, sunoTags, errorMsg, styleDNA, loadingDNA, store,
-    handleAnalyze, handleGhostWrite, handleRunChecks, handleSendToSongwriter, extractStyleDNA, saveSongToDisk,
+    artist, tab, analysis, ghostTopic, ghostLyrics, sunoTags, matrixWords, voice, songDesc, errorMsg, styleDNA, loadingDNA, store,
+    handleAnalyze, handleGhostWrite, handleRunChecks, handleSendToSongwriter, extractStyleDNA, saveSongToDisk, sendWordsToMatrix,
   };
   useEffect(() => registerGhostActions({
     describe_ghostrider: () => {
@@ -379,7 +464,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
         `GHOST RIDER TAB: artist "${g.artist}", analysis type "${g.tab}", topic "${g.ghostTopic}".`,
         g.analysis ? `Its style report starts: ${g.analysis.slice(0, 500)}` : 'No style report yet.',
         g.ghostLyrics
-          ? `Lyrics it wrote in that style:\n${g.ghostLyrics.slice(0, 1000)}\nSuno tags: ${g.sunoTags}`
+          ? `Lyrics it wrote in that style:\n${g.ghostLyrics.slice(0, 1000)}\nSuno tags: ${g.sunoTags}${g.voice ? `\nSuno voice: ${g.voice}` : ''}${g.songDesc ? `\nSuno song description: ${g.songDesc}` : ''}`
           : 'No lyrics written in the style yet.',
       ].join('\n');
     },
@@ -405,7 +490,14 @@ export default function ArtistAnalyzer({ onGhostSend }) {
       const g = ghost.current;
       if (g.errorMsg) throw new Error(g.errorMsg);
       if (!g.ghostLyrics) throw new Error('The write came back empty. Try it again.');
-      return `wrote a verse and hook in the style of ${g.artist}${g.sunoTags ? `. Suno tags: ${g.sunoTags}` : ''}`;
+      return `wrote a verse and hook in the style of ${g.artist}${g.sunoTags ? `. Suno tags: ${g.sunoTags}` : ''}${g.matrixWords.length ? `. ${g.matrixWords.length} Matrix words ready: ${g.matrixWords.join(', ')}` : ''}${g.voice ? `. Suno voice: ${g.voice}` : ''}${g.songDesc ? `. Suno song description: ${g.songDesc}` : ''}`;
+    },
+    /** The Send words button: the 20 words pulled from the analysis, into The Matrix. */
+    ghostrider_send_words_to_matrix: () => {
+      const g = ghost.current;
+      if (!g.matrixWords.length) throw new Error('No Matrix words yet. Analyze an artist first.');
+      g.sendWordsToMatrix();
+      return `sent ${g.matrixWords.length} words from ${g.artist.trim() || 'Ghost Rider'}'s analysis to The Matrix: ${g.matrixWords.join(', ')}`;
     },
     ghostrider_check: async () => {
       if (!ghost.current.ghostLyrics) throw new Error('Nothing written on Ghost Rider yet to check.');
@@ -788,6 +880,68 @@ export default function ArtistAnalyzer({ onGhostSend }) {
             </div>
           )}
 
+          {/* The 20 Matrix words, pulled from the analysis on screen. One tap into The Matrix. */}
+          {analysis && (
+            <div
+              data-demo="gr-matrix-words"
+              style={{ background: 'rgba(16,18,21,0.85)', border: '1px solid rgba(155,161,170,0.3)', borderRadius: 12, padding: 18 }}
+              data-help="Twenty words and phrases pulled from the analysis above, not random ones. Send them to The Matrix: they fill its 20 tiles and guide the lyrics."
+            >
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e7a540', marginBottom: 10 }}>
+                <Icon i={Grid3x3} />{matrixWords.length || 20} Words for The Matrix {loadingWords ? '(pulling…)' : ''}
+              </h4>
+              {matrixWords.length > 0 && (
+                <>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                    {matrixWords.map((w, idx) => (
+                      <span key={idx} className="suno-chip" style={{ fontSize: '0.7rem' }}>{w}</span>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={sendWordsToMatrix}
+                    data-help="Sends these words to The Matrix. The first 20 fill its tiles, all of them go in its keyword box. It replaces the grid that is there, so it only happens when you tap."
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: 8,
+                      border: '1px solid rgba(231,165,64,0.5)',
+                      background: 'rgba(33,34,36,0.5)',
+                      color: '#e6e8eb',
+                      fontWeight: 700,
+                      fontSize: '0.82rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Icon i={Grid3x3} />{wordsSent ? 'Sent to The Matrix' : `Send ${matrixWords.length} words to The Matrix`}
+                  </button>
+                </>
+              )}
+              {wordsError && <div style={{ color: '#ff8a8a', fontSize: '0.78rem', marginBottom: 8 }}>{wordsError}</div>}
+              {!loadingWords && (!matrixWords.length || wordsError) && (
+                <button
+                  type="button"
+                  onClick={() => makeAnalysisWords()}
+                  data-help="Pulls 20 words and phrases out of the analysis on screen."
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: 8,
+                    border: '1px solid rgba(231,165,64,0.5)',
+                    background: 'rgba(33,34,36,0.5)',
+                    color: '#e6e8eb',
+                    fontWeight: 700,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {wordsError ? 'Try again' : 'Pull 20 words from this analysis'}
+                </button>
+              )}
+              {loadingWords && !matrixWords.length && <div style={{ color: 'rgba(155,161,170,0.7)', fontSize: '0.78rem' }}>Reading the analysis…</div>}
+            </div>
+          )}
+
           {/* Ghost Rider Mimic section */}
           {artist.trim() && (
             <div style={{ background: 'rgba(16,18,21,0.85)', border: '1px solid rgba(231,165,64,0.22)', borderRadius: 12, padding: 18 }}>
@@ -913,6 +1067,18 @@ export default function ArtistAnalyzer({ onGhostSend }) {
                       </div>
                     </div>
                   )}
+
+                  {/* Suno's Voice and Song description, written with the song. Tags and words stay in their own cards above. */}
+                  <SunoKitPanel
+                    kit={voice || songDesc ? { voice, description: songDesc } : null}
+                    show={{ tags: false, words: false }}
+                    busy={loadingKit}
+                    error={kitError}
+                    onWrite={writeVoiceAndDescription}
+                    writeLabel="Write voice + description"
+                    title="Suno voice + description"
+                    artist={artist.trim()}
+                  />
 
                   {/* Send to Songwriter Hub */}
                   <div style={{ display: 'flex', gap: 8 }}>

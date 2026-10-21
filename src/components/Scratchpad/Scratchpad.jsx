@@ -108,7 +108,7 @@ export default function Scratchpad() {
               textShadow: '0 2px 4px rgba(0,0,0,0.5)',
               whiteSpace: 'nowrap'
             }}
-            data-help="A free blank notepad — no rules, no AI. Use it to dump ideas, hooks, or random lines as they come to you. Everything you type is saved on your computer automatically, so you can close the app and it'll still be here."
+            data-help="A blank notepad — no rules, no AI. Use it to dump ideas, hooks, or random lines as they come to you. Everything you type is saved on your computer automatically, so you can close the app and it'll still be here."
           >
             Scratchpad
           </h2>
