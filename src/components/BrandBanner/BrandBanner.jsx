@@ -38,7 +38,7 @@ import './BrandBanner.css';
 
 const MODES = ['auto', 'bars', 'disc', 'orbit', 'lyrics', 'molten', 'skyline', 'info', 'off'];
 const LABEL = { auto: 'Auto', bars: 'Bars', disc: 'Disc', orbit: 'Orbit', lyrics: 'Lyrics', molten: 'Molten', skyline: 'Skyline', info: 'Song info', off: 'Off' };
-const ROTATION = ['bars', 'orbit', 'disc', 'lyrics', 'skyline', 'molten', 'info'];
+const ROTATION = ['orbit', 'bars', 'disc', 'lyrics', 'skyline', 'molten', 'info'];
 // The scenes that are a video, and which clip each one plays.
 const VIDEO_SRC = { disc: bhLoop, orbit: c4dOrbit, lyrics: c4dLyrics, molten: c4dMolten };
 const VIDEO_SCENES = Object.keys(VIDEO_SRC);
@@ -207,11 +207,11 @@ export default function BrandBanner() {
     for (const name of VIDEO_SCENES) {
       const v = videoRefs.current[name];
       if (!v) continue;
-      if (scene === name && !REDUCED_MOTION) v.play().catch(() => {});
+      if (scene === name && (!REDUCED_MOTION || mode !== 'auto')) v.play().catch(() => {});
       else timers.push(setTimeout(() => v.pause(), FADE_MS + 100));
     }
     return () => timers.forEach(clearTimeout);
-  }, [scene]);
+  }, [scene, mode]);
 
   // Canvas scenes: size them to the banner and run one frame loop for both.
   useEffect(() => {
