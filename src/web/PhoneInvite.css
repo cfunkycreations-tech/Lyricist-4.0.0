@@ -1,0 +1,57 @@
+/* The "put it on your phone" screen (PhoneInvite.jsx). Desktop app only, but it
+   still has to scroll once and never slide sideways in a small window. */
+.pinv {
+  position: fixed; inset: 0; z-index: 2147482000;
+  display: flex; padding: 16px;
+  background: radial-gradient(80% 70% at 50% 30%, rgba(255, 120, 40, .16), transparent 62%), #050208;
+  color: #FFF4E2; overflow-y: auto; overflow-x: hidden;
+}
+.pinv-card {
+  width: 100%; max-width: 520px; margin: auto;   /* centred, but scrolls instead of clipping */
+  display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;
+  box-sizing: border-box;
+}
+.pinv h1 {
+  margin: 0; font-family: var(--faf-font, sans-serif); font-weight: 400;
+  font-size: 26px; letter-spacing: .04em; text-transform: uppercase;
+}
+.pinv-lede { margin: 0; font-size: 15px; line-height: 1.45; color: rgba(255, 244, 226, .82); }
+.pinv-qr {
+  width: 188px; height: 188px; border-radius: 12px; image-rendering: pixelated;
+  box-shadow: 0 0 28px rgba(255, 120, 40, .3);
+}
+.pinv-url { margin: 0; font: 16px/1.2 ui-monospace, Menlo, Consolas, monospace; color: #FFB25A; word-break: break-all; }
+.pinv-copy {
+  padding: 8px 18px; border-radius: 9999px; cursor: pointer;
+  border: 1px solid rgba(255, 138, 61, .55); background: rgba(255, 255, 255, .05);
+  color: #FFF4E2; font-size: 14px;
+}
+.pinv-copy:hover { background: rgba(255, 138, 61, .16); }
+.pinv-steps { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: left; }
+.pinv-steps section {
+  padding: 12px 14px; border-radius: 12px;
+  border: 1px solid rgba(255, 138, 61, .3); background: rgba(255, 255, 255, .04);
+}
+.pinv-steps h2 {
+  margin: 0 0 6px; font-family: var(--faf-font, sans-serif); font-weight: 400;
+  font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #FF8A3D;
+}
+.pinv-steps ol { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.5; }
+.pinv-note { margin: 0; font-size: 13px; line-height: 1.5; color: rgba(255, 244, 226, .7); }
+.pinv-go {
+  width: 100%; max-width: 320px; padding: 12px; border: 0; border-radius: 10px; cursor: pointer;
+  background: #FF8A3D; color: #160a02; font-family: var(--faf-font, sans-serif);
+  font-size: 16px; letter-spacing: .08em; text-transform: uppercase;
+}
+.pinv-again { margin: 0; font-size: 12px; color: rgba(255, 244, 226, .5); }
+
+/* Narrow window or phone upright: one column. */
+@media (max-width: 520px) {
+  .pinv-steps { grid-template-columns: 1fr; }
+  .pinv h1 { font-size: 22px; }
+}
+/* Short window: smaller code, same single scroll. */
+@media (max-height: 520px) {
+  .pinv-qr { width: 132px; height: 132px; }
+  .pinv-card { gap: 8px; }
+}

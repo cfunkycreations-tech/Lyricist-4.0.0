@@ -14,6 +14,7 @@ import { registerGhostActions, ghostSettle } from '../../services/ghostBus.js';
 
 import TabBackground from '../common/TabBackground.jsx';
 import { Icon } from '../common/Glyph.jsx';
+import SunoKitPanel, { useSunoKit } from '../common/SunoKit.jsx';
 const SURPRISE_TOPICS = [
   'a long drive at 2am with the radio off',
   'burning the recipe your mom left you',
@@ -78,6 +79,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
   const [remixLoading, setRemixLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [result, setResult] = useState(null); // { song, art, title }
+  const sunoKit = useSunoKit('songforge', result?.song?.rawText || '');
   const [titleDraft, setTitleDraft] = useState('');
   const [copied, setCopied] = useState(false);
   const [sent, setSent] = useState(false);
@@ -670,6 +672,14 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                   {result.song.rawText}
                 </pre>
               </div>
+
+              <SunoKitPanel
+                kit={sunoKit.kit}
+                busy={sunoKit.busy}
+                error={sunoKit.error}
+                onWrite={() => sunoKit.write(store, { lyrics: result.song.rawText, tags: store.sunoTags, topic: store.topic, artist: store.artistRef })}
+                artist={store.artistRef || ''}
+              />
 
               {/* Cover art medallion */}
               <div className="songforge-medallion-wrap">

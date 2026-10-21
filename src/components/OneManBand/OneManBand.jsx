@@ -9,6 +9,7 @@ import { runCaptionSkill } from '../../services/captionSkillRunner.js';
 import { readSunoTags } from '../../services/ghostMemory.js';
 import { track } from '../../services/analytics.js';
 import { applySongTags } from '../../services/songTags.js';
+import SunoKitPanel, { useSunoKit } from '../common/SunoKit.jsx';
 
 /**
  * THE SHAPE OF A SONG, IN ONE PRESS.
@@ -460,6 +461,10 @@ export default function OneManBand({ onNavigate, incoming, onSendToSongwriter } 
     genres: store.bhGenreList, moods: store.bhMoodList, voices: store.voiceList, seconds: 30, songTags: store.sunoTags,
   })));
   const [captionEdited, setCaptionEdited] = useState(false);
+  // The Suno kit rides on the Input Caption: its Song description is the short
+  // version of that caption, written from the same facts.
+  const sunoKit = useSunoKit('bhs', caption);
+  const writeKit = () => sunoKit.write(store, { caption, lyrics, tags: store.sunoTags, artist: store.artistRef });
   const [rewriting, setRewriting] = useState(false);
 
   const [takes, setTakes] = useState([]);
@@ -1817,6 +1822,16 @@ export default function OneManBand({ onNavigate, incoming, onSendToSongwriter } 
                 </div>
                 <pre className="omb-wholetext">{wholePrompt}</pre>
               </div>
+
+              <SunoKitPanel
+                kit={sunoKit.kit}
+                busy={sunoKit.busy}
+                error={sunoKit.error}
+                onWrite={writeKit}
+                canWrite={!!caption.trim()}
+                artist={store.artistRef || ''}
+                title="Suno kit from this caption"
+              />
             </div>
           </section>
 

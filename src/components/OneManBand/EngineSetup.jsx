@@ -155,10 +155,10 @@ export default function EngineSetup({ onKaggleReady, onLocalReady }) {
   return (
     <div className="es">
       <div className="es-head">
-        <h3>Make longer songs, free</h3>
+        <h3>Make longer songs</h3>
         <p>
           The free cloud is instant but tops out around 45 seconds a song. These two make full
-          songs, and both cost nothing. Set either one up once and it stays set up.
+          songs. Set either one up once and it stays set up.
         </p>
       </div>
 
@@ -168,7 +168,7 @@ export default function EngineSetup({ onKaggleReady, onLocalReady }) {
         <section className={`es-card${kaggle?.connected ? ' is-ready' : ''}`}>
           <header>
             <h4>Kaggle</h4>
-            <span className="es-tag good">free · no hardware needed</span>
+            <span className="es-tag good">no hardware needed</span>
           </header>
           <p className="es-what">
             Kaggle is Google-owned and gives away <b>30 hours a week</b> of a fast graphics card.
@@ -255,8 +255,8 @@ export default function EngineSetup({ onKaggleReady, onLocalReady }) {
           <header>
             <h4>This computer</h4>
             <span className={`es-tag${gpu?.verdict === 'good' ? ' good' : ''}`}>
-              {gpu?.verdict === 'good' ? 'free · fastest · private'
-                : gpu?.present ? 'free · slower on this machine' : 'needs an NVIDIA card'}
+              {gpu?.verdict === 'good' ? 'fastest · private'
+                : gpu?.present ? 'slower on this machine' : 'needs an NVIDIA card'}
             </span>
           </header>
 
