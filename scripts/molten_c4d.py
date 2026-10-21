@@ -100,7 +100,7 @@ SHOTS = {
 }
 FOCAL = 36.0
 TITLE_DEPTH = 36.0
-TITLE_SINK = 1.9                     # title centre, this x its height above the surface. Low
+TITLE_SINK = 1.45                     # title centre, this x its height above the surface. Low
                                      # enough to straddle the waterline and the letters have no
                                      # background to read against: dark sky above, bright gold
                                      # below, and the title lost in the join.

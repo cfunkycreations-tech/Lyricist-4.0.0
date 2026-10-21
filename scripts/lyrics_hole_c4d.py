@@ -96,8 +96,14 @@ HALO_OUTER = HORIZON_RADIUS * RIM[-1][0] + RIM[-1][1]
 # view (degrees above the disc) and focal the camera; sway and push how far it
 # drifts (degrees, units) over a loop.
 SHOTS = {
-    "hero":   dict(res=(1920, 1080), r_out=560.0, text_h=100.0, spread=120.0,
-                   dist=2100.0, view=26.0, focal=34.0, sway=8.0, push=50.0),
+    # dist 2100 left the hole about a third of the frame wide with the rest
+    # black. The Console called that a 90% fit because it measures how far the
+    # outermost word swings, not how much of the picture is lit.
+    # spread 120 stacked the arms so close that words from different lines
+    # landed on each other: "Every" and "edge" read as one word, "Evedge".
+    # 260 separates them and the scene still sits together.
+    "hero":   dict(res=(1920, 1080), r_out=560.0, text_h=100.0, spread=260.0,
+                   dist=1750.0, view=26.0, focal=34.0, sway=8.0, push=50.0),
     "phone":  dict(res=(1080, 1920), r_out=480.0, text_h=100.0, spread=600.0,
                    dist=1900.0, view=26.0, focal=40.0, sway=6.0, push=50.0),
     "header": dict(res=(720, 720), r_out=330.0, text_h=42.0, spread=130.0,
