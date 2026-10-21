@@ -9,11 +9,15 @@ renderer and would ignore these materials.
 | Script | What it makes | Where |
 |---|---|---|
 | `blackhole_c4d.py` | The black hole rig | main |
+| `logo_c4d.py` | Logo intro: the badge lands, then hands off to the splash | main |
 | `splash_c4d.py` | Opening splash, chrome title | main |
-| `molten_c4d.py` | Molten metal pool, Python Generator waves, metaballs, fog | `claude/molten-c4d` (#78) |
-| `orbit_c4d.py` | Tab names orbiting the hole, camera on a pivot | `claude/orbit-hole-c4d` (#79) |
-| `lyrics_hole_c4d.py` | Lyrics spiralling into the hole | `claude/orbit-hole-c4d` (#79) |
-| `metaballs_c4d.py` | Liquid metaballs: 12 chrome droplets fuse and pour apart, looping | `claude/metaballs-c4d` (#82) |
+| `molten_c4d.py` | Molten metal pool, Python Generator waves, metaballs, fog | main |
+| `orbit_c4d.py` | Tab names orbiting the hole, camera on a pivot | main |
+| `lyrics_hole_c4d.py` | Lyrics spiralling into the hole | main |
+| `metaballs_c4d.py` | Liquid metaballs: 12 chrome droplets fuse and pour apart, looping | main |
+
+`logo_c4d.py` runs before `splash_c4d.py`: 90 frames then 150, so playing
+logo/ followed by splash/ is 8 seconds at 30 fps.
 
 Each scene script has a companion `*_textures.py` that writes the images it
 reads, and each replaces its own top-level group on a re-run, so running one

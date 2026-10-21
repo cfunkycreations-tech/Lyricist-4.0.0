@@ -65,6 +65,8 @@ Run a single check by calling its `.mjs` directly — that is the unit of testin
 
 Run in C4D: Extensions -> Script Manager -> File -> Load Script -> Execute. Console `Shift+F10`, render `Shift+R`. Each script replaces its own top-level null group (`GROUP_NAME`) on re-run, so re-executing is safe.
 
+On main: `logo_c4d.py` (intro), `splash_c4d.py`, `blackhole_c4d.py`, `molten_c4d.py`, `orbit_c4d.py`, `lyrics_hole_c4d.py`, `metaballs_c4d.py`, each with its `*_textures.py` and `*_tex/`. `logo_c4d.py` runs before `splash_c4d.py` — 90 frames then 150. See `scripts/C4D-SCRIPTS.md`.
+
 `scripts/splash_c4d.py` is the reference implementation. Conventions every script follows:
 
 - Module-level CONFIG block: `GROUP_NAME`, `TEX_FOLDER`, `OUTPUT_PATH`, `RES_X`/`RES_Y`, `FPS`, `FRAMES`, `START_FRAME`.
