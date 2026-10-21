@@ -1,0 +1,544 @@
+{
+  "generated": "2026-10-21",
+  "total": 328,
+  "days": [
+    {
+      "date": "2026-10-21",
+      "items": [
+        "Ghost Rider: 20 Matrix words from the analysis, under Style DNA",
+        "Remove 'free' claims about the app and its built-in tools"
+      ]
+    },
+    {
+      "date": "2026-10-20",
+      "items": [
+        "Matrix full songs side by side + Suno kit in every writing tab",
+        "Ghost Rider: 20 Matrix words + phone app upright or sideways",
+        "Show how to put it on the phone first thing on desktop"
+      ]
+    },
+    {
+      "date": "2026-10-18",
+      "items": [
+        "Own AI server: keep model probes on OpenRouter, fix Song Forge wording",
+        "Settings: use your own AI server for the writing tools"
+      ]
+    },
+    {
+      "date": "2026-10-17",
+      "items": [
+        "Rewrite names every pick as an order; PostHog sees how each write went",
+        "Songwriter: Send to Black Hole Studios under Rewrite; near-copy rewrites get redone; phone shows its version"
+      ]
+    },
+    {
+      "date": "2026-10-16",
+      "items": [
+        "Rewrite follows the new tags and notes; Studio and Songwriter send and pull both ways",
+        "Songwriter: Send to Black Hole Studios with its tags; phone lyric lines show in full"
+      ]
+    },
+    {
+      "date": "2026-10-15",
+      "items": [
+        "Signed desktop updates and a server-side phone lock",
+        "Security pass: lock down the desktop bridge and the phone site",
+        "Black Hole Studios: send the exact instrumental pick to the caption writer",
+        "Desktop auto-update for the customer build",
+        "PostHog on phone and desktop: core events, build switch, truthful footers",
+        "Ghost Rider writes a whole song; caption skill gets the song's real facts",
+        "Send Songwriter notes to the AI; phone tools scroll as one page and never slide sideways",
+        "Phone Songwriter: Generate rewrites the song on the page, lines stop sliding sideways"
+      ]
+    },
+    {
+      "date": "2026-10-14",
+      "items": [
+        "Black Hole Studios on the phone: real captions, two takes, delete and save",
+        "License check: only Gumroad's real \"no\" locks; Windows notifications allowed",
+        "Phone: Share button for lyrics, and a ping when a song is ready",
+        "Phone: tell people when a new version is out and when the signal drops",
+        "Drop a banned word from the medallion art prompt",
+        "Lock the Windows customer build behind the Gumroad license key",
+        "Stop calling the app free: Lyricist Pro is $19.99 once",
+        "Phone polish: tool help cards, install row, keyboard, notch, touch feel"
+      ]
+    },
+    {
+      "date": "2026-10-13",
+      "items": [
+        "Phone: back button, readable grouped launcher, key step, main button in the bar",
+        "Batch 3 promo notes; drop two banned words from on-screen copy",
+        "Drop \"Free forever\"; product page links; batch 3 plan"
+      ]
+    },
+    {
+      "date": "2026-10-12",
+      "items": [
+        "Purchase lock: Lyricist Pro's Gumroad product ID and buy link",
+        "Story copy: singer-songwriter, taught myself to code, uses Suno",
+        "Story copy: career change and self-taught, nothing about health",
+        "Phone version: unlock with the Gumroad purchase code"
+      ]
+    },
+    {
+      "date": "2026-10-11",
+      "items": [
+        "Black Hole Studios disc on iPhone: animated WebP instead of alpha WebM",
+        "Gumroad kit + phone version (iPhone and Android)",
+        "Skyline scene: real Austin, drawn like the logo",
+        "Bigger logo banner with four side scenes; Black Hole title to the top",
+        "Logo banner shows at 150% scaling; black hole top glows like the bottom",
+        "Logo banner across the top of the app; black hole spins visibly again",
+        "Ghost icon everywhere, black hole redrawn to match it, installer art",
+        "Kaggle songs stop disappearing: collect before each push, rack keeps them",
+        "Sly Ghost finds controls by their words, scrolls the tab on a miss",
+        "Ghost: never read, list, press or type into a key or token box"
+      ]
+    },
+    {
+      "date": "2026-10-10",
+      "items": [
+        "Ghost caption step: Sly checks the caption box; show why your own model failed",
+        "Lyric video cut to the beat (Kaggle)",
+        "Kaggle: never bring home the last run's songs as this one's",
+        "Sly Ghost: checks every Ghost job step; the plan",
+        "Kaggle: download the 12 GB model once, not every song",
+        "Ghost: Slow hands with a pause after each step; one Ask box so Enter and Stow work in Jobs",
+        "Ghost chat sends only the last 6 messages, not the whole chat",
+        "Close the app and unsaved work resets; Save and Clear where needed",
+        "Fix what a full Ghost journey run broke",
+        "Ghost flight recorder; Enter box on every Ghost view",
+        "Songs carry their exact Suno tags; new song replaces the old one; cliché ban",
+        "Ghost job fixes: on-screen sprite, DNA step, OBS stop, stale song state",
+        "Pad synths load again; Claude Haiku Latest no longer flagged unusable",
+        "Ghost flies to what it works on; grunge stays grunge; no false tempo warning",
+        "Ghost voice: two takes at a time, Kokoro only for no key/credit/network",
+        "Ghost: speak in the demo's voice, without the long waits; saner Missing Ideas",
+        "MIDI Studio: say why an instrument failed to load",
+        "Songwriter: Esc or clicking outside closes Bridge Variations",
+        "MIDI Studio: stop visualizer drawing when scrolled off-screen",
+        "Start Here: 'Paste it into Settings' lands the cursor in the key box",
+        "Song tags survive a restart: genre, subgenre, mood, voice, topic and artist picks are saved with the lyrics",
+        "Genre and mood picks round-trip between Songwriter and Black Hole Studios without inventing picks",
+        "Tabs stop clipping their lower half on short screens; The Matrix says when Style DNA lands",
+        "Engine builds on GitHub's Windows runner and lands in juce-backend/prebuilt; release and dev both use it",
+        "Style DNA button reaches The Matrix live; engine builds during release:creator; RC-Funk 'Matrix' button label",
+        "Free models that work: Song Forge picture paths walk free vision/image models; Song First keeps the song when art fails; model list says what each model can do and blocks ones that can't work",
+        "Layout: window frame scrolls only when the header outgrows it; tab workspace keeps a usable height; reverse buffers built at clip load",
+        "Ghost Rider report stays put; window-height layout so tab panels scroll; Performance Deck pads drag, Repeater/Scratch/Stop on clip audio",
+        "Surface: add Dark Green and Emerald, cap Light Gray, drop White; Creator/Customer release folders",
+        "Settings: Surface slider, the colour of the whole app",
+        "Ghost Demo: the bar never covers the ghost or his bubbles; no sign-off bubble",
+        "OpenRouter: \"No endpoints found\" points at privacy settings, not a dead model",
+        "Ghost Demo: background music under the narration",
+        "OpenRouter: only proven CORS headers, swap a dead model to a live one",
+        "OpenRouter: official SDK, live model check, one app attribution",
+        "Ghost Demo beds: seamless loops, blackhole bed, prep script",
+        "Ghost Demo background beds (prepared, not wired) and handoff for the next session",
+        "Ghost demo: Black Hole Studios back to the original Ghost voice clips",
+        "Black Hole Studios: Gargantua-style black hole, brighter disc",
+        "Black Hole Studios: black hole as big as the header allows",
+        "Black Hole Studios: black hole gets its own slot in the header, not behind the title",
+        "Black Hole Studios header: Chris's Cinema 4D render of the black hole loop"
+      ]
+    },
+    {
+      "date": "2026-10-09",
+      "items": [
+        "Black Hole Studios header: rendered black hole loop replaces the CSS drawing",
+        "Ghost demo: Black Hole Studios bubbles transcribed from the actual VO clips",
+        "Piano roll: load sound banks via XHR fallback so file:// packaged app gets sound",
+        "Model picker: pin Space Bunny Alpha stealth model",
+        "Model picker: use API key for catalogue, merge account models, exact-ID entry, 15 min cache",
+        "Ghost demo: bubbles match Black Hole Studios VO, faster cursor, wait for clip end",
+        "Push deck: GarageBand Live Loops layout (clip grid + column launch, filter, reverse/scratch/stop, repeater)",
+        "Push: performance deck (filter XY, echo/HP faders, Live Loops clips, stutter) + VST param/panic",
+        "Ghost demo speed: replace Slow/Medium/Fast with a knob (mouse wheel, drag, arrows, double-click reset)",
+        "Ghost: one voice. Man and Woman options removed from the panel, the voice list and the Ghost's instructions; a saved Man/Woman choice falls back to the Ghost",
+        "Voice Lab gets its own tab in The Studio, for anyone: write a script, pick a voice, shape it, read it, save a WAV. Out of the Ghost panel. Ghost Demo and tour card for it.",
+        "Ghost Demo: show the ghost on screen with the pointer, with a Ghost On/Off button that is remembered",
+        "Ghost voice: Black Hole Studios demo uses the new Suno takes (Renders 1-6), captions match the new script"
+      ]
+    },
+    {
+      "date": "2026-10-08",
+      "items": [
+        "Narration clips fade in and out (0.3s / 0.4s) so cuts from a longer render don't sound chopped",
+        "Settings: take a model id as typed when it is not in the list; refresh the model list every 10 minutes"
+      ]
+    },
+    {
+      "date": "2026-10-01",
+      "items": [
+        "Lyrics: a thinking model that returns nothing gets more room, not replaced",
+        "Ghost: run actions in the order written, report refusals, retry false \"I can't\""
+      ]
+    },
+    {
+      "date": "2026-09-30",
+      "items": [
+        "Add Modal as a song engine: your own GPU, same ComfyUI, selectable in the app"
+      ]
+    },
+    {
+      "date": "2026-09-28",
+      "items": [
+        "Ghost Rider: Save Song & Tags button saves the song written in an artist's style and its Suno tags as its own .txt in Documents\\Lyricist Style Reports, named after the artist so it sits beside that artist's report; the tags are also kept for Black Hole Studios' caption. The Ghost can press it too (ghostrider_save_song)",
+        "Tags: swapping a genre in Songwriter no longer leaves the dropped subgenre's sound in Black Hole Studios (Hip-Hop / Rap + West Coast -> R&B / Soul kept G-funk); orphaned subgenres are dropped before translating, in setGenreList and setStylePicks. Verified in the app: picks carry into Black Hole, the caption redrafts from them, Pull from Songwriter brings the words",
+        "Start Here card: Black Hole Studios' Input Caption skill waits on the OpenRouter key (runCaptionSkill calls assertApiKey); making the songs needs no key",
+        "Black obsidian glass reflecting a red light, exactly the swatch Chris picked; brushed metal removed",
+        "Brushed black nickel, darker than the mock and hairline fine; the Ghost's paid-model suggester is gone"
+      ]
+    },
+    {
+      "date": "2026-09-27",
+      "items": [
+        "VST3 instruments in MIDI Studio's instrument picker; DAW mode sends MIDI clock/start/stop from the pad sequencer and MIDI Studio (switch in Play Through); fake vst3-open-gui window and filename-guess scan deleted (333 lines)",
+        "VST3 loads run one at a time and wait for the Sound knob to settle (wheeling past Zebralette and ZebraHZ had left three synths loaded)",
+        "VST3 instruments in the app (Creator): the pad board's Sound knob reaches your VST3s after the built-in sounds, Synth UI opens the plugin's window, Settings picks the ASIO driver and rescans. Engine: scan runs on the message thread and reads bundles directly, plugin.load picks a plugin by name inside multi-plugin bundles (Zebra2). Installer ships the engine + VC++ runtime in resources/creator/engine; engine is killed on quit",
+        "DAW key on the pad board (Built-in / DAW, slot 15 of the button block); Play Through text points at loopMIDI, since the Windows loopbacks are invisible to Web MIDI and Ableton",
+        "Play Through toggle: Built-in or DAW (every pad, sequencer and drum note goes out as MIDI to Ableton or any DAW); engine: plugins play through the ASIO device asio.open chose",
+        "Ghost panel greys are steel, not navy; selected preset/category chips are lit amber keys in the chrome font",
+        "Ghost and tour narration re-recorded in Gemini 3.8 Algieba; Voice Lab in the Ghost panel tunes the voice on the mouse wheel and bakes every line",
+        "Nickel floor under every tab (no black band below short tabs); last pinks out; OpenRouter narration baker with voice auditions",
+        "Visible text says Lyricist Pro (the exe and saved-folder names stay as they are on disk)",
+        "Busy keys: a job in progress lights its key amber with a scanning LED instead of greying it out",
+        "Last emoji out: FREE as text, close buttons are lit icons",
+        "Settings: each setting on its own nickel plate, brushed floor, white title, amber links",
+        "No more Windows pop-ups: in-app toasts, confirm and name boxes",
+        "API key cell keeps its red/green status light under the materials",
+        "Last neon greens, magentas and violets go amber",
+        "Kick is amber, not magenta",
+        "Pad board: every pad plays, in key; chords; quick taps never go silent",
+        "Header pads are glass keys, exactly the swatch mock; visuals play behind the header row too",
+        "Navy is gone: remaining dark-blue literals become neutral graphite; even brushed floor",
+        "Header wall, Ask the Ghost, Scratchpad and RC-Funk 5000 in the new materials",
+        "Materials: brushed black nickel, black anodized keys, lit icons, Audiowide back, wheel on every slider",
+        "Ghost tags the song: genre, subgenre and mood follow the words between tabs"
+      ]
+    },
+    {
+      "date": "2026-09-15",
+      "items": [
+        "Free models: never route lyrics to a coding agent",
+        "Lessons talk: type what the Ghost says at each click",
+        "Ghost lessons: teach it by doing it, replay on the real mouse, and the Ghost art is back",
+        "No cyan or purple: amber accent arc, razor-thin lines, pad header and Black Hole Studios recoloured",
+        "FAF OpSec: signal accent, Matrix tiles as graphite keys with a channel bar, neutral headings",
+        "FAF OpSec: glows become hairline rings, display fonts become Inter, gradient pills become machined keys",
+        "FAF OpSec skin: graphite surfaces with grain, machined controls, Inter type, line icons replace every emoji",
+        "Release 4.2.0.158 Creator",
+        "Pad header: visuals fill the 9x9 square (pads, row above, column right)",
+        "Pad header: smooth glass, visuals only in the pad square",
+        "Pad header: clip painted visuals to the grid so hidden cells don't smear",
+        "Pad header: dim the visuals under the glass so labels stay readable",
+        "Pad header: glass blocks laid 1px apart, visuals show through them",
+        "Pad header: square cell wall, instrument opens inside the header, visuals only inside cells",
+        "Push header: Milkdrop visuals under the pads, and the colour sweep fixed",
+        "Push header: four group pads replace the sliding tab strip",
+        "Release 4.2.0.157 Creator",
+        "Ghost jobs narrate every step in Chris's voice",
+        "Release 4.2.0.156 Creator",
+        "Allow the app to reach OBS's websocket at ws://localhost:4455",
+        "Release 4.2.0.155 Creator",
+        "Ghost jobs: stop the OBS recording before showing Done or Failed",
+        "Release 4.2.0.154 Creator",
+        "Ghost jobs: OBS opens already recording, fresh connection per try",
+        "Release 4.2.0.153 Creator",
+        "Ghost jobs: OBS can never hang a job",
+        "Release 4.2.0.152 Creator",
+        "Ghost: no model suggestions; voice skips WebGPU on GPUs without f16",
+        "Release 4.2.0.151 Creator",
+        "Ghost voice: fall back to wasm when WebGPU loads but cannot speak",
+        "Ghost: fix the OBS record check on workflow messages",
+        "Release 4.2.0.150 Creator",
+        "Ghost: job runner (Phase 3), fixes from Chris's test run, no Anthropic suggestions",
+        "Ghost voice warmth is level-matched: tone changes, volume does not",
+        "Ghost voice: warmer, with speed in hundredths",
+        "Ask the Ghost is creator-only: gated out of customer builds",
+        "Release Lyricist 4.2.0.149",
+        "Ghost hand never glides off the edge of the window",
+        "Ghost Phase 2: a visible hand customers can watch",
+        "Release Lyricist 4.2.0.148",
+        "open_tab waits until the tab is on screen before the next action runs",
+        "Ghost hands: match boxes by their label, and loose genre/mood matching",
+        "Ghost Phase 1: every tab can be driven, and it suggests a strong model",
+        "Release Lyricist 4.2.0.147",
+        "Restore the Electron entry and keep the Ghost voice speed-up"
+      ]
+    },
+    {
+      "date": "2026-09-12",
+      "items": [
+        "Scrap the DAW project, bring the eighteen tabs back",
+        "Empty pickers, one shared vocabulary, Black Hole Studios"
+      ]
+    },
+    {
+      "date": "2026-08-29",
+      "items": [
+        "upgrades"
+      ]
+    },
+    {
+      "date": "2026-08-28",
+      "items": [
+        "Make the renderer actually talk to the native engine",
+        "Route every engine through one AudioContext; add Lyric Matrix, Style Match, rhyme coach",
+        "feat(eula,diagnostics,flexasio): implement proprietary commercial eula, dsp performance diagnostics, and flexasio attribution",
+        "feat(autotune,metronome,coach): implement vocal autotune pitch correction, sample-accurate metronome, and live rhyme coach",
+        "feat(vst3,debleed,history): implement native VST3 GUI window spawner, spectral de-bleed stem filter, and visual session version history",
+        "feat(comping,granular,automix): implement vocal take comping, granular cloud synthesizer, and ghost auto-mix staging",
+        "feat(sampler,limiter,voice): implement 16-pad drum sampler, true-peak lookahead limiter, and speech recognition voice control",
+        "feat(scope,vocal-align,macros): implement master acoustic scope suite, vocal karaoke tracker, and 8-macro modulation matrix",
+        "feat(mixer,import): implement high-density studio mixer console, aux send/return busses, and multi-track audio drag-and-drop importer",
+        "feat(ghost-pilot,midi): implement Ghost Pilot floating DAW assistant HUD, Web MIDI controller support, and piano roll groove arpeggiator",
+        "feat(dsp,rhyme,chords): implement studio DSP effects rack, lyric rhyme heatmap visualizer, and smart chord palette",
+        "feat(automation,editor,session): implement track automation curves, non-destructive waveform sample editor, and project session file manager",
+        "feat(export,dsp): implement mastering export suite, live mic recording, and tape slicer DSP engine",
+        "feat(synth,looper): implement polyphonic Web Audio MIDI synth, live 4-track looper engine, and global DAW keybindings",
+        "feat(daw): implement Lyricist 4.2.0 Pro Single-Window Hybrid Native DAW architecture",
+        "Ghost Pilot content-automation foundation, live free-model routing, Matrix two-tier UI"
+      ]
+    },
+    {
+      "date": "2026-08-26",
+      "items": [
+        "Lyricist 4.2.0"
+      ]
+    },
+    {
+      "date": "2026-08-23",
+      "items": [
+        "Ghost never hides behind the speech bubble, and a real app icon"
+      ]
+    },
+    {
+      "date": "2026-08-22",
+      "items": [
+        "Quantum Lab: remove the banner header entirely",
+        "The free cloud showed him raw HTML and a sales pitch instead of an answer",
+        "The take number was four million times too big for the music server",
+        "The song comes home on its own, and stop giving up on a long one",
+        "The Ghost runs MiniMax's caption skill, shipped whole and untouched",
+        "A finished song comes home by itself, and the ones already made can be brought in",
+        "The Ghost's send button says Enter, and preflight catches a built index.html",
+        "Handoff for 132: what was fixed and what is still unproven",
+        "The Kaggle engine never sent the caption, and the Ghost could erase a song",
+        "Give the Ghost 7000 tokens to answer in",
+        "One Input Caption, and the Ghost can no longer claim what it did not do",
+        "Follow MiniMax's own caption method, and check the result in code",
+        "Bundle the voice model, so nothing is downloaded and nothing needs the internet",
+        "Bake the three voice samples, and stop the toggle blocking on a download",
+        "Bake in a real MiniMax prompt, and count the sections people actually write",
+        "Stop tracking the 21 MB onnx runtime, npm install regenerates it",
+        "The Ghost's voice works in the installed app, and picks a speaker",
+        "Send the Hugging Face token from Settings to Kaggle, and say so on screen",
+        "The Ghost is an AI now, and MiniMax works end to end"
+      ]
+    },
+    {
+      "date": "2026-08-21",
+      "items": [
+        "Say why a Kaggle run failed, and count the takes",
+        "One Man Band gets a writing surface",
+        "Kaggle makes both takes in one run, on both of its graphics cards",
+        "Kaggle changed the login, so the setup card was describing a page that no longer exists"
+      ]
+    },
+    {
+      "date": "2026-08-19",
+      "items": [
+        "Delete the Austin street photo that sat behind the whole app",
+        "The setup card comes first, not last",
+        "One button sets up Kaggle and ComfyUI",
+        "Five genres, five moods, five of everything, blended into one",
+        "The prism died as you walked back through the tabs",
+        "Let people see the artwork, and give Chopped & Screwed its motion",
+        "The model's scratchpad was being saved as Verse 1"
+      ]
+    },
+    {
+      "date": "2026-08-18",
+      "items": [
+        "His artwork on every tab, and the wordmark back in the header",
+        "The cloud engine was singing their demo song, not your lyrics"
+      ]
+    },
+    {
+      "date": "2026-08-16",
+      "items": [
+        "Every genre on earth, and each one brings its own instruments",
+        "Chopped & Screwed: the Houston treatment, with a slicer and a sub",
+        "Build 4.2.0.100: the prism actually fills every tab",
+        "Build 4.2.0.099: stop the prism spamming boot.log",
+        "One Man Band: reach a real ComfyUI, pull from Songwriter, and its own card",
+        "Settings: the Prism control, and a free-quota token for One Man Band",
+        "Every tab background is now the living prism, and no video ships at all",
+        "One Man Band: turn lyrics into a real song, and kill the header video",
+        "Fix missing desktop/start-menu shortcuts and stuck onboarding wizard",
+        "Splash now runs its full ~25s length, not a fixed floor",
+        "Swap app icon to his new 4.2.0 logo",
+        "Fix splash screen not appearing and rounded-corner clip artifact"
+      ]
+    },
+    {
+      "date": "2026-08-15",
+      "items": [
+        "Show the window as soon as it is ready - never wait for the splash video",
+        "Drop the Scratchpad background clip that could never be seen",
+        "Splash plays out for his voice-over, zero audio on every video, Album tab out",
+        "Splash: his Grok title card replaces the medallion clip",
+        "Build 4.2.0.089",
+        "CFunky Quantum: Chris's own SoundFont bank in the piano roll"
+      ]
+    },
+    {
+      "date": "2026-08-14",
+      "items": [
+        "Build 4.2.0.088",
+        "Give the mouse back during Ghost Demo, add the launch splash, default Stemmer to Offline",
+        "Build 4.2.0.087",
+        "Stop a corrupt save from bricking the app; fix Reset and isNearRhyme",
+        "Real SoundFont2 synthesis for the piano roll; RC-Funk clip to Stemmer",
+        "Replace the remaining eleven tab backgrounds with 1080p+ sources",
+        "Replace six tab backgrounds with the high-quality 1080p sources",
+        "Package demucsLocal.js; preflight now gates missing main-process modules",
+        "Stemmer never dead-ends; restore crisp Songwriter video",
+        "Stemmer: true local AI stems (Demucs on your GPU/CPU) + real-stem engine picker",
+        "Songwriter: swap in new background video"
+      ]
+    },
+    {
+      "date": "2026-08-13",
+      "items": [
+        "Recording Booth + Songwriter: new background videos; drop booth black slab",
+        "Stemmer: real GPU separation path + Auto/GPU/CPU processor picker",
+        "MIDI Studio: new background video; drop opaque black slab so it shows",
+        "RC-Funk 5000: new looper background video; drop opaque root bg so it shows",
+        "Song Forge: remove opaque black slab covering the background video"
+      ]
+    },
+    {
+      "date": "2026-08-12",
+      "items": [
+        "Cut the installer from 511 MB to 222 MB, the app from 1.4 GB to 527 MB",
+        "Song Forge: fix cover art, which could never have worked",
+        "Give the Ghost Demo a voice: am_adam at 92 Hz, 81 baked clips",
+        "One key guard for every OpenRouter path, not just one of four",
+        "Fix \"Missing Authentication header\": clean the API key in and out",
+        "Ghost Demo: fix the freeze, the restart loop, and 13 dead targets",
+        "Header: show the whole banner video, never crop it",
+        "Tab background videos: scratchpad clip, refreshed stemmer/loopstation"
+      ]
+    },
+    {
+      "date": "2026-08-11",
+      "items": [
+        "docs(handoff): record builds 060-068, and bump to 4.2.0.068",
+        "fix(video): the header banner clip, and every video freezing after an alt-tab",
+        "feat(ui): Chris's dichroic tab icons, and a background video on every tab"
+      ]
+    },
+    {
+      "date": "2026-08-08",
+      "items": [
+        "Fix: a .txt with no line breaks imported as one unreadable line",
+        "Fix: paid models 404'd with 'No endpoints found for the request with quantization'"
+      ]
+    },
+    {
+      "date": "2026-08-07",
+      "items": [
+        "fix(engine): the garbled lyrics — temperature 1.2 + fusion blending a collapsed draft",
+        "feat(narration): switch to Kokoro — half the word error, and a Collaboration card",
+        "fix(donations): the buttons actually open now, and stop explaining themselves",
+        "feat(collab): write a song with someone, peer to peer, joined with a code",
+        "fix(samples): you can upload again — caps lifted, audio split out, failures explain themselves",
+        "fix(narration): stop the trim eating the first consonant",
+        "feat(narration): re-record all 17 wizard cards with Supertonic, on-device",
+        "fix(header): Chris stands as tall as the medallion, everything to scale",
+        "feat(quantum): every command is a button under the lattice"
+      ]
+    },
+    {
+      "date": "2026-08-06",
+      "items": [
+        "feat(drums): rebuild the 808 from its circuit diagrams, and the FX rack with it",
+        "fix(brand): use Chris's icon exactly as he made it — 256x256 only",
+        "fix(brand): actually ship Chris's icon as the app and installer icon",
+        "feat(brand): Chris's medallion in the footer and the Quantum Lab banner",
+        "feat(brand): Chris's peace-sign DNA medallion in the header, and as the app icon",
+        "fix(loop-station): stop covering the header with a full-screen black sheet"
+      ]
+    },
+    {
+      "date": "2026-08-05",
+      "items": [
+        "fix(sample-library): stop reading every byte of audio to list sample names",
+        "fix(diagnostics): make the memory watch actually record something",
+        "feat(diagnostics): watch renderer memory and record which tab it dies on",
+        "fix(memory): stop the renderer running out of memory and going black",
+        "feat(app): View menu escape hatch for a black screen, plus the boot log folder",
+        "fix(app): a black window can never be silent again"
+      ]
+    },
+    {
+      "date": "2026-08-04",
+      "items": [
+        "docs: bring AI_HANDOFF up to date through 4.2.0.021",
+        "feat(demo-safety): register the tabs that were still unprotected",
+        "fix(tools-hub): drop the duplicate OpenRouter entry",
+        "feat(midi): FL-grade piano roll — draw, paint, erase, snap, velocity lane",
+        "build: 4.2.0.019",
+        "feat: save loops, and put the sampler controls where you can reach them",
+        "build: 4.2.0.018",
+        "fix(loop-station): stop the old app background showing through on scroll",
+        "build: 4.2.0.017",
+        "feat(midi): 808 drum machine, effects racks, library backup, loop and stop",
+        "build: 4.2.0.016",
+        "fix(ghost-demo): never destroy work in progress",
+        "build: 4.2.0.015",
+        "fix: restore clipboard support so the API key can be pasted",
+        "build: 4.2.0.014",
+        "fix(midi): parse soundfont packs correctly so instruments actually load",
+        "feat(ui): emerald laser edge on white titles, plus handoff notes",
+        "feat(midi): user sample library",
+        "feat(midi): real sampled instruments and an always-on piano roll",
+        "feat: app shell, remaining tabs, branding and media assets",
+        "fix(visualizer): load Butterchurn correctly and use every preset pack",
+        "feat(scratchpad): rebuild as a full-height yellow legal pad",
+        "feat(onboarding): guided tour, Ghost Demo and wizard audio",
+        "feat(audio): Stemmer and Loop Station tabs",
+        "feat(quantum-lab): cellular-automata lyric lattice tab"
+      ]
+    },
+    {
+      "date": "2026-07-10",
+      "items": [
+        "Harden OpenRouter model picker: offline cache, refresh button, retry"
+      ]
+    },
+    {
+      "date": "2026-07-03",
+      "items": [
+        "Add Mastering Studio, MIDI Studio, Recordings, Album Architect, Tools Hub (4.1.3)"
+      ]
+    },
+    {
+      "date": "2026-07-02",
+      "items": [
+        "Add Song Forge: Gemini-powered song + cover art generation (4.1.3)"
+      ]
+    },
+    {
+      "date": "2026-06-29",
+      "items": [
+        "Ghost Rider: auto-save style reports to Documents (4.0.12)",
+        "Add founder photos to assets",
+        "Initial commit — Lyricist 4.0.11"
+      ]
+    }
+  ]
+}

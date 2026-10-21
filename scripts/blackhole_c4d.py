@@ -27,7 +27,8 @@ procedural shaders — nothing that can render differently or fall over.
             white-hot photon ring right at its edge.
 
 It renders with the Standard engine (set here): Cinema 4D 2025+ starts new
-scenes in Redshift, which ignores Standard materials and renders nothing.
+scenes in its other renderer, which ignores Standard materials and renders
+nothing.
 
 Anything this version of Cinema 4D refuses is skipped and listed in the
 Console (Extensions → Console, Shift+F10) instead of stopping the script.
