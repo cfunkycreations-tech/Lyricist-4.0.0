@@ -17,6 +17,8 @@
  * subscribes and draws it.
  */
 
+import { holdBannerClosed } from './ghostBanner.js';
+
 // v2: the old key held 'normal' on his machine, which would have kept him off Slow.
 const HANDS_KEY = 'lyricist.ghost.hands.v2';
 
@@ -67,7 +69,7 @@ export function subscribeHand(fn) {
 let override = null;
 export function setHandSpeedOverride(name) {
   override = name && name in SPEEDS ? name : null;
-  if (override === 'off') { state.visible = false; emit(); }
+  if (override === 'off') { state.visible = false; openBanner?.(); openBanner = null; emit(); }
 }
 
 export function getHandSpeed() {
@@ -82,7 +84,7 @@ export function getHandSpeed() {
 export function setHandSpeed(name) {
   const v = name in SPEEDS ? name : DEFAULT_SPEED;
   try { localStorage.setItem(HANDS_KEY, v); } catch { /* storage blocked: session only */ }
-  if (v === 'off') { state.visible = false; emit(); }
+  if (v === 'off') { state.visible = false; openBanner?.(); openBanner = null; emit(); }
   return v;
 }
 const speed = () => SPEEDS[getHandSpeed()];
@@ -111,8 +113,10 @@ function checkStop() {
 }
 
 let hideTimer = null;
+let openBanner = null;
 function wake() {
   clearTimeout(hideTimer);
+  if (!openBanner) openBanner = holdBannerClosed();
   if (!state.visible) {
     // Appear where it was last, so the first glide starts from somewhere real.
     state.visible = true;
@@ -125,6 +129,8 @@ function idleSoon() {
   hideTimer = setTimeout(() => {
     if (state.typing || state.caption) return;
     state.visible = false;
+    openBanner?.();
+    openBanner = null;
     emit();
   }, 3500);
 }
