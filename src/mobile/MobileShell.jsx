@@ -73,7 +73,7 @@ const ACTIONS = {
 
 /* Tools built around a wide grid. Held upright they still work, but the grid
    runs off the side, so they say so once instead of looking broken. */
-const WIDE = new Set(['quantum', 'midistudio']);
+const WIDE = new Set(['midistudio']);
 
 /* WHAT EACH TOOL IS FOR, THE FIRST TIME YOU OPEN IT.
    On desktop every control explains itself on hover. A phone has no hover, so

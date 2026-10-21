@@ -1108,26 +1108,6 @@
   .ql-flame { filter: blur(1px); }
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   QUANTUM LAB IN LANDSCAPE, ON THE PHONE.
-
-   The three-column version put the keyword box and the step buttons down the
-   left, the lattice in the middle and three inspector panels down the right.
-   It fitted, but it left the lattice — the entire point of the tab — with 480
-   of 915 pixels, boxed in on both sides by chrome you only touch occasionally.
-
-   So the columns become DRAWERS. Three labelled buttons across the top; the
-   lattice gets the whole window; a drawer slides over it when you ask for it
-   and gets out of the way when you are done.
-
-     ☰ Words & steps   the keyword box, the six step buttons, the status line
-     ⚙ Advanced        DNA, contracts, measure, truth, stress, loop, journal
-     Inspector ⚛       the word inspector, section DNA, scores, neural output
-
-   NOTHING IS HIDDEN, and nothing needs a gesture. Every drawer has a button
-   with a word on it, and tapping the lattice closes whatever is open.
-   ══════════════════════════════════════════════════════════════════════════ */
-
 /* ── "Also write full songs" tick, under Auto-Craft ──────────────────────── */
 .ql-fullopt {
   display: flex;
@@ -1161,281 +1141,177 @@
 .ql-song-err { margin: 0; font-size: 0.8rem; color: #ff9a8a; overflow-wrap: anywhere; }
 .ql-song-col .ql-mini { align-self: flex-start; }
 
-.ql-mob {
+/* ══════════════════════════════════════════════════════════════════════════
+   THE MATRIX ON THE PHONE.
+
+   One column, one scroll. The root is the only scroller; every box inside it
+   sits in the normal flow, so nothing is clipped, nothing is off-canvas and
+   nothing scrolls on its own. Top to bottom:
+
+     1. your words      big box, grows as you type, one clear Load button
+     2. the grid        every tile readable
+     3. Auto-Craft      the main action, full width, then the song tick + status
+     4. Advanced        the steps and the nine tools, one tap to open
+     5. results         neural verses, full songs
+     6. inspector       word, section DNA, score
+
+   Same layout upright and sideways. Fonts stay at 12px or more.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.ql-root.ql-mob {
   display: block;
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  padding: 12px 12px 28px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 1 ─ your words */
+.ql-mob .ql-keywords { margin: 0 0 12px; padding: 12px; }
+.ql-mob .ql-keywords-label { font-size: 0.85rem; margin-bottom: 8px; }
+.ql-mob .ql-keywords-input {
+  font-size: 16px;               /* 16px stops iOS zooming the page on focus */
+  min-height: 96px;
+  max-height: none;
+  resize: none;
+  overflow: hidden;              /* it grows instead; see the effect in the JSX */
+}
+.ql-mob .ql-keywords-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.ql-mob .ql-keywords-actions .ql-btn {
+  width: 100%;
+  min-height: 44px;
+  justify-content: center;
+  white-space: normal;
+  padding: 10px 8px;
+  font-size: 0.85rem;
+}
+.ql-mob .ql-keywords-actions .ql-btn:first-child { grid-column: 1 / -1; min-height: 52px; }
+.ql-mob .ql-keywords-actions .ql-step-tag { white-space: nowrap; flex-shrink: 0; }
+.ql-mob .ql-keywords-hint { display: none; }   /* Ctrl+Enter means nothing on a phone */
+
+.ql-mob .ql-howto { margin: 0 0 12px; }
+.ql-mob .ql-howto-toggle { padding: 12px 14px; font-size: 0.78rem; }
+.ql-mob .ql-howto-steps { font-size: 0.88rem; padding: 0 14px 12px 32px; }
+.ql-mob .ql-howto-note { font-size: 0.8rem; }
+
+/* 2 ─ the grid */
+.ql-mob .ql-lattice-wrap { margin: 12px 0 8px; min-height: 0; }
+.ql-mob .ql-lattice { max-width: none; gap: 8px; }
+.ql-mob .ql-tile {
+  min-width: 0;
+  min-height: 56px;
+  padding: 8px 2px 6px;
+}
+.ql-mob .ql-tile-word {
+  font-size: 0.72rem;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.ql-mob .ql-tile-phono { font-size: 0.75rem; }
+.ql-mob .ql-tile-super-badge { font-size: 0.75rem; }
+
+/* The Linked-pairs chip sat on top of the tiles. In the flow it sits above them. */
+.ql-mob .ql-ent-panel {
   position: relative;
-  height: 100%;
-  min-height: 0;
-  padding: 0;
-  overflow: hidden;      /* the drawers live off-canvas; never scroll to them */
+  top: auto;
+  right: auto;
+  width: auto;
+  margin: 0 0 8px;
 }
+.ql-mob .ql-ent-head { padding: 9px 12px; font-size: 0.78rem; min-height: 40px; }
+.ql-mob .ql-ent-count { font-size: 0.75rem; }
 
-/* ── the three drawer buttons ─────────────────────────────────────────────
-   30px is as tall as this bar is allowed to be. It is navigation, and it is
-   competing with the lattice for a 412px window. */
-.ql-mobbar {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 30px;
-  z-index: 8;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 0 5px;
-  background: rgba(8, 10, 13, 0.9);
-  border-bottom: 1px solid rgba(231, 165, 64, 0.3);
-  backdrop-filter: blur(8px);
+/* 3 ─ Auto-Craft */
+.ql-mob .ql-quickpath {
+  width: 100%;
+  min-height: 56px;
+  margin-top: 12px;
 }
+.ql-mob .ql-fullopt { font-size: 0.88rem; margin: 12px 0 0; min-height: 40px; }
+.ql-mob .ql-fullopt input { width: 22px; height: 22px; }
+.ql-mob .ql-status { font-size: 0.88rem; line-height: 1.45; }
 
-.ql-mobtab {
-  flex: 0 0 auto;
-  padding: 3px 9px;
-  font-family: var(--faf-font);
-  font-size: 0.58rem;
-  letter-spacing: 0.04em;
-  color: #cfe9ff;
-  background: rgba(18, 20, 23, 0.9);
-  border: 1px solid rgba(231, 165, 64, 0.4);
-  border-radius: 999px;
-  cursor: pointer;
-  white-space: nowrap;
+/* 4 ─ Advanced */
+.ql-mob .ql-adv-toggle {
+  white-space: normal;
+  text-align: left;
+  min-height: 48px;
+  line-height: 1.3;
 }
-.ql-mobtab.is-open {
-  color: #101113;
-  background: var(--ql-blu);
-  border-color: var(--ql-blu);
-  box-shadow: 0 0 0 1px rgba(231, 165, 64, 0.55);
-}
-.ql-mobtab-mid { margin: 0 auto; }
-.ql-mobbar-title { display: none; }   /* the shell's own bar already names the tab */
-
-/* Tap-anywhere-else to close. Deliberately faint: the lattice underneath must
-   stay readable, because you are usually closing the drawer to look at it. */
-.ql-mobscrim {
-  position: absolute;
-  inset: 30px 0 0 0;
-  z-index: 5;
-  background: rgba(3, 5, 8, 0.35);
-}
-
-/* ── the lattice takes the whole window ──────────────────────────────────── */
-.ql-mob .ql-lattice-wrap {
-  position: absolute;
-  top: 30px; left: 0; right: 0; bottom: 0;
-  margin: 0;
-  min-height: 0;
-  overflow: auto;
-}
-
-/* ── DRAWER 1, left: your words and the six steps ────────────────────────── */
-.ql-mob .ql-keywords,
-.ql-mob .ql-actionbar,
-.ql-mob .ql-status {
-  position: absolute;
-  left: 0;
-  width: 274px;
-  z-index: 7;
-  margin: 0;
-  box-sizing: border-box;
-  background: rgba(10, 12, 15, 0.97);
-  border-right: 1px solid rgba(231, 165, 64, 0.35);
-  transform: translateX(-108%);
-  transition: transform 0.22s cubic-bezier(0.3, 0.8, 0.3, 1);
-}
-.ql-mob .ql-keywords  { top: 30px; height: 118px; overflow: hidden; padding: 5px 7px; }
-.ql-mob .ql-actionbar { top: 148px; bottom: 50px; overflow-y: auto; padding: 6px; }
-.ql-mob .ql-status    { bottom: 0; height: 22px; padding: 2px 8px; font-size: 0.55rem;
-                        overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-
-/* Two step buttons per row. Six steps in three rows fits the drawer; six rows
-   of one does not, and burying Step 2 under a scroll is how a "no hidden
-   controls" tool ends up with hidden controls anyway. */
+.ql-mob .ql-actionbar { margin: 10px 0 12px; padding: 12px; gap: 12px; }
 .ql-mob .ql-actionbar-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4px;
+  gap: 8px;
 }
-.ql-mob .ql-actionbar-primary .ql-btn { min-width: 0; flex: none; }
-.ql-mob .ql-actionbar-caption { margin-bottom: 4px; }
-.ql-mob .ql-actionbar-title   { font-size: 0.6rem; }
-.ql-mob .ql-genbadge          { grid-column: 1 / -1; text-align: center; }
+.ql-mob .ql-actionbar-title { font-size: 0.8rem; }
+.ql-mob .ql-actionbar-sub { font-size: 0.78rem; }
+.ql-mob .ql-actionbar .ql-btn,
+.ql-mob .ql-actionbar-primary .ql-btn,
+.ql-mob .ql-actionbar-secondary .ql-btn {
+  min-width: 0;
+  width: 100%;
+  min-height: 48px;
+  flex: none;
+  justify-content: center;
+  white-space: normal;
+  text-align: center;
+  font-size: 0.82rem;
+  padding: 8px 8px;
+}
+.ql-mob .ql-step-tag { font-size: 0.75rem; margin-right: 6px; }
+.ql-mob .ql-genbadge { grid-column: 1 / -1; margin: 0; text-align: center; font-size: 0.75rem; }
+.ql-mob .ql-actionbar-secondary .ql-genbadge { margin: 0; }
 
-.ql-draw-controls .ql-keywords,
-.ql-draw-controls .ql-actionbar,
-.ql-draw-controls .ql-status { transform: none; }
-
-/* The Auto-Craft tick lives in the same drawer as the words, just above the
-   status line, so it is reachable on the phone where Auto-Craft itself is a
-   shell button. */
-.ql-mob .ql-fullopt {
-  position: absolute;
-  left: 0;
-  bottom: 22px;
-  width: 274px;
-  height: 28px;
-  z-index: 7;
-  margin: 0;
-  padding: 0 8px;
-  box-sizing: border-box;
-  justify-content: flex-start;
-  font-size: 0.6rem;
-  background: rgba(10, 12, 15, 0.97);
-  border-right: 1px solid rgba(231, 165, 64, 0.35);
-  transform: translateX(-108%);
-  transition: transform 0.22s cubic-bezier(0.3, 0.8, 0.3, 1);
-}
-.ql-mob .ql-fullopt input { width: 16px; height: 16px; }
-.ql-draw-controls .ql-fullopt { transform: none; }
-
-.ql-mob .ql-keywords textarea {
-  min-height: 40px !important;
-  max-height: 40px;
-  font-size: 0.58rem;
-}
-/* One line, or the two-line heading pushes Step 2 out of a box that clips. */
-.ql-mob .ql-keywords-label {
-  font-size: 0.55rem;
-  margin-bottom: 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-/* "Ctrl+Enter to load" is desktop advice on a device with no Ctrl key. */
-.ql-mob .ql-keywords-hint  { display: none; }
-.ql-mob .ql-keywords-actions { gap: 4px; }
-/* The caption paragraph explains what the bar is; the bar is now behind a
-   button that says the same thing. Its 3 lines cost a step button. */
-.ql-mob .ql-actionbar-sub { display: none; }
-
-/* ── DRAWER 2, middle: the advanced set ──────────────────────────────────── */
-.ql-mob .ql-adv {
-  display: block !important;      /* it was hidden outright; now it has a door */
-  position: absolute;
-  left: 50%;
-  top: 30px;
-  bottom: 0;
-  width: 340px;
-  margin: 0 0 0 -170px;
-  z-index: 7;
-  box-sizing: border-box;
-  overflow-y: auto;
-  background: rgba(10, 12, 15, 0.98);
-  transform: translateY(-108%);
-  transition: transform 0.22s cubic-bezier(0.3, 0.8, 0.3, 1);
-}
-.ql-draw-adv .ql-adv { transform: none; }
-.ql-mob .ql-adv-body { padding: 8px 10px 10px; }
-.ql-mob .ql-adv-tab  { font-size: 0.55rem; padding: 4px 7px; }
-
-/* ── DRAWER 3, right: inspector, DNA, scores, and the neural output ───────
-   The neural verses are the payoff of the tab, so when they exist they take
-   the top of the drawer and the panels slide under them. */
-.ql-mob .ql-panels,
-.ql-mob .ql-neural-out {
-  position: absolute;
-  right: 0;
-  width: 292px;
-  z-index: 7;
-  margin: 0;
-  box-sizing: border-box;
-  background: rgba(10, 12, 15, 0.97);
-  border-left: 1px solid rgba(155, 161, 170, 0.35);
-  transform: translateX(108%);
-  transition: transform 0.22s cubic-bezier(0.3, 0.8, 0.3, 1);
-}
-.ql-mob .ql-panels {
-  top: 30px;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
+.ql-mob .ql-adv { margin: 10px 0 14px; }
+.ql-mob .ql-adv-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  overflow-y: auto;
-  padding: 6px;
+  padding: 8px;
 }
-.ql-mob .ql-neural-out {
-  top: 30px;
-  max-height: 46%;
-  overflow-y: auto;
-  border-radius: 0;
-  /* .ql-panel paints a translucent !important background; the verses must sit on a solid one. */
-  background: #0a0c0f !important;
+.ql-mob .ql-adv-tab {
+  min-height: 40px;
+  padding: 6px 4px;
+  font-size: 0.78rem;
+  text-align: center;
+  white-space: normal;
 }
-/* .ql-neural-out precedes .ql-panels in the markup, so this only applies when
-   there is actually a generated verse to show. */
-.ql-mob .ql-neural-out ~ .ql-panels { top: calc(30px + 46%); }
+.ql-mob .ql-adv-body { padding: 12px; }
+.ql-mob .ql-adv-h { font-size: 0.85rem; }
+.ql-mob .ql-adv-p { font-size: 0.85rem; }
 
-.ql-draw-panels .ql-panels,
-.ql-draw-panels .ql-neural-out { transform: none; }
+/* 5 ─ results, stacked */
+.ql-mob .ql-neural-out,
+.ql-mob .ql-songs-out { margin-top: 12px; }
+.ql-mob .ql-songs-cols { grid-template-columns: 1fr; gap: 14px; }
+.ql-mob .ql-song-text { font-size: 0.95rem; }
+.ql-mob .ql-song-label { font-size: 0.78rem; }
+.ql-mob .ql-song-err { font-size: 0.85rem; }
 
-/* ── DRAWER 4, full width: the two full songs ─────────────────────────────
-   Opens from the neural panel's "View full songs" button, closes with its own
-   X. Two columns, one scroll. */
-.ql-mob .ql-songs-out {
-  position: absolute;
-  top: 30px; left: 0; right: 0; bottom: 0;
-  z-index: 7;
-  margin: 0;
-  box-sizing: border-box;
-  overflow-y: auto;
-  border-radius: 0;
-  /* .ql-panel paints a translucent !important background; this drawer must be solid. */
-  background: #0a0c0f !important;
-  transform: translateY(108%);
-  transition: transform 0.22s cubic-bezier(0.3, 0.8, 0.3, 1);
+/* 6 ─ inspector */
+.ql-mob .ql-panels { grid-template-columns: 1fr; gap: 12px; margin-top: 12px; }
+.ql-mob .ql-panel { padding: 12px; font-size: 0.9rem; }
+.ql-mob .ql-kv { font-size: 0.9rem; }
+
+/* Every small button on the phone is a real tap target. */
+.ql-mob .ql-mini {
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
 }
-.ql-draw-songs .ql-songs-out { transform: none; }
-.ql-mob .ql-songs-cols { gap: 8px; }
-.ql-mob .ql-song-text  { font-size: 0.7rem; line-height: 1.45; }
-.ql-mob .ql-song-err   { font-size: 0.62rem; }
-.ql-mob .ql-song-label { font-size: 0.58rem; }
+.ql-mob .ql-edit-label { font-size: 0.82rem; }
+.ql-mob .ql-edit-input { font-size: 16px; min-height: 44px; }
 
-/* The how-to is 339px of instructions — bigger than the tool it explains. The
-   six step buttons carry the same six steps, in order, with the same words. */
-.ql-mob .ql-howto { display: none !important; }
-
-/* Everything shrinks: 412px of height does not forgive desktop padding. */
-.ql-mob .ql-panel     { padding: 6px 7px; font-size: 0.62rem; }
-.ql-mob .ql-kv        { font-size: 0.58rem; padding: 2px 0; }
-.ql-mob .ql-btn,
-.ql-mob .ql-mini      { font-size: 0.53rem; padding: 4px 5px; min-height: 30px;
-                        white-space: normal; line-height: 1.15; }
-.ql-mob .ql-step-tag  { font-size: 0.5rem; padding: 1px 5px; }
-.ql-mob .ql-tile-word { font-size: 0.62rem; }
-.ql-mob .ql-tile      { padding: 4px 3px; }
-/* ── FIRE ON A 412px SCREEN ──────────────────────────────────────────────
-   A flame here MUST stand taller than the tile it burns and lick up over the
-   row above it. That is what the animation shows and it is the whole reason
-   the board reads as on fire rather than decorated.
-
-   An earlier version of this block shrank the flame to 20-44px to stop the top
-   row being clipped by the scrolling wrap. It worked, and it meant every
-   screenshot of the running app showed candle flames while the isolated test
-   bench showed proper fire — the app and the bench disagreed for hours and the
-   override was the reason.
-
-   The clipping is solved with headroom above row 1 instead. */
-.ql-mob .ql-flame {
-  width: calc(44% + var(--heat, 0.7) * 18%);
-  height: calc(66px + var(--heat, 0.7) * 40px);
-  bottom: calc(100% - 30px);
-}
-.ql-mob .ql-blazing .ql-flame {
-  width: calc(54% + var(--heat, 1) * 20%);
-  height: calc(84px + var(--heat, 1) * 40px);
-}
-.ql-mob .ql-lattice { padding-top: 62px; }
-
-/* The linked-pairs chip shrinks with everything else and keeps its own
-   hover-to-open behaviour — on the phone the tap on its title bar is what
-   opens it. */
-.ql-mob .ql-ent-panel { width: 128px; top: 4px; right: 4px; }
-.ql-mob .ql-ent-head  { padding: 4px 7px; font-size: 0.55rem; }
-.ql-mob .ql-ent-panel.is-open { width: 210px; }
-
-@media (prefers-reduced-motion: reduce) {
-  .ql-mob .ql-keywords, .ql-mob .ql-actionbar, .ql-mob .ql-status, .ql-mob .ql-fullopt,
-  .ql-mob .ql-adv, .ql-mob .ql-panels, .ql-mob .ql-neural-out, .ql-mob .ql-songs-out { transition: none; }
-}
 /* ══════════════════════════════════════════════════════════════════════════
    THE FIRE CANVAS.
 

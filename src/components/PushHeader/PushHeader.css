@@ -139,7 +139,9 @@ button.pc:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
 }
 .push-side > button > span:first-child, .push-side > div > span:first-child { font-size: 16px; line-height: 1; }
 
-body.lyricist-mobile .push-hd { display: none !important; }
+@media (orientation: portrait), (max-width: 639px) {
+  body.lyricist-mobile .push-hd { display: none !important; }
+}
 @media (prefers-reduced-motion: reduce) {
   .pc-sweep, .pc-ctl, .pc-empty { animation: none; --hue: 215; --sat: 30%; --spread: 8; }
 }
