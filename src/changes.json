@@ -1,10 +1,12 @@
 {
   "generated": "2026-10-21",
-  "total": 335,
+  "total": 337,
   "days": [
     {
       "date": "2026-10-21",
       "items": [
+        "Ghost demo: fold the top banner while the Ghost works; aim only after scroll settles",
+        "dist-web: rebuild phone bundle with the launch splash and landscape header",
         "Phone landscape header, Ghost Rider DNA tags, Matrix on the phone",
         "Builds 183 and 184: opener with the splash track; phone redeployed",
         "Splash track under the opener, whole thing, picture cut to fit it",

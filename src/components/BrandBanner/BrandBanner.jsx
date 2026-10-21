@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import brandLogo from '../../assets/brand-logo.webp';
 import bhLoop from '../../assets/blackhole/bh_loop.webm';
+import c4dOrbit from '../../assets/c4d/orbit.webm';
+import c4dLyrics from '../../assets/c4d/lyrics.webm';
+import c4dMolten from '../../assets/c4d/molten.webm';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import { getAudioContext, getMasterBus } from '../../services/audioEngine.js';
 import { buildSkyline, drawSkyline } from './skyline.js';
@@ -24,13 +27,21 @@ import './BrandBanner.css';
  *             grackles, a kayaker and an armadillo.
  *   info    — what's playing on the left, the song's genre, mood and topic
  *             on the right.
- * Auto moves through all four, twenty seconds each. The pill in the corner
+ * Three more are Cinema 4D renders, Chris's own (scripts/orbit_c4d.py,
+ * lyrics_hole_c4d.py, molten_c4d.py):
+ *   orbit   — the 18 tab names circling the Black Hole Studios title.
+ *   lyrics  — lyric words pulled into the black hole.
+ *   molten  — the molten gold pool.
+ * Auto moves through all seven, twenty seconds each. The pill in the corner
  * steps through Auto, each scene and Off; the choice is remembered.
  */
 
-const MODES = ['auto', 'bars', 'disc', 'skyline', 'info', 'off'];
-const LABEL = { auto: 'Auto', bars: 'Bars', disc: 'Disc', skyline: 'Skyline', info: 'Song info', off: 'Off' };
-const ROTATION = ['bars', 'disc', 'skyline', 'info'];
+const MODES = ['auto', 'bars', 'disc', 'orbit', 'lyrics', 'molten', 'skyline', 'info', 'off'];
+const LABEL = { auto: 'Auto', bars: 'Bars', disc: 'Disc', orbit: 'Orbit', lyrics: 'Lyrics', molten: 'Molten', skyline: 'Skyline', info: 'Song info', off: 'Off' };
+const ROTATION = ['bars', 'orbit', 'disc', 'lyrics', 'skyline', 'molten', 'info'];
+// The scenes that are a video, and which clip each one plays.
+const VIDEO_SRC = { disc: bhLoop, orbit: c4dOrbit, lyrics: c4dLyrics, molten: c4dMolten };
+const VIDEO_SCENES = Object.keys(VIDEO_SRC);
 const ROTATE_MS = 20000;
 const FADE_MS = 1400;
 const MODE_KEY = 'lyricistBannerMode';
@@ -155,7 +166,7 @@ export default function BrandBanner() {
   const rootRef = useRef(null);
   const barsRef = useRef(null);
   const skyRef = useRef(null);
-  const discRef = useRef(null);
+  const videoRefs = useRef({});
   const sceneRef = useRef('bars');
   const shownAt = useRef({});
 
@@ -190,13 +201,16 @@ export default function BrandBanner() {
     return () => window.removeEventListener('lyricist:now-playing', on);
   }, []);
 
-  // The disc only plays while it's on (or fading out).
+  // A video scene only plays while it's on (or fading out); the rest sit paused.
   useEffect(() => {
-    const v = discRef.current;
-    if (!v) return undefined;
-    if (scene === 'disc' && !REDUCED_MOTION) { v.play().catch(() => {}); return undefined; }
-    const id = setTimeout(() => v.pause(), FADE_MS + 100);
-    return () => clearTimeout(id);
+    const timers = [];
+    for (const name of VIDEO_SCENES) {
+      const v = videoRefs.current[name];
+      if (!v) continue;
+      if (scene === name && !REDUCED_MOTION) v.play().catch(() => {});
+      else timers.push(setTimeout(() => v.pause(), FADE_MS + 100));
+    }
+    return () => timers.forEach(clearTimeout);
   }, [scene]);
 
   // Canvas scenes: size them to the banner and run one frame loop for both.
@@ -260,14 +274,18 @@ export default function BrandBanner() {
   return (
     <div className="brand-banner" ref={rootRef} data-scene={mode === 'off' ? 'off' : scene}>
       <canvas ref={barsRef} className="bb-layer" data-on={scene === 'bars'} aria-hidden="true" />
-      <video
-        ref={discRef}
-        className="bb-layer bb-disc"
-        data-on={scene === 'disc'}
-        src={bhLoop}
-        loop muted playsInline disablePictureInPicture preload="auto"
-        aria-hidden="true"
-      />
+      {VIDEO_SCENES.map((name) => (
+        <video
+          key={name}
+          ref={(el) => { videoRefs.current[name] = el; }}
+          className={`bb-layer bb-video bb-${name}`}
+          data-on={scene === name}
+          src={VIDEO_SRC[name]}
+          loop muted playsInline disablePictureInPicture
+          preload={name === 'disc' ? 'auto' : 'metadata'}
+          aria-hidden="true"
+        />
+      ))}
       <canvas ref={skyRef} className="bb-layer" data-on={scene === 'skyline'} aria-hidden="true" />
       <div className="bb-layer bb-info" data-on={scene === 'info'}>
         <div className="bb-info-side bb-info-left">
@@ -294,7 +312,7 @@ export default function BrandBanner() {
         type="button"
         className="bb-mode"
         onClick={cycle}
-        data-help="Changes what runs either side of the logo: Auto moves through them all, or pick Bars (they move to the music), Disc, Skyline, Song info, or Off."
+        data-help="Changes what runs either side of the logo: Auto moves through them all, or pick Bars (they move to the music), Disc, Orbit, Lyrics, Molten, Skyline, Song info, or Off."
       >
         {LABEL[mode]}{mode === 'auto' ? ` · ${LABEL[scene]}` : ''}
       </button>
