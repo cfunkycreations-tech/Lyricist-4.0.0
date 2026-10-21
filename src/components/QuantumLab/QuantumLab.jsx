@@ -392,7 +392,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       || raw.split(/\s+/).filter(Boolean).length;
     setStatus({
       lead,
-      rest: ` Loaded your keywords into the grid (${count} token${count === 1 ? '' : 's'} — cycles to fill 20 tiles). These stay YOUR words. Now: Spotlight, Run 12 gens, Crystallize, Generate Neural Lyrics.`,
+      rest: ` Loaded your keywords into the grid (${count} token${count === 1 ? '' : 's'} — the first 20 sit on the grid, all of them guide the lyrics). These stay YOUR words. Now: Spotlight, Run 12 gens, Crystallize, Generate Neural Lyrics.`,
     });
   }, []);
   const loadKeywords = useCallback(() => loadFromRaw(keywordDraft), [keywordDraft, loadFromRaw]);

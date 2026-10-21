@@ -1089,6 +1089,32 @@ ${KIT_PROSE_ASK}`;
   };
 }
 
+/**
+ * THE THIRTY MATRIX WORDS, FROM THE ANALYSIS. Chris, 2026-10-21: "Where are the
+ * fucking 30 random not fucking random key words/phrases for the matrix?" They
+ * used to appear only after a song was written. Now they come the moment a
+ * Ghost Rider analysis (Full, Lyrical Style, Flow & Cadence or Common Themes)
+ * is on screen, drawn from that text, so they sit with the Style DNA.
+ *
+ * @param {{artist?: string, report?: string, kind?: string, motifs?: string[]}} input
+ * @param {Object} store - LyricStore, for the API key and model config.
+ * @returns {Promise<string[]>} up to MATRIX_WORD_COUNT words and short phrases.
+ */
+export async function writeAnalysisWords({ artist = '', report = '', kind = '', motifs = [] } = {}, store) {
+  assertApiKey(store?.config);
+  const text = String(report || '').trim();
+  if (!text) throw new Error('Study the artist first.');
+  const dna = (motifs || []).filter(Boolean);
+  const raw = await callAI([
+    { role: 'system', content: 'You pull seed words for a songwriter\'s word grid out of a style analysis. Plain, concrete, specific. Never name a real artist or person.\n' + NO_CLICHES },
+    { role: 'user', content: `Read the ${kind ? `${kind} analysis` : 'analysis'} below and pull ${MATRIX_WORD_COUNT + 6} comma-separated words or short phrases (1-3 words each) out of it: its themes, images, objects, places, vocabulary and flow terms. They seed a word grid for writing, so make them concrete and varied, not random. NO artist names, NO real person names. Reply with one line of words and nothing else.\n\nANALYSIS:\n${text.slice(0, 6000)}${dna.length ? `\n\nMOTIFS: ${dna.join(', ')}` : ''}` },
+  ], store.config, 0.6, 900);
+  // The word line is the one with the most commas, whatever the model put around it.
+  const lines = String(raw || '').split('\n').map((l) => l.trim()).filter(Boolean);
+  const best = lines.reduce((a, l) => ((l.match(/,/g) || []).length > (a.match(/,/g) || []).length ? l : a), lines[0] || '');
+  return cleanMatrixWords(best, artist, { motifs: dna });
+}
+
 export { MATRIX_WORD_COUNT };
 
 /**
