@@ -196,7 +196,9 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const [entOpen, setEntOpen] = useState(false);
   const [status, setStatus] = useState({
     lead: 'Your words first.',
-    rest: ' Type YOUR keywords below (as many as you want), hit Load into Grid, then Spotlight / Run / Crystallize. Or click a tile and edit it. The demo grid is only a starting example.',
+    rest: mobile
+      ? ' Type YOUR keywords in the box at the top (as many as you want), tap Load into Grid, then tap Auto-Craft. Or tap a tile and edit it. The demo grid is only a starting example.'
+      : ' Type YOUR keywords below (as many as you want), hit Load into Grid, then Spotlight / Run / Crystallize. Or click a tile and edit it. The demo grid is only a starting example.',
   });
   const [running, setRunning] = useState(false);
   // Multi-state verse: A and B candidates before you "collapse" to one
@@ -242,15 +244,21 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const howtoRef = useRef(null);
   const kwRef = useRef(null);
   const songsRef = useRef(null);
+  const neuralRef = useRef(null);
   // Freeform keywords Chris types — commas/newlines keep multi-word phrases together
   const [keywordDraft, setKeywordDraft] = useState('');
   // Phone: the keyword box grows with what you type instead of scrolling inside itself.
   useEffect(() => {
     const el = kwRef.current;
-    if (!el || !mobile) return;
+    if (!el) return;
+    if (!mobile) { el.style.height = ''; return; }
     el.style.height = 'auto';
     el.style.height = `${el.scrollHeight}px`;
   }, [keywordDraft, mobile]);
+  // Phone: the verses land far below the button that made them, so bring them up.
+  const showVerses = () => {
+    if (mobile) setTimeout(() => neuralRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  };
   // Inline edit for the selected tile
   const [editDraft, setEditDraft] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -730,7 +738,9 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       setSongErrB('');
       setStatus({
         lead: 'Two states ready.',
-        rest: ' Pick A or B, open panel → 5 Truth Meter, then snapshot Journal (9) before you send. Or write a full song for each.',
+        rest: mobile
+          ? ' Pick A or B, then send it to Songwriter or Song Forge. Or write a full song for each.'
+          : ' Pick A or B, open panel → 5 Truth Meter, then snapshot Journal (9) before you send. Or write a full song for each.',
       });
       return { a: (outA || '').trim(), b: (outB || '').trim() };
     } catch (e) {
@@ -872,6 +882,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
 
       setAutoStage('Writing both states…');
       const verses = await doNeural(locked.section);
+      if (verses && !fullSongsOpt) showVerses();
 
       // "Also write full songs": same hand-off, the locked grid and the two
       // fresh verses go straight in rather than through stale state.
@@ -1415,7 +1426,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           <span className="ql-actionbar-title">Matrix Engine Controls</span>
           <span className="ql-actionbar-sub">
             Press them left to right — or use the one orange button to do Steps 4 and 5 in a single press.
-            Hover any button for plain English.
+            {mobile ? '' : ' Hover any button for plain English.'}
           </span>
         </div>
 
@@ -1470,7 +1481,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           <button
             type="button"
             className={`ql-btn accent-ylw ${busy ? 'ql-btn-busy' : ''}`}
-            onClick={() => doNeural()}
+            onClick={async () => { if (await doNeural()) showVerses(); }}
             aria-busy={busy}
             disabled={busy}
             data-demo="ql-generate"
@@ -1581,6 +1592,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
           has to be visible to somebody who never opens Advanced Studio. */}
       {(neuralA || neuralB) && (
         <div
+          ref={neuralRef}
           className="ql-panel ql-neural-out"
           style={{ marginTop: 12, borderColor: 'rgba(234,255,43,0.4)' }}
           data-help="Two multi-state verses from the same grid. Pick A or B (collapse), then Send to Songwriter or Song Forge in one click."
