@@ -135,7 +135,7 @@ body.lyricist-mobile .app-footer  { display: none !important; }
   /* Solid, never see-through: a translucent blurred bar smears whatever scrolls
      under it. */
   background: #08090b;
-  border-bottom: 1px solid rgba(231, 165, 64, 0.22);
+  /* No border line: the bar and the notch strip read as one seamless block. */
 }
 
 /* The notch strip above the bar is solid too, so nothing shows through it. */
