@@ -40,3 +40,19 @@
 @media (prefers-reduced-motion: reduce) {
   .phsplash-logo { animation: none; }
 }
+
+/* Sound or play waiting on a tap. Orange pill, same as the desktop opener's. */
+.phsplash-sound, .phsplash-play {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: max(14px, env(safe-area-inset-bottom));
+  padding: 10px 20px; border: 0; border-radius: 999px;
+  background: #FF8A3D; color: #160a02; cursor: pointer;
+  font-family: var(--faf-font, sans-serif);
+  font-size: 13px; letter-spacing: .08em; text-transform: uppercase;
+  pointer-events: none; animation: phsplash-nudge 1.6s ease-in-out infinite;
+}
+.phsplash-play {
+  bottom: auto; top: 50%; transform: translate(-50%, -50%);
+  padding: 16px 32px; font-size: 15px; pointer-events: auto; animation: none;
+}
+@keyframes phsplash-nudge { 50% { opacity: .65; } }

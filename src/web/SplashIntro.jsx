@@ -14,13 +14,10 @@ import './SplashIntro.css';
  * so the picture ends exactly with the music: 463 frames at 30 fps against a
  * 15.418 s track, nothing trimmed off either.
  *
- * WHERE IT PLAYS. The desktop app and a desktop browser always get it. On a
- * phone it plays only SIDEWAYS — Chris, 2026-10-21: "The animations will show
- * on the phone version when in landscape mode." The clip is 16:9, and letter-
- * boxing it into a 9:16 screen would leave the badge a strip in the middle
- * with black above and below; cropping it to fill would cut the LYRICIST PRO
- * arc off, which is the exact bug that had to be fixed in the render. So
- * upright phones skip it and go straight to the app.
+ * WHERE IT PLAYS. The desktop app and a desktop browser always get it. A phone
+ * gets the same clip and the same track from PhoneSplash.jsx, upright or
+ * sideways, so this one stays out of its way: two copies of the opener on top
+ * of each other would be two soundtracks.
  *
  * SOUND. The desktop app plays it out loud: main.js sets autoplayPolicy to
  * no-user-gesture-required, because the window only exists because somebody
@@ -50,16 +47,10 @@ function isPhone() {
   return window.matchMedia('(max-height: 560px), (max-width: 560px)').matches;
 }
 
-function isPortrait() {
-  if (typeof window === 'undefined') return false;
-  if (window.matchMedia?.('(orientation: portrait)')?.matches) return true;
-  return window.innerHeight > window.innerWidth;
-}
-
 function shouldPlay() {
   if (typeof window === 'undefined') return false;
   if (REDUCED_MOTION) return false;
-  if (isPhone() && isPortrait()) return false;                // sideways only on a phone
+  if (isPhone()) return false;                                // PhoneSplash plays it there
   return true;
 }
 
