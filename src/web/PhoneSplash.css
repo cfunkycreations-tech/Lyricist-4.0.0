@@ -29,7 +29,11 @@
    card lives in the middle half of the frame, so widen the clip past the screen
    (the black sides are cropped by .phsplash's overflow) and it reads big. */
 @media (orientation: portrait) {
-  .phsplash-video { width: 150vw; max-width: none; height: auto; aspect-ratio: 16 / 9; }
+  .phsplash-video {
+    position: absolute; left: 50%; top: 50%;
+    width: 150vw; max-width: none; height: auto; aspect-ratio: 16 / 9;
+    transform: translate(-50%, -50%);
+  }
 }
 
 .phsplash-skip {
