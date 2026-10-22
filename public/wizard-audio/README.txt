@@ -1,4 +1,4 @@
-LYRICIST 4.2.0 GOES QUANTUM — WIZARD NARRATION
+LYRICIST PRO — WIZARD NARRATION
 ==============================================
 
 Voice:   Kokoro af_heart (American female), speed 1.0

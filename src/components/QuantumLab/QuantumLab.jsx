@@ -28,7 +28,7 @@ import { Icon } from '../common/Glyph.jsx';
 import { hasWritingAI } from '../../services/customAI.js';
 
 // ============================================================
-// Quantum Lab — "Lyricist Goes Quantum" (Lyricist 4.2.0)
+// Quantum Lab (Lyricist 4.2.0)
 // A living grid of lyric syllables driven by the lyric-core engine:
 // energy cellular-automata, superposition collapse, entanglement,
 // sectional DNA, and neural surface realization (via OpenRouter).

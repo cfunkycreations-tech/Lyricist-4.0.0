@@ -1,4 +1,4 @@
-# AI HANDOFF - Lyricist 4.2.0 "Goes Quantum"
+# AI HANDOFF - Lyricist Pro 4.2.0
 
 > **2026-08-19 - THE AUSTIN STREET PHOTO BEHIND THE WHOLE APP IS GONE. Build 111.**
 > He screenshotted the new Start Here card with a **photograph of a street, faces and old
@@ -663,14 +663,14 @@ opaque backdrop already has one — its own root background.
 
 ### Done (as of build 4.2.0.050)
 - **Header art is three pieces now, not one strip, and the header height scales.**
-  `header-banner.png` was a single 1880×440 strip carrying **534px of flat #020516 filler**
+  The old header banner was a single 1880×440 strip carrying **534px of flat #020516 filler**
   between its three elements. That filler forced a 4.3:1 aspect, so fitting the strip into the
   width left beside the medallion collapsed its height — Chris rendered about a third as tall as
   the medallion. Chris: *"I should be as tall as that goddamn logo on the left, and everything
   else needs to be to scale."*
   - Sliced into `header-signature.png` (394×230), `header-chris.png` (244×440) and
-    `header-wordmark.png` (768×403). Only empty filler was dropped — no artwork altered, and the
-    original strip is still committed. The strip's background is `#020516`, the header's own
+    a wordmark piece (768×403). Only empty filler was dropped — no artwork altered. All of those
+    pieces have since been deleted. The strip's background is `#020516`, the header's own
     colour, so the pieces are seamless.
   - **The header height is no longer a fixed 300.** Everything in the bar sizes off that height,
     so a fixed height forced the art to letterbox down on narrow windows while the medallion
@@ -772,7 +772,7 @@ at once and is far harder to get wrong than three separate copies.
 
 ### The 420 thing — read this before designing anything
 
-The app is **4.2.0** on purpose. **420.** Weed, bud, flower, cannabis, sour diesel, purple urkle,
+The app is **4.2.0** on purpose. **420.** Weed, bud, flower, sour diesel, purple urkle,
 skunk — you get it. That is the aesthetic backbone, and it should inform art direction, copy, easter
 eggs and naming. Don't be coy about it and don't make it tacky; it's the joke underneath the whole
 release.
@@ -795,8 +795,7 @@ anything else that needs it. Widen its reach as more white text turns up.
 > adding anything back to this list** — a stale "open" item costs a whole session.
 
 - ~~**Quantum Lab top banner is REJECTED.**~~ **Built 2026-08-09.** He reversed the "guitar photo
-  OUT" call and now wants the guitar shot IN. Built from his own art — `quantum-banner-bg.png`,
-  `quantum-chris.png`, `quantum-medallion-glass.png`. Do not redesign it.
+  OUT" call and now wants the guitar shot IN. That banner art is deleted now. Do not bring it back.
 - ~~**Collaboration tab — HIGH PRIORITY.**~~ **Built 2026-08-07 (build 054)** — peer to peer with
   room codes, `src/components/Collab/CollabTab.jsx`. Free signalling servers keep dying; if it won't
   connect, check those first.

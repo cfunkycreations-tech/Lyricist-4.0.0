@@ -17,6 +17,7 @@
  */
 import { execSync, spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -80,3 +81,15 @@ console.log(`
 ║  Android  Chrome -> menu -> Install app
 ╚════════════════════════════════════════════════════════════════
 `);
+
+// Is the live site really this build? Compare the stamp build-web.mjs wrote into
+// sw.js. Best effort: never fails the deploy and prints nothing secret.
+try {
+  const stamp = (t) => (t.match(/const STAMP = '([^']+)'/) || [])[1];
+  const mine = stamp(fs.readFileSync(path.join(ROOT, 'dist-web', 'sw.js'), 'utf8'));
+  const res = await fetch(`https://${domain}/sw.js?fresh=${Date.now()}`);
+  const live = res.ok ? stamp(await res.text()) : null;
+  console.log(live && live === mine
+    ? '  Live site = this build. Force-close the phone app and reopen it.'
+    : '  Live site still shows an older build. Wait a minute and run this again.');
+} catch { /* offline or not reachable from here: say nothing */ }

@@ -17,15 +17,29 @@
  * So the shell is cached and the heavy weights are left alone. They download
  * when someone actually opens the feature that needs them. See HEAVY below.
  *
- * The cache name carries the build number, which arrives in the registration
- * URL as ?v=. A new build therefore gets a new cache and the old one is deleted
- * on activate, so a stale bundle can never survive a release. The website was
- * bitten twice by stale browser caches during the launch; this is that lesson,
- * written into the app.
+ * The cache name carries the build number (the ?v= in the registration URL) AND
+ * a stamp build-web.mjs writes into this file from the bundle hash, so every web
+ * deploy gets a new cache even when the build number did not move. On activate
+ * EVERY other shell cache is deleted (the voice caches stay), so a stale bundle can never survive a release.
+ * The website was bitten twice by stale browser caches during the launch; this
+ * is that lesson, written into the app.
+ *
+ * REMOVED is the kill list: art and clips that were deleted for good. They are
+ * never served and never kept, so an old card cannot come back from a phone's
+ * cache.
  */
 
+const STAMP = 'C1oyivQm';
 const BUILD = new URL(self.location).searchParams.get('v') || 'dev';
-const CACHE = `lyricist-shell-${BUILD}`;
+const CACHE = `lyricist-shell-${BUILD}-${STAMP}`;
+
+const REMOVED = [
+  /\/splash\.mp4$/i,
+  /goes-?quantum/i,
+  /app-key-art|press-square|press-header|header-wordmark|header-banner|header-medallion/i,
+  /quantum-banner|quantum-medallion|footer-medallion-new|cfunky-logo-new/i,
+];
+const isRemoved = (url) => REMOVED.some((re) => re.test(url.pathname));
 
 /** Stable-named files worth having before the first offline launch. */
 const SHELL = [
@@ -63,9 +77,12 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(
-        keys.filter((k) => k.startsWith('lyricist-shell-') && k !== CACHE)
-            .map((k) => caches.delete(k))
+        keys.filter((k) => k.startsWith('lyricist-shell-') && k !== CACHE).map((k) => caches.delete(k))
       ))
+      .then(() => caches.open(CACHE))
+      .then((c) => c.keys().then((reqs) => Promise.all(
+        reqs.filter((r) => isRemoved(new URL(r.url))).map((r) => c.delete(r))
+      )))
       .then(() => self.clients.claim())
   );
 });
@@ -92,6 +109,12 @@ self.addEventListener('fetch', (e) => {
   if (req.headers.has('range')) return;
 
   const url = new URL(req.url);
+
+  // Deleted art and clips: gone, whatever any cache or old page still asks for.
+  if (url.origin === self.location.origin && isRemoved(url)) {
+    e.respondWith(new Response('', { status: 410, statusText: 'Gone' }));
+    return;
+  }
 
   // Someone else's server is not ours to cache. Kaggle, the relay and
   // OpenRouter all go straight out, every time.

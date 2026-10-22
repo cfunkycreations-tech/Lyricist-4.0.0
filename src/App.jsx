@@ -60,15 +60,14 @@ import { track, isEnabled as analyticsEnabled } from './services/analytics.js';
 import { Compass, Ghost, Play, Lightbulb, KeyRound, Lock, Smartphone } from 'lucide-react';
 import { OPEN_EVENT as PHONE_INVITE_EVENT } from './web/PhoneInvite.jsx';
 import { hasWritingAI } from './services/customAI.js';
-// The still header art (profile.jpg, logo.jpg, header-medallion / -signature /
-// -chris / -wordmark .png) is no longer imported here. The header became the
+// The still header art is no longer imported here. The header became the
 // whole uncropped video clip, and its <img> elements went with it, but the six
 // imports stayed behind — and Vite emits an imported asset whether or not it is
-// rendered, so every build was still shipping them. The files themselves are
-// left in src/assets/ untouched.
+// rendered, so every build was still shipping them. The old medallion, banner and
+// wordmark files are deleted.
 //
 // THE FOOTER MEDALLION IS OUT TOO (commercial refactor). It was 1.2 MB of
-// "Lyricist Goes Quantum" tip-jar-era artwork sitting in a bar that is now an
+// tip-jar-era artwork sitting in a bar that is now an
 // operational status deck. Same rule as above: an imported asset ships whether
 // or not it renders, so the import goes with the <img>.
 // Header banner clip. Imported, NOT read out of public/ at runtime — see the note

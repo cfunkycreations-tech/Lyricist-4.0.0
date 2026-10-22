@@ -26,7 +26,7 @@ would make those cards narrate the wrong tab.
 
 | Card | Subject | SAVE AS |
 |---:|---|---|
-| 1 | Welcome to Lyricist 4.2.0 Goes Quantum | `card-01.mp3` |
+| 1 | Welcome to Lyricist Pro | `card-01.mp3` |
 | 2 | First | `card-15.mp3` |
 | 3 | Songwriter | `card-02.mp3` |
 | 4 | One Man Band, hear your words sung | `card-18.mp3` |
@@ -52,9 +52,9 @@ would make those cards narrate the wrong tab.
 
 ## CARD 1 — save as `card-01.mp3`
 
-*Welcome to Lyricist 4.2.0 Goes Quantum*
+*Welcome to Lyricist Pro*
 
-Welcome to Lyricist 4.2.0 Goes Quantum.
+Welcome to Lyricist Pro.
 This is your full songwriting studio. Write, shape style, forge full songs, loop live, master albums, and experiment in Quantum Lab. Built so you can start even if you have never finished a song before.
 Before we tour the tabs, find the light bulb in the top right. That is Tips. Turn it on, hover any control, and it explains itself in plain English.
 Now let me walk you through the lab.
