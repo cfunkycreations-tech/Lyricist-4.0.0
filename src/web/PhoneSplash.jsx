@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import logo from '../assets/brand-logo.webp';
-import introMp4 from '../assets/blackhole/intro.mp4';
-import introPoster from '../assets/blackhole/intro_poster.webp';
+import splashMp4 from '../assets/blackhole/phone-splash.mp4';
+import splashPoster from '../assets/blackhole/phone-splash_poster.webp';
 import './PhoneSplash.css';
 
 /**
@@ -9,9 +9,11 @@ import './PhoneSplash.css';
  *
  * Chris, 2026-10-21/22: "I want the splash screen for the phone app", then "I
  * didn't see the splash screen or hear the soundtrack that goes with it." It is
- * the same 15.4 s clip the desktop opens with (intro.mp4, his splash track
- * baked in), upright or sideways, over everything, the purchase-code screen
- * included. Contain, never cover: the LYRICIST PRO arc is not cropped.
+ * his Lyricist-Logo-Splash picture (8 s) with his SPLASHST backing track under
+ * it, faded out with the last frame (phone-splash.mp4, 1280x720 H.264 + AAC),
+ * upright or sideways, over everything, the purchase-code screen included.
+ * Sideways it is contained; upright it is scaled up so the title card fills
+ * the width (all of it sits in the middle half of the frame).
  *
  * SOUND. A phone browser refuses audible autoplay until the first tap, so:
  *   - sound first; if refused, the picture runs muted and the whole screen
@@ -115,8 +117,8 @@ export default function PhoneSplash() {
       <video
         ref={videoRef}
         className={`phsplash-video${playing || blocked ? ' phsplash-on' : ''}`}
-        src={introMp4}
-        poster={introPoster}
+        src={splashMp4}
+        poster={splashPoster}
         playsInline
         autoPlay
         preload="auto"

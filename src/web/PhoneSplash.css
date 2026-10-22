@@ -25,6 +25,13 @@
 }
 .phsplash-on { opacity: 1; }
 
+/* Upright: a 16:9 clip contained in a portrait screen is a thin strip. His title
+   card lives in the middle half of the frame, so widen the clip past the screen
+   (the black sides are cropped by .phsplash's overflow) and it reads big. */
+@media (orientation: portrait) {
+  .phsplash-video { width: 150vw; max-width: none; height: auto; aspect-ratio: 16 / 9; }
+}
+
 .phsplash-skip {
   position: absolute;
   right: max(12px, env(safe-area-inset-right));
