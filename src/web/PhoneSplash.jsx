@@ -23,7 +23,8 @@ import './PhoneSplash.css';
  *   - if even a muted start is refused (iOS Low Power Mode does that), or the
  *     clip is slow to arrive, a big Play button waits for a tap. The splash is
  *     never skipped silently, which is how it went missing before.
- * Skip always leaves at once. Tap anywhere else leaves once the sound is on.
+ * Skip always leaves at once. Nothing else ends it before the last frame
+ * ("it's not saying Austin, Texas, that's the end of the video", 2026-10-23).
  *
  * Shown again after five minutes away, not on a reload or the new-version
  * Reload bar. The installed app keeps sessionStorage while it sits in the
@@ -58,10 +59,12 @@ export default function PhoneSplash() {
   const [blocked, setBlocked] = useState(false);     // nothing runs until a tap
   const videoRef = useRef(null);
   const done = useRef(false);
+  const ceiling = useRef(null);
 
   const finish = () => {
     if (done.current) return;
     done.current = true;
+    clearTimeout(ceiling.current);
     try { sessionStorage.setItem(SEEN, String(Date.now())); } catch { /* ignore */ }
     setFading(true);
     setTimeout(() => setShow(false), FADE_MS);
@@ -89,8 +92,10 @@ export default function PhoneSplash() {
       const el = videoRef.current;
       if (!el || el.currentTime < 0.2) setBlocked(true);
     }, STALL_MS);
-    const ceiling = setTimeout(finish, CEILING_MS);
-    return () => { dead = true; clearTimeout(stall); clearTimeout(ceiling); };
+    // Only while nothing plays. Once it plays, onPlaying moves this to the end
+    // of the clip, so a slow load or a late tap never cuts off the last card.
+    ceiling.current = setTimeout(finish, CEILING_MS);
+    return () => { dead = true; clearTimeout(stall); clearTimeout(ceiling.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show]);
 
@@ -105,7 +110,17 @@ export default function PhoneSplash() {
     if (p && p.catch) p.catch(() => { v.muted = true; setSilenced(true); v.play?.().catch?.(() => setBlocked(true)); });
   };
 
-  const onTap = () => { if (blocked || silenced) wake(); else finish(); };
+  // A stray tap never ends it: only Skip does. It runs to the last frame.
+  const onTap = () => { if (blocked || silenced) wake(); };
+
+  const onPlaying = () => {
+    setPlaying(true);
+    setBlocked(false);
+    const v = videoRef.current;
+    const left = v && Number.isFinite(v.duration) ? v.duration - v.currentTime : 16;
+    clearTimeout(ceiling.current);
+    ceiling.current = setTimeout(finish, (left + 4) * 1000);
+  };
 
   if (!show) return null;
   return (
@@ -113,7 +128,7 @@ export default function PhoneSplash() {
       className={`phsplash${fading ? ' phsplash-gone' : ''}`}
       onClick={onTap}
       role="button"
-      aria-label={blocked ? 'Play intro' : silenced ? 'Turn sound on' : 'Skip intro'}
+      aria-label={blocked ? 'Play intro' : silenced ? 'Turn sound on' : 'Intro'}
     >
       <img className="phsplash-logo" src={logo} alt="" draggable="false" />
       <video
@@ -124,7 +139,7 @@ export default function PhoneSplash() {
         playsInline
         autoPlay
         preload="auto"
-        onPlaying={() => { setPlaying(true); setBlocked(false); }}
+        onPlaying={onPlaying}
         onEnded={finish}
         onError={() => setTimeout(finish, 1500)}
       />
