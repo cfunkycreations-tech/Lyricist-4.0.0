@@ -56,6 +56,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
   // Style DNA (4.2.0) — structured fingerprint from the freeform analysis
   const [styleDNA, setStyleDNA] = useState(boot.styleDNA || null);
   const [loadingDNA, setLoadingDNA] = useState(false);
+  const [dnaError, setDnaError] = useState('');
 
   // Ghost Rider
   const [ghostTopic, setGhostTopic] = useState(boot.ghostTopic || '');
@@ -168,7 +169,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
         { role: 'user', content: finalPrompt }
       ], store.config);
       setAnalysis(result);
-      setStyleDNA(null);
+      setStyleDNA(null); setDnaError('');
       setMatrixWords([]); setWordsSent(false); setWordsError('');
       setSunoTags(''); setTagsError('');
       if (autoSaveReports) saveReportToDisk(result);
@@ -804,7 +805,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
           )}
 
           {/* Style DNA — rhythm, rhyme density, image clusters (4.2.0) */}
-          {(styleDNA || loadingDNA) && (
+          {analysis && (
             <div
               data-demo="gr-style-dna"
               style={{ background: 'rgba(16,18,21,0.85)', border: '1px solid rgba(231,165,64,0.35)', borderRadius: 12, padding: 18 }}
@@ -868,6 +869,32 @@ export default function ArtistAnalyzer({ onGhostSend }) {
                     </button>
                   </div>
                 </div>
+              )}
+              {/* The card is always here. When the fingerprint did not come back it says so, and one tap tries again. */}
+              {dnaError && <div style={{ color: '#ff8a8a', fontSize: '0.78rem', marginBottom: 8 }}>{dnaError}</div>}
+              {!styleDNA && !loadingDNA && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setDnaError('');
+                    try { await extractStyleDNA(analysis, artist.trim(), { loud: true }); }
+                    catch (e) { setDnaError(e?.message || String(e)); }
+                  }}
+                  data-help="Reads the report on screen and writes its Style DNA: rhythm, rhyme density and image clusters. Send it to The Matrix after."
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: 8,
+                    border: '1px solid rgba(231,165,64,0.5)',
+                    background: 'rgba(33,34,36,0.5)',
+                    color: '#e6e8eb',
+                    fontWeight: 700,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {dnaError ? 'Try again' : 'Write Style DNA from this analysis'}
+                </button>
               )}
             </div>
           )}
@@ -944,7 +971,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e7a540', margin: 0 }}>
-                  <Icon i={Tags} />DNA Tags for Suno {loadingTags ? '(pulling…)' : ''}
+                  <Icon i={Tags} />Suno Tags {loadingTags ? '(pulling…)' : ''}
                 </h4>
                 {sunoTags && (
                   <button
@@ -989,7 +1016,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
                     cursor: 'pointer',
                   }}
                 >
-                  {tagsError ? 'Try again' : 'Write DNA tags'}
+                  {tagsError ? 'Try again' : 'Write Suno tags'}
                 </button>
               )}
               {loadingTags && !sunoTags && <div style={{ color: 'rgba(155,161,170,0.7)', fontSize: '0.78rem' }}>Reading the analysis…</div>}
