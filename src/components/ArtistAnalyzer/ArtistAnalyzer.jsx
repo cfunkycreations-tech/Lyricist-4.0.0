@@ -806,6 +806,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
           {/* Style DNA — rhythm, rhyme density, image clusters (4.2.0) */}
           {(styleDNA || loadingDNA) && (
             <div
+              data-demo="gr-style-dna"
               style={{ background: 'rgba(16,18,21,0.85)', border: '1px solid rgba(231,165,64,0.35)', borderRadius: 12, padding: 18 }}
               data-help="Style DNA is a compact fingerprint pulled from the report: how they ride the beat (rhythm), how hard they rhyme (rhyme density), and recurring image clusters (metaphors/scenes). Used as a cheat sheet when you ghostwrite."
             >

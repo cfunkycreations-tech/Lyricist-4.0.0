@@ -72,6 +72,7 @@ export const PHONE_GHOST = {
       { target: '[data-demo="gr-analyze"]', line: "Then tap Analyze. It studies their rhymes, their rhythm, their favorite words, and writes you a report. It runs on your AI key." },
       { target: '[data-demo="gr-matrix-words"]', optional: true, line: "When the report's done, you get twenty words pulled straight out of it, ready for The Matrix." },
       { target: '[data-demo="gr-words-send"]', optional: true, line: "Then one tap on Send to The Matrix, and all twenty land in its grid. No copying, no pasting." },
+      { target: '[data-demo="gr-style-dna"]', optional: true, line: "Style DNA is the fingerprint of how they write. How they ride the beat, how hard they rhyme, and the pictures they keep coming back to. Send it to The Matrix, and it steers your lyrics there." },
       { target: '[data-demo="gr-dna-tags"]', optional: true, line: "You also get style tags written from the analysis. They travel with the song, so Black Hole Studios can use them for its caption." },
       { target: '[data-demo="gr-write"]', optional: true, line: "Write Lyrics gives you a brand new verse in that style. New words. Never theirs." },
       { target: '[data-demo="gr-send"]', optional: true, line: "And after that, Send to Songwriter appears. One tap, and the verse lands in Songwriter, tags and all." },
