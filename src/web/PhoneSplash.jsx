@@ -10,8 +10,9 @@ import './PhoneSplash.css';
  * Chris, 2026-10-21/22: "I want the splash screen for the phone app", then "I
  * didn't see the splash screen or hear the soundtrack that goes with it." It is
  * his Lyricist-Logo-Splash picture with the WHOLE SPLASHST track under it,
- * 15.4 s: the 8 s animation, then the title card held until the music ends
- * ("ADD THE WHOLE SOUND TRACK", 2026-10-23). phone-splash.mp4, 1280x720 H.264 + AAC,
+ * 15.4 s: the 8 s animation slowed (motion-interpolated) to end with the music
+ * ("ADD THE WHOLE SOUND TRACK", "Slow the animation", 2026-10-23).
+ * phone-splash.mp4, 1280x720 H.264 + AAC,
  * upright or sideways, over everything, the purchase-code screen included.
  * Sideways it is contained; upright it is scaled up so the title card fills
  * the width (all of it sits in the middle half of the frame).
