@@ -53,6 +53,7 @@ import Stemmer from './components/Stemmer/Stemmer.jsx';
 // imports them any more, so Vite emits none of them.
 import { useMobile } from './mobile/useMobile.js';
 import MobileShell from './mobile/MobileShell.jsx';
+import PhoneGhost from './mobile/PhoneGhost.jsx';
 import GhostPilotLayer from './components/Ghost/GhostPilotLayer.jsx';
 import PushHeader from './components/PushHeader/PushHeader.jsx';
 import BrandBanner from './components/BrandBanner/BrandBanner.jsx';
@@ -383,6 +384,10 @@ function MainLayout() {
           // null while the tour is parked. MobileShell hides both of its tour
           // controls when it has nothing to call — see WIZARD_ENABLED above.
           onWizard={WIZARD_ENABLED ? () => setShowWizard(true) : null}
+          // The phone has no header, so no Ghost Demo On/Off switch: its
+          // Ghost button in the bar is the opt-in. See the GhostDemo mount below.
+          onGhostDemo={() => setShowGhostDemo(true)}
+          onGhostStop={() => setShowGhostDemo(false)}
         />
       )}
 
@@ -418,7 +423,12 @@ function MainLayout() {
         </React.Suspense>
       )}
 
-      {showGhostDemo && store.ghostDemoEnabled && (
+      {/* The phone has its own Ghost: no bubbles, he points and the words glow
+          (Chris, 2026-10-22). The desktop keeps the walkthrough below. */}
+      {showGhostDemo && isMobile && (
+        <PhoneGhost tabId={activeTab} onClose={() => setShowGhostDemo(false)} />
+      )}
+      {showGhostDemo && !isMobile && store.ghostDemoEnabled && (
         <GhostDemo
           tabId={activeTab}
           onClose={() => setShowGhostDemo(false)}

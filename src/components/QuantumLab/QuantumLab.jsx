@@ -210,12 +210,15 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const [songA, setSongA] = useState(null);
   const [songB, setSongB] = useState(null);
   const [songErrB, setSongErrB] = useState('');
-  // "Also write full songs" next to Auto-Craft. Remembered per browser.
+  // "Also write full songs" next to Auto-Craft. ON unless you untick it:
+  // Chris, 2026-10-23, "the matrix is now supposed to make 2 full songs." It
+  // used to default off, and the old key was written '0' on every first visit,
+  // so this reads a new key; only an explicit untick turns it off.
   const [fullSongsOpt, setFullSongsOpt] = useState(() => {
-    try { return localStorage.getItem('ql.fullSongs') === '1'; } catch { return false; }
+    try { return localStorage.getItem('ql.fullSongs.v2') !== '0'; } catch { return true; }
   });
   useEffect(() => {
-    try { localStorage.setItem('ql.fullSongs', fullSongsOpt ? '1' : '0'); } catch { /* private mode */ }
+    try { localStorage.setItem('ql.fullSongs.v2', fullSongsOpt ? '1' : '0'); } catch { /* private mode */ }
   }, [fullSongsOpt]);
   // Tier 1 Quick Path. `autoStage` is what the button says while it works, so a
   // 15 second run is never a dead control with a spinner on it.

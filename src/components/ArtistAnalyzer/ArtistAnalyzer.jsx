@@ -891,6 +891,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
                   <button
                     type="button"
                     onClick={sendWordsToMatrix}
+                    data-demo="gr-words-send"
                     data-help="Sends these words to The Matrix. The first 20 fill its tiles, all of them go in its keyword box. It replaces the grid that is there, so it only happens when you tap."
                     style={{
                       width: '100%',

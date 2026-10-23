@@ -75,7 +75,9 @@
   opacity: 1;
   filter: none;
   animation: ghost-float 2.4s ease-in-out infinite;
-  transition: top 0.25s ease;
+  /* left/top come inline from figureAt() in GhostDemo.jsx; these are the
+     desktop values it returns when there is room. */
+  transition: top 0.25s ease, left 0.25s ease;
   pointer-events: none;
   background: transparent !important;
   border: none !important;
@@ -120,6 +122,19 @@
 /* Up against the demo bar the ghost hangs below the pointer instead of above. */
 .ghost-demo-operator.is-below .ghost-demo-figure {
   top: 30px;
+}
+
+/* The logo ghost leans right, mic stand down toward the pointer. When there is
+   no room on the left he hangs on the pointer's right, mirrored, so he still
+   leans in toward what he is pointing at. */
+.ghost-demo-operator.is-flip .ghost-demo-sprite {
+  transform: scaleX(-1);
+}
+
+/* His outline is black and the app is black: a soft lift so he never sinks
+   into the floor. */
+.ghost-demo-sprite {
+  filter: drop-shadow(0 0 6px rgba(230, 232, 235, 0.22)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6)) !important;
 }
 
 /* Old circular aura killed — transparency only, no Bubble Boy */
@@ -341,4 +356,72 @@
 .ghost-demo-click {
   filter: brightness(1.35) saturate(1.2) !important;
   transition: filter 0.15s !important;
+}
+
+/* ── THE PHONE ──────────────────────────────────────────────────────────────
+   Same walkthrough, same voice; sized for a thumb. body.lyricist-mobile is set
+   by App.jsx on the phone build only, so none of this reaches the desktop. */
+
+/* A fingertip instead of a mouse arrow. */
+.ghost-demo-cursor.is-touch {
+  width: 0;
+  height: 0;
+}
+.ghost-demo-touch {
+  position: absolute;
+  left: -8px;
+  top: -9px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(248, 250, 252, 0.42);
+  border: 2px solid #f8fafc;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55), 0 3px 10px rgba(0, 0, 0, 0.5);
+  transition: transform 0.08s, background 0.08s;
+}
+.ghost-demo-operator.is-click .ghost-demo-touch {
+  transform: scale(0.78);
+  background: rgba(248, 250, 252, 0.85);
+}
+
+/* The bar: under the notch, never wider than the screen, wraps to two rows on
+   a narrow phone held upright instead of running off the side. The long
+   "Ghost walkthrough — ..." title goes; the bubble already says the step. */
+body.lyricist-mobile .ghost-demo-bar {
+  top: calc(var(--mob-top, env(safe-area-inset-top, 0px)) + 6px);
+  width: max-content;
+  max-width: calc(100vw - 12px);
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 18px;
+}
+body.lyricist-mobile .ghost-demo-bar.at-bottom {
+  top: auto;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 6px);
+}
+body.lyricist-mobile .ghost-demo-bar-title,
+body.lyricist-mobile .ghost-demo-bar-speed-label {
+  display: none;
+}
+body.lyricist-mobile .ghost-demo-bar-speed {
+  margin-right: 0;
+}
+body.lyricist-mobile .ghost-demo-knob-read {
+  min-width: 34px;
+  font-size: 0.66rem;
+}
+body.lyricist-mobile .ghost-demo-bar-btn {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 0.68rem;
+}
+
+body.lyricist-mobile .ghost-demo-bubble {
+  padding: 10px 12px 8px;
+}
+body.lyricist-mobile .ghost-demo-bubble-text {
+  font-size: 0.82rem;
+  line-height: 1.4;
 }
