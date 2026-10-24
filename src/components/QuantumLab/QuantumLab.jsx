@@ -1,19 +1,18 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import TabBackground from '../common/TabBackground.jsx';
 import { useLyricStore } from '../../context/LyricStore.jsx';
-import { callAI } from '../../services/AIService.js';
-import { NO_CLICHES, clicheFree } from '../../services/cliches.js';
+import { callAI, wantsExplicit } from '../../services/AIService.js';
+import { CLICHE_RE, clicheFree } from '../../services/cliches.js';
 import { useLogged } from '../../services/useLogged.js';
 import EnergyField from './EnergyField.jsx';
 import {
-  buildSection, buildSectionFromKeywords, buildEntanglements, setCellText,
+  buildSection, buildSectionFromGrid, keywordsToGrid, buildEntanglements, setCellText,
   runGens, spotlightCell, measureCell,
   crystallizeLab, freezeCell, dnaOf, scoreOf, mutateSection, injectSection, lockSection,
-  parseKeywords,
+  parseKeywords, setRhymeResolver,
 } from './quantumEngine.js';
 import QuantumFeaturesPanel from './QuantumFeaturesPanel.jsx';
 import {
-  buildNeuralConstraints,
   checkContracts,
   readStylePressure,
   takeMatrixWords,
@@ -26,6 +25,12 @@ import './QuantumLab.css';
 import { SlidersHorizontal, ArrowDownToLine, Zap, Crosshair, Snowflake, Cpu, Lock, Unlock, Syringe } from 'lucide-react';
 import { Icon } from '../common/Glyph.jsx';
 import { hasWritingAI } from '../../services/customAI.js';
+import { readSunoTags } from '../../services/ghostMemory.js';
+import { loadPronunciations, pronunciationsReady, rhymeKey, rhymeKind, findRhymePairs } from '../../services/phonetics.js';
+import {
+  SONG_PAIRS, REMIXES, guessDelivery, bpmFrom, arrangeForRhyme, verseMessages, songMessages, remixMessages,
+  tidySong, fillChoruses, parseSong, scoreSong, needsRepair, repairMessages, rhymeColors, usesWord,
+} from './matrixSong.js';
 
 // ============================================================
 // Quantum Lab — "Lyricist Goes Quantum" (Lyricist 4.2.0)
@@ -169,6 +174,109 @@ function sparkPath(seed, w = 150, h = 40) {
   return 'M' + pts.join(' L');
 }
 
+/** "Rhyming line endings: x / y, z / w." for the status line, when the grid has them. */
+function rhymeNote(section) {
+  if (!pronunciationsReady()) return '';
+  const ends = section.lines.map((l) => l.cells[l.cells.length - 1]?.text);
+  const ok = (a, b) => { const k = rhymeKind(a || '', b || ''); return k !== 'none' && k !== 'same'; };
+  const pairs = [[0, 1], [2, 3]].filter(([a, b]) => ok(ends[a], ends[b])).map(([a, b]) => `${ends[a]} / ${ends[b]}`);
+  return pairs.length ? ` Rhyming words moved to the line ends: ${pairs.join(', ')}.` : '';
+}
+
+const METER_HELP = {
+  Flow: 'How many lines fit the beat: the right number of syllables for one bar of this kind of song.',
+  Rhyme: 'How many of the lines that should rhyme really do, by sound. Perfect and multi-syllable rhymes count in full, slant rhymes most of the way.',
+  Hook: 'How strong the chorus is: written out every time, starts and ends on its title line, short lines, built on the hottest words on the grid.',
+};
+
+/** Flow, Rhyme and Hook for one song, and how many grid words it used. */
+function SongMeters({ score }) {
+  return (
+    <div className="ql-meters">
+      {[['Flow', score.flow], ['Rhyme', score.rhyme], ['Hook', score.hook]].map(([k, v]) => (
+        <div className="ql-meter" key={k} data-help={METER_HELP[k]}>
+          <span className="ql-meter-k">{k}</span>
+          <span className="ql-bar"><span style={{ width: pct(v) }} /></span>
+          <span className="ql-meter-n">{Math.round((v || 0) * 100)}</span>
+        </div>
+      ))}
+      <div className="ql-hits" data-help="How many of your grid words made it into this song. Their tiles light up on the grid.">
+        {score.used.length}/{score.paletteSize} words hit
+      </div>
+    </div>
+  );
+}
+
+/** One song on screen, with rhyming sounds sharing a colour. */
+function RhymeText({ text, plan }) {
+  const sections = useMemo(() => rhymeColors(text, plan), [text, plan]);
+  return (
+    <div className="ql-song-text ql-rhyme-text">
+      {sections.map((sec, si) => (
+        <div className="ql-song-sec" key={si}>
+          <div className="ql-song-sec-name">[{sec.name}]</div>
+          {sec.lines.map((parts, li) => (
+            <div className="ql-song-line" key={li}>
+              {parts.map((p, pi) => (p.c === null
+                ? <React.Fragment key={pi}>{p.t}</React.Fragment>
+                : <span key={pi} className={`ql-rh ql-rh-${p.c}`}>{p.t}</span>))}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Song A or Song B: scores, the lyrics, remixes, pick the winner, send it. */
+function SongCard({ which, text, score, err, winner, busy, remixBusy, canUndo, onWin, onSend, onRemix, onUndo }) {
+  const isWinner = winner === which;
+  const name = score?.plan?.name;
+  return (
+    <div className={['ql-song-col', isWinner && 'is-winner', winner && !isWinner && 'is-other'].filter(Boolean).join(' ')}>
+      <div className="ql-song-label">SONG {which}{name ? ` · ${name.toUpperCase()}` : ''}{isWinner ? ' · ★ WINNER' : ''}</div>
+      {text && score && <SongMeters score={score} />}
+      {text ? <RhymeText text={text} plan={score?.plan} /> : <p className="ql-song-err">{err ? `Song ${which} did not finish: ${err}` : '—'}</p>}
+      {text && (
+        <div className="ql-remix" data-help="One-tap remixes. Each one rewrites this song in that direction and checks it again. Undo puts the last version back.">
+          {Object.entries(REMIXES).map(([id, r]) => (
+            <button key={id} type="button" className="ql-mini" disabled={busy || !!remixBusy} onClick={() => onRemix(which, id)}>
+              {remixBusy === `${which}:${id}` ? 'Remixing…' : r.label}
+            </button>
+          ))}
+          {canUndo && (
+            <button type="button" className="ql-mini" disabled={busy || !!remixBusy} onClick={() => onUndo(which)}>
+              Undo
+            </button>
+          )}
+        </div>
+      )}
+      <div className="ql-song-actions">
+        <button
+          type="button"
+          className={`ql-mini ${isWinner ? 'grn' : 'ylw'}`}
+          onClick={() => onWin(which)}
+          disabled={!text}
+          data-demo={`ql-win-${which.toLowerCase()}`}
+          data-help="Pick the one you like best. It gets the winner's star; then send it to Songwriter."
+        >
+          {isWinner ? '★ Winner' : 'This one wins'}
+        </button>
+        <button
+          type="button"
+          className="ql-mini grn"
+          onClick={() => onSend(which)}
+          disabled={!text}
+          data-demo={`ql-send-song-${which.toLowerCase()}`}
+          data-help={`Open Songwriter with Song ${which} as a full song.`}
+        >
+          → Send Song {which} to Songwriter
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const store = useLyricStore();
   const [section, setSection] = useState(() => buildSection());
@@ -220,6 +328,28 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   useEffect(() => {
     try { localStorage.setItem('ql.fullSongs.v2', fullSongsOpt ? '1' : '0'); } catch { /* private mode */ }
   }, [fullSongsOpt]);
+  // Which two songs A and B are: Rap vs Sung, Story vs Party, Clean vs Explicit. Remembered per browser.
+  const [pairId, setPairId] = useState(() => {
+    try { const v = localStorage.getItem('ql.pair'); return SONG_PAIRS[v] ? v : 'rapSung'; } catch { return 'rapSung'; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('ql.pair', pairId); } catch { /* private mode */ }
+  }, [pairId]);
+  // Each song's Flow / Rhyme / Hook check, the winner, and the version before a remix (for Undo).
+  const [scoreA, setScoreA] = useState(null);
+  const [scoreB, setScoreB] = useState(null);
+  const [winner, setWinner] = useState(null);
+  const [prevSongs, setPrevSongs] = useState({});
+  const [remixBusy, setRemixBusy] = useState('');
+  // The pronunciation dictionary (services/phonetics.js): rhymes by sound once it is in.
+  const [dictReady, setDictReady] = useState(pronunciationsReady());
+  useEffect(() => {
+    let live = true;
+    loadPronunciations()
+      .then(() => { setRhymeResolver(rhymeKey); if (live) setDictReady(true); })
+      .catch((e) => console.warn('[The Matrix] The pronunciation dictionary did not load; rhymes fall back to spelling.', e));
+    return () => { live = false; };
+  }, []);
   // Tier 1 Quick Path. `autoStage` is what the button says while it works, so a
   // 15 second run is never a dead control with a spinner on it.
   const [autoBusy, setAutoBusy] = useState(false);
@@ -248,6 +378,8 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const kwRef = useRef(null);
   const songsRef = useRef(null);
   const neuralRef = useRef(null);
+  // The keyword text that is on the grid right now, so Auto-Craft knows when typed words still need loading.
+  const loadedRawRef = useRef('');
   // Freeform keywords Chris types — commas/newlines keep multi-word phrases together
   const [keywordDraft, setKeywordDraft] = useState('');
   // Phone: the keyword box grows with what you type instead of scrolling inside itself.
@@ -295,7 +427,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   const liveRef = useRef({});
   liveRef.current = {
     section, manualLinks, selectedId, gen, spotlightMode, crystallized,
-    neuralA, neuralB, neuralPick, songA, songB, keywordDraft, contracts, dnaUsed, status,
+    neuralA, neuralB, neuralPick, songA, songB, scoreA, scoreB, winner, keywordDraft, contracts, dnaUsed, status,
   };
 
   useEffect(() => registerDemoSnapshot('quantum-lab', {
@@ -313,6 +445,9 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       setNeuralPick(s.neuralPick);
       setSongA(s.songA ?? null);
       setSongB(s.songB ?? null);
+      setScoreA(s.scoreA ?? null);
+      setScoreB(s.scoreB ?? null);
+      setWinner(s.winner ?? null);
       setKeywordDraft(s.keywordDraft);
       setContracts(s.contracts);
       setDnaUsed(s.dnaUsed);
@@ -388,6 +523,13 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     return map;
   }, [cells]);
 
+  // A tile lights up when either song uses its word.
+  const hitIds = useMemo(() => {
+    const text = [songA, songB].filter(Boolean).join('\n');
+    if (!text) return null;
+    return new Set(cells.filter((c) => usesWord(text, c.text)).map((c) => c.id));
+  }, [songA, songB, cells]);
+
   // ---- actions ----
   const loadFromRaw = useCallback((text, lead = 'Your grid.') => {
     const raw = String(text || '').trim();
@@ -398,7 +540,10 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       });
       return;
     }
-    const next = buildSectionFromKeywords(raw);
+    // Rhyming words go to the ends of the rows, where the lines end (matrixSong.arrangeForRhyme).
+    const words = parseKeywords(raw);
+    const next = words.length ? buildSectionFromGrid(keywordsToGrid(arrangeForRhyme(words)), { userOwned: true }) : buildSection();
+    loadedRawRef.current = raw;
     setSection(next);
     setSelectedId('c_0_0');
     setGen(0);
@@ -410,8 +555,9 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       || raw.split(/\s+/).filter(Boolean).length;
     setStatus({
       lead,
-      rest: ` Loaded your keywords into the grid (${count} token${count === 1 ? '' : 's'} — the first 20 sit on the grid, all of them guide the lyrics). These stay YOUR words. Now: Spotlight, Run 12 gens, Crystallize, Generate Neural Lyrics.`,
+      rest: ` Loaded your keywords into the grid (${count} token${count === 1 ? '' : 's'} — the first 20 sit on the grid, all of them guide the lyrics). These stay YOUR words.${rhymeNote(next)} Now: Spotlight, Run 12 gens, Crystallize, Generate Neural Lyrics.`,
     });
+    return next;
   }, []);
   const loadKeywords = useCallback(() => loadFromRaw(keywordDraft), [keywordDraft, loadFromRaw]);
 
@@ -425,11 +571,24 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       setKeywordDraft(raw);
       loadFromRaw(raw, `${artist || 'Ghost Rider'}'s ${words.length} words.`);
     };
-    const waiting = takeMatrixWords();
-    if (waiting) land(waiting.words, waiting.artist);
-    const onWords = (e) => { const w = takeMatrixWords(); land(w?.words || e.detail?.words, w?.artist || e.detail?.artist); };
+    // The words wait for the pronunciation dictionary (a second at most) so
+    // their rhyming pairs land at the ends of the lines.
+    let live = true;
+    const ready = loadPronunciations().catch(() => {});
+    ready.then(() => {
+      if (!live) return;
+      const waiting = takeMatrixWords();
+      if (waiting) land(waiting.words, waiting.artist);
+    });
+    const onWords = (e) => {
+      ready.then(() => {
+        if (!live) return;
+        const w = takeMatrixWords();
+        land(w?.words || e.detail?.words, w?.artist || e.detail?.artist);
+      });
+    };
     window.addEventListener('lyricist:matrix-words', onWords);
-    return () => window.removeEventListener('lyricist:matrix-words', onWords);
+    return () => { live = false; window.removeEventListener('lyricist:matrix-words', onWords); };
   }, [loadFromRaw]);
 
   const applyCellEdit = useCallback(() => {
@@ -460,6 +619,11 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     setSongA(null);
     setSongB(null);
     setSongErrB('');
+    setScoreA(null);
+    setScoreB(null);
+    setWinner(null);
+    setPrevSongs({});
+    loadedRawRef.current = '';
     setKeywordDraft('');
     setEditingId(null);
     setStatus({
@@ -632,48 +796,78 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
   };
 
   /**
-   * `srcSection` is how Auto-Craft stays honest.
+   * EVERYTHING THE SONG ENGINE NEEDS TO KNOW, read off the grid and the app.
    *
-   * setSection() does not update the `section` in this closure, so a one-click
-   * run that spreads, locks, then generates would build its prompt from the
-   * grid as it looked BEFORE any of that — a verse for a board that never
-   * existed. Each step hands the next one its actual result instead.
+   * `srcSection` is how Auto-Craft stays honest: setSection() does not update
+   * `section` in this closure, so a run that spreads, locks, then writes hands
+   * each step the previous step's actual grid.
+   *
+   * The physics does real work here: the HOTTEST tiles become the hook words,
+   * LINKED tiles that rhyme become rhyme pairs, and tiles still OPEN
+   * (superposition) go in as open choices until something locks them.
    */
-  const gridContext = (srcSection = null) => {
+  const songContext = (srcSection = null, forPair = pairId) => {
     const sec = srcSection || section;
     const secCells = sec.lines.flatMap((l) => l.cells);
-    return {
-      sec,
-      secDna: srcSection ? dnaOf(sec, gen + 12) : dna,
-      endWords: sec.lines.map((l) => l.cells[l.cells.length - 1].text),
-      palette: clicheFree([...new Set(secCells.map((c) => c.text))]).join(', '),
+    const real = (w) => Boolean(w) && w !== '—' && w !== 'void';
+    const byKey = new Map();
+    for (const w of [...parseKeywords(keywordDraft), ...secCells.filter((c) => !c.isSuperposition).map((c) => c.text)]) {
+      if (real(w) && !byKey.has(w.toLowerCase())) byKey.set(w.toLowerCase(), w);
+    }
+    const palette = clicheFree([...byKey.values()]);
+    const hookWords = [];
+    for (const c of [...secCells].sort((x, y) => (y.energy || 0) - (x.energy || 0))) {
+      if (hookWords.length === 2) break;
+      if (c.isSuperposition || !real(c.text) || CLICHE_RE.test(c.text)) continue;
+      if (!hookWords.some((w) => w.toLowerCase() === c.text.toLowerCase())) hookWords.push(c.text);
+    }
+    const textOf = new Map(secCells.map((c) => [c.id, c.text]));
+    const rhymes = (x, y) => { const k = rhymeKind(x || '', y || ''); return k !== 'none' && k !== 'same'; };
+    const rhymePairs = [];
+    const addPair = (x, y) => {
+      if (!real(x) || !real(y) || rhymePairs.length >= 6 || !rhymes(x, y)) return;
+      const key = [x, y].map((z) => z.toLowerCase()).sort().join('|');
+      if (!rhymePairs.some((p) => p.map((z) => z.toLowerCase()).sort().join('|') === key)) rhymePairs.push([x, y]);
     };
-  };
-
-  const buildNeuralMessages = (variant, srcSection = null) => {
-    const { sec, secDna, endWords, palette } = gridContext(srcSection);
-    const spin = variant === 'B'
-      ? 'Variant B: lean more abstract/image-heavy, slightly different angle on the same end-words.'
-      : 'Variant A: lean more direct and emotional, plain language.';
-    const pressure = buildNeuralConstraints({
-      stylePressure: stylePressure || sec.stylePressure,
-      contracts,
-      section: sec,
-      dnaUsed,
-      forceKeywords: parseKeywords(keywordDraft),
-    });
-    const secLabel = QUANTUM_SECTIONS.find((s) => s.id === activeSectionId)?.label || 'verse';
-    return [
-      {
-        role: 'system',
-        content:
-          'You are a surgical lyricist working INSIDE hard craft constraints (word grid). Write ONE tight 4-line verse. Land each line on its given end-word. Honor contracts and style pressure. No clichés, no explanations — output only the 4 lines. Never copy any real artist lyrics.\n' + NO_CLICHES,
-      },
-      {
-        role: 'user',
-        content: `Section: ${secLabel}\nSeed palette: ${palette}\nRhyme scheme: ${secDna?.rhymeScheme || 'AABB'}\nEnd-words per line (in order): ${endWords.join(', ')}\nStress signature: ${secDna?.stressSignature || ''}\n${pressure ? `CONSTRAINTS:\n${pressure}\n` : ''}${spin}\nWrite the 4-line verse now.`,
-      },
-    ];
+    if (dictReady) {
+      [...contracts, ...links].filter((l) => l.type === 'rhyme').forEach((l) => addPair(textOf.get(l.aId), textOf.get(l.bId)));
+      findRhymePairs(palette.slice(0, 40)).forEach((p) => addPair(palette[p.i], palette[p.j]));
+    }
+    const extraLinks = contracts
+      .filter((c) => c.type !== 'rhyme')
+      .map((c) => ({ type: c.type, a: textOf.get(c.aId), b: textOf.get(c.bId) }))
+      .filter((l) => l.a && l.b);
+    const openChoices = secCells
+      .filter((c) => c.isSuperposition && c.candidates?.length)
+      .map((c) => [...new Set([c.text, ...c.candidates.map((x) => x.text)])].slice(0, 4))
+      .slice(0, 4);
+    const ends = sec.lines.map((l) => l.cells[l.cells.length - 1]?.text);
+    const gridEnds = {
+      a: dictReady && rhymes(ends[0], ends[1]) ? [ends[0], ends[1]] : null,
+      b: dictReady && rhymes(ends[2], ends[3]) ? [ends[2], ends[3]] : null,
+    };
+    // The sound: Ghost Rider's Suno tags first (the words most often come from
+    // there), then Songwriter's tags, then the genre picks.
+    const ghostTags = readSunoTags()?.tags || '';
+    const genres = [...(store.genreList || []), ...(store.subgenreList || [])];
+    const sound = String(ghostTags || store.sunoTags || genres.join(', ')).slice(0, 240);
+    const dnaNow = stylePressure || sec.stylePressure || null;
+    const everything = [sound, ...genres, store.sunoTags, dnaNow?.rhythm, dnaNow?.cadenceNotes].filter(Boolean).join(' ');
+    return {
+      pairId: forPair,
+      palette,
+      hookWords,
+      rhymePairs,
+      extraLinks,
+      openChoices,
+      gridEnds,
+      genre: sound,
+      bpm: bpmFrom(everything),
+      delivery: guessDelivery(everything),
+      explicit: wantsExplicit(store),
+      dna: dnaNow,
+      sectionLabel: QUANTUM_SECTIONS.find((x) => x.id === activeSectionId)?.label || 'verse',
+    };
   };
 
   /**
@@ -718,14 +912,14 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
        * fail on its own. Losing the second variant costs the A/B choice for
        * that run; losing the pair costs the whole generate.
        */
-      const outA = await callAI(buildNeuralMessages('A', overrideSection), store.config, 0.88, 220);
+      const outA = await callAI(verseMessages(songContext(overrideSection), 'A'), store.config, 0.88, 320);
       setNeuralA((outA || '').trim());
 
       await new Promise((r) => setTimeout(r, 400));
 
       let outB;
       try {
-        outB = await callAI(buildNeuralMessages('B', overrideSection), store.config, 0.95, 220);
+        outB = await callAI(verseMessages(songContext(overrideSection), 'B'), store.config, 0.95, 320);
       } catch (errB) {
         // B alone is not a failed run. Fall back to A so the tab still has a
         // verse on screen and the pick control still works.
@@ -739,6 +933,10 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       setSongA(null);
       setSongB(null);
       setSongErrB('');
+      setScoreA(null);
+      setScoreB(null);
+      setWinner(null);
+      setPrevSongs({});
       setStatus({
         lead: 'Two states ready.',
         rest: mobile
@@ -754,42 +952,45 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     }
   };
 
+  /** Room for a whole song with every chorus written out. */
+  const songRoom = () => Math.max(Number(store.config?.maxTokens) || 0, 2600);
+
+  /**
+   * CHECK, THEN REPAIR ONCE. A song comes back, its choruses are written out in
+   * full, and it is scored (Flow, Rhyme, Hook, plus anything sung back from the
+   * instructions). When real problems turn up, the lines that failed go back
+   * for one repair pass, and the repair is kept only if it scores better: a fix
+   * never makes a song worse.
+   */
+  const finishSong = async (raw, ctx, plan, label) => {
+    let text = fillChoruses(tidySong(raw));
+    let score = scoreSong(text, plan, ctx);
+    if (needsRepair(score)) {
+      const n = score.problems.length;
+      setStatus({ lead: `Polishing ${label}…`, rest: ` Fixing ${n} spot${n === 1 ? '' : 's'} that missed the beat, the rhyme or the hook.` });
+      try {
+        const fixed = fillChoruses(tidySong(await callAI(repairMessages(ctx, plan, text, score), store.config, 0.6, songRoom())));
+        const again = scoreSong(fixed, plan, ctx);
+        if (parseSong(fixed).length >= parseSong(text).length - 1 && again.total > score.total) {
+          text = fixed;
+          score = again;
+        }
+      } catch (e) {
+        console.warn('[The Matrix] The repair pass failed; keeping the first draft.', e);
+      }
+    }
+    return { text, score: { ...score, plan, paletteSize: ctx.palette.length } };
+  };
+
   /**
    * FULL SONGS, ONE PER STATE.
    *
-   * Takes the verse each state already wrote and builds a whole song around it
-   * under the same grid DNA, contracts and style pressure, with every keyword
-   * (Ghost Rider's 20 or the ones typed) woven across the song rather than
-   * forced into one verse. `srcSection` and the verses are passed in by
-   * Auto-Craft for the same stale-closure reason as doNeural.
+   * Song A and Song B are two different songs from the same grid (Rap vs Sung,
+   * Story vs Party or Clean vs Explicit), each a real song shape for Suno, each
+   * checked and repaired before it is shown. The verse each state wrote is a
+   * sketch the song is free to rewrite. `srcSection` and the verses are passed
+   * in by Auto-Craft for the same stale-closure reason as doNeural.
    */
-  const buildSongMessages = (variant, verse, srcSection = null) => {
-    const { sec, secDna, palette } = gridContext(srcSection);
-    const keywords = clicheFree(parseKeywords(keywordDraft));
-    const spin = variant === 'B'
-      ? 'Variant B: lean more abstract and image-heavy, a different angle on the same idea.'
-      : 'Variant A: lean more direct and emotional, plain language.';
-    const pressure = buildNeuralConstraints({
-      stylePressure: stylePressure || sec.stylePressure,
-      contracts,
-      section: sec,
-      dnaUsed,
-    });
-    return [
-      {
-        role: 'system',
-        content:
-          'You are a surgical lyricist. Write ONE complete song around the verse you are given. Use exactly these sections, each header in [brackets] on its own line: [Verse 1] [Chorus] [Verse 2] [Bridge] [Chorus]. [Verse 1] is the given verse, kept word for word. Every section is 4 lines. Verse 2 keeps the rhyme scheme and rhythm of Verse 1. The Chorus is a hook that repeats. The Bridge turns the song. Honor the constraints. No clichés, no explanations — output only the song. Never copy any real artist lyrics.\n' + NO_CLICHES,
-      },
-      {
-        role: 'user',
-        content: `Verse 1 (keep exactly):\n${verse}\n\nSeed palette: ${palette}\nRhyme scheme: ${secDna?.rhymeScheme || 'AABB'}\nStress signature: ${secDna?.stressSignature || ''}\n${pressure ? `CONSTRAINTS:\n${pressure}\n` : ''}${keywords.length ? `KEYWORDS — use every one of these at least once across the whole song: ${keywords.join(', ')}\n` : ''}${spin}\nWrite the full song now.`,
-      },
-    ];
-  };
-
-  const tidySong = (out) => String(out || '').replace(/^\s*```\w*\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
-
   const writeFullSongs = async ({ section: srcSection = null, verseA = neuralA, verseB = neuralB } = {}) => {
     if (!hasWritingAI(store.config)) {
       setStatus({
@@ -806,35 +1007,84 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     setSongA(null);
     setSongB(null);
     setSongErrB('');
+    setScoreA(null);
+    setScoreB(null);
+    setWinner(null);
+    setPrevSongs({});
     try {
-      setStatus({ lead: 'Writing Song A…', rest: ' A whole song from State A, then one from State B, under the grid DNA and your keywords.' });
-      const outA = tidySong(await callAI(buildSongMessages('A', verseA, srcSection), store.config, 0.88, 1200));
-      setSongA(outA);
+      const ctx = songContext(srcSection);
+      const pair = SONG_PAIRS[ctx.pairId] || SONG_PAIRS.rapSung;
+      setStatus({ lead: 'Writing Song A…', rest: ` ${pair.A.name}, then Song B (${pair.B.name}). Each one is checked for flow, rhyme and hook.` });
+      const a = songMessages(ctx, 'A', verseA);
+      const outA = await finishSong(await callAI(a.messages, store.config, 0.85, songRoom()), ctx, a.plan, 'Song A');
+      setSongA(outA.text);
+      setScoreA(outA.score);
 
       await new Promise((r) => setTimeout(r, 400));
 
       setStatus({ lead: 'Writing Song B…', rest: ' Song A is done.' });
       let outB = null;
       try {
-        outB = tidySong(await callAI(buildSongMessages('B', verseB || verseA, srcSection), store.config, 0.95, 1200));
-        setSongB(outB);
+        const b = songMessages(ctx, 'B', verseB || verseA);
+        outB = await finishSong(await callAI(b.messages, store.config, 0.92, songRoom()), ctx, b.plan, 'Song B');
+        setSongB(outB.text);
+        setScoreB(outB.score);
       } catch (errB) {
         // B on its own is not a failed run. Say so; never hand back A as B.
         console.warn('[The Matrix] Song B failed:', errB);
         setSongErrB(errB?.message || String(errB));
       }
       setStatus(outB
-        ? { lead: 'Two songs ready.', rest: (mobile ? ' Song A and Song B below. Send either one to Songwriter.' : ' Song A and Song B side by side. Send either one to Songwriter.') }
+        ? { lead: 'Two songs ready.', rest: ' Rhyming sounds share a colour. Pick the winner, remix it if you like, then send it to Songwriter.' }
         : { lead: 'Song A ready.', rest: ' Song B could not be written. Press Write full songs again to retry both.' });
       // The songs land far below the button on a phone; take the reader to them.
       if (mobile) setTimeout(() => songsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
-      return { a: outA, b: outB };
+      return { a: outA.text, b: outB?.text || null };
     } catch (e) {
       setStatus({ lead: 'Could not write songs.', rest: ' ' + (e?.message || String(e)) + ' Check Settings and your internet, then try again.' });
       return null;
     } finally {
       setBusy(false);
     }
+  };
+
+  /** Harder, Funnier, Sadder, Bigger Hook: one song rewritten, checked again. Undo keeps the version before. */
+  const remixSong = async (which, kind) => {
+    const song = which === 'B' ? songB : songA;
+    const before = which === 'B' ? scoreB : scoreA;
+    if (!song || busy || autoBusy || remixBusy) return;
+    if (!hasWritingAI(store.config)) {
+      setStatus({ lead: 'Need an API key.', rest: ' Open the Settings tab, paste your OpenRouter key, save, then remix again.' });
+      return;
+    }
+    const label = REMIXES[kind]?.label || 'Remix';
+    setRemixBusy(`${which}:${kind}`);
+    setStatus({ lead: `Remixing Song ${which}…`, rest: ` ${label}, then it gets checked again.` });
+    try {
+      const ctx = songContext(null, before?.plan?.pairId || pairId);
+      const r = remixMessages(ctx, which, song, kind);
+      const out = await finishSong(await callAI(r.messages, store.config, 0.9, songRoom()), ctx, r.plan, `Song ${which}`);
+      setPrevSongs((p) => ({ ...p, [which]: { text: song, score: before } }));
+      if (which === 'B') { setSongB(out.text); setScoreB(out.score); } else { setSongA(out.text); setScoreA(out.score); }
+      setStatus({ lead: `Song ${which}: ${label}.`, rest: ' Not feeling it? Undo puts the last version back.' });
+    } catch (e) {
+      setStatus({ lead: 'Could not remix.', rest: ' ' + (e?.message || String(e)) + ' Check Settings and your internet, then try again.' });
+    } finally {
+      setRemixBusy('');
+    }
+  };
+
+  const undoRemix = (which) => {
+    const prev = prevSongs[which];
+    if (!prev) return;
+    if (which === 'B') { setSongB(prev.text); setScoreB(prev.score); } else { setSongA(prev.text); setScoreA(prev.score); }
+    setPrevSongs((p) => ({ ...p, [which]: null }));
+    setStatus({ lead: `Song ${which} is back.`, rest: ' This is the version from before the remix.' });
+  };
+
+  const pickWinner = (which) => {
+    setWinner(which);
+    setStatus({ lead: `Song ${which} wins.`, rest: ' Send it to Songwriter, or remix it first.' });
   };
 
   /**
@@ -852,7 +1102,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
    * in this closure, so calling doRun() then doCrystallize() then doNeural()
    * in sequence would run all three against the ORIGINAL grid. Each step
    * takes the previous step's return value instead. This is the same reason
-   * buildNeuralMessages accepts srcSection.
+   * songContext accepts srcSection.
    *
    * The manual Step 3/4/5/6 buttons are untouched and still in Advanced.
    * This does not replace them; it is the same transforms with nothing to
@@ -862,9 +1112,13 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
     if (autoBusy || busy || running) return;
     setAutoBusy(true);
     try {
+      // Words typed but not loaded yet go in first: words in, songs out, no extra tap.
+      let base = section;
+      const draft = keywordDraft.trim();
+      if (draft && draft !== loadedRawRef.current) base = loadFromRaw(draft) || section;
       setAutoStage('Spreading energy…');
       setStatus({ lead: 'Auto-Craft running.', rest: ' Spreading energy across the matrix for 12 generations.' });
-      const ran = runGens(section, 12);
+      const ran = runGens(base, 12);
 
       setAutoStage('Locking the field…');
       const locked = crystallizeLab(ran.section);
@@ -1272,6 +1526,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
                 !cell.frozen && heat >= 0.72 && 'ql-burning',
                 !cell.frozen && heat >= 0.88 && 'ql-blazing',
                 flashTileId === cell.id && 'ql-tile-flash',
+                hitIds?.has(cell.id) && 'ql-hit',
               ].filter(Boolean).join(' ');
               const stateLabel = cell.frozen ? 'pinned' : cell.isSuperposition ? 'still open to change' : 'settled';
               return (
@@ -1282,7 +1537,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
                   style={{ '--tc': c, '--glow': `${glow}px`, '--heat': heat.toFixed(2), '--fh': fireHue(cell) }}
                   onClick={() => onTile(cell)}
                   onDoubleClick={() => onTileDouble(cell)}
-                  data-help={`“${cell.text}” — energy ${pct(cell.energy)} (${stateLabel})${cell.userOwned ? ' · YOUR word' : ''}. Click = purple (grid tile). Double-click or edit below. Spotlight ON = pour heat.`}
+                  data-help={`“${cell.text}” — energy ${pct(cell.energy)} (${stateLabel})${cell.userOwned ? ' · YOUR word' : ''}${hitIds?.has(cell.id) ? ' · used in the songs' : ''}. The hottest tiles become the hook. Double-click or edit below. Spotlight ON = pour heat.`}
                 >
                   <span className="ql-tile-word">{cell.text}</span>
                   {phoneticsOn && (
@@ -1318,7 +1573,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         aria-busy={autoBusy}
         disabled={autoBusy || busy || running}
         data-demo="matrix-autocraft"
-        data-help="ONE CLICK. Spreads energy across the grid for 12 generations, locks the field, then writes two complete verses (State A and State B). Tick 'Also write full songs' and it goes on to write a whole song for each state, side by side. Everything the six numbered buttons do, in the right order, without you having to remember it. Needs a free OpenRouter key in Settings."
+        data-help="ONE CLICK. Loads the words you typed, spreads energy across the grid for 12 generations, locks the field, then writes two verses (State A and State B). With 'Also write full songs' ticked it goes on to write Song A and Song B, checks each one for flow, rhyme and hook, and fixes what missed. Everything the six numbered buttons do, in the right order, without you having to remember it. Needs a free OpenRouter key in Settings."
         style={{
           width: '100%',
           display: 'flex',
@@ -1346,7 +1601,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             letterSpacing: '0.04em',
             color: 'var(--accent-neon, #e7a540)',
           }}>
-            {autoBusy ? (autoStage || 'Auto-Crafting…') : 'Auto-Craft Verse'}
+            {autoBusy ? (autoStage || 'Auto-Crafting…') : (fullSongsOpt ? 'Auto-Craft 2 Songs' : 'Auto-Craft Verse')}
           </span>
           <span className="ql-mono" style={{
             display: 'block',
@@ -1355,7 +1610,7 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
             opacity: 0.75,
             marginTop: 3,
           }}>
-            SPREAD, LOCK &amp; GENERATE · 1-CLICK RUN
+            {fullSongsOpt ? 'WORDS IN · SONG A + SONG B OUT' : 'SPREAD, LOCK & GENERATE · 1-CLICK RUN'}
           </span>
         </span>
       </button>
@@ -1372,6 +1627,27 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
         />
         <span>Also write full songs (A + B)</span>
       </label>
+
+      <div
+        className="ql-pair"
+        data-demo="ql-pair"
+        data-help="What makes Song A and Song B different. Rap vs Sung: A raps the verses with a sung hook, B is sung all the way. Story vs Party: A tells a story, B is a chant-along. Clean vs Explicit: same idea, with and without profanity."
+      >
+        <span className="ql-pair-label">Song A vs Song B</span>
+        <div className="ql-pair-btns" role="group" aria-label="Song A vs Song B">
+          {Object.entries(SONG_PAIRS).map(([id, p]) => (
+            <button
+              key={id}
+              type="button"
+              className={`ql-mini ${pairId === id ? 'ylw' : ''}`}
+              aria-pressed={pairId === id}
+              onClick={() => setPairId(id)}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <p
         className="ql-status"
@@ -1649,47 +1925,37 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       )}
 
       {/* Two full songs, side by side. One panel, one scroll. On the phone the
-          two songs stack, and Write full songs scrolls here when they land. */}
+          two songs stack, and Write full songs scrolls here when they land.
+          Each song shows its Flow / Rhyme / Hook check, rhyming sounds share a
+          colour, and it can be remixed, crowned the winner and sent on. */}
       {(songA || songB || songErrB) && (
         <div
           ref={songsRef}
           className="ql-panel ql-songs-out"
-          data-help="A whole song for State A and a whole song for State B, written from your Matrix DNA and keywords. Send either one to Songwriter."
+          data-help="Song A and Song B, written from your grid and checked for flow, rhyme and hook. Rhyming sounds share a colour. Pick the winner, remix it, send it to Songwriter."
         >
           <div className="ql-songs-head">
             <h4 style={{ color: YLW }}>Full songs — A and B</h4>
+            {winner && <span className="ql-winner-note">★ Song {winner} wins</span>}
           </div>
           <div className="ql-songs-cols">
-            <div className="ql-song-col">
-              <div className="ql-song-label">SONG A</div>
-              <pre className="ql-song-text">{songA || '—'}</pre>
-              <button
-                type="button"
-                className="ql-mini grn"
-                onClick={() => sendSongToSongwriter('A')}
-                disabled={!songA}
-                data-demo="ql-send-song-a"
-                data-help="Open Songwriter with Song A as a full song."
-              >
-                → Send Song A to Songwriter
-              </button>
-            </div>
-            <div className="ql-song-col">
-              <div className="ql-song-label">SONG B</div>
-              {songB ? <pre className="ql-song-text">{songB}</pre> : (
-                <p className="ql-song-err">{songErrB ? `Song B did not finish: ${songErrB}` : '—'}</p>
-              )}
-              <button
-                type="button"
-                className="ql-mini grn"
-                onClick={() => sendSongToSongwriter('B')}
-                disabled={!songB}
-                data-demo="ql-send-song-b"
-                data-help="Open Songwriter with Song B as a full song."
-              >
-                → Send Song B to Songwriter
-              </button>
-            </div>
+            {['A', 'B'].map((which) => (
+              <SongCard
+                key={which}
+                which={which}
+                text={which === 'A' ? songA : songB}
+                score={which === 'A' ? scoreA : scoreB}
+                err={which === 'B' ? songErrB : ''}
+                winner={winner}
+                busy={busy || autoBusy}
+                remixBusy={remixBusy}
+                canUndo={!!prevSongs[which]}
+                onWin={pickWinner}
+                onSend={sendSongToSongwriter}
+                onRemix={remixSong}
+                onUndo={undoRemix}
+              />
+            ))}
           </div>
         </div>
       )}

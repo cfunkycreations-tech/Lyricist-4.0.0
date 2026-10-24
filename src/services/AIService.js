@@ -1069,7 +1069,7 @@ Reply in exactly this format and nothing else. Each separator sits on its own li
 ---SUNO TAGS---
 ${String(tags || '').trim() ? 'The tags above, then up to 4 more' : '10-14'} comma-separated Suno style tags on one line: genre, subgenre, production style, mood, tempo, instruments, vocal style, era. NO artist names, NO real person names.
 ---MATRIX WORDS---
-${MATRIX_WORD_COUNT + 4} comma-separated words or short phrases (1-3 words each) pulled from this song's own material: images, objects, places, vocabulary. They seed a word grid for writing, so make them concrete and varied, not random. One line. NO artist names.
+${MATRIX_WORD_COUNT + 4} comma-separated words or short phrases (1-3 words each) pulled from this song's own material: images, objects, places, actions, everyday words. They seed a word grid for writing, so make them concrete and varied, not random. ${MATRIX_WORD_RULE} One line. NO artist names.
 ${KIT_PROSE_ASK}`;
 
   const raw = await callAI([
@@ -1105,7 +1105,7 @@ export async function writeAnalysisWords({ artist = '', report = '', kind = '', 
   const dna = (motifs || []).filter(Boolean);
   const raw = await callAI([
     { role: 'system', content: 'You pull seed words for a songwriter\'s word grid out of a style analysis. Plain, concrete, specific. Never name a real artist or person.\n' + NO_CLICHES },
-    { role: 'user', content: `Read the ${kind ? `${kind} analysis` : 'analysis'} below and pull ${MATRIX_WORD_COUNT + 6} comma-separated words or short phrases (1-3 words each) out of it: its themes, images, objects, places, feelings and everyday words. They seed a word grid for LYRICS, so every one must be something a lyric can say: concrete and varied, not random. NEVER include how the music sounds or is made (no genres, instruments, production, vocal technique, rhyme or flow terms such as 808, hi-hat, ad-libs, vocal runs, syncopation, cadence, acoustic, folk). Those belong in Suno tags, not here. NO artist names, NO real person names. Reply with one line of words and nothing else.\n\nANALYSIS:\n${text.slice(0, 6000)}${dna.length ? `\n\nMOTIFS: ${dna.join(', ')}` : ''}` },
+    { role: 'user', content: `Read the ${kind ? `${kind} analysis` : 'analysis'} below and pull ${MATRIX_WORD_COUNT + 6} comma-separated words or short phrases (1-3 words each) out of it: its images, objects, places, actions, feelings and everyday words. They seed a word grid for LYRICS, so every one must be something a lyric can say: concrete and varied, not random. ${MATRIX_WORD_RULE} NEVER include how the music sounds or is made (no genres, instruments, production, vocal technique, rhyme or flow terms such as 808, hi-hat, ad-libs, vocal runs, syncopation, cadence, acoustic, folk). Those belong in Suno tags, not here. NO artist names, NO real person names. Reply with one line of words and nothing else.\n\nANALYSIS:\n${text.slice(0, 6000)}${dna.length ? `\n\nMOTIFS: ${dna.join(', ')}` : ''}` },
   ], store.config, 0.6, 900);
   // The word line is the one with the most commas, whatever the model put around it.
   const lines = String(raw || '').split('\n').map((l) => l.trim()).filter(Boolean);
@@ -1136,6 +1136,14 @@ export async function writeAnalysisTags({ artist = '', report = '', kind = '' } 
   return cleanTags(best, artist);
 }
 
+/**
+ * WHAT A MATRIX WORD IS. Chris's Song A came out of twenty critic's words
+ * ("street reportage", "confessional detail", "menacing mood") and read like a
+ * review. A word on the grid has to be something a person can sing about.
+ * sunoKit's CRITIC_TERMS drops any that slip through.
+ */
+const MATRIX_WORD_RULE = 'Every one must be something you can see, hold, do or feel, or a real place ("spare key", "two phones face down", "bus stop", "counting cash"). NEVER words that describe how the artist writes (mood, tone, theme, detail, imagery, narrative, confessional, deadpan, menacing, hypnotic, reportage): those are words a critic uses, and nobody sings them.';
+
 export { MATRIX_WORD_COUNT };
 
 /**
@@ -1157,7 +1165,7 @@ function matrixWordsPrompt({ report = '', kind = '', motifs = [] } = {}) {
 
 After the tags, on a new line write exactly this separator and nothing else:
 ---MATRIX WORDS---
-Then on the very next line write ${MATRIX_WORD_COUNT + 4} comma-separated words or short phrases (1-3 words each) pulled from ${source}: its themes, images, objects, places, feelings and everyday words. They seed a word grid for LYRICS, so every one must be something a lyric can say: concrete and varied, not random. NEVER include how the music sounds or is made (no genres, instruments, production, vocal technique, rhyme or flow terms such as 808, hi-hat, ad-libs, vocal runs, syncopation, cadence, acoustic, folk). Those belong in Suno tags, not here. NO artist names, NO real person names. One line only.
+Then on the very next line write ${MATRIX_WORD_COUNT + 4} comma-separated words or short phrases (1-3 words each) pulled from ${source}: its images, objects, places, actions, feelings and everyday words. They seed a word grid for LYRICS, so every one must be something a lyric can say: concrete and varied, not random. ${MATRIX_WORD_RULE} NEVER include how the music sounds or is made (no genres, instruments, production, vocal technique, rhyme or flow terms such as 808, hi-hat, ad-libs, vocal runs, syncopation, cadence, acoustic, folk). Those belong in Suno tags, not here. NO artist names, NO real person names. One line only.
 
 After the words, write these two sections, each starting with its separator on its own line:
 `,

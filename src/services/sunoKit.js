@@ -89,6 +89,22 @@ export function cleanTags(block, artist = '') {
 /** How a track SOUNDS or is made. Those words are Suno tags; a lyric cannot say them. */
 const SOUND_TERMS = /\b(808|hi-?hat|ad-?libs?|vocal runs?|syncopation|cadence|tempo|bpm|acoustic|folk|synth|reverb|bassline|beat|rhythmic|rhythm|melodic|melody|internal rhyme|rhyme scheme|flow|phrasing|production|mixing|autotune|falsetto)\b/i;
 
+/**
+ * A CRITIC'S WORDS: they describe how somebody writes instead of being anything
+ * a song can say. Chris's Song A was built from twenty of these ("street
+ * reportage", "confessional detail", "menacing mood", "deadpan threat") and
+ * read like a review, not a song. Chris, 2026-10-24: "I can't work with this
+ * garbage."
+ */
+export const CRITIC_TERMS = /\b(moods?|tones?|themes?|thematic|motifs?|imagery|narratives?|narrators?|personas?|delivery|reportage|aesthetics?|confessional|storytelling|wordplay|metaphors?|similes?|symbolism|lyricism|lyrical|introspect\w*|braggadocio|bravado|commentary|critiques?|juxtaposition|vulnerabilit\w*|deadpan|plainspoken|hypnotic|menacing|mantras?|vignettes?|anecdot\w*|depictions?|sensibilit\w*|subject matter|worldview|ethos|duality|tropes?|archetyp\w*|punchlines?|couplets?|stanzas?|verses?|choruses|refrains?|details?|portrayals?|nuanced?|fixation|obsessive|plainspoken|survival themes?)\b/i;
+
+/**
+ * The same idea, narrowed for checking finished LYRICS: words that only ever
+ * turn up in a song when the model copied its instructions into it. ("Tone"
+ * and "details" are left out here: a dial tone is a real thing to sing about.)
+ */
+export const LEAK_TERMS = /\b(reportage|confessional|imagery|narratives?|motifs?|aesthetics?|juxtaposition|braggadocio|introspect\w*|lyricism|symbolism|deadpan|plainspoken|wordplay|storytelling|vignettes?|personas?|subject matter|rhyme scheme|internal rhymes?|syllables?|cadence|emotional temp\w*|style dna|stress signature)\b/i;
+
 export function cleanMatrixWords(block, artistName, { motifs = [] } = {}) {
   const terms = nameTerms(artistName);
   const named = (w) => terms.some((t) => String(w).toLowerCase().includes(t));
@@ -96,7 +112,7 @@ export function cleanMatrixWords(block, artistName, { motifs = [] } = {}) {
   const words = clicheFree(
     String(block || '').trim().split('\n')[0].split(',')
       .map((w) => w.replace(/^["'\s]+|["'.\s]+$/g, ''))
-      .filter((w) => w.length > 1 && w.length < 40 && !named(w) && !SOUND_TERMS.test(w))
+      .filter((w) => w.length > 1 && w.length < 40 && !named(w) && !SOUND_TERMS.test(w) && !CRITIC_TERMS.test(w))
   ).filter((w) => {
     const k = w.toLowerCase();
     if (seen.has(k)) return false;
@@ -107,7 +123,7 @@ export function cleanMatrixWords(block, artistName, { motifs = [] } = {}) {
   for (const m of clicheFree(motifs)) {
     if (words.length >= MATRIX_WORD_COUNT) break;
     const k = String(m).toLowerCase().trim();
-    if (k && !seen.has(k) && !named(k)) { seen.add(k); words.push(String(m).trim()); }
+    if (k && !seen.has(k) && !named(k) && !CRITIC_TERMS.test(k)) { seen.add(k); words.push(String(m).trim()); }
   }
   return words.slice(0, MATRIX_WORD_COUNT);
 }
