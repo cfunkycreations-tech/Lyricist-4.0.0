@@ -3,6 +3,7 @@
 // action: 'type' | 'click' | 'point' | 'say'
 // Default for button targets is REAL click (operates the app).
 // skipClick: true for mic/API-heavy controls we only show.
+// desktopOnly: true for lines that are only true on Windows; the phone skips them.
 // ============================================================
 
 export const GHOST_DEMO_TABS = new Set([
@@ -38,12 +39,14 @@ export const GHOST_DEMOS = {
       },
       {
         target: '.omb-engine',
+        desktopOnly: true,   // Kaggle / this computer: Windows only, see GhostDemo runsHere
         say: 'Where it runs. Free cloud costs nothing and is also the fastest, so it is the default. It tops out around forty five seconds of music. Kaggle and this computer both make full length songs, and both are free as well.',
         action: 'point',
         wait: 5200,
       },
       {
         target: '[data-demo="omb-setup"]',
+        desktopOnly: true,   // Kaggle / this computer: Windows only, see GhostDemo runsHere
         say: 'Set-up is how you switch Kaggle on, and it is worth doing before anything else. It is three steps. Open Kaggle, click Create New Token, and paste the long code they show you into the box. Once, and it stays done.',
         action: 'point',
         wait: 5600,
@@ -104,6 +107,7 @@ export const GHOST_DEMOS = {
       },
       {
         target: '.omb-est',
+        desktopOnly: true,   // Kaggle / this computer: Windows only, see GhostDemo runsHere
         say: 'It tells you how long before you commit, not after. A long song on free hardware is a real wait. Kaggle is honest rather than quick: about seventeen minutes for thirty seconds of music. You should know that going in.',
         action: 'point',
         wait: 5200,

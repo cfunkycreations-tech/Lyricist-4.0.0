@@ -90,8 +90,9 @@ try {
             straight through in the desktop app and on the dev server. */}
         <PurchaseLock>
           <App />
-          {/* The 8s opener, over everything until it ends. Phones get it
-              sideways only - see SplashIntro.jsx. */}
+          {/* The opener, over everything until it ends. Every launch, desktop
+              and phone, upright or sideways. Never remove or gate this: the
+              phone build fails without it (scripts/opener-guard.mjs). */}
           <SplashIntro />
           {/* Every fresh open, for everyone: what changed. See WhatsNew.jsx. */}
           <WhatsNew />

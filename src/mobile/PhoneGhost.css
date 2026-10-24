@@ -1,0 +1,142 @@
+/* The Ghost on the phone. See PhoneGhost.jsx. No bubbles: he points, it glows. */
+
+.pg-root {
+  position: fixed;
+  inset: 0;
+  z-index: 120000;          /* over the phone shell (800-906) and every tool */
+  pointer-events: none;     /* the app underneath stays live; he taps it for real */
+  transition: opacity 0.45s ease;
+}
+.pg-root.is-leaving { opacity: 0; }
+
+/* Everything but what he is talking about steps back a little. No border:
+   the glow on the words is the marker, this only makes it pop. */
+/* Four flat rectangles around the lit area. It used to be one box with a
+   9999px box-shadow, which the phone repainted over the whole screen every time
+   it moved: that was the flicker. These are plain fills, and they never animate. */
+.pg-dim i {
+  position: fixed;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* THE GLOW. Whatever he is talking about: its words light up white-hot with an
+   amber halo, and the control itself gets a soft ring of the same light. */
+/* :not(#pg) is a specificity lift, nothing more. The app has a global
+   `body :not(.pc)... { text-shadow: none !important }` that out-ranked a plain
+   class, so nothing glowed. An id-level :not() out-ranks it. */
+.pg-glow:not(#pg) {
+  /* Steady: a pulsing shadow repaints the control forever, and on a big one
+     (the lyrics box) that flickered. */
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.85), 0 0 20px 4px rgba(231, 165, 64, 0.65);
+}
+.pg-glow:not(#pg),
+.pg-glow:not(#pg) *,
+.pg-glow-text:not(#pg),
+.pg-glow-text:not(#pg) * {
+  color: #fff !important;
+  text-shadow:
+    0 0 4px rgba(255, 255, 255, 0.95),
+    0 0 12px rgba(255, 214, 140, 0.9),
+    0 0 24px rgba(231, 165, 64, 0.7) !important;
+}
+.pg-glow:not(#pg)::placeholder,
+.pg-glow:not(#pg) *::placeholder,
+.pg-glow-text:not(#pg) *::placeholder {
+  color: #fff !important;
+  opacity: 1;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.9), 0 0 16px rgba(231, 165, 64, 0.8);
+}
+
+/* Him. Hangs so the foot of his mic stand lands on the spot he means. */
+.pg-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  will-change: transform;   /* his own layer: moving him repaints nothing else */
+}
+.pg-bob {
+  width: 100%;
+  height: 100%;
+  animation: pg-bob 2.6s ease-in-out infinite;
+}
+.pg-ghost img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  /* Black outline on a black app: a soft lift so he never sinks into it. */
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.7));
+  -webkit-user-drag: none;
+  user-select: none;
+}
+.pg-ghost.is-flip img { transform: scaleX(-1); }
+@keyframes pg-bob {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50% { transform: translateY(-5px) rotate(1.5deg); }
+}
+
+/* The exact spot, so a small button is never in doubt. Presses in on a tap. */
+.pg-dot {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  will-change: transform;
+}
+.pg-dot::after {
+  content: '';
+  display: block;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: rgba(255, 236, 200, 0.9);
+  box-shadow: 0 0 0 2px rgba(231, 165, 64, 0.7), 0 0 10px 3px rgba(231, 165, 64, 0.5);
+  animation: pg-dot 1.2s ease-in-out infinite;
+}
+.pg-dot.is-tap::after { animation: pg-tap 0.36s ease-out; }
+@keyframes pg-dot {
+  0%, 100% { transform: scale(1); opacity: 0.95; }
+  50% { transform: scale(1.25); opacity: 0.7; }
+}
+@keyframes pg-tap {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.6); background: #fff; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* Pause / Music / Stop. Small, at the bottom, out of his way and the bar's. */
+.pg-controls {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(10, 11, 13, 0.92);
+  border: 1px solid rgba(230, 232, 235, 0.22);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+  pointer-events: auto;
+}
+.pg-btn {
+  min-height: 40px;
+  min-width: 64px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(230, 232, 235, 0.3);
+  background: transparent;
+  color: #f2f5fa;
+  font-family: var(--faf-font);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.pg-btn:active { transform: scale(0.95); }
+.pg-btn.is-on { border-color: rgba(231, 165, 64, 0.7); color: #ffd08a; }
+.pg-btn-stop { border-color: rgba(255, 120, 120, 0.55); color: #ffb3b3; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-bob, .pg-dot::after { animation: none; }
+}

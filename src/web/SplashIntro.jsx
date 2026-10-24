@@ -14,13 +14,20 @@ import './SplashIntro.css';
  * so the picture ends exactly with the music: 463 frames at 30 fps against a
  * 15.418 s track, nothing trimmed off either.
  *
- * WHERE IT PLAYS. The desktop app and a desktop browser always get it. On a
- * phone it plays only SIDEWAYS — Chris, 2026-10-21: "The animations will show
- * on the phone version when in landscape mode." The clip is 16:9, and letter-
- * boxing it into a 9:16 screen would leave the badge a strip in the middle
- * with black above and below; cropping it to fill would cut the LYRICIST PRO
- * arc off, which is the exact bug that had to be fixed in the render. So
- * upright phones skip it and go straight to the app.
+ * WHERE IT PLAYS: EVERYWHERE, EVERY LAUNCH. The desktop app, desktop browsers,
+ * and the phone app held sideways OR upright. Chris, 2026-10-23, after it had
+ * gone missing on his phone again: "put the splash screen back on the phone
+ * app... Better not come down again. Keep it there." It went missing because
+ * it used to play only sideways, and he holds the phone upright. Upright, the
+ * 16:9 clip plays full width with black above and below (object-fit: contain,
+ * never cover, so the LYRICIST PRO arc is never cropped). It also plays when
+ * the phone asks for reduced motion, which hid it on those phones too; it is
+ * one tap to skip.
+ *
+ * DO NOT add a condition that skips it. scripts/opener-guard.mjs fails the
+ * phone build (build-web) and the desktop release (preflight) if PLAY_ON_PHONE
+ * is false, if a portrait or reduced-motion skip comes back, or if main.jsx
+ * stops mounting it.
  *
  * SOUND. The desktop app plays it out loud: main.js sets autoplayPolicy to
  * no-user-gesture-required, because the window only exists because somebody
@@ -39,16 +46,8 @@ import './SplashIntro.css';
  * opener you cannot escape is an opener people uninstall.
  */
 
-/**
- * Phones get the opener at all. Chris, 2026-10-21: "if i don't like it, we'll
- * just keep them on the desktop version." Flip this to false and the desktop
- * app and desktop browsers keep it while every phone goes straight to the app.
- * Nothing else needs touching.
- */
+/** Phones get the opener. Chris, 2026-10-23: keep it there. Guarded; see above. */
 const PLAY_ON_PHONE = true;
-
-const REDUCED_MOTION = typeof window !== 'undefined'
-  && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 /** Phone-shaped, the same test the mobile shell uses. */
 function isPhone() {
@@ -58,19 +57,9 @@ function isPhone() {
   return window.matchMedia('(max-height: 560px), (max-width: 560px)').matches;
 }
 
-function isPortrait() {
-  if (typeof window === 'undefined') return false;
-  if (window.matchMedia?.('(orientation: portrait)')?.matches) return true;
-  return window.innerHeight > window.innerWidth;
-}
-
 function shouldPlay() {
   if (typeof window === 'undefined') return false;
-  if (REDUCED_MOTION) return false;
-  if (isPhone()) {
-    if (!PLAY_ON_PHONE) return false;                         // desktop only
-    if (isPortrait()) return false;                           // sideways only on a phone
-  }
+  if (isPhone() && !PLAY_ON_PHONE) return false;
   return true;
 }
 
@@ -78,6 +67,11 @@ export default function SplashIntro() {
   const [show, setShow] = useState(shouldPlay);
   const [leaving, setLeaving] = useState(false);
   const [silenced, setSilenced] = useState(false);            // browser refused the sound
+  // Refused to play at all, even muted: an iPhone in Low Power Mode does this.
+  // It used to close the opener on the spot, which is one of the ways it kept
+  // "coming down". Now it stays on its title frame with Tap to play.
+  const [blocked, setBlocked] = useState(false);
+  const blockedRef = useRef(false);
   const timer = useRef(null);
   const video = useRef(null);
 
@@ -116,15 +110,30 @@ export default function SplashIntro() {
         el.muted = true;
         setSilenced(true);
         const quiet = el.play?.();
-        if (quiet && typeof quiet.catch === 'function') quiet.catch(() => finish());
+        if (quiet && typeof quiet.catch === 'function') {
+          quiet.catch(() => { if (!dead) { blockedRef.current = true; setBlocked(true); } });
+        }
       });
     }
 
     // Belt and braces: if 'ended' never arrives (a decode failure, a tab
     // throttled in the background) the app must not stay behind a dead video.
-    const bail = setTimeout(finish, 19000);
+    // Not while it is waiting for a tap to play: that is not a dead video.
+    const bail = setTimeout(() => { if (!blockedRef.current) finish(); }, 19000);
     return () => { dead = true; clearTimeout(bail); };
   }, [show, finish]);
+
+  const playNow = useCallback((e) => {
+    e.stopPropagation();
+    const el = video.current;
+    if (!el) return;
+    blockedRef.current = false;
+    setBlocked(false);
+    setSilenced(false);
+    el.muted = false;
+    const p = el.play?.();
+    if (p && typeof p.catch === 'function') p.catch(() => finish());   // refused even on a tap: let them in
+  }, [finish]);
 
   const unmute = useCallback((e) => {
     e.stopPropagation();
@@ -153,7 +162,12 @@ export default function SplashIntro() {
         onEnded={finish}
         onError={finish}
       />
-      {silenced && (
+      {blocked && (
+        <button type="button" className="sintro-play" onClick={playNow}>
+          Tap to play
+        </button>
+      )}
+      {silenced && !blocked && (
         <button type="button" className="sintro-sound" onClick={unmute}>
           Tap for sound
         </button>

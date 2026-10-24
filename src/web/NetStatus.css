@@ -3,7 +3,7 @@
 .net-stack {
   position: fixed;
   left: 50%;
-  top: calc(52px + env(safe-area-inset-top, 0px));
+  top: calc(52px + var(--mob-top, env(safe-area-inset-top, 0px)));
   transform: translateX(-50%);
   z-index: 950;
   display: flex;

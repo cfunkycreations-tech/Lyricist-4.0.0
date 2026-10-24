@@ -45,8 +45,22 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { posthogStatus } from './posthog-status.mjs';
+import { openerProblems } from './opener-guard.mjs';
 
 const ROOT = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
+
+// The opener must play on the phone. See opener-guard.mjs: it went missing
+// twice, both times because a build shipped it switched off.
+{
+  const opener = openerProblems(ROOT);
+  if (opener.length) {
+    console.error('');
+    console.error('  PHONE BUILD STOPPED: the opener would not play.');
+    for (const p of opener) console.error('  - ' + p);
+    console.error('');
+    process.exit(1);
+  }
+}
 const DIST = path.join(ROOT, 'dist');
 const WEB = path.join(ROOT, 'dist-web');
 
