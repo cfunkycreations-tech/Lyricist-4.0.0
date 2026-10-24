@@ -42,6 +42,28 @@ const readSession = () => {
   try { return JSON.parse(localStorage.getItem(SESSION_KEY)) || {}; } catch { return {}; }
 };
 
+/** The two boxes that take typing: Style DNA and the 20 words. */
+const fieldStyle = {
+  width: '100%',
+  boxSizing: 'border-box',
+  marginTop: 4,
+  background: 'rgba(16,18,21,0.7)',
+  border: '1px solid rgba(155,161,170,0.22)',
+  borderRadius: 8,
+  padding: '7px 10px',
+  fontSize: '0.82rem',
+  color: '#e6e8eb',
+  outline: 'none',
+  fontFamily: 'inherit',
+};
+const dnaLabel = { color: 'rgba(155,161,170,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' };
+
+/** "a, b, c" or one per line, into a clean list. */
+const splitList = (text) => String(text || '').split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
+
+/** True when a Style DNA has anything in it. */
+const hasDNA = (d) => !!d && !!(d.rhythm || d.rhymeDensity || d.cadenceNotes || d.imageClusters?.length || (d.emotionalTemp !== null && d.emotionalTemp !== undefined && d.emotionalTemp !== ''));
+
 export default function ArtistAnalyzer({ onGhostSend }) {
   const store = useLyricStore();
   const [boot] = useState(readSession);
@@ -65,11 +87,22 @@ export default function ArtistAnalyzer({ onGhostSend }) {
   const [sunoTags, setSunoTags] = useState(boot.sunoTags || '');
   const [loadingTags, setLoadingTags] = useState(false);
   const [tagsError, setTagsError] = useState('');
-  // The 20 words drawn from the report on screen, for The Matrix. They arrive with the analysis.
+  // The 20 words for The Matrix. They arrive when the AI writes a song; until then the box is empty and takes typing.
   const [matrixWords, setMatrixWords] = useState(Array.isArray(boot.matrixWords) ? boot.matrixWords : []);
   const [wordsSent, setWordsSent] = useState(false);
   const [loadingWords, setLoadingWords] = useState(false);
   const [wordsError, setWordsError] = useState('');
+  /**
+   * The Style DNA and the 20 words are made when the AI writes a song, and at no
+   * other time (Chris, 2026-10-23). Until then both boxes sit empty and take
+   * what a person types. The text boxes below hold what is being typed; the
+   * *Typed refs remember that a person has been in a box, so the next AI song
+   * does not write over their work.
+   */
+  const [wordsText, setWordsText] = useState(() => (Array.isArray(boot.matrixWords) ? boot.matrixWords.join(', ') : ''));
+  const [imagesText, setImagesText] = useState(() => (Array.isArray(boot.styleDNA?.imageClusters) ? boot.styleDNA.imageClusters.join(', ') : ''));
+  const wordsTyped = useRef(false);
+  const dnaTyped = useRef(false);
   const [loadingGhost, setLoadingGhost] = useState(false);
   const [copied, setCopied] = useState('');
   const [ghostSent, setGhostSent] = useState(false);
@@ -81,6 +114,29 @@ export default function ArtistAnalyzer({ onGhostSend }) {
   useLogged('Ghost Rider · Verse', ghostLyrics);
   useLogged('Ghost Rider · Suno tags', sunoTags);
   useLogged('Ghost Rider · Matrix words', matrixWords.join(', '));
+
+  // What is typed in the two boxes, and what the AI wrote into them, stay in step.
+  useEffect(() => {
+    if (splitList(wordsText).join('|') !== matrixWords.join('|')) setWordsText(matrixWords.join(', '));
+  }, [matrixWords]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const have = Array.isArray(styleDNA?.imageClusters) ? styleDNA.imageClusters : [];
+    if (splitList(imagesText).join('|') !== have.join('|')) setImagesText(have.join(', '));
+  }, [styleDNA]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const typeWords = (text) => {
+    wordsTyped.current = true;
+    setWordsText(text);
+    setMatrixWords(splitList(text));
+    setWordsSent(false);
+    setWordsError('');
+  };
+  /** One field of the Style DNA, typed by hand. */
+  const typeDNA = (patch) => {
+    dnaTyped.current = true;
+    setDnaError('');
+    setStyleDNA((d) => ({ rhythm: '', rhymeDensity: '', imageClusters: [], emotionalTemp: null, cadenceNotes: '', ...(d || {}), ...patch }));
+  };
 
   // Checks & Intelligence
   const [clichés, setClichés] = useState([]);
@@ -169,14 +225,13 @@ export default function ArtistAnalyzer({ onGhostSend }) {
         { role: 'user', content: finalPrompt }
       ], store.config);
       setAnalysis(result);
-      setStyleDNA(null); setDnaError('');
-      setMatrixWords([]); setWordsSent(false); setWordsError('');
+      setStyleDNA(null); setDnaError(''); dnaTyped.current = false;
+      setMatrixWords([]); setWordsSent(false); setWordsError(''); wordsTyped.current = false;
       setSunoTags(''); setTagsError('');
       if (autoSaveReports) saveReportToDisk(result);
-      // Kick Style DNA extract in the background (does not block the report)
-      extractStyleDNA(result, artist.trim());
-      // And the 20 words for The Matrix and the DNA tags, from the same report, in parallel.
-      makeAnalysisWords(result, artist.trim());
+      // The Suno tags come with the report. The Style DNA and the 20 words do NOT:
+      // they are made when the AI writes a song (handleGhostWrite), and until then
+      // those two boxes stay empty for anyone who wants to type their own.
       makeAnalysisTags(result, artist.trim());
     } catch (e) {
       setErrorMsg(e.message);
@@ -293,9 +348,27 @@ export default function ArtistAnalyzer({ onGhostSend }) {
       const tags = songTags || sunoTags;
       setGhostLyrics(lyrics);
       setSunoTags(tags);
-      // The 20 words from the analysis stay; the song's own words only fill an empty list.
-      setMatrixWords((have) => (have.length ? have : (words || [])));
       track('ghostrider_song_written', { sections: (lyrics.match(/^\[[^\]]+\]\s*$/gm) || []).length });
+
+      /**
+       * THE STYLE DNA AND THE 20 WORDS ARE MADE HERE, and nowhere else. A song the
+       * AI just wrote fills both boxes. Whatever a person typed into a box stays
+       * as it is; the AI's own earlier ones are replaced by this song's.
+       */
+      if (!(wordsTyped.current && matrixWords.length)) {
+        if (words?.length) {
+          setMatrixWords(words); setWordsSent(false); setWordsError(''); wordsTyped.current = false;
+        } else {
+          // The song came back without its words: pull them from the report, or from the song itself.
+          makeAnalysisWords(analysis || lyrics, artist.trim());
+        }
+      }
+      if (!(dnaTyped.current && hasDNA(styleDNA))) {
+        setDnaError('');
+        extractStyleDNA(analysis || lyrics, artist.trim(), { loud: true })
+          .then(() => { dnaTyped.current = false; })
+          .catch((e) => setDnaError(e?.message || String(e)));
+      }
 
       /**
        * AND CHECK THE BOXES, which is what this whole tab exists to feed.
@@ -318,6 +391,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
     setArtist(''); setFocus(''); setAnalysis(''); setStyleDNA(null);
     setGhostTopic(''); setGhostLyrics(''); setSunoTags(''); setGhostSent(false);
     setMatrixWords([]); setWordsSent(false); setWordsError(''); setTagsError('');
+    setDnaError(''); wordsTyped.current = false; dnaTyped.current = false;
     setClichés([]); setPlagiarismRisk(null); setThemeCheck(null);
     setErrorMsg(''); setSaveNote(''); setSongSaveNote('');
   };
@@ -484,10 +558,10 @@ export default function ArtistAnalyzer({ onGhostSend }) {
       if (!g.ghostLyrics) throw new Error('The write came back empty. Try it again.');
       return `wrote a verse and hook in the style of ${g.artist}${g.sunoTags ? `. Suno tags: ${g.sunoTags}` : ''}${g.matrixWords.length ? `. ${g.matrixWords.length} Matrix words ready: ${g.matrixWords.join(', ')}` : ''}`;
     },
-    /** The Send words button: the 20 words pulled from the analysis, into The Matrix. */
+    /** The Send words button: the 20 words, into The Matrix. */
     ghostrider_send_words_to_matrix: () => {
       const g = ghost.current;
-      if (!g.matrixWords.length) throw new Error('No Matrix words yet. Analyze an artist first.');
+      if (!g.matrixWords.length) throw new Error('No Matrix words yet. Write a song first.');
       g.sendWordsToMatrix();
       return `sent ${g.matrixWords.length} words from ${g.artist.trim() || 'Ghost Rider'}'s analysis to The Matrix: ${g.matrixWords.join(', ')}`;
     },
@@ -525,8 +599,8 @@ export default function ArtistAnalyzer({ onGhostSend }) {
       return note;
     },
     /**
-     * SEND THE STYLE DNA TO THE MATRIX. The DNA is built in the background
-     * after a study, so wait for it, and build it now if it never came.
+     * SEND THE STYLE DNA TO THE MATRIX. The DNA is made when a song is written,
+     * so use it if it is there, and build it now when the Ghost is asked to send one.
      */
     ghostrider_send_dna_to_matrix: async () => {
       const g = () => ghost.current;
@@ -804,43 +878,57 @@ export default function ArtistAnalyzer({ onGhostSend }) {
             </div>
           )}
 
-          {/* Style DNA — rhythm, rhyme density, image clusters (4.2.0) */}
-          {analysis && (
+          {/* Style DNA — rhythm, rhyme density, image clusters (4.2.0). Made when the AI writes a song; empty and typeable until then. */}
+          {(analysis || ghostLyrics) && (
             <div
               data-demo="gr-style-dna"
               style={{ background: 'rgba(16,18,21,0.85)', border: '1px solid rgba(231,165,64,0.35)', borderRadius: 12, padding: 18 }}
-              data-help="Style DNA is a compact fingerprint pulled from the report: how they ride the beat (rhythm), how hard they rhyme (rhyme density), and recurring image clusters (metaphors/scenes). Used as a cheat sheet when you ghostwrite."
+              data-help="Style DNA is a compact fingerprint: how they ride the beat (rhythm), how hard they rhyme (rhyme density), and recurring image clusters (metaphors/scenes). It fills in when Ghost Rider writes a song, or you can type your own. Send it to The Matrix to steer your lyrics."
             >
               <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e7a540', marginBottom: 10 }}>
                 <Icon i={Dna} />Style DNA {loadingDNA ? '(building…)' : ''}
               </h4>
-              {styleDNA && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, fontSize: '0.82rem' }}>
-                  <div>
-                    <div style={{ color: 'rgba(155,161,170,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Rhythm / pocket</div>
-                    <div style={{ color: '#e6e8eb', marginTop: 4 }}>{styleDNA.rhythm || '—'}</div>
-                  </div>
-                  <div>
-                    <div style={{ color: 'rgba(155,161,170,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Rhyme density</div>
-                    <div style={{ color: '#FFD08A', marginTop: 4, fontWeight: 700 }}>{styleDNA.rhymeDensity || '—'}</div>
-                  </div>
-                  <div>
-                    <div style={{ color: 'rgba(155,161,170,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Emotional temp</div>
-                    <div style={{ color: '#E7A540', marginTop: 4 }}>{styleDNA.emotionalTemp != null ? `${styleDNA.emotionalTemp}/100` : '—'}</div>
-                  </div>
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <div style={{ color: 'rgba(155,161,170,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Cadence notes</div>
-                    <div style={{ color: '#e6e8eb', marginTop: 4 }}>{styleDNA.cadenceNotes || '—'}</div>
-                  </div>
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <div style={{ color: 'rgba(155,161,170,0.6)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Image clusters</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {(Array.isArray(styleDNA.imageClusters) ? styleDNA.imageClusters : []).map((img, i) => (
-                        <span key={i} className="suno-chip" style={{ fontSize: '0.7rem' }}>{img}</span>
-                      ))}
-                      {!styleDNA.imageClusters?.length && <span style={{ color: 'rgba(155,161,170,0.5)' }}>—</span>}
-                    </div>
-                  </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, fontSize: '0.82rem' }}>
+                <div>
+                  <div style={dnaLabel}>Rhythm / pocket</div>
+                  <input value={styleDNA?.rhythm || ''} onChange={(e) => typeDNA({ rhythm: e.target.value })} placeholder="The pocket, the feel" style={fieldStyle} />
+                </div>
+                <div>
+                  <div style={dnaLabel}>Rhyme density</div>
+                  <select value={styleDNA?.rhymeDensity || ''} onChange={(e) => typeDNA({ rhymeDensity: e.target.value })} style={{ ...fieldStyle, colorScheme: 'dark' }}>
+                    <option value="">—</option>
+                    <option value="sparse">sparse</option>
+                    <option value="balanced">balanced</option>
+                    <option value="dense">dense</option>
+                  </select>
+                </div>
+                <div>
+                  <div style={dnaLabel}>Emotional temp</div>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={100}
+                    value={styleDNA?.emotionalTemp ?? ''}
+                    onChange={(e) => typeDNA({ emotionalTemp: e.target.value === '' ? null : Math.max(0, Math.min(100, Math.round(Number(e.target.value)))) })}
+                    placeholder="0 to 100"
+                    style={fieldStyle}
+                  />
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div style={dnaLabel}>Cadence notes</div>
+                  <input value={styleDNA?.cadenceNotes || ''} onChange={(e) => typeDNA({ cadenceNotes: e.target.value })} placeholder="How the lines land" style={fieldStyle} />
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div style={dnaLabel}>Image clusters</div>
+                  <input
+                    value={imagesText}
+                    onChange={(e) => { setImagesText(e.target.value); typeDNA({ imageClusters: splitList(e.target.value) }); }}
+                    placeholder="The pictures they keep coming back to, separated by commas"
+                    style={fieldStyle}
+                  />
+                </div>
+                {hasDNA(styleDNA) && (
                   <div style={{ gridColumn: '1 / -1', marginTop: 8 }}>
                     <button
                       type="button"
@@ -868,21 +956,23 @@ export default function ArtistAnalyzer({ onGhostSend }) {
                       <Icon i={Grid3x3} />Send Style DNA to The Matrix
                     </button>
                   </div>
-                </div>
-              )}
-              {/* The card is always here. When the fingerprint did not come back it says so, and one tap tries again. */}
-              {dnaError && <div style={{ color: '#ff8a8a', fontSize: '0.78rem', marginBottom: 8 }}>{dnaError}</div>}
-              {!styleDNA && !loadingDNA && (
+                )}
+              </div>
+              {/* If the song's Style DNA did not come back it says why, and one tap tries again. */}
+              {dnaError && <div style={{ color: '#ff8a8a', fontSize: '0.78rem', marginTop: 10 }}>{dnaError}</div>}
+              {dnaError && ghostLyrics && !loadingDNA && (
                 <button
                   type="button"
-                  onClick={async () => {
+                  onClick={() => {
                     setDnaError('');
-                    try { await extractStyleDNA(analysis, artist.trim(), { loud: true }); }
-                    catch (e) { setDnaError(e?.message || String(e)); }
+                    extractStyleDNA(analysis || ghostLyrics, artist.trim(), { loud: true })
+                      .then(() => { dnaTyped.current = false; })
+                      .catch((e) => setDnaError(e?.message || String(e)));
                   }}
-                  data-help="Reads the report on screen and writes its Style DNA: rhythm, rhyme density and image clusters. Send it to The Matrix after."
+                  data-help="Tries the Style DNA for the song on screen again."
                   style={{
                     width: '100%',
+                    marginTop: 8,
                     padding: '10px',
                     borderRadius: 8,
                     border: '1px solid rgba(231,165,64,0.5)',
@@ -893,56 +983,35 @@ export default function ArtistAnalyzer({ onGhostSend }) {
                     cursor: 'pointer',
                   }}
                 >
-                  {dnaError ? 'Try again' : 'Write Style DNA from this analysis'}
+                  Try again
                 </button>
               )}
             </div>
           )}
 
-          {/* The 20 Matrix words, pulled from the analysis on screen. One tap into The Matrix. */}
-          {analysis && (
+          {/* The 20 Matrix words. Made when the AI writes a song; empty and typeable until then. One tap into The Matrix. */}
+          {(analysis || ghostLyrics) && (
             <div
               data-demo="gr-matrix-words"
               style={{ background: 'rgba(16,18,21,0.85)', border: '1px solid rgba(155,161,170,0.3)', borderRadius: 12, padding: 18 }}
-              data-help="Twenty words and phrases pulled from the analysis above, not random ones. Send them to The Matrix: they fill its 20 tiles and guide the lyrics."
+              data-help="Twenty words and phrases for The Matrix. They fill in when Ghost Rider writes a song, or you can type your own, separated by commas. Send them to The Matrix: they fill its 20 tiles and guide the lyrics."
             >
               <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e7a540', marginBottom: 10 }}>
                 <Icon i={Grid3x3} />{matrixWords.length || 20} Words for The Matrix {loadingWords ? '(pulling…)' : ''}
               </h4>
+              <textarea
+                value={wordsText}
+                onChange={(e) => typeWords(e.target.value)}
+                rows={3}
+                placeholder="Fills in when Ghost Rider writes a song. Or type your own words, separated by commas."
+                style={{ ...fieldStyle, marginTop: 0, marginBottom: 12, resize: 'vertical', lineHeight: 1.5 }}
+              />
               {matrixWords.length > 0 && (
-                <>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                    {matrixWords.map((w, idx) => (
-                      <span key={idx} className="suno-chip" style={{ fontSize: '0.7rem' }}>{w}</span>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={sendWordsToMatrix}
-                    data-demo="gr-words-send"
-                    data-help="Sends these words to The Matrix. The first 20 fill its tiles, all of them go in its keyword box. It replaces the grid that is there, so it only happens when you tap."
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      borderRadius: 8,
-                      border: '1px solid rgba(231,165,64,0.5)',
-                      background: 'rgba(33,34,36,0.5)',
-                      color: '#e6e8eb',
-                      fontWeight: 700,
-                      fontSize: '0.82rem',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <Icon i={Grid3x3} />{wordsSent ? 'Sent to The Matrix' : `Send ${matrixWords.length} words to The Matrix`}
-                  </button>
-                </>
-              )}
-              {wordsError && <div style={{ color: '#ff8a8a', fontSize: '0.78rem', marginBottom: 8 }}>{wordsError}</div>}
-              {!loadingWords && (!matrixWords.length || wordsError) && (
                 <button
                   type="button"
-                  onClick={() => makeAnalysisWords()}
-                  data-help="Pulls 20 words and phrases out of the analysis on screen."
+                  onClick={sendWordsToMatrix}
+                  data-demo="gr-words-send"
+                  data-help="Sends these words to The Matrix. The first 20 fill its tiles, all of them go in its keyword box. It replaces the grid that is there, so it only happens when you tap."
                   style={{
                     width: '100%',
                     padding: '10px',
@@ -955,10 +1024,32 @@ export default function ArtistAnalyzer({ onGhostSend }) {
                     cursor: 'pointer',
                   }}
                 >
-                  {wordsError ? 'Try again' : 'Pull 20 words from this analysis'}
+                  <Icon i={Grid3x3} />{wordsSent ? 'Sent to The Matrix' : `Send ${matrixWords.length} words to The Matrix`}
                 </button>
               )}
-              {loadingWords && !matrixWords.length && <div style={{ color: 'rgba(155,161,170,0.7)', fontSize: '0.78rem' }}>Reading the analysis…</div>}
+              {wordsError && <div style={{ color: '#ff8a8a', fontSize: '0.78rem', marginTop: 8 }}>{wordsError}</div>}
+              {wordsError && ghostLyrics && !loadingWords && (
+                <button
+                  type="button"
+                  onClick={() => makeAnalysisWords(analysis || ghostLyrics)}
+                  data-help="Tries the 20 words for the song on screen again."
+                  style={{
+                    width: '100%',
+                    marginTop: 8,
+                    padding: '10px',
+                    borderRadius: 8,
+                    border: '1px solid rgba(231,165,64,0.5)',
+                    background: 'rgba(33,34,36,0.5)',
+                    color: '#e6e8eb',
+                    fontWeight: 700,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Try again
+                </button>
+              )}
+              {loadingWords && !matrixWords.length && <div style={{ color: 'rgba(155,161,170,0.7)', fontSize: '0.78rem' }}>Pulling the words…</div>}
             </div>
           )}
 
