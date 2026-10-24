@@ -779,11 +779,11 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge }) {
       {
         role: 'system',
         content:
-          'You are a surgical lyricist. Write ONE complete song around the verse you are given. Use exactly these sections, each header in [brackets] on its own line: [Verse 1] [Chorus] [Verse 2] [Bridge] [Chorus]. [Verse 1] is the given verse, kept word for word. Every section is 4 lines. Verse 2 keeps the rhyme scheme and rhythm of Verse 1. The Chorus is a hook that repeats. The Bridge turns the song. Honor the constraints. No clichés, no explanations — output only the song. Never copy any real artist lyrics. EVERY line is a real, singable sentence with its own meaning: image, action or feeling. NEVER string keywords together as a list, never write a line that is just words separated by commas, and never repeat a line except the Chorus hook.\n' + NO_CLICHES,
+          'You are a surgical lyricist. Write ONE complete song around the verse you are given. Use exactly these sections, each header in [brackets] on its own line: [Verse 1] [Chorus] [Verse 2] [Bridge] [Chorus]. [Verse 1] is the given verse, kept word for word. Every section is 4 lines. Verse 2 keeps the rhyme scheme and rhythm of Verse 1. The Chorus is a hook that repeats. The Bridge turns the song. Honor the constraints. No clichés, no explanations — output only the song. Never copy any real artist lyrics.\n' + NO_CLICHES,
       },
       {
         role: 'user',
-        content: `Verse 1 (keep exactly):\n${verse}\n\nSeed palette: ${palette}\nRhyme scheme: ${secDna?.rhymeScheme || 'AABB'}\nStress signature: ${secDna?.stressSignature || ''}\n${pressure ? `CONSTRAINTS:\n${pressure}\n` : ''}${keywords.length ? `KEYWORDS — the imagery and themes to draw on. Work in as many as fit naturally, woven into full lines, never listed. Skip any that are about how music sounds (production, instruments, technique): ${keywords.join(', ')}\n` : ''}${spin}\nWrite the full song now.`,
+        content: `Verse 1 (keep exactly):\n${verse}\n\nSeed palette: ${palette}\nRhyme scheme: ${secDna?.rhymeScheme || 'AABB'}\nStress signature: ${secDna?.stressSignature || ''}\n${pressure ? `CONSTRAINTS:\n${pressure}\n` : ''}${keywords.length ? `KEYWORDS — use every one of these at least once across the whole song: ${keywords.join(', ')}\n` : ''}${spin}\nWrite the full song now.`,
       },
     ];
   };
