@@ -86,6 +86,9 @@ export function cleanTags(block, artist = '') {
 }
 
 /** Split, de-banned, de-named, de-duplicated, trimmed to one per tile. */
+/** How a track SOUNDS or is made. Those words are Suno tags; a lyric cannot say them. */
+const SOUND_TERMS = /\b(808|hi-?hat|ad-?libs?|vocal runs?|syncopation|cadence|tempo|bpm|acoustic|folk|synth|reverb|bassline|beat|rhythmic|rhythm|melodic|melody|internal rhyme|rhyme scheme|flow|phrasing|production|mixing|autotune|falsetto)\b/i;
+
 export function cleanMatrixWords(block, artistName, { motifs = [] } = {}) {
   const terms = nameTerms(artistName);
   const named = (w) => terms.some((t) => String(w).toLowerCase().includes(t));
@@ -93,7 +96,7 @@ export function cleanMatrixWords(block, artistName, { motifs = [] } = {}) {
   const words = clicheFree(
     String(block || '').trim().split('\n')[0].split(',')
       .map((w) => w.replace(/^["'\s]+|["'.\s]+$/g, ''))
-      .filter((w) => w.length > 1 && w.length < 40 && !named(w))
+      .filter((w) => w.length > 1 && w.length < 40 && !named(w) && !SOUND_TERMS.test(w))
   ).filter((w) => {
     const k = w.toLowerCase();
     if (seen.has(k)) return false;
