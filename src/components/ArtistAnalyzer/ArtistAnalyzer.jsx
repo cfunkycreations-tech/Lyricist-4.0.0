@@ -103,6 +103,17 @@ export default function ArtistAnalyzer({ onGhostSend }) {
   const [imagesText, setImagesText] = useState(() => (Array.isArray(boot.styleDNA?.imageClusters) ? boot.styleDNA.imageClusters.join(', ') : ''));
   const wordsTyped = useRef(false);
   const dnaTyped = useRef(false);
+  // The report, the song, or the error that says why there is none. On a phone the
+  // button you pressed is a long way above where they appear, so the page follows
+  // them there; otherwise the button just goes back to normal and it looks like
+  // nothing happened.
+  const reportRef = useRef(null);
+  const lyricsRef = useRef(null);
+  const errorRef = useRef(null);
+  const reveal = (ref) => {
+    if (!document.body.classList.contains('lyricist-mobile')) return;
+    setTimeout(() => ref.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 120);
+  };
   const [loadingGhost, setLoadingGhost] = useState(false);
   const [copied, setCopied] = useState('');
   const [ghostSent, setGhostSent] = useState(false);
@@ -233,8 +244,10 @@ export default function ArtistAnalyzer({ onGhostSend }) {
       // they are made when the AI writes a song (handleGhostWrite), and until then
       // those two boxes stay empty for anyone who wants to type their own.
       makeAnalysisTags(result, artist.trim());
+      reveal(reportRef);
     } catch (e) {
       setErrorMsg(e.message);
+      reveal(errorRef);
     } finally {
       setLoadingAnalysis(false);
     }
@@ -380,8 +393,10 @@ export default function ArtistAnalyzer({ onGhostSend }) {
        * hand with the pickers, and it fills only what is still empty.
        */
       applySongTags(store, { text: tags });
+      reveal(lyricsRef);
     } catch (e) {
       setErrorMsg(e.message);
+      reveal(errorRef);
     } finally {
       setLoadingGhost(false);
     }
@@ -829,7 +844,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
 
         {/* Error message */}
         {errorMsg && (
-          <div className="pill-red" style={{ margin: '10px 20px', padding: '10px 14px', borderRadius: 8, fontSize: '0.82rem' }}>
+          <div ref={errorRef} className="pill-red" style={{ margin: '10px 20px', padding: '10px 14px', borderRadius: 8, fontSize: '0.82rem' }}>
             {errorMsg}
           </div>
         )}
@@ -837,7 +852,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
         {/* Workspace Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20, background: 'rgba(0,0,0,0.26)' }}>
           {analysis && (
-            <div style={{ background: 'rgba(16,18,21,0.7)', border: '1px solid rgba(155,161,170,0.22)', borderRadius: 10, padding: 18 }}>
+            <div ref={reportRef} style={{ background: 'rgba(16,18,21,0.7)', border: '1px solid rgba(155,161,170,0.22)', borderRadius: 10, padding: 18 }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e6e8eb', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <BookOpen size={16} />
                 Lyrical Analysis Report: {artist}
@@ -1167,7 +1182,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
               {ghostLyrics && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 14 }}>
                   {/* Lyrics Display */}
-                  <div style={{ position: 'relative' }}>
+                  <div ref={lyricsRef} style={{ position: 'relative' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                       <span style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', color: 'rgba(155,161,170,0.6)' }}>
                         Generated Lyrics

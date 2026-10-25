@@ -15,6 +15,7 @@ import { registerGhostActions, ghostSettle } from '../../services/ghostBus.js';
 import TabBackground from '../common/TabBackground.jsx';
 import { Icon } from '../common/Glyph.jsx';
 import SunoKitPanel, { useSunoKit } from '../common/SunoKit.jsx';
+import { hasWritingAI } from '../../services/customAI.js';
 const SURPRISE_TOPICS = [
   'a long drive at 2am with the radio off',
   'burning the recipe your mom left you',
@@ -96,6 +97,8 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
   // Art-first mode state
   const [seedImage, setSeedImage] = useState(null); // { dataUrl, base64, mimeType }
   const [seedPrompt, setSeedPrompt] = useState('');
+  const [promptHint, setPromptHint] = useState('');
+  const promptRef = useRef(null);
   const [seedLoading, setSeedLoading] = useState(false);
   const [imageNotes, setImageNotes] = useState('');
 
@@ -124,8 +127,23 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
     hasWork: () => Boolean(demoRef.current.result || demoRef.current.seedImage || demoRef.current.refImage),
   }), []);
 
-  // One key: OpenRouter (lyrics + Nano Banana cover art via OpenRouter)
-  const ready = Boolean(store.config.openRouterApiKey);
+  // One key: OpenRouter (lyrics + Nano Banana cover art via OpenRouter), or the
+  // user's own AI server. Same check every other writing tab makes.
+  const ready = hasWritingAI(store.config);
+
+  // WHERE THE RESULT LANDS. On a phone the controls and the results stack in one
+  // column, so a finished song, or the error that says why there isn't one, sits
+  // below the bottom of the screen. The button went back to normal and it looked
+  // like nothing had happened (Chris, 2026-10-24: "It won't write the lyrics").
+  // After any run that ends in a song or a message, scroll the results into view.
+  const outRef = useRef(null);
+  const [reveal, setReveal] = useState(0);
+  const showResults = () => setReveal((n) => n + 1);
+  useEffect(() => {
+    if (!reveal) return;
+    if (!window.matchMedia('(max-width: 900px)').matches) return;
+    outRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }, [reveal]);
 
   const autoSaveResult = async (song, art, title) => {
     if (!autoSave || !window.lyricistAPI?.saveSongForge) return;
@@ -146,7 +164,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
 
   // Song-first: write the lyrics, then paint matching cover art
   const handleForgeSongFirst = async () => {
-    if (!ready) { setErrorMsg('Add your OpenRouter API key in Settings first — one key runs Song Forge lyrics and cover art.'); return; }
+    if (!ready) { setErrorMsg('Add your OpenRouter API key in Settings first — one key runs Song Forge lyrics and cover art.'); showResults(); return; }
     setLoading(true);
     setErrorMsg('');
     setResult(null);
@@ -174,8 +192,10 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
       setResult({ song, art, title });
       setTitleDraft(title);
       autoSaveResult(song, art, title);
+      showResults();
     } catch (e) {
       setErrorMsg(e.message);
+      showResults();
     } finally {
       setLoading(false);
       setStage('');
@@ -184,7 +204,14 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
 
   // Art-first: generate (or accept an uploaded) image, then write lyrics inspired by it
   const handleGenerateSeedImage = async () => {
-    if (!ready) { setErrorMsg('Add your OpenRouter API key in Settings first — one key runs Song Forge lyrics and cover art.'); return; }
+    if (!ready) { setErrorMsg('Add your OpenRouter API key in Settings first — one key runs Song Forge lyrics and cover art.'); showResults(); return; }
+    // A greyed-out button says nothing. The phone's bar button presses this one
+    // too, so with no description it says what is missing, right where you type.
+    if (!seedPrompt.trim()) {
+      setPromptHint('Describe the picture first, or upload your own below.');
+      promptRef.current?.focus();
+      return;
+    }
     setSeedLoading(true);
     setErrorMsg('');
     try {
@@ -193,6 +220,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
       setResult(null);
     } catch (e) {
       setErrorMsg(e.message);
+      showResults();
     } finally {
       setSeedLoading(false);
     }
@@ -220,6 +248,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
       setSeedImage(payload);
       setResult(null);
       setErrorMsg('');
+      setPromptHint('');
     } catch (err) {
       setErrorMsg('Could not read that image file.');
     }
@@ -227,8 +256,8 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
   };
 
   const handleWriteLyricsFromImage = async () => {
-    if (!ready) { setErrorMsg('Add your OpenRouter API key in Settings first — one key runs Song Forge lyrics and cover art.'); return; }
-    if (!seedImage) { setErrorMsg('Upload or generate an image first.'); return; }
+    if (!ready) { setErrorMsg('Add your OpenRouter API key in Settings first — one key runs Song Forge lyrics and cover art.'); showResults(); return; }
+    if (!seedImage) { setErrorMsg('Upload or generate an image first.'); showResults(); return; }
     setLoading(true);
     setStage('lyrics');
     setErrorMsg('');
@@ -243,8 +272,10 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
       setResult({ song, art: seedImage, title });
       setTitleDraft(title);
       autoSaveResult(song, seedImage, title);
+      showResults();
     } catch (e) {
       setErrorMsg(e.message);
+      showResults();
     } finally {
       setLoading(false);
       setStage('');
@@ -273,6 +304,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
       setResult(prev => ({ ...prev, art, title: titleDraft || prev.title }));
     } catch (e) {
       setErrorMsg(e.message);
+      showResults();
     } finally {
       setRemixLoading(false);
     }
@@ -553,16 +585,21 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                   Describe an image to create
                 </label>
                 <textarea
+                  ref={promptRef}
                   value={seedPrompt}
-                  onChange={(e) => setSeedPrompt(e.target.value)}
+                  onChange={(e) => { setSeedPrompt(e.target.value); setPromptHint(''); }}
                   placeholder="e.g. an empty diner at 3am, a busted jukebox in the corner..."
                   rows={3}
                   style={{ width: '100%', background: 'rgba(16,18,21,0.7)', border: '1px solid rgba(231,165,64,0.22)', borderRadius: 8, padding: '7px 10px', fontSize: '0.78rem', color: '#e6e8eb', outline: 'none', resize: 'vertical' }}
                 />
+                {promptHint && <div role="alert" style={{ marginTop: 6, fontSize: '0.72rem', color: '#f87171', fontWeight: 600 }}>{promptHint}</div>}
+                {/* The phone's bar button presses [data-demo="sf-forge"]. In Art First
+                    that is this button until there is a picture, then the lyrics one. */}
                 <button
                   onClick={handleGenerateSeedImage}
                   aria-busy={seedLoading}
-                  disabled={busy || !ready || !seedPrompt.trim()}
+                  data-demo={seedImage ? undefined : 'sf-forge'}
+                  disabled={busy || !ready}
                   className="btn-neon-purple"
                   style={{ marginTop: 8, width: '100%', padding: '9px', borderRadius: 8, border: 'none', color: '#fff', fontSize: '0.78rem', fontWeight: 700, cursor: busy || !ready ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
@@ -603,6 +640,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
                   <button
                     onClick={handleWriteLyricsFromImage}
                     aria-busy={loading}
+                    data-demo="sf-forge"
                     disabled={busy || !ready}
                     className="btn-neon-cyan"
                     style={{ width: '100%', padding: '11px', borderRadius: 8, border: 'none', color: '#fff', fontSize: '0.84rem', fontWeight: 700, cursor: busy || !ready ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
@@ -624,7 +662,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
         </div>
 
         {/* Results */}
-        <div className="songforge-main" style={{ background: 'rgba(8,10,13,0.45)' }}>
+        <div className="songforge-main" ref={outRef} style={{ background: 'rgba(8,10,13,0.45)' }}>
           {errorMsg && (
             <div className="pill-red" style={{ padding: '10px 14px', borderRadius: 8, fontSize: '0.82rem', marginBottom: 16 }}>
               {errorMsg}

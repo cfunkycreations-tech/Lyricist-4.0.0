@@ -1149,11 +1149,14 @@ export default function Settings() {
       </div>
 
       {/* Where the notes go: built-in, or out to a DAW as MIDI */}
-      <PlayThrough />
+      {/* desktop-only: DAW mode turns the app's own sound OFF and sends MIDI out, and a
+          phone has nowhere to send it (iPhone has no MIDI out at all), so one tap here
+          would leave MIDI Studio and the pads silent with no way to see why. */}
+      <div className="desktop-only"><PlayThrough /></div>
       <VstPlugins />
 
-      {/* Your own voice — the voice pack folder */}
-      <div style={{ marginBottom: 18 }} data-help="Record the tour in your own voice instead of the built-in one. Click the button, drop your recordings in the folder that opens, and restart the app. Name them splash.mp3 for the opening video and card-01.mp3 through card-18.mp3 for the tour cards. Anything you don't record keeps the built-in voice.">
+      {/* Your own voice — the voice pack folder. desktop-only: a phone has no folder to open. */}
+      <div className="desktop-only" style={{ marginBottom: 18 }} data-help="Record the tour in your own voice instead of the built-in one. Click the button, drop your recordings in the folder that opens, and restart the app. Name them splash.mp3 for the opening video and card-01.mp3 through card-18.mp3 for the tour cards. Anything you don't record keeps the built-in voice.">
         <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
           Your Own Voice — <span style={{ color: voiceCount > 0 ? '#34d399' : 'inherit' }}>
             {voiceCount > 0 ? `${voiceCount} recording${voiceCount === 1 ? '' : 's'} in use` : 'using the built-in voice'}

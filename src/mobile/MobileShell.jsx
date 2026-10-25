@@ -356,6 +356,21 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard, onGho
     if (actionNeedsKey) { go('settings', { push: true }); return; }
     const el = findVisible(action.hook);
     if (!el) return;
+    if (el.disabled) {
+      // A greyed-out button is waiting on something, almost always the first box
+      // above it that is still empty (Ghost Rider's artist, Voice Lab's script).
+      // Go there and open it, so the bar button never just sits there doing nothing.
+      const empty = [...document.querySelectorAll('input, textarea')].find((f) => (
+        isField(f) && !f.value && !f.disabled && !f.readOnly && f.getClientRects().length
+        && !f.closest('.mob-root')
+        && (el.compareDocumentPosition(f) & Node.DOCUMENT_POSITION_PRECEDING)
+      ));
+      if (empty) {
+        empty.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        setTimeout(() => empty.focus(), 350);
+        return;
+      }
+    }
     el.scrollIntoView({ block: 'center', behavior: 'smooth' });
     if (!el.disabled) setTimeout(() => el.click(), 300);
   };
