@@ -692,7 +692,7 @@ export default function GhostDemo({ tabId, onClose }) {
         if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) {
           field = el.querySelector('textarea, input') || el;
         }
-        await typeLikeHuman(field, step.typeText, runId);
+        await typeLikeHuman(field, typeof step.typeText === 'function' ? step.typeText() : step.typeText, runId);
         setStatusLine(`Typed into ${step.target || 'field'}`);
       } else if (action === 'click' && el) {
         // Default: really operate the control

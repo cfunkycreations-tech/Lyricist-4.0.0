@@ -341,7 +341,8 @@ export default function PhoneGhost({ tabId, onClose }) {
         if (field) {
           // No focus(): on a phone that throws the keyboard up over half the screen.
           let built = '';
-          for (const ch of s.typeText) {
+          const text = typeof s.typeText === 'function' ? s.typeText() : s.typeText;
+          for (const ch of text) {
             if (isDead(id)) return;
             built += ch;
             setReactValue(field, built);

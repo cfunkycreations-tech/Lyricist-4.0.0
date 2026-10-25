@@ -6,6 +6,8 @@
 // desktopOnly: true for lines that are only true on Windows; the phone skips them.
 // ============================================================
 
+import { nextTrendingArtist } from '../../services/trendingArtists.js';
+
 export const GHOST_DEMO_TABS = new Set([
   'songwriter',
   'onemanband',
@@ -325,7 +327,7 @@ export const GHOST_DEMOS = {
         target: '[data-demo="gr-artist"]',
         say: 'Typing an example artist name…',
         action: 'type',
-        typeText: 'Kendrick Lamar',
+        typeText: nextTrendingArtist, // rotates through who's trending on TikTok
         wait: 2000,
       },
       {

@@ -17,13 +17,16 @@
 //   target   where he points (a CSS selector). It glows, and so does its label.
 //   glow     extra selectors that glow with it.
 //   action   'point' (default) | 'type' | 'click'. 'click' really presses it.
-//   typeText what 'type' types.
+//   typeText what 'type' types. A function is called when he types, so the
+//            Ghost Rider demo can rotate through the TikTok-trending artists.
 //   optional the control only exists after a result. He says the same line
 //            from the middle of the screen, so it is worded to be true either way.
 // Nothing here presses a button that spends the user's AI credit or opens
 // their microphone. Those are pointed at, never pressed.
 // Never use the words in src/services/cliches.js, and never call the app free.
 // ============================================================
+
+import { nextTrendingArtist } from '../services/trendingArtists.js';
 
 /** @type {Record<string, { title: string, steps: object[] }>} */
 export const PHONE_GHOST = {
@@ -68,7 +71,7 @@ export const PHONE_GHOST = {
     title: 'Ghost Rider',
     steps: [
       { line: "This is Ghost Rider. My favorite, for obvious reasons. Name an artist, and it figures out how they write. Then it hands all of that to the rest of the app." },
-      { target: '[data-demo="gr-artist"]', action: 'type', typeText: 'Kendrick Lamar', line: "Let's try one. I'll type a name." },
+      { target: '[data-demo="gr-artist"]', action: 'type', typeText: nextTrendingArtist, line: "Let's try one. I'll type a name." },
       { target: '[data-demo="gr-analyze"]', line: "Then tap Analyze. It studies their rhymes, their rhythm, their favorite words, and writes you a report. It runs on your AI key." },
       { target: '[data-demo="gr-matrix-words"]', optional: true, line: "These are your twenty words for The Matrix. They stay empty until Ghost Rider writes you a song, then they fill themselves in. Or type your own. I won't tell anyone." },
       { target: '[data-demo="gr-words-send"]', optional: true, line: "Then one tap on Send to The Matrix, and all twenty land in its grid. No copying, no pasting." },
