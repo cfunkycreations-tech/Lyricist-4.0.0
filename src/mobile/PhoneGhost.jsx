@@ -3,7 +3,8 @@ import { phoneGhostFor, phoneGhostKey } from './phoneGhostScripts.js';
 import { captureAll, restoreAll } from '../services/demoSafety.js';
 import { playBed, bedFor, primeBed, dropPrimedBed } from '../services/ghostBed.js';
 import { withFades } from '../services/clipFade.js';
-import ghostArt from '../assets/ghost-logo.png';
+import GhostFace from '../components/GhostFace/GhostFace.jsx';
+import { FACE } from '../assets/ghost-face/layout.js';
 import './PhoneGhost.css';
 
 /**
@@ -31,8 +32,8 @@ export function phoneGhostReady(tabId) {
   return Object.keys(CLIPS).some((k) => k.startsWith(`../assets/ghost-vo-phone/${phoneGhostKey(tabId)}-`));
 }
 
-const SIZE = 96;                  // the ghost, in CSS px
-const TIP = { x: 0.655, y: 0.973 }; // his mic stand's foot, as a share of the art
+const SIZE = 112;                 // the ghost, in CSS px (his face moves now, so it has to be big enough to see)
+const TIP = { x: FACE.tip[0], y: FACE.tip[1] }; // his mic stand's foot, as a share of the art
 const MUSIC_KEY = 'lyricistGhostMusic';
 const BED_LEVEL = 0.3;
 const BED_UNDER_VOICE = 0.12;
@@ -139,6 +140,7 @@ export default function PhoneGhost({ tabId, onClose }) {
   const pausedRef = useRef(false);
   const pointRef = useRef(point);
   const audioRef = useRef(null);
+  const clipIdRef = useRef(null);                // the line he is saying, for his mouth
   const bedRef = useRef(null);
   const snapshotRef = useRef(null);
   const glowRef = useRef([]);
@@ -201,6 +203,7 @@ export default function PhoneGhost({ tabId, onClose }) {
         audioRef.current = a;
       }
       a.src = url;
+      clipIdRef.current = clipId;
       let failed = false;
       a.onerror = () => { failed = true; };
       try { await a.play(); } catch { failed = true; }
@@ -398,6 +401,12 @@ export default function PhoneGhost({ tabId, onClose }) {
   };
 
   const g = ghostSpot(point.x, point.y, below);
+  // His mouth: which clip is playing and how far in. Null while he is quiet.
+  const speech = useCallback(() => {
+    const a = audioRef.current;
+    const id = clipIdRef.current;
+    return a && id && !a.paused && !a.ended ? { id, t: a.currentTime } : null;
+  }, []);
 
   return (
     <div className={`pg-root ${leaving ? 'is-leaving' : ''}`} aria-label={`The Ghost is showing you ${demo?.title || 'this tool'}`}>
@@ -414,7 +423,7 @@ export default function PhoneGhost({ tabId, onClose }) {
 
       <div className={`pg-ghost ${g.flip ? 'is-flip' : ''}`} style={{ transform: `translate3d(${g.left}px, ${g.top}px, 0)`, width: SIZE, height: SIZE }}>
         <div className="pg-bob">
-          <img src={ghostArt} alt="" draggable={false} />
+          <GhostFace kind="phone" speech={speech} look={{ x: 0, y: below ? -0.9 : 0.9 }} />
         </div>
       </div>
 

@@ -17,7 +17,7 @@ import { playBed, bedFor } from '../../services/ghostBed.js';
 // tail in ghost-logo.png was rebuilt from the logo itself (full size in
 // marketing/ghost-logo-full.png). The Ask-the-Ghost hand keeps ghost-sprite.png:
 // its fingertip is what lands on the control it presses.
-import ghostArt from '../../assets/ghost-logo.png';
+import GhostFace from '../GhostFace/GhostFace.jsx';
 import './GhostDemo.css';
 
 /** The phone build. App.jsx puts this class on <body>; the phone CSS hangs off it too. */
@@ -328,6 +328,12 @@ export default function GhostDemo({ tabId, onClose }) {
   }, [showGhost]);
   const voiceOnRef = useRef(true);
   const audioRef = useRef(null);
+  const clipIdRef = useRef(null);                 // the line he is saying, for his mouth
+  const speech = useCallback(() => {
+    const a = audioRef.current;
+    const id = clipIdRef.current;
+    return a && id && !a.paused && !a.ended ? { id, t: a.currentTime } : null;
+  }, []);
 
   // Background music under the narration. Its own button, on by default and
   // remembered. Ducked while the Ghost is talking, back up between lines.
@@ -393,6 +399,7 @@ export default function GhostDemo({ tabId, onClose }) {
     a.onloadedmetadata = null;
     a.onerror = null;
     a.src = clipFor(id);
+    clipIdRef.current = id;
     // Slow/Fast changes the pace of the whole walkthrough; the voice follows it
     // rather than desyncing from the captions. Clamped because the browser
     // refuses rates outside this range and throws.
@@ -813,11 +820,11 @@ export default function GhostDemo({ tabId, onClose }) {
             aria-hidden
           >
             <div className="ghost-demo-sprite-wrap" style={{ width: fig.size, height: fig.size }}>
-              <img
+              <GhostFace
                 className="ghost-demo-sprite"
-                src={ghostArt}
-                alt=""
-                draggable={false}
+                kind="desktop"
+                speech={speech}
+                look={{ x: fig.flip ? -0.4 : 0.4, y: fig.below ? -0.9 : 0.9 }}
                 style={{ width: fig.size, height: fig.size }}
               />
             </div>

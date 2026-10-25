@@ -59,17 +59,12 @@
   height: 100%;
   animation: pg-bob 2.6s ease-in-out infinite;
 }
-.pg-ghost img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-  /* Black outline on a black app: a soft lift so he never sinks into it. */
+.pg-ghost .gf {
+  /* Black outline on a black app: a soft lift so he never sinks into it. On the
+     whole face, not each layer, or every patch would cast its own shadow. */
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.7));
-  -webkit-user-drag: none;
-  user-select: none;
 }
-.pg-ghost.is-flip img { transform: scaleX(-1); }
+.pg-ghost.is-flip .gf { transform: scaleX(-1); }
 @keyframes pg-bob {
   0%, 100% { transform: translateY(0) rotate(-1.5deg); }
   50% { transform: translateY(-5px) rotate(1.5deg); }
