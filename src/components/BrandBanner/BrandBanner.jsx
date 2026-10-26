@@ -243,12 +243,21 @@ export default function BrandBanner() {
     resize();
 
     let raf = 0, last = performance.now();
+    let folded = false;
     const live = (name, now) => sceneRef.current === name || now - (shownAt.current[name] || 0) < FADE_MS + 100;
     const frame = (now) => {
       raf = requestAnimationFrame(frame);
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
-      if (!st.W || !st.H || document.hidden) return;
+      // Folded away (the Banner pad, or the Ghost on screen): draw nothing and
+      // hold the video, then pick it back up when it opens again.
+      const fold = root.clientHeight === 0;
+      if (fold !== folded) {
+        folded = fold;
+        const v = videoRefs.current[sceneRef.current];
+        if (v) { if (fold) v.pause(); else v.play().catch(() => {}); }
+      }
+      if (fold || !st.W || !st.H || document.hidden) return;
       const t = REDUCED_MOTION ? 0 : now / 1000;
       if (live('bars', now) && barsRef.current) {
         if (!st.analyser) {

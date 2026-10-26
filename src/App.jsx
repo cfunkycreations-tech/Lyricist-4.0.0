@@ -59,7 +59,7 @@ import GhostPilotLayer from './components/Ghost/GhostPilotLayer.jsx';
 import PushHeader from './components/PushHeader/PushHeader.jsx';
 import BrandBanner from './components/BrandBanner/BrandBanner.jsx';
 import { track, isEnabled as analyticsEnabled } from './services/analytics.js';
-import { Compass, Ghost, Play, Lightbulb, KeyRound, Lock, Smartphone } from 'lucide-react';
+import { Compass, Ghost, Play, Lightbulb, KeyRound, Lock, Smartphone, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { OPEN_EVENT as PHONE_INVITE_EVENT } from './web/PhoneInvite.jsx';
 import { hasWritingAI } from './services/customAI.js';
 // The still header art is no longer imported here. The header became the
@@ -270,6 +270,19 @@ function MainLayout() {
   const [quantumForgeSeed, setQuantumForgeSeed] = useState(null);
   const [showWizard, setShowWizard] = useState(false);
   const [showGhostDemo, setShowGhostDemo] = useState(false);
+  // The desktop banner, shown or folded away (the Banner pad in the header).
+  const [bannerShown, setBannerShown] = useState(() => {
+    let shown = true;
+    try { shown = localStorage.getItem('lyricistBanner') !== 'off'; } catch { /* storage blocked */ }
+    // Before the first paint, so a folded banner starts folded instead of
+    // folding itself up on every launch.
+    document.documentElement.classList.toggle('banner-hidden', !shown);
+    return shown;
+  });
+  useEffect(() => {
+    document.documentElement.classList.toggle('banner-hidden', !bannerShown);
+    try { localStorage.setItem('lyricistBanner', bannerShown ? 'on' : 'off'); } catch { /* storage blocked */ }
+  }, [bannerShown]);
   // Promo runs (mobile/promoScripts.js): the picker opens from a long-press on
   // the phone's Ghost button, or straight away with ?promo in the address.
   const [promoPicker, setPromoPicker] = useState(() => new URLSearchParams(window.location.search).has('promo'));
@@ -559,6 +572,32 @@ function MainLayout() {
               <span><Compass size={18} strokeWidth={1.6} /></span>
               Take the Tour
             </button>}
+
+            {/* Banner switch. Chris, 2026-10-26: with the banner up, a tool gets
+                "two inches of space" to scroll in. Off folds it away and gives
+                the room to the tool; remembered between sessions. */}
+            <button
+              onClick={() => setBannerShown((v) => !v)}
+              aria-pressed={bannerShown}
+              data-help="Shows or hides the big Lyricist Pro banner at the top. Hide it to give the tool below the whole screen. Remembered next time."
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                padding: '4px 12px',
+                borderRadius: 9999,
+                cursor: 'pointer',
+                background: bannerShown ? 'rgba(155,161,170,0.18)' : 'rgba(78,80,83,0.15)',
+                color: bannerShown ? '#e6e8eb' : 'rgba(170,150,160,0.7)',
+                border: `1px solid ${bannerShown ? 'rgba(155,161,170,0.5)' : 'rgba(140,120,130,0.35)'}`,
+                transition: 'all 0.15s'
+              }}
+            >
+              <span>{bannerShown ? <PanelTopClose size={18} strokeWidth={1.6} /> : <PanelTopOpen size={18} strokeWidth={1.6} />}</span>
+              Banner: {bannerShown ? 'On' : 'Off'}
+            </button>
 
             {/* Ghost Demo master switch — optional; remembered between sessions */}
             <button

@@ -4,6 +4,7 @@
 .brand-banner {
   position: relative; flex-shrink: 0; height: var(--brand-banner-h);
   display: flex; justify-content: center; background: #000; overflow: hidden;
+  transition: height .35s ease;      /* the Banner pad folds it, not snaps it */
 }
 @media (max-height: 620px) { .brand-banner { display: none; } }
 
