@@ -6,13 +6,16 @@ import './SplashIntro.css';
 /**
  * THE OPENING ANIMATION.
  *
- * 15.4 seconds with Chris's splash track under it. The picture is Cinema 4D:
+ * 14.2 seconds with Chris's splash track under it. The picture is Cinema 4D:
  * scripts/logo_c4d.py for the first 90 frames and scripts/splash_c4d.py for
  * the next 373, rendered on the Standard engine and cut together. The badge
  * lands, a bar of light crosses it, it is pulled into its own black hole, and
  * the chrome title grows back out of the same point. The splash half runs long
  * so the picture ends exactly with the music: 463 frames at 30 fps against a
- * 15.418 s track, nothing trimmed off either.
+ * 15.418 s track, nothing trimmed off either. Chris, 2026-10-25: "speeding the
+ * whole splash up 1 sec or 1.5". Picture and track were both sped up x1.088
+ * (track pitch kept), so it is 425 frames against 14.19 s and still ends
+ * together on "Austin, Texas".
  *
  * WHERE IT PLAYS: EVERYWHERE, EVERY LAUNCH. The desktop app, desktop browsers,
  * and the phone app held sideways OR upright. Chris, 2026-10-23, after it had

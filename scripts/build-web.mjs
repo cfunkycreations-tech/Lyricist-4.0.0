@@ -167,6 +167,50 @@ fs.writeFileSync(path.join(WEB, '404.html'),
   + '<title>Not here</title><body style="background:#04060f;color:#e6e8eb;font:16px system-ui;padding:24px">'
   + 'That page is not here. <a href="./" style="color:#ffb25a">Open Lyricist Pro</a></body>');
 
+// A stray splash.mp4 is the old card.
+for (const f of fs.readdirSync(WEB)) {
+  if (/^splash\.mp4$/i.test(f)) fs.rmSync(path.join(WEB, f), { force: true });
+}
+
+// Stamp the service worker with the bundle hash so every deploy gets a fresh
+// cache and the old caches (and anything stale in them) are wiped on activate.
+{
+  const html = fs.readFileSync(path.join(WEB, 'index.html'), 'utf8');
+  const m = html.match(/assets\/index-([\w-]+)\.js/);
+  if (!m) throw new Error('Could not read the bundle hash from dist-web/index.html');
+  const swp = path.join(WEB, 'sw.js');
+  const sw = fs.readFileSync(swp, 'utf8');
+  if (!sw.includes('__WEB_STAMP__')) throw new Error('sw.js has no __WEB_STAMP__ to stamp');
+  fs.writeFileSync(swp, sw.replace('__WEB_STAMP__', m[1]));
+  console.log(`  stamped sw.js with ${m[1]}`);
+}
+
+// The old "goes Quantum" card must never ship again. Any trace in the bundle
+// fails the build loudly.
+{
+  const bad = new RegExp(['goes[ -]?', 'quantum'].join(''), 'i');
+  const badArt = new RegExp(['app-key-art', 'press-square', 'press-header', 'header-wordmark',
+    'header-banner', 'header-medallion', 'quantum-banner', 'quantum-lab-medallion', 'quantum-medallion',
+    'footer-medallion-new', 'cfunky-logo-new', 'cannabis', 'with-leaf', 'green-leaf', 'icon-quantum',
+    'atom-symbol-2k'].join('|'), 'i');
+  const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => {
+    const f = path.join(d, e.name);
+    return e.isDirectory() ? walk(f) : [f];
+  });
+  const hits = [];
+  for (const f of walk(WEB)) {
+    const rel = path.relative(WEB, f);
+    if (badArt.test(rel) || /(^|\/)splash\.mp4$/i.test(rel)) hits.push(rel);
+    // The rhyme dictionary (cmudict) is plain English words, "cannabis" among
+    // them; its file name is still checked above, its words are not.
+    else if (/\.(html|js|css|json|webmanifest|txt)$/i.test(f) && !/cmudict/i.test(rel) && fs.statSync(f).size < 20e6) {
+      const t = fs.readFileSync(f, 'utf8');
+      if (f.endsWith('sw.js') ? false : (bad.test(t) || badArt.test(t))) hits.push(rel);
+    }
+  }
+  if (hits.length) throw new Error(`The old Quantum card is in the web build: ${hits.slice(0, 8).join(', ')}`);
+}
+
 const after = sizeOf(WEB);
 
 // A PWA must be served over https from its own origin. Leaving a stray

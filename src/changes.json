@@ -1,13 +1,35 @@
 {
-  "generated": "2026-10-21",
-  "total": 338,
+  "generated": "2026-10-23",
+  "total": 350,
   "days": [
+    {
+      "date": "2026-10-23",
+      "items": [
+        "Phone splash: slow the animation to run the whole track",
+        "Phone splash: play the whole SPLASHST track"
+      ]
+    },
+    {
+      "date": "2026-10-22",
+      "items": [
+        "Destroy the old Quantum leaf card everywhere; SW wipes old caches each deploy; build and preflight refuse it back",
+        "Phone splash: centre the widened clip when upright",
+        "Phone: launch splash is his Logo-Splash picture with the SPLASHST track",
+        "Phone: splash plays with its soundtrack, What's New list removed",
+        "Phone: remove the amber line under the top bar"
+      ]
+    },
     {
       "date": "2026-10-21",
       "items": [
-        "Throw away the 4.2.0 goes Quantum splash",
-        "Phone: opener and change list off",
-        "One-word switch for the opener on phones",
+        "Phone: bar drops 14px below the status bar / island",
+        "Phone: solid top bar, no backdrop blur anywhere on the phone",
+        "Phone: hide pads header on all phones, drop shell bar 8px, Matrix results print under Auto-Craft, tappable key prompt",
+        "C4D clips: mp4 first, webm fallback, so Safari plays them on the phone",
+        "Phone landscape: Cinema 4D strip on the launcher; Auto banner opens on Orbit; picked scene plays under reduced motion",
+        "Banner: Cinema 4D orbit, lyrics and molten renders play as scenes",
+        "Ghost demo: fold the top banner while the Ghost works; aim only after scroll settles",
+        "dist-web: rebuild phone bundle with the launch splash and landscape header",
         "Phone landscape header, Ghost Rider DNA tags, Matrix on the phone",
         "Builds 183 and 184: opener with the splash track; phone redeployed",
         "Splash track under the opener, whole thing, picture cut to fit it",

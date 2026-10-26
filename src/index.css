@@ -363,6 +363,10 @@ h1.gradient-title {
    --brand-banner-h off too, so the player and footer stay on screen. */
 :root { --brand-banner-h: clamp(0px, min(36vh, 100vh - 440px), 440px); }
 @media (max-height: 620px) { :root { --brand-banner-h: 0px; } }
+/* While the Ghost Demo or the Ghost's hand is on screen the banner folds away
+   so it never covers what he is pointing at (services/ghostBanner.js). */
+html.ghost-active { --brand-banner-h: 0px; }
+html.ghost-active .brand-banner { height: 0; }
 /* .brand-banner itself: components/BrandBanner/BrandBanner.css. */
 
 .output-cosmic {

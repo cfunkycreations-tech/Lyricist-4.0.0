@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { getGhostDemo } from './ghostDemoScripts.js';
 import { captureAll, restoreAll } from '../../services/demoSafety.js';
 import { playBed, bedFor } from '../../services/ghostBed.js';
+import { holdBannerClosed } from '../../services/ghostBanner.js';
 // The ghost portrait (ghost.demo.png) was stripped 2026-08-27 with the rest of
 // the artwork. Chris, later same day, watching a test recording: *"if you built
 // it right, I don't want the cursor to say remote on it. It needs to look like
@@ -497,6 +498,24 @@ export default function GhostDemo({ tabId, onClose }) {
     }
   };
 
+  /**
+   * A smooth scroll outlasts any fixed wait. Measuring the target mid-scroll
+   * put the ghost, the highlight and the bubble where the control WAS, off the
+   * bottom of the screen. Wait until the target has stopped moving.
+   */
+  const settleScroll = async (el, runId) => {
+    let last = '';
+    let still = 0;
+    for (let n = 0; n < 90 && still < 4; n += 1) {
+      if (isDead(runId)) return;
+      await new Promise((r) => requestAnimationFrame(r));
+      const r = el.getBoundingClientRect();
+      const now = `${Math.round(r.top)}:${Math.round(r.left)}`;
+      still = now === last ? still + 1 : 0;
+      last = now;
+    }
+  };
+
   const animateCursorTo = (x, y, duration = 850, runId) =>
     new Promise((resolve) => {
       const from = { ...cursorRef.current };
@@ -661,7 +680,7 @@ export default function GhostDemo({ tabId, onClose }) {
 
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-        await wait(220 * speedRef.current, runId);
+        await settleScroll(el, runId);
         const r = el.getBoundingClientRect();
         tx = r.left + Math.min(r.width * 0.55, r.width - 8);
         ty = r.top + r.height / 2;
@@ -752,8 +771,10 @@ export default function GhostDemo({ tabId, onClose }) {
   useEffect(() => {
     const myId = ++runIdRef.current;
     cancelRef.current = false;
+    const openBanner = holdBannerClosed();
     runDemoRef.current(myId);
     return () => {
+      openBanner();
       cancelRef.current = true;
       bedWantedRef.current = false;
       stopBed();

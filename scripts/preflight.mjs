@@ -181,11 +181,57 @@ function checkSourceIndexHtml() {
   return 1;
 }
 
+/**
+ * THE OLD "GOES QUANTUM" CARD (the pot-leaf one) MUST NEVER COME BACK.
+ *
+ * Chris deleted it on purpose and his phone kept showing it from a stale cache.
+ * The art, the clip and the name are gone from the repo; this fails the release
+ * if any of them is put back. The patterns are built from pieces so this file
+ * does not match itself.
+ */
+function checkNoQuantumSplash() {
+  const name = new RegExp(['goes[ -]?', 'quantum'].join(''), 'i');
+  const art = new RegExp(['app-key-art', 'press-square', 'press-header', 'header-wordmark',
+    'header-banner', 'header-medallion', 'quantum-banner', 'quantum-lab-medallion',
+    'quantum-medallion', 'footer-medallion-new', 'cfunky-logo-new', 'cannabis',
+    'with-leaf', 'green-leaf', 'icon-quantum', 'atom-symbol-2k'].join('|'), 'i');
+  const skip = new Set(['node_modules', 'dist', 'dist-web', 'release', '.git']);
+  const hits = [];
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (skip.has(e.name)) continue;
+      const f = path.join(dir, e.name);
+      if (e.isDirectory()) { walk(f); continue; }
+      const rel = path.relative(ROOT, f).replace(/\\/g, '/');
+      if (rel === 'public/sw.js') continue;   // its kill list names the dead files on purpose
+      if (art.test(rel) || /(^|\/)splash\.mp4$/i.test(rel)) { hits.push(rel); continue; }
+      if (/\.(jsx?|css|html|json|md|txt|webmanifest)$/i.test(rel) && fs.statSync(f).size < 3e6) {
+        const t = fs.readFileSync(f, 'utf8');
+        if (name.test(t) || art.test(t)) hits.push(rel);
+      }
+    }
+  };
+  for (const d of ['src', 'public', 'lyricist-site']) {
+    if (fs.existsSync(path.join(ROOT, d))) walk(path.join(ROOT, d));
+  }
+  for (const f of ['package.json', 'AI_HANDOFF.md', 'WIZARD-RECORDING-SCRIPT.md']) {
+    if (!fs.existsSync(path.join(ROOT, f))) continue;
+    const t = fs.readFileSync(path.join(ROOT, f), 'utf8');
+    if (name.test(t) || art.test(t)) hits.push(f);
+  }
+  if (hits.length) {
+    problems.push('The old Quantum card is back: ' + hits.slice(0, 8).join(', ')
+      + '. Delete it. Chris does not want that splash anywhere.');
+  }
+  return 1;
+}
+
 const channels = checkDuplicateIpcHandlers();
 const bridged = checkPreloadChannels();
 const mainModules = checkPackagedMainModules();
 const runtimeAssets = checkPackagedRuntimeAssets();
 checkSourceIndexHtml();
+checkNoQuantumSplash();
 problems.push(...openerProblems(ROOT));
 
 if (problems.length) {

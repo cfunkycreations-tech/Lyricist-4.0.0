@@ -22,6 +22,9 @@
 
 /* The black hole loop stretched across, so the disc runs out of both sides. */
 .bb-disc { object-fit: fill; transform: scaleY(1.15); }
+/* The Cinema 4D renders are 16:9; the banner is a wide strip, so they fill it
+   and crop top and bottom around the middle. */
+.bb-orbit, .bb-lyrics, .bb-molten { object-fit: cover; object-position: 50% 50%; background: #000; }
 
 /* Song info: what's playing on the left, the song on the right, both leaning
    in towards the logo. */

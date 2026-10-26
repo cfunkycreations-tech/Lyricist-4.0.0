@@ -17,7 +17,7 @@
 body.lyricist-mobile .tab-nav-scroll { display: none !important; }
 /* Never on the phone, upright or sideways: Chris, 2026-10-23, "that top bar is not
    supposed to be in the phone app." (A landscape-only copy of it was added in #89
-   and removed here.) */
+   and removed here.) The launcher carries the animations (Cinema 4D strip). */
 body.lyricist-mobile .header-cosmic { display: none !important; }
 
 /* Push the whole app column below the 44px bar. The shell is position:fixed so
@@ -36,7 +36,8 @@ body.lyricist-mobile .header-cosmic { display: none !important; }
    starts the island's own safe area PLUS a 20px gap below it, and everything
    above the bar is painted solid black (.mob-root::before). The gap is
    min(inset, 20px) so a phone with no notch, or one held sideways (inset 0),
-   loses nothing. Every "below the bar" offset reads this one variable. */
+   loses nothing. Every "below the bar" offset reads this one variable.
+   Landscape redefines it further down. */
 body.lyricist-mobile {
   --mob-top: calc(env(safe-area-inset-top, 0px) + min(env(safe-area-inset-top, 0px), 20px));
 }
@@ -156,7 +157,8 @@ body.lyricist-mobile .app-footer  { display: none !important; }
   /* Solid, not frosted glass: the backdrop blur is what made the bar read
      blurred on the phone. */
   background: #08090b;
-  border-bottom: 1px solid rgba(231, 165, 64, 0.22);
+  /* No border line: the bar and the black strip above it (.mob-root::before)
+     read as one seamless block. */
 }
 
 .mob-wordmark {
@@ -846,3 +848,44 @@ body.lyricist-mobile .mob-wrap > input { min-width: 0; flex-basis: 100% !importa
 /* Settings that only the Windows app can use (Modal) stay off the phone, where
    they could only be filled in and then do nothing. */
 body.lyricist-mobile .desktop-only { display: none !important; }
+
+/* ── landscape: the 44px bar sits a hand's width below the top edge ───────
+   Flush at y=0 it gets clipped by the browser chrome and rounded corners, so it
+   drops by the notch or 8px, whichever is more. Everything under it follows. */
+@media (orientation: landscape) and (min-width: 640px) {
+  body.lyricist-mobile { --mob-top: max(env(safe-area-inset-top, 0px), 8px); }
+  body.lyricist-mobile .min-h-screen { padding-top: calc(44px + var(--mob-top)); }
+  .mob-root { padding-top: var(--mob-top); }
+  .mob-sheet { top: calc(44px + var(--mob-top) + 6px); }
+}
+
+/* ── the Cinema 4D strip on the launcher (phone held sideways) ───────────── */
+.mob-c4d {
+  position: relative;
+  flex: 0 0 auto;
+  height: 96px;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(231, 165, 64, 0.30);
+  background: #000;
+}
+.mob-c4d-v {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+  pointer-events: none;
+}
+.mob-c4d-v[data-on="true"] { opacity: 1; }
+
+/* No backdrop blur anywhere on the phone: the floor is flat black, so it only
+   smears panel edges and the strip under the bar. Panels keep their colour. */
+body.lyricist-mobile *,
+body.lyricist-mobile *::before,
+body.lyricist-mobile *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}

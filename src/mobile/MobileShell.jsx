@@ -6,6 +6,7 @@ import { useLyricStore } from '../context/LyricStore.jsx';
 import { isEnabled as analyticsEnabled } from '../services/analytics.js';
 import { useInstallOffer } from './install.js';
 import { hasWritingAI } from '../services/customAI.js';
+import MobileC4dStrip from './MobileC4dStrip.jsx';
 import { phoneGhostFor } from './phoneGhostScripts.js';
 import { primePhoneGhost } from './PhoneGhost.jsx';
 import ghostIcon from '../assets/ghost-logo-icon.png';
@@ -487,6 +488,7 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard, onGho
       {/* THE LAUNCHER. Hidden rather than unmounted while a tool is open, so
           coming home is instant and never re-fetches its icons. */}
       <div className={`mob-home ${openId ? 'is-hidden' : ''}`}>
+        <MobileC4dStrip active={!openId} />
         {/* THE KEY, FIRST. The desktop "Start here" card is far too tall for a
             phone and is hidden there, which left the phone with no word at all
             about the one thing the writing tools need. This is that card at

@@ -41,6 +41,8 @@ const PLUMBING = [
   /^merge /i,
   /^revert /i,
   /counter to \d+/i,
+  // The old splash card is gone for good; its commit lines never print.
+  new RegExp(['goes[ -]?', 'quantum'].join(''), 'i'),
 ];
 
 const REC = String.fromCharCode(1);   // between commits

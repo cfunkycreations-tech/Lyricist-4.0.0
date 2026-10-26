@@ -141,7 +141,7 @@ h1,h2,h3{font-family:var(--display);font-weight:400;line-height:1.08;margin:0}
 .hero{padding-bottom:20px}
 .hero-art{display:block;position:relative}
 .hero-art img{
-  width:100%;
+  width:100%;max-width:760px;height:auto;margin:0 auto;display:block;
   /* The art carries the title, so it is never scrimmed or cropped hard. */
   border-bottom:1px solid rgba(0,229,255,.22);
 }
