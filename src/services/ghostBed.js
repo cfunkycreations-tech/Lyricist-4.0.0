@@ -48,10 +48,32 @@ async function decode(url, ctx) {
  * level() ramps, pause() holds the music where it is, stop() fades and frees
  * the audio device. Safe to stop before it ever started.
  */
+/**
+ * An audio context made and woken inside a tap, for the next playBed to use.
+ * iPhone keeps a context made any later than the tap itself silent; see
+ * primeGhostAudio in GhostDemo.jsx, the only caller.
+ */
+let primed = null;
+export function primeBed() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC || primed) return;
+  try {
+    primed = new AC();
+    primed.resume().catch(() => {});
+  } catch { primed = null; }
+}
+
+/** Close a primed context nothing used (the music was off, or no bed loaded). */
+export function dropPrimedBed() {
+  if (primed) primed.close().catch(() => {});
+  primed = null;
+}
+
 export function playBed(bed, { level = 0.35, fadeIn = 2 } = {}) {
   const AC = window.AudioContext || window.webkitAudioContext;
   if (!bed || !AC) return { level() {}, pause() {}, resume() {}, stop() {} };
-  const ctx = new AC();
+  const ctx = primed || new AC();
+  primed = null;
   const gain = ctx.createGain();
   gain.gain.value = 0;
   gain.connect(ctx.destination);
