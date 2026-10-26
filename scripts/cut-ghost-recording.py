@@ -1,6 +1,10 @@
 """Cut a long Voice Lab recording into one clip per Ghost line.
 
-    python scripts/cut-ghost-recording.py <recording.wav> <tab> [--write]
+    python scripts/cut-ghost-recording.py <recording.wav> <tab> [--write] [--only id,id]
+
+--only cuts just those lines: for a short re-take of a few lines, where a
+two-word line elsewhere ("Make the song.") can score 0.80 on a stray "the song"
+and get overwritten.
 
 Tabs: songwriter blackhole analyzer songforge quantum loopstation stemmer
 booth midistudio mastering screw settings, and promo (the promo runs' lines,
@@ -26,6 +30,9 @@ lines = json.loads(subprocess.run(
      "process.stdout.write(JSON.stringify(m.phoneGhostLines()))"],
     capture_output=True, text=True, cwd=REPO).stdout)
 lines = [l for l in lines if l['tabId'] == tab]
+if '--only' in sys.argv:
+    only = set(sys.argv[sys.argv.index('--only') + 1].split(','))
+    lines = [l for l in lines if l['id'] in only]
 
 NUM = {'20': 'twenty', '200': 'two hundred', '2': 'two', '4': 'four', '12': 'twelve'}
 def norm(t):
