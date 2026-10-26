@@ -21,13 +21,34 @@
 //            Ghost Rider demo can rotate through the TikTok-trending artists.
 //   optional the control only exists after a result. He says the same line
 //            from the middle of the screen, so it is worded to be true either way.
-// Nothing here presses a button that spends the user's AI credit or opens
-// their microphone. Those are pointed at, never pressed.
+//   pre / post   extra steps right before / after this one. They are promo-style
+//            steps (PhoneGhost.jsx runs both kinds) and speak by `id`, from
+//            promoLines.js, so the `${tab}-${index}` clips never shift.
+//
+// LIVE. Chris, 2026-10-25, on Ghost Rider: "It doesn't analyze the song... it
+// doesn't scroll the page. It doesn't go along with anything that's saying." So
+// with a writing key in Settings the Ghost Rider and Matrix walkthroughs DO it:
+// he presses Analyze, Write Lyrics and Auto-Craft on the user's own key, waits
+// for the real result and scrolls through it. Without a key he points, as before.
+//   liveAction  the action on a live run ('click' really presses it)
+//   liveRead    on a live run, scroll through this result while saying the line
+//   livePre / livePost  extra steps on a live run only
+//   liveSkip    the live steps already did this one
+// He never opens the microphone.
 // Never use the words in src/services/cliches.js, and never call the app free.
 // ============================================================
 
 import { nextTrendingArtist } from '../services/trendingArtists.js';
 import { promoLines } from './promoLines.js';
+import { riderFailed, riderAnalyzed, riderWritten, riderExtrasReady, matrixBusy, matrixHasSongs } from './ghostWaits.js';
+
+const clickIf = (sel) => { const el = document.querySelector(sel); if (el && !el.disabled) el.click(); };
+
+/** Auto-Craft's full songs: on, so the walkthrough's "two whole songs" is true. */
+const fullSongsOn = () => {
+  const box = document.querySelector('[data-demo="ql-fullsongs-opt"] input[type="checkbox"]');
+  if (box && !box.checked) box.click();
+};
 
 /** @type {Record<string, { title: string, steps: object[] }>} */
 export const PHONE_GHOST = {
@@ -72,13 +93,29 @@ export const PHONE_GHOST = {
     title: 'Ghost Rider',
     steps: [
       { line: "This is Ghost Rider. My favorite, for obvious reasons. Name an artist, and it figures out how they write. Then it hands all of that to the rest of the app." },
-      { target: '[data-demo="gr-artist"]', action: 'type', typeText: nextTrendingArtist, line: "Let's try one. I'll type a name." },
-      { target: '[data-demo="gr-analyze"]', line: "Then tap Analyze. It studies their rhymes, their rhythm, their favorite words, and writes you a report. It runs on your AI key." },
+      {
+        target: '[data-demo="gr-artist"]', action: 'type', typeText: nextTrendingArtist, line: "Let's try one. I'll type a name.",
+        // An old report or song on screen would read as this artist's.
+        livePre: [{ run: () => clickIf('[data-demo="gr-clear"]') }],
+      },
+      {
+        target: '[data-demo="gr-analyze"]', line: "Then tap Analyze. It studies their rhymes, their rhythm, their favorite words, and writes you a report. It runs on your AI key.",
+        liveAction: 'click',
+        livePost: [
+          { wait: riderAnalyzed, fail: riderFailed, at: '[data-demo="gr-analyze"]', timeout: 150000, id: 'rider-wait' },
+          { read: '[data-demo="gr-report"]', ms: 9000, id: 'rider-report' },
+          { target: '[data-demo="gr-write"]', action: 'click', id: 'rider-write' },
+          { wait: riderWritten, fail: riderFailed, at: '[data-demo="gr-write"]', timeout: 180000, id: 'rider-write-wait' },
+          { read: '[data-demo="gr-lyrics"]', ms: 14000, id: 'rider-lyrics' },
+          // The 20 words and the Style DNA fill in after the song lands.
+          { wait: riderExtrasReady, at: '[data-demo="gr-style-dna"]', timeout: 90000, soft: true },
+        ],
+      },
       { target: '[data-demo="gr-matrix-words"]', optional: true, line: "These are your twenty words for The Matrix. They stay empty until Ghost Rider writes you a song, then they fill themselves in. Or type your own. I won't tell anyone." },
       { target: '[data-demo="gr-words-send"]', optional: true, line: "Then one tap on Send to The Matrix, and all twenty land in its grid. No copying, no pasting." },
       { target: '[data-demo="gr-style-dna"]', optional: true, line: "Style DNA belongs to The Matrix. It's the fingerprint of how they write: how they ride the beat, how hard they rhyme, and the pictures they keep coming back to. It fills in when the song gets written, or you can type your own. Send it over, and The Matrix uses it to steer your lyrics." },
       { target: '[data-demo="gr-dna-tags"]', optional: true, line: "And these are your Suno tags. They're separate from Style DNA. Copy them, paste them into Suno's style box, and they ride along with your song into Black Hole Studios." },
-      { target: '[data-demo="gr-write"]', optional: true, line: "Write Lyrics gives you a brand new verse in that style. New words. Never theirs." },
+      { target: '[data-demo="gr-write"]', optional: true, liveSkip: true, line: "Write Lyrics gives you a brand new verse in that style. New words. Never theirs." },
       { target: '[data-demo="gr-send"]', optional: true, line: "And after that, Send to Songwriter appears. One tap, and the verse lands in Songwriter, tags and all." },
       { line: "So one artist name gets you a report, twenty Matrix words, style tags and a fresh verse. Ghost Rider. The only ride I'm allowed on." },
     ],
@@ -107,9 +144,30 @@ export const PHONE_GHOST = {
       },
       { target: '[data-demo="ql-load"]', action: 'click', line: "Then load them into the grid. Watch it fill up with your words." },
       { target: '.ql-tile', line: "Every tile is one of your words. They stay yours, no matter what." },
-      { target: '[data-demo="ql-fullsongs-opt"]', line: "Leave this ticked, and you get two whole songs, not just two verses." },
-      { target: '[data-demo="matrix-autocraft"]', line: "Then the magic button. Auto-Craft heats the grid, locks it, and writes Song A and Song B. It runs on your AI key." },
-      { target: '.ql-songs-out', optional: true, line: "When they're done, Song A and Song B show up right here, one on top of the other. Pick your favorite and send it to Songwriter." },
+      {
+        target: '[data-demo="ql-fullsongs-opt"]', line: "Leave this ticked, and you get two whole songs, not just two verses.",
+        pre: [{ run: fullSongsOn }],
+        post: [{ target: '[data-demo="ql-pair"]', id: 'matrix-pair' }],
+      },
+      {
+        target: '[data-demo="matrix-autocraft"]', line: "Then the magic button. Auto-Craft heats the grid, locks it, and writes Song A and Song B. It runs on your AI key.",
+        liveAction: 'click',
+        livePost: [{
+          // Done when the button is free again; songs or not after that is the result.
+          wait: (ms) => !matrixBusy() && (matrixHasSongs() || ms > 4000),
+          fail: () => !matrixHasSongs(),
+          at: '.ql-status', timeout: 300000, id: 'matrix-wait',
+          idle: [{ id: 'matrix-wait-2', after: 30000 }],
+        }],
+      },
+      {
+        target: '.ql-songs-out', optional: true, liveRead: '.ql-songs-out .ql-song-col', ms: 14000,
+        line: "When they're done, Song A and Song B show up right here, one on top of the other. Pick your favorite and send it to Songwriter.",
+        post: [
+          { target: '.ql-songs-out .ql-meters', optional: true, id: 'matrix-songs' },
+          { target: '.ql-songs-out .ql-remix', optional: true, id: 'matrix-remix' },
+        ],
+      },
       { target: '.ql-adv-toggle', line: "Want to drive it yourself? Advanced Studio Controls opens every manual step, and Send to Song Forge lives in there too." },
       { line: "Words in, two songs out. You're basically a hacker now." },
     ],

@@ -136,7 +136,43 @@ function ghostSpot(x, y, below) {
  * results. It keeps what it made (no snapshot put back), survives the tool
  * changing under it, and stops when the Ghost himself is tapped.
  */
-export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab }) {
+/**
+ * A walkthrough's steps in the order he runs them, each with its clip index.
+ * `live` (a writing key is set) adds the live steps around the ones they belong
+ * to; they all keep that step's index, so the `${tab}-${i}` clips never shift.
+ */
+function stepPlan(demo, live) {
+  const plan = [];
+  (demo?.steps || []).forEach((s, i) => {
+    if (live && s.liveSkip) return;
+    const add = (list) => (list || []).forEach((x) => plan.push([x, i]));
+    add(s.pre);
+    if (live) add(s.livePre);
+    let main = s;
+    if (live && s.liveAction) main = { ...main, action: s.liveAction };
+    if (live && s.liveRead) main = { ...main, read: s.liveRead };
+    plan.push([main, i]);
+    if (live) add(s.livePost);
+    add(s.post);
+  });
+  return plan;
+}
+
+// Chris's own songs under every phone walkthrough and promo run (2026-10-25:
+// "It's got the old music"). The old beds only if his are missing.
+const ghostMusic = (tabId) => (PROMO_BEDS.length ? PROMO_BEDS : bedFor(tabId));
+
+/**
+ * Start a clip, or give up. iPhone can leave play() pending for good when a
+ * clip stalls, and the Ghost then sat in the middle of The Matrix forever
+ * (Chris, 2026-10-25). True once it plays.
+ */
+const startClip = (a) => Promise.race([
+  a.play().then(() => true, () => false),
+  new Promise((resolve) => setTimeout(() => resolve(false), 4000)),
+]);
+
+export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab, live = false }) {
   const demo = promo || phoneGhostFor(tabId);
   const clipKey = phoneGhostKey(tabId);
   const onCloseRef = useRef(onClose);
@@ -144,7 +180,8 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab 
   const requestTabRef = useRef(onRequestTab);
   requestTabRef.current = onRequestTab;
   // A promo line is recorded once and shared between runs, so it goes by its id.
-  const clipOf = (s, i) => (s.id ? `promo-${s.id}` : `${clipKey}-${i}`);
+  // A step with no words has no clip (never the tool's clip at that index).
+  const clipOf = (s, i) => (s.id ? `promo-${s.id}` : s.line ? `${clipKey}-${i}` : null);
   const lineOf = (s) => (s.id ? PROMO_LINES[s.id] : s.line) || '';
 
   const [point, setPoint] = useState({ x: window.innerWidth * 0.5, y: window.innerHeight * 0.42 });
@@ -227,14 +264,23 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab 
       clipIdRef.current = clipId;
       let failed = false;
       a.onerror = () => { failed = true; };
-      try { await a.play(); } catch { failed = true; }
+      if (!(await startClip(a))) { failed = true; try { a.pause(); } catch { /* */ } }
+      // Ended, or as good as: Safari can stop on the last frame without `ended`,
+      // and playing it again from there never finishes either.
+      const over = () => a.ended || (Number.isFinite(a.duration) && a.duration > 0 && a.currentTime >= a.duration - 0.08);
       const t0 = Date.now();
-      while (!isDead(id) && !failed && !a.ended && Date.now() - t0 < 45000) {
+      let lastT = -1;
+      let movedAt = Date.now();
+      while (!isDead(id) && !failed && !over() && Date.now() - t0 < 45000) {
         if (pausedRef.current && !a.paused) a.pause();
-        if (!pausedRef.current && a.paused && !a.ended) { try { await a.play(); } catch { failed = true; } }
+        if (!pausedRef.current && a.paused && !(await startClip(a))) failed = true;
+        // A clip that stops moving for 5 s (and isn't paused) is over.
+        if (pausedRef.current || a.currentTime !== lastT) { lastT = a.currentTime; movedAt = Date.now(); }
+        else if (Date.now() - movedAt > 5000) { failed = a.currentTime < 0.5; break; }
         await wait(60, id);
       }
       if (!failed) return;
+      try { a.pause(); } catch { /* */ }
     }
     // No clip yet: NO stand-in voice (Chris, 2026-10-22: never the phone's
     // robot voice; every line is voiced in the Voice Lab). He stays on the
@@ -422,7 +468,7 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab 
     let ok = false;
     while (!isDead(id)) {
       let done = false;
-      try { done = !!s.wait(); } catch { /* not there yet */ }
+      try { done = !!s.wait(Date.now() - t0); } catch { /* not there yet */ }
       if (done) { ok = !(s.fail && s.fail()); break; }
       if (Date.now() - t0 > (s.timeout || 60000)) break;
       // A long wait gets another line, once he has finished the last one.
@@ -519,17 +565,20 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab 
     // is also what keeps the primed audio for the run that survives.
     await Promise.resolve();
     if (isDead(id)) return;
-    // A walkthrough puts the tool back as it found it. A promo keeps its song.
-    if (!promo) snapshotRef.current = captureAll();
-    // A promo run plays Chris's own songs in his order (ghostBed.js PROMO_BEDS).
-    const music = promo ? (PROMO_BEDS.length ? PROMO_BEDS : bedFor('onemanband')) : bedFor(tabId);
-    if (musicWanted()) bedRef.current = playBed(music, { level: BED_LEVEL });
+    // A walkthrough puts the tool back as it found it. A promo, or a live
+    // walkthrough, keeps what it made: that is what he came to see.
+    if (!promo && !live) snapshotRef.current = captureAll();
+    if (musicWanted()) bedRef.current = playBed(ghostMusic(tabId), { level: BED_LEVEL });
 
-    for (let i = 0; i < demo.steps.length; i += 1) {
+    for (const [s, i] of stepPlan(demo, live && !promo)) {
       if (isDead(id)) return;
-      const s = demo.steps[i];
 
       if (s.bed === 'off') { bedRef.current?.stop(1.2); bedRef.current = null; continue; }
+      if (s.run) {
+        try { await s.run(); } catch { /* nothing to do there */ }
+        await wait(300, id);
+        continue;
+      }
       if (s.open) {
         if (lineOf(s)) await sayFromMiddle(s, i, id);
         if (isDead(id)) return;
@@ -537,15 +586,17 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab 
         continue;
       }
       if (s.wait) {
-        // It failed or never came: stop where the reason is on screen.
-        if (!(await waitStep(s, i, id))) { if (!isDead(id)) finish(); return; }
+        // It failed or never came: stop where the reason is on screen. A `soft`
+        // wait was only giving it time, so he carries on.
+        if (!(await waitStep(s, i, id)) && !s.soft) { if (!isDead(id)) finish(); return; }
         continue;
       }
       if (s.read) { await readStep(s, i, id); continue; }
       if (s.play) { await playStep(s, i, id); continue; }
 
       let el = s.target ? shown(s.target) : null;
-      if (s.target && !el) el = await findShown(s.target, promo ? 4000 : 350, id);
+      // Results arrive late on a run that makes them, so it waits for them.
+      if (s.target && !el) el = await findShown(s.target, promo || live ? 4000 : 350, id);
 
       // No control to point at: a talking step, or an optional control that
       // only appears after a result. He says the step's one line from the
@@ -621,7 +672,7 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab 
     setMusicOn(next);
     try { localStorage.setItem(MUSIC_KEY, next ? 'on' : 'off'); } catch { /* storage blocked */ }
     if (!next) { bedRef.current?.stop(0.6); bedRef.current = null; }
-    else if (!bedRef.current && !deadRef.current) bedRef.current = playBed(bedFor(tabId), { level: BED_LEVEL });
+    else if (!bedRef.current && !deadRef.current) bedRef.current = playBed(ghostMusic(tabId), { level: BED_LEVEL });
   };
 
   const g = ghostSpot(point.x, point.y, below);

@@ -445,7 +445,7 @@ function MainLayout() {
       {/* The phone has its own Ghost: no bubbles, he points and the words glow
           (Chris, 2026-10-22). The desktop keeps the walkthrough below. */}
       {showGhostDemo && isMobile && !promoRun && (
-        <PhoneGhost tabId={activeTab} onClose={() => setShowGhostDemo(false)} />
+        <PhoneGhost tabId={activeTab} live={hasWritingAI(store.config)} onClose={() => setShowGhostDemo(false)} />
       )}
       {isMobile && promoPicker && (
         <PromoPicker

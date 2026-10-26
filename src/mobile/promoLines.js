@@ -27,6 +27,10 @@ export const PROMO_LINES = {
   'matrix-wait': 'Two songs at once. I can barely write one.',
   'matrix-wait-2': "Every rhyme gets checked by sound, every line gets counted, and anything that doesn't fit gets fixed.",
   'matrix-songs': 'Song A and Song B. Scored for flow, rhyme and hook, with the rhymes color-coded.',
+  // The Matrix walkthrough's new features (Chris, 2026-10-25: "It doesn't even
+  // mention the new features like explicit versus clean").
+  'matrix-pair': 'Now the fun part. Song A versus Song B. Rap versus Sung, Story versus Party, or Clean versus Explicit. Same words, two totally different songs.',
+  'matrix-remix': "Don't love one? Remix it with one tap. Harder, Funnier, Sadder, or a Bigger Hook. And Undo puts it right back.",
   'matrix-win': "I'm picking A. Don't tell B.",
   'matrix-send': 'Off to Songwriter.',
   'sw-arrived': "It lands in Songwriter, split into verses and choruses. Every line's editable.",

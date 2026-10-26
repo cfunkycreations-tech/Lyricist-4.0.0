@@ -22,13 +22,13 @@ export const BEDS = Object.entries(LOOPS)
   .filter((b) => b.url);
 
 /**
- * THE PROMO RUNS' MUSIC: Chris's own songs, in his order (2026-10-25: "Use the
- * first one that I sent first, and then the second one"). Each plays through
- * once and the next follows; after the last it starts over at the first, so a
- * long run never goes quiet. Whole songs, not loops: a seamless-loop cut of
- * Curuspulse kept only 29 s of it. Each file is leveled to -20 LUFS like the
- * beds, with a fade at both ends. Kept out of beds.json so the walkthroughs
- * never pick them.
+ * THE PHONE GHOST'S MUSIC: Chris's own songs, in his order (2026-10-25: "Use the
+ * first one that I sent first, and then the second one"), under the promo runs
+ * and every phone walkthrough. Each plays through once and the next follows;
+ * after the last it starts over at the first, so a long run never goes quiet.
+ * Whole songs, not loops: a seamless-loop cut of Curuspulse kept only 29 s of
+ * it. Each file is leveled to -20 LUFS like the beds, with a fade at both ends.
+ * Kept out of beds.json, which the desktop Ghost still plays.
  */
 const PROMO_URLS = import.meta.glob('../assets/ghost-bg/promo/*.mp3', {
   eager: true, query: '?url', import: 'default',

@@ -29,7 +29,7 @@
  * cache.
  */
 
-const STAMP = 'C1408U5b';
+const STAMP = 'u6px3FPK';
 const BUILD = new URL(self.location).searchParams.get('v') || 'dev';
 const CACHE = `lyricist-shell-${BUILD}-${STAMP}`;
 

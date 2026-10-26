@@ -42,6 +42,9 @@
 import { nextTrendingArtist } from '../services/trendingArtists.js';
 import { runGhostAction } from '../services/ghostBus.js';
 import { CLICHE_RE } from '../services/cliches.js';
+import {
+  inPane, shownPane, riderFailed, riderAnalyzed, riderWritten, riderExtrasReady, matrixBusy, matrixHasSongs,
+} from './ghostWaits.js';
 export { PROMO_LINES, promoLines } from './promoLines.js';
 
 // Topics and word sets rotate like the artists, so every recording is a new song.
@@ -73,14 +76,6 @@ export const nextWordSet = () => rotate('lyricist.promo.wordsIdx', WORD_SETS);
 
 const $ = (sel) => document.querySelector(sel);
 const text = (sel) => ($(sel)?.textContent || '').trim();
-const shownPane = (tab) => {
-  const p = $(`[data-tab-pane="${tab}"]`);
-  return !!p && p.style.display !== 'none';
-};
-const inPane = (tab, sel) => $(`[data-tab-pane="${tab}"] ${sel}`);
-
-/** A Ghost Rider call came back with an error: stop instead of hanging there. */
-const riderFailed = () => !!inPane('analyzer', '.pill-red');
 
 /**
  * A 30 second cut of a whole song: its first verse and its hook, four lines each.
@@ -115,17 +110,11 @@ function riderSteps({ artist, topic }) {
     { target: '[data-demo="gr-clear"]', action: 'click', optional: true },
     { target: '[data-demo="gr-artist"]', action: 'type', typeText: artist, id: 'rider-artist' },
     { target: '[data-demo="gr-analyze"]', action: 'click', id: 'rider-analyze' },
-    {
-      wait: () => riderFailed() || (!!text('[data-tab-pane="analyzer"] [data-demo="gr-report"]') && !/Analyzing/.test(text('[data-demo="gr-analyze"]'))),
-      fail: riderFailed, at: '[data-demo="gr-analyze"]', timeout: 150000, id: 'rider-wait',
-    },
+    { wait: riderAnalyzed, fail: riderFailed, at: '[data-demo="gr-analyze"]', timeout: 150000, id: 'rider-wait' },
     { read: '[data-demo="gr-report"]', ms: 9000, id: 'rider-report' },
     ...(topic ? [{ target: '[data-demo="gr-topic"]', action: 'type', typeText: topic, id: 'rider-topic' }] : []),
     { target: '[data-demo="gr-write"]', action: 'click', id: 'rider-write' },
-    {
-      wait: () => riderFailed() || (!!text('[data-demo="gr-lyrics"] pre') && !/Writing/.test(text('[data-demo="gr-write"]'))),
-      fail: riderFailed, at: '[data-demo="gr-write"]', timeout: 180000, id: 'rider-write-wait',
-    },
+    { wait: riderWritten, fail: riderFailed, at: '[data-demo="gr-write"]', timeout: 180000, id: 'rider-write-wait' },
     { read: '[data-demo="gr-lyrics"]', ms: 14000, id: 'rider-lyrics' },
   ];
 }
@@ -133,10 +122,7 @@ function riderSteps({ artist, topic }) {
 /** Style DNA and the 20 words, to The Matrix. They are made after the song lands. */
 function riderToMatrixSteps() {
   return [
-    {
-      wait: () => !!$('[data-demo="gr-dna-send"]') && !!$('[data-demo="gr-words-send"]'),
-      at: '[data-demo="gr-style-dna"]', timeout: 90000,
-    },
+    { wait: riderExtrasReady, at: '[data-demo="gr-style-dna"]', timeout: 90000 },
     { target: '[data-demo="gr-style-dna"]', id: 'rider-dna' },
     { target: '[data-demo="gr-dna-send"]', action: 'click', id: 'rider-dna-send' },
     { target: '[data-demo="gr-matrix-words"]', id: 'rider-words' },
@@ -150,8 +136,6 @@ function riderToMatrixSteps() {
 
 /** The Matrix: two whole songs, pick one, send it on. */
 function matrixSongSteps() {
-  // Auto-Craft stays disabled until both songs are written and checked.
-  const autoBusy = () => !!$('[data-demo="matrix-autocraft"]')?.disabled;
   return [
     {
       target: '[data-demo="ql-fullsongs-opt"]',
@@ -162,7 +146,7 @@ function matrixSongSteps() {
     },
     { target: '[data-demo="matrix-autocraft"]', action: 'click', id: 'matrix-autocraft' },
     {
-      wait: () => !!$('[data-demo="ql-send-song-a"]') && !autoBusy(),
+      wait: () => matrixHasSongs() && !matrixBusy(),
       at: '.ql-status', timeout: 300000, id: 'matrix-wait',
       idle: [{ id: 'matrix-wait-2', after: 30000 }],
     },

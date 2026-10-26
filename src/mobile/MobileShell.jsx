@@ -325,8 +325,9 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard, onGho
      phone hides, so it lives in the bar on every tool that has a walkthrough.
      primePhoneGhost has to run inside this tap or an iPhone plays it silent. */
   const hasGhost = (id) => !!(onGhostDemo && id && phoneGhostFor(id));
-  /* HOLD THE GHOST BUTTON for the promo runs (mobile/PromoPicker.jsx). A tap
-     is still the walkthrough; the tap that ends a long press is swallowed. */
+  /* HOLD THE GHOST BUTTON FIVE SECONDS for the promo runs (mobile/PromoPicker.jsx).
+     Chris, 2026-10-25: five, so no customer finds it by accident. A tap is
+     still the walkthrough; the tap that ends a long press is swallowed. */
   const holdTimer = useRef(null);
   const held = useRef(false);
   const holdStart = () => {
@@ -335,7 +336,7 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard, onGho
     holdTimer.current = setTimeout(() => {
       held.current = true;
       window.dispatchEvent(new CustomEvent('lyricist:promo'));
-    }, 700);
+    }, 5000);
   };
   const holdEnd = () => clearTimeout(holdTimer.current);
   const startGhost = () => {
