@@ -27,6 +27,7 @@
 // ============================================================
 
 import { nextTrendingArtist } from '../services/trendingArtists.js';
+import { promoLines } from './promoLines.js';
 
 /** @type {Record<string, { title: string, steps: object[] }>} */
 export const PHONE_GHOST = {
@@ -206,7 +207,7 @@ export function phoneGhostFor(tabId) {
   return PHONE_GHOST[GHOST_KEY[tabId] || tabId] || null;
 }
 
-/** Every spoken line, for the bake script. */
+/** Every spoken line, for the bake script. The promo runs' lines are tab "promo". */
 export function phoneGhostLines() {
   const out = [];
   for (const [tab, d] of Object.entries(PHONE_GHOST)) {
@@ -214,5 +215,5 @@ export function phoneGhostLines() {
       out.push({ id: `${tab}-${i}`, tabId: tab, text: s.line });
     });
   }
-  return out;
+  return out.concat(promoLines());
 }

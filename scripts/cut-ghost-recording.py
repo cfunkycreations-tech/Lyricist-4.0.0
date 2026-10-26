@@ -3,7 +3,8 @@
     python scripts/cut-ghost-recording.py <recording.wav> <tab> [--write]
 
 Tabs: songwriter blackhole analyzer songforge quantum loopstation stemmer
-booth midistudio mastering screw settings. Then run scripts/check-ghost-clips.py.
+booth midistudio mastering screw settings, and promo (the promo runs' lines,
+src/mobile/promoLines.js). Then run scripts/check-ghost-clips.py.
 
 Transcribes the recording (faster-whisper small.en, cached), finds the best
 matching stretch of speech for every line of that tab in phoneGhostScripts.js,

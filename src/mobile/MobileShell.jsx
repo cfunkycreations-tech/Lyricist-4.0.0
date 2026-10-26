@@ -325,7 +325,21 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard, onGho
      phone hides, so it lives in the bar on every tool that has a walkthrough.
      primePhoneGhost has to run inside this tap or an iPhone plays it silent. */
   const hasGhost = (id) => !!(onGhostDemo && id && phoneGhostFor(id));
+  /* HOLD THE GHOST BUTTON for the promo runs (mobile/PromoPicker.jsx). A tap
+     is still the walkthrough; the tap that ends a long press is swallowed. */
+  const holdTimer = useRef(null);
+  const held = useRef(false);
+  const holdStart = () => {
+    held.current = false;
+    clearTimeout(holdTimer.current);
+    holdTimer.current = setTimeout(() => {
+      held.current = true;
+      window.dispatchEvent(new CustomEvent('lyricist:promo'));
+    }, 700);
+  };
+  const holdEnd = () => clearTimeout(holdTimer.current);
   const startGhost = () => {
+    if (held.current) { held.current = false; return; }
     if (sheet) closeSheet();
     closeHelp();
     primePhoneGhost();
@@ -383,6 +397,7 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard, onGho
       key={t.id}
       className={`${cls} ${activeTab === t.id ? 'is-active' : ''}`}
       onClick={() => go(t.id)}
+      data-tool={t.id}
     >
       <TileIcon tab={t} />
       <span className="mob-tile-text">
@@ -422,6 +437,11 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard, onGho
               <button
                 className="mob-icon-btn mob-ghost-btn"
                 onClick={startGhost}
+                onPointerDown={holdStart}
+                onPointerUp={holdEnd}
+                onPointerLeave={holdEnd}
+                onPointerCancel={holdEnd}
+                onContextMenu={(e) => e.preventDefault()}
                 aria-label={`Ghost demo: watch the Ghost walk through ${current ? current.label : 'this tool'}`}
                 title="Ghost demo"
               >

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { phoneGhostFor, phoneGhostKey } from './phoneGhostScripts.js';
+import { PROMO_LINES } from './promoLines.js';
 import { captureAll, restoreAll } from '../services/demoSafety.js';
 import { playBed, bedFor, primeBed, dropPrimedBed } from '../services/ghostBed.js';
 import { withFades } from '../services/clipFade.js';
@@ -101,6 +102,15 @@ function tap(el) {
   el.click();
 }
 
+/** The thing that actually scrolls when `el` moves: a scrolling box, or the page. */
+function scrollParent(el) {
+  for (let n = el.parentElement; n && n !== document.body; n = n.parentElement) {
+    const oy = getComputedStyle(n).overflowY;
+    if ((oy === 'auto' || oy === 'scroll') && n.scrollHeight > n.clientHeight + 4) return n;
+  }
+  return document.scrollingElement || document.documentElement;
+}
+
 /** The top of the free screen: just under the phone's bar (which sits below the island). */
 function topLimit() {
   const bar = document.querySelector('.mob-bar');
@@ -120,11 +130,22 @@ function ghostSpot(x, y, below) {
   return { left, top, flip };
 }
 
-export default function PhoneGhost({ tabId, onClose }) {
-  const demo = phoneGhostFor(tabId);
+/**
+ * `promo` (promoScripts.js) swaps the walkthrough for a promo run: one script
+ * across several tools that presses the real buttons and waits for the real
+ * results. It keeps what it made (no snapshot put back), survives the tool
+ * changing under it, and stops when the Ghost himself is tapped.
+ */
+export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab }) {
+  const demo = promo || phoneGhostFor(tabId);
   const clipKey = phoneGhostKey(tabId);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const requestTabRef = useRef(onRequestTab);
+  requestTabRef.current = onRequestTab;
+  // A promo line is recorded once and shared between runs, so it goes by its id.
+  const clipOf = (s, i) => (s.id ? `promo-${s.id}` : `${clipKey}-${i}`);
+  const lineOf = (s) => (s.id ? PROMO_LINES[s.id] : s.line) || '';
 
   const [point, setPoint] = useState({ x: window.innerWidth * 0.5, y: window.innerHeight * 0.42 });
   const [pointing, setPointing] = useState(false);   // the glowing dot at his stand's foot
@@ -218,6 +239,7 @@ export default function PhoneGhost({ tabId, onClose }) {
     // No clip yet: NO stand-in voice (Chris, 2026-10-22: never the phone's
     // robot voice; every line is voiced in the Voice Lab). He stays on the
     // control, glowing, for as long as the line takes to read, then moves on.
+    if (!text) return;                                  // a promo step with nothing to say
     await wait(Math.min(14000, 1400 + text.split(/\s+/).length * 400), id);
   };
 
@@ -287,6 +309,209 @@ export default function PhoneGhost({ tabId, onClose }) {
     setTimeout(() => onCloseRef.current?.(), fadeMs);
   }, []);
 
+  // ---- pointing, pressing, finding ----------------------------------------------
+
+  /** The lit area around a control, its label and any extras. */
+  const boxOf = (nodes) => {
+    const rects = nodes.filter(Boolean).map((n) => n.getBoundingClientRect());
+    return {
+      left: Math.min(...rects.map((q) => q.left)) - 8,
+      top: Math.min(...rects.map((q) => q.top)) - 8,
+      right: Math.max(...rects.map((q) => q.right)) + 8,
+      bottom: Math.max(...rects.map((q) => q.bottom)) + 8,
+    };
+  };
+
+  /** Scroll to a control, light it up and fly over to it. Resolves once he is there. */
+  const pointAt = async (el, glowSels, id) => {
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    await settled(el, id);
+    if (isDead(id)) return null;             // never light up anything for a cancelled run
+    const label = labelFor(el);
+    const extra = (glowSels || []).map(shown);
+    glow(el, [label, ...extra]);
+    const box = boxOf([el, label, ...extra]);
+    setSpot(box);
+    const aim = aimAt(box);
+    setPointing(false);
+    setBelow(aim.below);
+    await flyTo(aim.x, aim.y, id);
+    if (isDead(id)) return null;
+    setPointing(true);
+    return box;
+  };
+
+  /** A real tap, with the dot pressing in. */
+  const press = async (el, id) => {
+    setTapping(true);
+    await wait(140, id);
+    if (isDead(id)) return;
+    tap(el);
+    await wait(220, id);
+    setTapping(false);
+  };
+
+  /** The first match on screen, waiting up to `ms` for it to mount. */
+  const findShown = async (sel, ms, id) => {
+    let el = shown(sel);
+    for (let waited = 0; !el && waited < ms && !isDead(id); waited += 150) {
+      await wait(150, id);
+      el = shown(sel);
+    }
+    return el;
+  };
+
+  const sayFromMiddle = async (s, i, id) => {
+    unglow(); setSpot(null); setPointing(false); setBelow(false);
+    await flyTo(window.innerWidth * 0.5, window.innerHeight * 0.45, id);
+    if (isDead(id)) return;
+    await say(clipOf(s, i), lineOf(s), id);
+  };
+
+  // ---- promo steps -------------------------------------------------------------------
+
+  const paneShown = (tab) => {
+    const p = document.querySelector(`[data-tab-pane="${tab}"]`);
+    return !!p && p.style.display !== 'none';
+  };
+  const toolOpen = (tab) => paneShown(tab) && (!document.querySelector('.mob-home') || !!document.querySelector('.mob-home.is-hidden'));
+
+  /** Go to a tool the way a person does: its tile, or the menu and then its tile. */
+  const openTool = async (tab, id) => {
+    if (!toolOpen(tab)) {
+      let tile = shown(`.mob-home:not(.is-hidden) [data-tool="${tab}"]`);
+      if (!tile) {
+        const menu = shown('.mob-bar button[aria-label="All tools"]');
+        if (menu) {
+          await pointAt(menu, [], id);
+          await press(menu, id);
+          tile = await findShown(`.mob-sheet [data-tool="${tab}"]`, 1500, id);
+        }
+      }
+      if (tile && !isDead(id)) {
+        await pointAt(tile, [], id);
+        await press(tile, id);
+      } else {
+        requestTabRef.current?.(tab);
+      }
+      for (let n = 0; n < 40 && !toolOpen(tab) && !isDead(id); n += 1) await wait(100, id);
+    }
+    // A tool's first-time card would sit over everything he points at.
+    const ok = await findShown('.mob-help-ok', 600, id);
+    if (ok && !isDead(id)) { await wait(400, id); tap(ok); await wait(300, id); }
+    unglow(); setSpot(null);
+    return toolOpen(tab);
+  };
+
+  /**
+   * HE WAITS FOR THE REAL RESULT. Chris: "make sure the ghost is waiting for the
+   * lyrics to come up". He hangs over the busy control (it says what it is doing
+   * and for how long) and the screen stays on it until `wait()` comes true.
+   * False when it failed or ran out of time.
+   */
+  const waitStep = async (s, i, id) => {
+    const at = s.at ? await findShown(s.at, 3000, id) : null;
+    let box = at ? await pointAt(at, [], id) : null;
+    if (!at) await flyTo(window.innerWidth * 0.5, window.innerHeight * 0.45, id);
+    if (isDead(id)) return false;
+    let talking = say(clipOf(s, i), lineOf(s), id);
+    let speaking = true;
+    talking.then(() => { speaking = false; });
+    const idle = [...(s.idle || [])];
+    const t0 = Date.now();
+    let ok = false;
+    while (!isDead(id)) {
+      let done = false;
+      try { done = !!s.wait(); } catch { /* not there yet */ }
+      if (done) { ok = !(s.fail && s.fail()); break; }
+      if (Date.now() - t0 > (s.timeout || 60000)) break;
+      // A long wait gets another line, once he has finished the last one.
+      if (idle.length && !speaking && Date.now() - t0 > idle[0].after) {
+        const next = idle.shift();
+        speaking = true;
+        talking = say(`promo-${next.id}`, PROMO_LINES[next.id] || '', id);
+        talking.then(() => { speaking = false; });
+      }
+      // Keep the busy control on screen and him on it: a status line grows and
+      // moves while it works, and the app may scroll on its own.
+      if (at && at.isConnected) {
+        const r = at.getBoundingClientRect();
+        if (r.bottom < topLimit() + 10 || r.top > window.innerHeight - 110) {
+          at.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          await settled(at, id);
+        }
+        const nb = boxOf([at]);
+        if (!box || Math.abs(nb.top - box.top) > 6 || Math.abs(nb.bottom - box.bottom) > 6 || Math.abs(nb.left - box.left) > 6) {
+          box = nb;
+          setSpot(nb);
+          const aim = aimAt(nb);
+          setBelow(aim.below);
+          await flyTo(aim.x, aim.y, id, 320);
+        }
+      }
+      await wait(250, id);
+    }
+    await talking;                       // he finishes his sentence either way
+    return ok;
+  };
+
+  /**
+   * THE SCREEN MOVES WITH HIM. Chris: "the screen is scrolling along with the
+   * ghost". The result scrolls up under him from its top to its end while he
+   * rides along the right edge, reading it, at a pace a viewer can follow.
+   */
+  const readStep = async (s, i, id) => {
+    const el = await findShown(s.read, 5000, id);
+    if (isDead(id)) return;
+    if (!el) { await sayFromMiddle(s, i, id); return; }
+    unglow(); setSpot(null); setPointing(false); setBelow(false);
+    const sc = scrollParent(el);
+    const page = sc === document.scrollingElement || sc === document.documentElement;
+    const viewTop = page ? 0 : sc.getBoundingClientRect().top;
+    const viewH = page ? window.innerHeight : sc.clientHeight;
+    const max = sc.scrollHeight - sc.clientHeight;
+    const elTop = el.getBoundingClientRect().top - viewTop + sc.scrollTop;
+    const clamp = (v) => Math.max(0, Math.min(max, v));
+    const from = clamp(elTop - Math.max(topLimit() - viewTop, 0) - viewH * 0.12);
+    const to = Math.max(from, clamp(elTop + el.offsetHeight - viewH * 0.8));
+    sc.scrollTo({ top: from, behavior: 'smooth' });
+    await settled(el, id);
+    if (isDead(id)) return;
+    await flyTo(window.innerWidth - 26, topLimit() + (window.innerHeight - topLimit()) * 0.42, id);
+    if (isDead(id)) return;
+    const talking = say(clipOf(s, i), lineOf(s), id);
+    // About 70px a second, so a viewer can read along; long ones go faster.
+    const dur = Math.max(2500, Math.min(s.ms || 12000, ((to - from) / 70) * 1000));
+    const behavior = sc.style.scrollBehavior;
+    sc.style.scrollBehavior = 'auto';          // CSS smooth scrolling would fight every frame
+    const t0 = Date.now();
+    while (!isDead(id)) {
+      const p = Math.min(1, (Date.now() - t0) / dur);
+      const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      sc.scrollTop = from + (to - from) * e;
+      if (p >= 1) break;
+      await wait(30, id);
+    }
+    sc.style.scrollBehavior = behavior;
+    await talking;
+    await wait(400, id);
+  };
+
+  /** Play a finished take and listen to it with the viewer. */
+  const playStep = async (s, i, id) => {
+    const el = await findShown(s.play, 5000, id);
+    if (!el) { await sayFromMiddle(s, i, id); return; }
+    await pointAt(el, [], id);
+    if (isDead(id)) return;
+    await say(clipOf(s, i), lineOf(s), id);
+    if (isDead(id)) return;
+    await press(el, id);
+    try { el.currentTime = 0; await el.play(); } catch { /* the controls are still there to tap */ }
+    const t0 = Date.now();
+    while (!isDead(id) && !el.ended && Date.now() - t0 < (s.ms || 40000)) await wait(200, id);
+    await wait(500, id);
+  };
+
   const run = async (id) => {
     if (!demo) { finish(0); return; }
     // One tick before touching anything: in dev, React mounts, tears down and
@@ -294,49 +519,45 @@ export default function PhoneGhost({ tabId, onClose }) {
     // is also what keeps the primed audio for the run that survives.
     await Promise.resolve();
     if (isDead(id)) return;
-    snapshotRef.current = captureAll();
-    if (musicWanted()) bedRef.current = playBed(bedFor(tabId), { level: BED_LEVEL });
+    // A walkthrough puts the tool back as it found it. A promo keeps its song.
+    if (!promo) snapshotRef.current = captureAll();
+    if (musicWanted()) bedRef.current = playBed(bedFor(promo ? 'onemanband' : tabId), { level: BED_LEVEL });
 
     for (let i = 0; i < demo.steps.length; i += 1) {
       if (isDead(id)) return;
       const s = demo.steps[i];
+
+      if (s.bed === 'off') { bedRef.current?.stop(1.2); bedRef.current = null; continue; }
+      if (s.open) {
+        if (lineOf(s)) await sayFromMiddle(s, i, id);
+        if (isDead(id)) return;
+        if (!(await openTool(s.open, id))) { if (!isDead(id)) finish(); return; }
+        continue;
+      }
+      if (s.wait) {
+        // It failed or never came: stop where the reason is on screen.
+        if (!(await waitStep(s, i, id))) { if (!isDead(id)) finish(); return; }
+        continue;
+      }
+      if (s.read) { await readStep(s, i, id); continue; }
+      if (s.play) { await playStep(s, i, id); continue; }
+
       let el = s.target ? shown(s.target) : null;
-      if (s.target && !el) { await wait(350, id); el = shown(s.target); }
+      if (s.target && !el) el = await findShown(s.target, promo ? 4000 : 350, id);
 
       // No control to point at: a talking step, or an optional control that
       // only appears after a result. He says the step's one line from the
       // middle of the screen (optional lines are worded to be true either way).
       if (s.target && !el && !s.optional) continue;
       if (!el) {
-        unglow(); setSpot(null); setPointing(false); setBelow(false);
-        await flyTo(window.innerWidth * 0.5, window.innerHeight * 0.45, id);
-        if (isDead(id)) return;
-        await say(`${clipKey}-${i}`, s.line, id);
+        if (!lineOf(s)) continue;
+        await sayFromMiddle(s, i, id);
         await wait(300, id);
         continue;
       }
 
-      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      await settled(el, id);
-      if (isDead(id)) return;             // never light up anything for a cancelled run
-      const label = labelFor(el);
-      const extra = (s.glow || []).map(shown);
-      glow(el, [label, ...extra]);
-      const rects = [el, label, ...extra].filter(Boolean).map((n) => n.getBoundingClientRect());
-      const box = {
-        left: Math.min(...rects.map((q) => q.left)) - 8,
-        top: Math.min(...rects.map((q) => q.top)) - 8,
-        right: Math.max(...rects.map((q) => q.right)) + 8,
-        bottom: Math.max(...rects.map((q) => q.bottom)) + 8,
-      };
-      setSpot(box);
-      const aim = aimAt(box);
-      setPointing(false);
-      setBelow(aim.below);
-      await flyTo(aim.x, aim.y, id);
-      if (isDead(id)) return;
-      setPointing(true);
-      await say(`${clipKey}-${i}`, s.line, id);
+      if (!(await pointAt(el, s.glow, id))) return;
+      await say(clipOf(s, i), lineOf(s), id);
       if (isDead(id)) return;
 
       if (s.action === 'type' && s.typeText) {
@@ -344,6 +565,7 @@ export default function PhoneGhost({ tabId, onClose }) {
         if (field) {
           // No focus(): on a phone that throws the keyboard up over half the screen.
           let built = '';
+          if (s.clear) setReactValue(field, '');
           const text = typeof s.typeText === 'function' ? s.typeText() : s.typeText;
           for (const ch of text) {
             if (isDead(id)) return;
@@ -353,14 +575,13 @@ export default function PhoneGhost({ tabId, onClose }) {
           }
         }
       } else if (s.action === 'click') {
-        setTapping(true);
-        await wait(140, id);
-        if (isDead(id)) return;
-        tap(el);
-        await wait(220, id);
-        setTapping(false);
+        s.before?.();
+        await press(el, id);
       }
-      await wait(s.action ? 700 : 350, id);
+      if (s.act) {
+        try { await s.act(); } catch { /* the step still happened on screen */ }
+      }
+      await wait(s.action || s.act ? 700 : 350, id);
     }
     if (!isDead(id)) finish();
   };
@@ -383,9 +604,10 @@ export default function PhoneGhost({ tabId, onClose }) {
   }, []);
 
   // The app moved to another tool: everything he would point at is hidden now.
+  // A promo run changes tools itself, so it carries on.
   useEffect(() => {
-    if (tabId !== tabAtStart.current) finish(0);
-  }, [tabId, finish]);
+    if (!promo && tabId !== tabAtStart.current) finish(0);
+  }, [tabId, finish, promo]);
 
   useEffect(() => {
     pausedRef.current = paused;
@@ -421,13 +643,21 @@ export default function PhoneGhost({ tabId, onClose }) {
 
       {pointing && <span className={`pg-dot ${tapping ? 'is-tap' : ''}`} style={{ transform: `translate3d(${point.x}px, ${point.y}px, 0)` }} />}
 
-      <div className={`pg-ghost ${g.flip ? 'is-flip' : ''}`} style={{ transform: `translate3d(${g.left}px, ${g.top}px, 0)`, width: SIZE, height: SIZE }}>
+      {/* In a promo run the screen is being recorded, so there are no buttons:
+          tapping the Ghost himself stops it. */}
+      <div
+        className={`pg-ghost ${g.flip ? 'is-flip' : ''} ${promo ? 'is-tappable' : ''}`}
+        style={{ transform: `translate3d(${g.left}px, ${g.top}px, 0)`, width: SIZE, height: SIZE }}
+        onClick={promo ? () => finish() : undefined}
+        role={promo ? 'button' : undefined}
+        aria-label={promo ? 'Stop the promo run' : undefined}
+      >
         <div className="pg-bob">
           <GhostFace kind="phone" speech={speech} look={{ x: 0, y: below ? -0.9 : 0.9 }} />
         </div>
       </div>
 
-      <div className="pg-controls">
+      {!promo && <div className="pg-controls">
         <button type="button" className="pg-btn" onClick={() => setPaused((p) => !p)} aria-label={paused ? 'Keep going' : 'Pause the Ghost'}>
           {paused ? 'Play' : 'Pause'}
         </button>
@@ -437,7 +667,7 @@ export default function PhoneGhost({ tabId, onClose }) {
         <button type="button" className="pg-btn pg-btn-stop" onClick={() => finish()} aria-label="Stop the Ghost">
           Stop
         </button>
-      </div>
+      </div>}
     </div>
   );
 }

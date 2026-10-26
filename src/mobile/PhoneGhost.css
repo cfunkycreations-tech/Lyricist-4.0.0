@@ -65,6 +65,8 @@
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.7));
 }
 .pg-ghost.is-flip .gf { transform: scaleX(-1); }
+/* A promo run has no buttons on screen: tapping him stops it. */
+.pg-ghost.is-tappable { pointer-events: auto; cursor: pointer; }
 @keyframes pg-bob {
   0%, 100% { transform: translateY(0) rotate(-1.5deg); }
   50% { transform: translateY(-5px) rotate(1.5deg); }

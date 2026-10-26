@@ -54,6 +54,7 @@ import Stemmer from './components/Stemmer/Stemmer.jsx';
 import { useMobile } from './mobile/useMobile.js';
 import MobileShell from './mobile/MobileShell.jsx';
 import PhoneGhost from './mobile/PhoneGhost.jsx';
+import PromoPicker from './mobile/PromoPicker.jsx';
 import GhostPilotLayer from './components/Ghost/GhostPilotLayer.jsx';
 import PushHeader from './components/PushHeader/PushHeader.jsx';
 import BrandBanner from './components/BrandBanner/BrandBanner.jsx';
@@ -269,6 +270,15 @@ function MainLayout() {
   const [quantumForgeSeed, setQuantumForgeSeed] = useState(null);
   const [showWizard, setShowWizard] = useState(false);
   const [showGhostDemo, setShowGhostDemo] = useState(false);
+  // Promo runs (mobile/promoScripts.js): the picker opens from a long-press on
+  // the phone's Ghost button, or straight away with ?promo in the address.
+  const [promoPicker, setPromoPicker] = useState(() => new URLSearchParams(window.location.search).has('promo'));
+  const [promoRun, setPromoRun] = useState(null);
+  useEffect(() => {
+    const open = () => setPromoPicker(true);
+    window.addEventListener('lyricist:promo', open);
+    return () => window.removeEventListener('lyricist:promo', open);
+  }, []);
 
   const handleGhostSend = (data) => {
     setGhostRiderData(data);
@@ -434,8 +444,23 @@ function MainLayout() {
 
       {/* The phone has its own Ghost: no bubbles, he points and the words glow
           (Chris, 2026-10-22). The desktop keeps the walkthrough below. */}
-      {showGhostDemo && isMobile && (
+      {showGhostDemo && isMobile && !promoRun && (
         <PhoneGhost tabId={activeTab} onClose={() => setShowGhostDemo(false)} />
+      )}
+      {isMobile && promoPicker && (
+        <PromoPicker
+          onClose={() => setPromoPicker(false)}
+          onStart={(run) => { setPromoPicker(false); setShowGhostDemo(false); setPromoRun({ ...run, at: Date.now() }); }}
+        />
+      )}
+      {isMobile && promoRun && (
+        <PhoneGhost
+          key={promoRun.at}
+          tabId={activeTab}
+          promo={promoRun}
+          onRequestTab={setActiveTab}
+          onClose={() => setPromoRun(null)}
+        />
       )}
       {showGhostDemo && !isMobile && store.ghostDemoEnabled && (
         <GhostDemo

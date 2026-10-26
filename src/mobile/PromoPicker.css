@@ -1,0 +1,69 @@
+/* The promo picker. See PromoPicker.jsx. Over everything, the Ghost's layer included. */
+.pp-root {
+  position: fixed;
+  inset: 0;
+  z-index: 120100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: calc(var(--mob-top, env(safe-area-inset-top, 0px)) + 12px) 12px 24px;
+  background: rgba(0, 0, 0, 0.82);
+  overflow-y: auto;
+}
+.pp-card {
+  width: 100%;
+  max-width: 460px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #0c0d10;
+  border: 1px solid rgba(231, 165, 64, 0.35);
+  color: #f2f5fa;
+  font-family: var(--faf-font);
+}
+.pp-head { display: flex; align-items: center; justify-content: space-between; }
+.pp-title { font-size: 1.05rem; font-weight: 700; color: #ffd08a; }
+.pp-x {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  color: #f2f5fa;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.pp-note { margin: 6px 0 14px; font-size: 0.8rem; line-height: 1.45; color: rgba(230, 232, 235, 0.75); }
+.pp-field { display: block; margin-bottom: 10px; }
+.pp-field span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(155, 161, 170, 0.85);
+}
+.pp-field input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(155, 161, 170, 0.3);
+  background: rgba(16, 18, 21, 0.9);
+  color: #e6e8eb;
+  font-size: 16px;          /* under 16px an iPhone zooms the page on tap */
+}
+.pp-runs { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.pp-run {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  border-radius: 10px;
+  border: 1px solid rgba(231, 165, 64, 0.45);
+  background: rgba(33, 34, 36, 0.6);
+  color: #f2f5fa;
+}
+.pp-run:active { transform: scale(0.98); }
+.pp-run-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.pp-run-head b { font-size: 0.92rem; }
+.pp-min { font-size: 0.72rem; color: #ffd08a; white-space: nowrap; }
+.pp-blurb { display: block; font-size: 0.76rem; line-height: 1.4; color: rgba(230, 232, 235, 0.7); }
