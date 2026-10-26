@@ -1340,3 +1340,61 @@
   pointer-events: none;
   will-change: transform;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE SONG CHECK, THE PAIR PICKER, REMIXES AND RHYME COLOURS (2026-10-24).
+   See matrixSong.js. Warm colours only: no purple, no cyan.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Song A vs Song B: Rap vs Sung, Story vs Party, Clean vs Explicit. */
+.ql-pair { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin: 10px 0 0; }
+.ql-pair-label { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(230, 232, 235, 0.65); }
+.ql-pair-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+
+/* A tile whose word made it into a song. */
+.ql-tile.ql-hit { outline: 2px solid rgba(52, 211, 153, 0.9); outline-offset: 2px; }
+.ql-tile.ql-hit::after {
+  content: '✓';
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  font-size: 0.7rem;
+  line-height: 1;
+  color: #34d399;
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* Flow / Rhyme / Hook. */
+.ql-meters { display: grid; gap: 4px; }
+.ql-meter { display: grid; grid-template-columns: 52px 1fr 30px; align-items: center; gap: 8px; font-size: 0.72rem; }
+.ql-meter-k { color: rgba(230, 232, 235, 0.75); letter-spacing: 0.06em; text-transform: uppercase; }
+.ql-meter-n { text-align: right; color: #FFD08A; font-variant-numeric: tabular-nums; }
+.ql-hits { font-size: 0.72rem; color: #34d399; letter-spacing: 0.04em; }
+
+/* The lyrics, section by section, rhyming sounds in matching colours. */
+.ql-rhyme-text { white-space: normal; }
+.ql-song-sec { margin-bottom: 10px; }
+.ql-song-sec-name { font-size: 0.72rem; letter-spacing: 0.08em; color: rgba(230, 232, 235, 0.5); margin-bottom: 2px; }
+.ql-song-line { white-space: pre-wrap; }
+.ql-rh { font-weight: 700; }
+.ql-rh-0 { color: #ffb03a; }
+.ql-rh-1 { color: #34d399; }
+.ql-rh-2 { color: #ff7a5c; }
+.ql-rh-3 { color: #eaff2b; }
+.ql-rh-4 { color: #ff4d6d; }
+.ql-rh-5 { color: #ffffff; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Remixes, the winner, send. */
+.ql-remix { display: flex; flex-wrap: wrap; gap: 6px; }
+.ql-song-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.ql-song-col .ql-remix .ql-mini,
+.ql-song-col .ql-song-actions .ql-mini { align-self: auto; }
+.ql-song-col.is-winner { border: 1px solid rgba(52, 211, 153, 0.6); border-radius: 10px; padding: 8px; box-shadow: 0 0 18px rgba(52, 211, 153, 0.18); }
+.ql-song-col.is-other { opacity: 0.7; }
+.ql-winner-note { font-size: 0.75rem; color: #34d399; letter-spacing: 0.06em; }
+
+.ql-mob .ql-pair-label { font-size: 0.78rem; }
+.ql-mob .ql-meter { font-size: 0.8rem; grid-template-columns: 60px 1fr 34px; }
+.ql-mob .ql-hits { font-size: 0.8rem; }
+.ql-mob .ql-song-sec-name { font-size: 0.78rem; }

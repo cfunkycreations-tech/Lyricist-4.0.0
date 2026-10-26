@@ -45,8 +45,22 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { posthogStatus } from './posthog-status.mjs';
+import { openerProblems } from './opener-guard.mjs';
 
 const ROOT = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
+
+// The opener must play on the phone. See opener-guard.mjs: it went missing
+// twice, both times because a build shipped it switched off.
+{
+  const opener = openerProblems(ROOT);
+  if (opener.length) {
+    console.error('');
+    console.error('  PHONE BUILD STOPPED: the opener would not play.');
+    for (const p of opener) console.error('  - ' + p);
+    console.error('');
+    process.exit(1);
+  }
+}
 const DIST = path.join(ROOT, 'dist');
 const WEB = path.join(ROOT, 'dist-web');
 
@@ -153,7 +167,7 @@ fs.writeFileSync(path.join(WEB, '404.html'),
   + '<title>Not here</title><body style="background:#04060f;color:#e6e8eb;font:16px system-ui;padding:24px">'
   + 'That page is not here. <a href="./" style="color:#ffb25a">Open Lyricist Pro</a></body>');
 
-// A stray splash.mp4 is the old card. The phone splash is phone-splash*.
+// A stray splash.mp4 is the old card.
 for (const f of fs.readdirSync(WEB)) {
   if (/^splash\.mp4$/i.test(f)) fs.rmSync(path.join(WEB, f), { force: true });
 }
@@ -187,7 +201,9 @@ for (const f of fs.readdirSync(WEB)) {
   for (const f of walk(WEB)) {
     const rel = path.relative(WEB, f);
     if (badArt.test(rel) || /(^|\/)splash\.mp4$/i.test(rel)) hits.push(rel);
-    else if (/\.(html|js|css|json|webmanifest|txt)$/i.test(f) && fs.statSync(f).size < 20e6) {
+    // The rhyme dictionary (cmudict) is plain English words, "cannabis" among
+    // them; its file name is still checked above, its words are not.
+    else if (/\.(html|js|css|json|webmanifest|txt)$/i.test(f) && !/cmudict/i.test(rel) && fs.statSync(f).size < 20e6) {
       const t = fs.readFileSync(f, 'utf8');
       if (f.endsWith('sw.js') ? false : (bad.test(t) || badArt.test(t))) hits.push(rel);
     }

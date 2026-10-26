@@ -30,11 +30,23 @@ const ROWS = 4;
 const COLS = 5;
 const CELL_COUNT = ROWS * COLS;
 
+/**
+ * How a typed word's rhyme is found. The Matrix sets this to the pronunciation
+ * dictionary once it has loaded (services/phonetics.js rhymeKey), so "light"
+ * and "night" share a class by SOUND. Until then, the spelling guess below.
+ */
+let rhymeResolver = null;
+export function setRhymeResolver(fn) { rhymeResolver = typeof fn === 'function' ? fn : null; }
+
 /** Coarse rime class for any user-typed word/phrase (engine needs a label). */
 function rhymeClassFor(word) {
   const w = String(word || '').toLowerCase().trim();
   if (!w) return 'X';
   if (WORD_SEED[w]) return WORD_SEED[w].rhymeClass;
+  if (rhymeResolver) {
+    const k = rhymeResolver(w);
+    if (k) return k;
+  }
   // last token if multi-word phrase; use last 3 letters as a soft rime bucket
   const last = w.split(/\s+/).pop() || w;
   const tail = last.replace(/[^a-z]/g, '').slice(-3).toUpperCase() || 'X';

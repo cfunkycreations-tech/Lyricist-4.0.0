@@ -14,6 +14,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { openerProblems } from './opener-guard.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const problems = [];
@@ -231,6 +232,7 @@ const mainModules = checkPackagedMainModules();
 const runtimeAssets = checkPackagedRuntimeAssets();
 checkSourceIndexHtml();
 checkNoQuantumSplash();
+problems.push(...openerProblems(ROOT));
 
 if (problems.length) {
   console.error('\n  PREFLIGHT FAILED\n');

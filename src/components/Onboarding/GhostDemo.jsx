@@ -12,9 +12,17 @@ import { holdBannerClosed } from '../../services/ghostBanner.js';
 // other cursor a viewer might be watching. The .png file is left in src/assets/
 // untouched but no longer imported.
 // Chris, 2026-10-09: the Ghost is back on screen during the demo, with a button
-// to hide it. Same art as the Ask-the-Ghost hand (ghost-sprite.png).
-import ghostSprite from '../../assets/ghost-sprite.png';
+// to hide it.
+// Chris, 2026-10-22: and it is the Ghost from the Lyricist Pro logo now, pen,
+// mic and all. The render he had cropped the tail off at the right edge; the
+// tail in ghost-logo.png was rebuilt from the logo itself (full size in
+// marketing/ghost-logo-full.png). The Ask-the-Ghost hand keeps ghost-sprite.png:
+// its fingertip is what lands on the control it presses.
+import GhostFace from '../GhostFace/GhostFace.jsx';
 import './GhostDemo.css';
+
+/** The phone build. App.jsx puts this class on <body>; the phone CSS hangs off it too. */
+const onPhone = () => document.body.classList.contains('lyricist-mobile');
 
 /**
  * The ghost's voice — am_adam dragged down to ~68 Hz, baked by
@@ -138,9 +146,21 @@ function freeBand() {
     : { top: 0, bottom: r.top };
 }
 
-/** The ghost hangs above the pointer; with no room up there he hangs below it. */
-function ghostBelow(ty) {
-  return ty - 122 < freeBand().top + 6;
+/**
+ * Where the ghost hangs for a pointer at (tx, ty), in viewport pixels. Above
+ * and to the left of it normally; below it when he is up against the bar; to
+ * its right when the left edge would cut him off, which on a phone is most
+ * controls in the left half. Smaller on a phone, where 112px is a quarter of
+ * the screen's width. The render and placeBubble both read this, so the bubble
+ * always knows where he is.
+ */
+function figureAt(tx, ty) {
+  const size = onPhone() ? 80 : 112;
+  const below = ty - (size + 10) < freeBand().top + 6;
+  const flip = tx - size + 16 < 4;
+  const left = flip ? tx + 14 : tx - size + 16;
+  const top = below ? ty + 30 : ty - size - 6;
+  return { size, below, flip, left, top, right: left + size, bottom: top + size + 6 };
 }
 
 /** Keep a centred bubble clear of the bar. */
@@ -155,13 +175,14 @@ function placeBubble(tx, ty) {
   const TOP = band.top + M;                            // never under the bar
   const BOTTOM = band.bottom - M;
 
-  // The ghost's own rectangle in viewport coordinates (above the pointer, or
-  // below it when he's up against the bar; see ghostBelow).
-  const below = ghostBelow(ty);
-  const gLeft = tx - 100;
-  const gRight = tx + 20;
-  const gTop = below ? ty + 20 : ty - 122;
-  const gBottom = below ? ty + 160 : ty + 16;
+  // The ghost's own rectangle in viewport coordinates, with a little slack
+  // (see figureAt). The pointer itself sits inside it.
+  const f = figureAt(tx, ty);
+  const below = f.below;
+  const gLeft = Math.min(f.left, tx) - 4;
+  const gRight = Math.max(f.right, tx + 20) + 4;
+  const gTop = Math.min(f.top, ty) - 4;
+  const gBottom = Math.max(f.bottom, ty) + 16;
 
   let x = gRight + GAP;
   let y = Math.max(TOP, below ? ty : ty - 130);
@@ -189,8 +210,17 @@ function placeBubble(tx, ty) {
   return { x, y };
 }
 
+/**
+ * Lines about Kaggle and "this computer" are true on Windows only. On the phone
+ * they are skipped, not reworded: each caption is also the words in a baked
+ * clip, and the two have to agree. Clip ids keep the step's original index, so
+ * skipping one never shifts the voice onto the wrong caption.
+ */
+const runsHere = (step) => !(step.desktopOnly && onPhone());
+
 export default function GhostDemo({ tabId, onClose }) {
   const demo = getGhostDemo(tabId);
+  const stepTotal = demo ? demo.steps.filter(runsHere).length : 0;
 
   /**
    * onClose comes in as an inline arrow from App.jsx, so its identity changes
@@ -299,6 +329,12 @@ export default function GhostDemo({ tabId, onClose }) {
   }, [showGhost]);
   const voiceOnRef = useRef(true);
   const audioRef = useRef(null);
+  const clipIdRef = useRef(null);                 // the line he is saying, for his mouth
+  const speech = useCallback(() => {
+    const a = audioRef.current;
+    const id = clipIdRef.current;
+    return a && id && !a.paused && !a.ended ? { id, t: a.currentTime } : null;
+  }, []);
 
   // Background music under the narration. Its own button, on by default and
   // remembered. Ducked while the Ghost is talking, back up between lines.
@@ -364,6 +400,7 @@ export default function GhostDemo({ tabId, onClose }) {
     a.onloadedmetadata = null;
     a.onerror = null;
     a.src = clipFor(id);
+    clipIdRef.current = id;
     // Slow/Fast changes the pace of the whole walkthrough; the voice follows it
     // rather than desyncing from the captions. Clamped because the browser
     // refuses rates outside this range and throws.
@@ -509,12 +546,22 @@ export default function GhostDemo({ tabId, onClose }) {
       requestAnimationFrame(step);
     });
 
+  // The first match that is actually laid out. querySelector alone returned
+  // controls on panes that are display:none (every tab you have opened stays
+  // mounted), and the ghost then flew to the top-left corner to point at a
+  // zero-size box. On the phone, where the shell hides some desktop controls,
+  // that was most of a walkthrough.
+  const shown = (sel) => [...document.querySelectorAll(sel)].find((n) => {
+    const r = n.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  }) || null;
+
   const findEl = async (sel) => {
     if (!sel) return null;
-    let el = document.querySelector(sel);
+    let el = shown(sel);
     if (!el) {
       await wait(350);
-      el = document.querySelector(sel);
+      el = shown(sel);
     }
     // Prefer inner input/textarea/button if wrapper selected
     if (el && !(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLButtonElement)) {
@@ -528,7 +575,9 @@ export default function GhostDemo({ tabId, onClose }) {
 
   const typeLikeHuman = async (el, text, runId) => {
     if (!el || !text) return;
-    el.focus();
+    // Not on a phone: focus pops the keyboard up over half the screen, the
+    // page reflows under it, and every position the demo measured is wrong.
+    if (!onPhone()) el.focus();
     el.scrollIntoView({ block: 'center', behavior: 'smooth' });
     await wait(200, runId);
     setReactInputValue(el, '');
@@ -588,10 +637,11 @@ export default function GhostDemo({ tabId, onClose }) {
 
     const steps = demo.steps || [];
 
-    for (let i = 0; i < steps.length; i++) {
+    for (let i = 0, n = 0; i < steps.length; i++) {
       if (isDead(runId)) break;
-      setStepIdx(i);
       const step = steps[i];
+      if (!runsHere(step)) continue;
+      setStepIdx(n++);
       let tx = window.innerWidth * 0.5;
       let ty = window.innerHeight * 0.4;
       let el = null;
@@ -668,7 +718,7 @@ export default function GhostDemo({ tabId, onClose }) {
         if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) {
           field = el.querySelector('textarea, input') || el;
         }
-        await typeLikeHuman(field, step.typeText, runId);
+        await typeLikeHuman(field, typeof step.typeText === 'function' ? step.typeText() : step.typeText, runId);
         setStatusLine(`Typed into ${step.target || 'field'}`);
       } else if (action === 'click' && el) {
         // Default: really operate the control
@@ -754,6 +804,9 @@ export default function GhostDemo({ tabId, onClose }) {
     closeDemo();
   };
 
+  const phone = onPhone();
+  const fig = figureAt(cursor.x, cursor.y);
+
   return (
     <div className="ghost-demo-root" role="dialog" aria-label="Ghost walkthrough">
       {/* Dim overlay does NOT block the UI — ghost clicks pass through to real controls */}
@@ -773,7 +826,7 @@ export default function GhostDemo({ tabId, onClose }) {
 
       {/* The only visible mouse during the session */}
       <div
-        className={`ghost-demo-operator ${clickPulse ? 'is-click' : ''} ${ghostBelow(cursor.y) ? 'is-below' : ''}`}
+        className={`ghost-demo-operator ${clickPulse ? 'is-click' : ''} ${fig.below ? 'is-below' : ''} ${fig.flip ? 'is-flip' : ''}`}
         style={{ left: cursor.x, top: cursor.y }}
       >
         {/* The transparent ghost art and the "Remote" name tag both used to
@@ -782,21 +835,37 @@ export default function GhostDemo({ tabId, onClose }) {
             tag hovering next to a pointer is the tell. The cursor stands
             alone now, and looks like any other cursor on screen. */}
         {showGhost && (
-          <div className="ghost-demo-figure" aria-hidden>
-            <div className="ghost-demo-sprite-wrap">
-              <img className="ghost-demo-sprite" src={ghostSprite} alt="" draggable={false} />
+          <div
+            className="ghost-demo-figure"
+            style={{ left: fig.left - cursor.x, top: fig.top - cursor.y }}
+            aria-hidden
+          >
+            <div className="ghost-demo-sprite-wrap" style={{ width: fig.size, height: fig.size }}>
+              <GhostFace
+                className="ghost-demo-sprite"
+                kind="desktop"
+                speech={speech}
+                look={{ x: fig.flip ? -0.4 : 0.4, y: fig.below ? -0.9 : 0.9 }}
+                style={{ width: fig.size, height: fig.size }}
+              />
             </div>
           </div>
         )}
-        <div className="ghost-demo-cursor" aria-hidden>
-          <svg width="32" height="32" viewBox="0 0 24 24">
-            <path
-              d="M5 3 L5 18 L9.5 14.5 L12.5 21 L15 20 L12 13.5 L18 13 Z"
-              fill="#f8fafc"
-              stroke="#9ba1aa"
-              strokeWidth="1.1"
-            />
-          </svg>
+        {/* A phone has no mouse, so on a phone the ghost's "pointer" is a
+            fingertip: a soft dot that presses in when he taps. */}
+        <div className={`ghost-demo-cursor ${phone ? 'is-touch' : ''}`} aria-hidden>
+          {phone ? (
+            <span className="ghost-demo-touch" />
+          ) : (
+            <svg width="32" height="32" viewBox="0 0 24 24">
+              <path
+                d="M5 3 L5 18 L9.5 14.5 L12.5 21 L15 20 L12 13.5 L18 13 Z"
+                fill="#f8fafc"
+                stroke="#9ba1aa"
+                strokeWidth="1.1"
+              />
+            </svg>
+          )}
         </div>
       </div>
 
@@ -806,7 +875,7 @@ export default function GhostDemo({ tabId, onClose }) {
           <div className="ghost-demo-bubble-text">{bubble.text}</div>
           <div className="ghost-demo-bubble-meta">
             {demo
-              ? `Step ${Math.min(stepIdx + 1, demo.steps.length)} / ${demo.steps.length} · ${demo.title}`
+              ? `Step ${Math.min(stepIdx + 1, stepTotal)} / ${stepTotal} · ${demo.title}`
               : 'Tips only'}
           </div>
         </div>

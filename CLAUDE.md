@@ -84,3 +84,4 @@ Two traps confirmed in Cinema 4D 2026.3.2:
 - Parameter names move between versions: 2026 has `MG_RADIAL_AXIS` (value `MG_RADIAL_AXIS_XZ`), not `MG_RADIAL_PLANE`.
 
 Never call `KillDocument()` on the active document and then force a redraw — it crashes Cinema 4D in `drawport_directx`.
+- The opener (`src/web/SplashIntro.jsx`) plays on every launch, desktop and phone, upright and sideways. Never switch it off, gate it, or unmount it. `scripts/opener-guard.mjs` fails the phone build and the release if you do.

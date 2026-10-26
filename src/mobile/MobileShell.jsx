@@ -7,6 +7,9 @@ import { isEnabled as analyticsEnabled } from '../services/analytics.js';
 import { useInstallOffer } from './install.js';
 import { hasWritingAI } from '../services/customAI.js';
 import MobileC4dStrip from './MobileC4dStrip.jsx';
+import { phoneGhostFor } from './phoneGhostScripts.js';
+import { primePhoneGhost } from './PhoneGhost.jsx';
+import ghostIcon from '../assets/ghost-logo-icon.png';
 
 /**
  * THE PHONE NAVIGATION, built from the approved landscape mockups.
@@ -135,7 +138,7 @@ function findVisible(hook) {
   return null;
 }
 
-export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
+export default function MobileShell({ tabs, activeTab, onSelect, onWizard, onGhostDemo, onGhostStop }) {
   const store = useLyricStore();
   const hasKey = hasWritingAI(store.config);
   const installOffer = useInstallOffer();
@@ -317,6 +320,23 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
   const helpTab = helpFor ? tabs.find((t) => t.id === helpFor) : null;
   const closeHelp = () => setHelpFor(null);
   const action = openId ? ACTIONS[openId] : null;
+
+  /* THE GHOST DEMO, ON THE PHONE. Desktop starts it from the header, which the
+     phone hides, so it lives in the bar on every tool that has a walkthrough.
+     primePhoneGhost has to run inside this tap or an iPhone plays it silent. */
+  const hasGhost = (id) => !!(onGhostDemo && id && phoneGhostFor(id));
+  const startGhost = () => {
+    if (sheet) closeSheet();
+    closeHelp();
+    primePhoneGhost();
+    onGhostDemo();
+  };
+  // Back to the launcher ends the walkthrough: it has nothing left to point at.
+  const ghostStopRef = useRef(onGhostStop);
+  ghostStopRef.current = onGhostStop;
+  useEffect(() => {
+    if (!openId) ghostStopRef.current?.();
+  }, [openId]);
   const actionNeedsKey = !!action && NEEDS_KEY.has(openId) && !hasKey;
 
   /* BUSY SHOWS IN THE BAR. The tool's own button says it is working, but on a
@@ -337,6 +357,21 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
     if (actionNeedsKey) { go('settings', { push: true }); return; }
     const el = findVisible(action.hook);
     if (!el) return;
+    if (el.disabled) {
+      // A greyed-out button is waiting on something, almost always the first box
+      // above it that is still empty (Ghost Rider's artist, Voice Lab's script).
+      // Go there and open it, so the bar button never just sits there doing nothing.
+      const empty = [...document.querySelectorAll('input, textarea')].find((f) => (
+        isField(f) && !f.value && !f.disabled && !f.readOnly && f.getClientRects().length
+        && !f.closest('.mob-root')
+        && (el.compareDocumentPosition(f) & Node.DOCUMENT_POSITION_PRECEDING)
+      ));
+      if (empty) {
+        empty.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        setTimeout(() => empty.focus(), 350);
+        return;
+      }
+    }
     el.scrollIntoView({ block: 'center', behavior: 'smooth' });
     if (!el.disabled) setTimeout(() => el.click(), 300);
   };
@@ -381,6 +416,16 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
             {action && (
               <button className={`mob-go ${actionNeedsKey ? 'is-key' : ''}`} onClick={runAction} disabled={busy} aria-busy={busy}>
                 {actionNeedsKey ? 'Add key' : busy ? 'Working…' : action.label}
+              </button>
+            )}
+            {hasGhost(openId) && (
+              <button
+                className="mob-icon-btn mob-ghost-btn"
+                onClick={startGhost}
+                aria-label={`Ghost demo: watch the Ghost walk through ${current ? current.label : 'this tool'}`}
+                title="Ghost demo"
+              >
+                <img src={ghostIcon} alt="" width="34" height="34" draggable="false" />
               </button>
             )}
             {current?.help && (
@@ -542,6 +587,14 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard }) {
               <p className="mob-help-key">
                 <KeyRound size={13} strokeWidth={2} aria-hidden="true" /> Needs your free AI key from Settings.
               </p>
+            )}
+            {/* The first-time card is where a new user is listening, so the
+                demo is offered here in words, not only as the icon in the bar. */}
+            {hasGhost(helpTab.id) && helpTab.id === openId && (
+              <button className="mob-help-ghost" onClick={startGhost}>
+                <img src={ghostIcon} alt="" width="28" height="28" draggable="false" />
+                Watch the Ghost show you
+              </button>
             )}
             <button className="mob-help-ok" onClick={closeHelp}>Got it</button>
           </div>

@@ -10,12 +10,12 @@ import './styles/opsec.css';
 import './styles/materials.css';
 import { startWheelControls } from './services/wheelControls.js';
 import { registerPWA } from './web/registerPWA.js';
-import PhoneSplash from './web/PhoneSplash.jsx';
 import { installPhoneAudio } from './web/iosAudio.js';
 import { installPhoneSave } from './web/iosSave.js';
 import NetStatus from './web/NetStatus.jsx';
 import DesktopUpdate from './web/DesktopUpdate.jsx';
 import PurchaseLock from './web/PurchaseLock.jsx';
+import WhatsNew from './web/WhatsNew.jsx';
 import SplashIntro from './web/SplashIntro.jsx';
 import PhoneInvite from './web/PhoneInvite.jsx';
 import DialogHost from './components/common/DialogHost.jsx';
@@ -86,15 +86,16 @@ try {
   ReactDOM.createRoot(rootEl).render(
     <React.StrictMode>
       <BootErrorBoundary>
-        {/* Phone only: the opener with its soundtrack, every fresh open. */}
-        <PhoneSplash />
         {/* Phone build: asks for the Gumroad purchase code once. Passes
             straight through in the desktop app and on the dev server. */}
         <PurchaseLock>
           <App />
-          {/* The opener on desktop, over everything until it ends. Phones
-              get it from PhoneSplash instead - see SplashIntro.jsx. */}
+          {/* The opener, over everything until it ends. Every launch, desktop
+              and phone, upright or sideways. Never remove or gate this: the
+              phone build fails without it (scripts/opener-guard.mjs). */}
           <SplashIntro />
+          {/* Every fresh open, for everyone: what changed. See WhatsNew.jsx. */}
+          <WhatsNew />
           {/* Desktop only: how to put it on the phone, first thing, once. */}
           <PhoneInvite />
         </PurchaseLock>

@@ -6,6 +6,7 @@
 //   node scripts/ghost-tts-openrouter.mjs --voice <name>        bake every Ghost line + wizard card
 //   node scripts/ghost-tts-openrouter.mjs --voice <name> --tab quantum
 //   node scripts/ghost-tts-openrouter.mjs --voice <name> --only ghost|wizard
+//   node scripts/ghost-tts-openrouter.mjs --voice g38-algieba --only phone   the phone Ghost
 //
 // THE KEY. Taken from OPENROUTER_API_KEY if set, otherwise from the key the app
 // itself saved (its Local Storage). It is only ever put in the Authorization
@@ -18,6 +19,8 @@ import { spawnSync } from 'child_process';
 const ROOT = path.dirname(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')));
 const GHOST_DIR = path.join(ROOT, 'src', 'assets', 'ghost-vo');
 const WIZARD_DIR = path.join(ROOT, 'public', 'wizard-audio');
+// The phone Ghost (src/mobile/phoneGhostScripts.js) has its own lines and clips.
+const PHONE_DIR = path.join(ROOT, 'src', 'assets', 'ghost-vo-phone');
 const API = 'https://openrouter.ai/api/v1/audio/speech';
 
 // Who the Ghost is, for the models that take direction. The old bake read every
@@ -26,6 +29,13 @@ const DIRECTION = 'You are the Ghost, the guide inside a music studio app. Speak
   + 'confident late-night radio host with a little mischief: lively, varied intonation, '
   + 'real emphasis on the words that matter, natural pauses, a smile in the voice. '
   + 'Never flat, never robotic, never rushed. Clear enough for a beginner to follow.';
+
+// The phone Ghost has no caption on screen: the voice IS the walkthrough, and
+// Chris wants it friendly and funny, not a narrator (2026-10-22).
+const PHONE_DIRECTION = 'You are the Ghost, a friendly, funny ghostwriter showing a friend around a '
+  + 'music app on their phone. Talk like a real person, not an announcer: relaxed, warm, playful, '
+  + 'a grin in your voice, good comic timing on the jokes, natural pauses. Never robotic, never flat, '
+  + 'never rushed. Clear enough for a beginner to follow.';
 
 // name -> request body (minus input). Voices checked against each model page.
 const CANDIDATES = {
@@ -128,6 +138,21 @@ if (args.includes('--audition')) {
   if (!spec) { console.log('Pick a voice: --voice ' + Object.keys(CANDIDATES).join(' | ')); process.exit(1); }
   const which = opt('--only');
   const jobs = [];
+  if (which === 'phone') {
+    const phone = await import('file:///' + path.join(ROOT, 'src', 'mobile', 'phoneGhostScripts.js').split(path.sep).join('/'));
+    fs.mkdirSync(PHONE_DIR, { recursive: true });
+    let p = phone.phoneGhostLines();
+    if (opt('--tab')) p = p.filter((l) => l.tabId === opt('--tab'));
+    if (opt('--ids')) p = p.filter((l) => opt('--ids').split(',').includes(l.id));
+    const phoneSpec = spec.instructions ? { ...spec, instructions: PHONE_DIRECTION } : spec;
+    let fails = 0;
+    for (const [n, job] of p.entries()) {
+      try { await speak(key, phoneSpec, job.text, path.join(PHONE_DIR, `${job.id}.mp3`)); console.log(`[${n + 1}/${p.length}] ${job.id}`); }
+      catch (e) { fails++; console.log(`[${n + 1}/${p.length}] FAIL ${job.id}: ${e.message}`); }
+    }
+    console.log(fails ? `${fails} failed` : 'all baked', `(voice ${name}, phone)`);
+    process.exit(fails ? 1 : 0);
+  }
   if (which !== 'wizard') {
     let g = lines.ghostLines();
     if (opt('--tab')) g = g.filter((l) => l.tabId === opt('--tab'));

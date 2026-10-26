@@ -1,0 +1,17 @@
+/* The Ghost's layered face. See GhostFace.jsx. Every layer is a square-relative box. */
+.gf {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.gf .gf-layer {
+  position: absolute;
+  display: block;
+  max-width: none;
+  max-height: none;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  transform-origin: 50% 40%;
+}
+.gf .gf-base { left: 0; top: 0; width: 100%; height: 100%; }

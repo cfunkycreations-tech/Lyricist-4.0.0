@@ -140,6 +140,9 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
               style={{ fontSize: '0.9rem', padding: '10px 12px' }}
               data-help="Just a label so the other person knows who is typing. It is not an account and it is not sent anywhere except to the people in your session."
             />
+            {status && (
+              <div role="status" style={{ fontSize: '0.74rem', fontWeight: 600, color: /^(Put your name|Could not)/.test(status) ? '#f87171' : 'rgba(52,211,153,0.9)' }}>{status}</div>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 4 }}>
@@ -276,7 +279,10 @@ export default function CollabTab({ onSendToSongwriter, currentLyrics }) {
         </>
       )}
 
-      {status && (
+      {/* Before a session the message sits up with the name box and the two buttons it
+          is about. At the bottom of the page it was a screen below "Start a session",
+          so with no name typed the button seemed to do nothing. */}
+      {status && session && (
         <div style={{ fontSize: '0.72rem', color: 'rgba(52,211,153,0.9)' }}>{status}</div>
       )}
 

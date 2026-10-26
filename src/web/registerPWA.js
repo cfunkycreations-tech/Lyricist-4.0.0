@@ -49,6 +49,20 @@ export function registerPWA() {
   if (!/^https?:$/.test(window.location.protocol)) return;  // file:// -> Electron
   if (window.lyricistAPI) return;                            // desktop app
   if (!('serviceWorker' in navigator)) return;
+  // NEVER ON THE DEV SERVER. A worker registered by a weeks-old dev session
+  // kept serving that old build at the same localhost address: Chris opened
+  // the preview on 2026-10-23 and got build 148's fonts, purple and icons, and
+  // no opener, while the code on disk was right. Dev removes any worker and
+  // its caches instead, so the preview is always the code as it is now.
+  if (import.meta.env.DEV) {
+    navigator.serviceWorker.getRegistrations?.()
+      .then((regs) => regs.forEach((r) => r.unregister()))
+      .catch(() => {});
+    window.caches?.keys?.()
+      .then((keys) => keys.forEach((k) => window.caches.delete(k)))
+      .catch(() => {});
+    return;
+  }
 
   window.addEventListener('load', () => {
     // The build number rides in the URL so a release produces a byte-different

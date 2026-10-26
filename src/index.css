@@ -988,6 +988,14 @@ input.lyric-line-input {
     width: 100%;
     overflow-y: visible;
   }
+  /* The results are the second half of ONE scrolling column. As a flex item that
+     could shrink and scroll on its own, they were squeezed to a 28px sliver under
+     the controls with the whole song scrolling inside it (Chris, 2026-10-24: "it
+     won't write the lyrics"). Natural height, and the shell does the scrolling. */
+  .songforge-main {
+    flex: none;
+    overflow: visible;
+  }
   .songforge-results {
     grid-template-columns: 1fr;
   }
@@ -1124,6 +1132,10 @@ input.lyric-line-input {
   background: rgba(0, 0, 0, 0.55); border-right: 1px solid rgba(var(--accent-rgb), 0.2);
 }
 .midi-main { flex: 1; min-width: 0; overflow-y: auto; padding: clamp(12px, 1.6vw, 26px); display: flex; flex-direction: column; gap: 16px; }
+/* Panels in a scrolling column keep their height and the column scrolls. They were
+   free to shrink, so on a short window the Visualizer (and its preset list) was
+   squeezed to 0px high and simply vanished. */
+.midi-main > *, .midi-sidebar > * { flex-shrink: 0; }
 .midi-record-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #f87171; box-shadow: 0 0 0 1px #f87171; animation: pulseGlow 1s infinite; }
 .seq-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 .seq-roll-wrap {
@@ -1206,6 +1218,10 @@ input.lyric-line-input {
 @media (max-width: 900px) {
   .midi-shell { flex-direction: column; overflow-y: auto; }
   .midi-sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(var(--accent-rgb), 0.2); }
+  /* One scrolling column on a phone: the main panel takes its own height and the
+     shell scrolls. As a shrinkable flex item it was squeezed to a sliver with
+     everything scrolling inside it (see .songforge-main). */
+  .midi-main { flex: none; overflow: visible; }
 }
 @media (min-width: 1800px) {
   .midi-main { max-width: 1800px; margin: 0 auto; width: 100%; }
@@ -1272,6 +1288,7 @@ input.lyric-line-input {
 @media (max-width: 900px) {
   .booth-shell { flex-direction: column; overflow-y: auto; }
   .booth-sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(var(--accent-rgb), 0.2); }
+  .booth-main { flex: none; overflow: visible; }
 }
 @media (min-width: 1800px) {
   .booth-main { max-width: 1600px; margin: 0 auto; width: 100%; }
@@ -1309,6 +1326,12 @@ input.lyric-line-input {
 @media (max-width: 900px) {
   .album-shell { flex-direction: column; overflow-y: auto; }
   .album-sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(var(--accent-rgb), 0.22); }
+  .album-main { flex: none; overflow: visible; }
+  /* A track row is grip, number, name, Raw, Mastered, loudness and Remove. In one
+     unwrapped line the Remove button hung 23px off the right edge of the phone,
+     where it could not be tapped. */
+  .album-track { flex-wrap: wrap; row-gap: 6px; }
+  .album-track .album-input { flex: 1 1 120px; min-width: 100px; }
 }
 @media (min-width: 1800px) {
   .album-main { max-width: 1600px; margin: 0 auto; width: 100%; }
