@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { phoneGhostFor, phoneGhostKey } from './phoneGhostScripts.js';
 import { PROMO_LINES } from './promoLines.js';
 import { captureAll, restoreAll } from '../services/demoSafety.js';
-import { playBed, bedFor, primeBed, dropPrimedBed } from '../services/ghostBed.js';
+import { playBed, bedFor, primeBed, dropPrimedBed, PROMO_BEDS } from '../services/ghostBed.js';
 import { withFades } from '../services/clipFade.js';
 import GhostFace from '../components/GhostFace/GhostFace.jsx';
 import { FACE } from '../assets/ghost-face/layout.js';
@@ -521,7 +521,9 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab 
     if (isDead(id)) return;
     // A walkthrough puts the tool back as it found it. A promo keeps its song.
     if (!promo) snapshotRef.current = captureAll();
-    if (musicWanted()) bedRef.current = playBed(bedFor(promo ? 'onemanband' : tabId), { level: BED_LEVEL });
+    // A promo run plays Chris's own songs in his order (ghostBed.js PROMO_BEDS).
+    const music = promo ? (PROMO_BEDS.length ? PROMO_BEDS : bedFor('onemanband')) : bedFor(tabId);
+    if (musicWanted()) bedRef.current = playBed(music, { level: BED_LEVEL });
 
     for (let i = 0; i < demo.steps.length; i += 1) {
       if (isDead(id)) return;
