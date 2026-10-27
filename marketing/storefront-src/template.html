@@ -321,8 +321,8 @@ footer .foot-links a:hover { color: var(--ink); }
 (function () {
   document.documentElement.classList.add('js');
 
-  // Embers: fine bits of fire that rise off the ring around the logo and drift on
-  // a slow swirling flow, white-hot to orange to deep red as they cool.
+  // Embers: fine multicolored bits that rise off the ring around the logo and
+  // drift on a slow swirling flow, fading as they go.
   (function () {
     var cv = document.getElementById('fire');
     if (!cv || !cv.getContext) return;
@@ -335,7 +335,7 @@ footer .foot-links a:hover { color: var(--ink); }
     function spawn(p) {
       var a = Math.random() * Math.PI * 2, d = R * (0.98 + Math.random() * 0.08);
       p.x = W / 2 + Math.cos(a) * d; p.y = H / 2 + Math.sin(a) * d;
-      p.vx = 0; p.vy = 0; p.life = 0; p.max = 90 + Math.random() * 170;
+      p.vx = 0; p.vy = 0; p.life = 0; p.h = Math.floor(Math.random() * 360); p.max = 90 + Math.random() * 170;
       p.s = Math.random() < 0.08 ? 1.6 + Math.random() : 0.5 + Math.random() * 0.9;
       return p;
     }
@@ -345,16 +345,12 @@ footer .foot-links a:hover { color: var(--ink); }
       var w = Math.sin(nx * 7 + t * .6) + Math.cos(ny * 9 - t * .45) + Math.sin((nx + ny) * 11 + t * .8);
       return [Math.cos(ang) * .35 + Math.cos(w * 1.6) * .35, Math.sin(ang) * .35 + Math.sin(w * 1.6) * .35 - .55];
     }
-    function color(k) {                                         // k: 0 hot .. 1 cool
-      var r = 255, g = Math.round(235 - 190 * k), b = Math.round(170 * Math.max(0, 1 - k * 3));
-      return r + ',' + g + ',' + b;
-    }
     function frame() {
       if (!on) return;
       t += 1 / 60;
       cx.globalCompositeOperation = 'source-over';
       cx.clearRect(0, 0, W, H);
-      cx.globalCompositeOperation = 'lighter'; cx.lineCap = 'round';
+      cx.globalCompositeOperation = 'lighter';
       for (var i = 0; i < ps.length; i++) {
         var p = ps[i], f = flow(p.x, p.y);
         p.vx = p.vx * .94 + f[0] * .09; p.vy = p.vy * .94 + f[1] * .09;
@@ -362,9 +358,9 @@ footer .foot-links a:hover { color: var(--ink); }
         var k = p.life / p.max;
         if (k >= 1 || p.x < 0 || p.x > W || p.y < 0) { spawn(p); continue; }
         var al = Math.min(1, p.life / 12) * (1 - k) * .9;
-        cx.strokeStyle = 'rgba(' + color(k) + ',' + al.toFixed(3) + ')';
-        cx.lineWidth = p.s * (1 - k * .5);
-        cx.beginPath(); cx.moveTo(p.x - p.vx * 4, p.y - p.vy * 4); cx.lineTo(p.x, p.y); cx.stroke();
+        cx.fillStyle = 'hsla(' + p.h + ',100%,' + (72 - 20 * k) + '%,' + al.toFixed(3) + ')';
+        cx.beginPath(); cx.arc(p.x, p.y, p.s * (1 - k * .5), 0, 6.283); cx.fill();
+        if (p.s > 1.5) { cx.fillStyle = 'hsla(' + p.h + ',100%,55%,' + (al * .12).toFixed(3) + ')'; cx.beginPath(); cx.arc(p.x, p.y, p.s * 5, 0, 6.283); cx.fill(); }
       }
       if (!still) requestAnimationFrame(frame);
     }
