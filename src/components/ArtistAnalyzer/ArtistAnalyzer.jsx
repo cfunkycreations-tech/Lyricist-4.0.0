@@ -330,6 +330,10 @@ export default function ArtistAnalyzer({ onGhostSend }) {
       const tags = await writeAnalysisTags({ artist: artistName, report: reportText, kind: KIND_NAME[tab] }, store);
       if (!tags) throw new Error('No tags came back.');
       setSunoTags(tags);
+      // Where The Matrix and Black Hole Studios read them. Only saving the song
+      // file used to put them there, so the singer never left Ghost Rider and
+      // Black Hole Studios sang with whatever voice was left over.
+      saveSunoTags(tags, artistName);
       return tags;
     } catch (e) {
       setTagsError(e?.message || 'The tags did not come back.');
@@ -361,6 +365,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
       const tags = songTags || sunoTags;
       setGhostLyrics(lyrics);
       setSunoTags(tags);
+      if (tags) saveSunoTags(tags, artist.trim());
       track('ghostrider_song_written', { sections: (lyrics.match(/^\[[^\]]+\]\s*$/gm) || []).length });
 
       /**
