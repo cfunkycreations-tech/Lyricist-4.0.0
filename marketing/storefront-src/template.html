@@ -332,10 +332,12 @@ footer .foot-links a:hover { color: var(--ink); }
       var r = cv.getBoundingClientRect(); W = r.width; H = r.height; R = W / 1.64 * 0.41;
       cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
+    var NOTES = [0x266A, 0x266B, 0x2669, 0x266C, 0x266A, 0x266B, 0x1D11E, 0x1D122, 0x266F, 0x266D, 0x266E].map(function (c) { return String.fromCodePoint(c); });
     function spawn(p) {
       var a = Math.random() * Math.PI * 2, d = R * (0.98 + Math.random() * 0.08);
       p.x = W / 2 + Math.cos(a) * d; p.y = H / 2 + Math.sin(a) * d;
-      p.vx = 0; p.vy = 0; p.life = 0; p.h = Math.floor(Math.random() * 360); p.max = 90 + Math.random() * 170;
+      p.vx = 0; p.vy = 0; p.life = 0; p.h = Math.floor(Math.random() * 360);
+      p.n = Math.random() < 0.05 ? NOTES[Math.floor(Math.random() * NOTES.length)] : null; p.ns = 13 + Math.random() * 11; p.r = (Math.random() - .5) * .6; p.max = 90 + Math.random() * 170;
       p.s = Math.random() < 0.08 ? 1.6 + Math.random() : 0.5 + Math.random() * 0.9;
       return p;
     }
@@ -350,7 +352,7 @@ footer .foot-links a:hover { color: var(--ink); }
       t += 1 / 60;
       cx.globalCompositeOperation = 'source-over';
       cx.clearRect(0, 0, W, H);
-      cx.globalCompositeOperation = 'lighter';
+      cx.globalCompositeOperation = 'lighter'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
       for (var i = 0; i < ps.length; i++) {
         var p = ps[i], f = flow(p.x, p.y);
         p.vx = p.vx * .94 + f[0] * .09; p.vy = p.vy * .94 + f[1] * .09;
@@ -359,6 +361,11 @@ footer .foot-links a:hover { color: var(--ink); }
         if (k >= 1 || p.x < 0 || p.x > W || p.y < 0) { spawn(p); continue; }
         var al = Math.min(1, p.life / 12) * (1 - k) * .9;
         cx.fillStyle = 'hsla(' + p.h + ',100%,' + (72 - 20 * k) + '%,' + al.toFixed(3) + ')';
+        if (p.n) {                                              // a musical note
+          cx.save(); cx.translate(p.x, p.y); cx.rotate(p.r + Math.sin(t * 2 + p.h) * .25);
+          cx.font = p.ns.toFixed(1) + 'px "Segoe UI Symbol", "Apple Symbols", "Noto Music", "Noto Sans Symbols 2", serif';
+          cx.fillText(p.n, 0, 0); cx.restore(); continue;
+        }
         cx.beginPath(); cx.arc(p.x, p.y, p.s * (1 - k * .5), 0, 6.283); cx.fill();
         if (p.s > 1.5) { cx.fillStyle = 'hsla(' + p.h + ',100%,55%,' + (al * .12).toFixed(3) + ')'; cx.beginPath(); cx.arc(p.x, p.y, p.s * 5, 0, 6.283); cx.fill(); }
       }
