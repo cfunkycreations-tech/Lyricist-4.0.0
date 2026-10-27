@@ -17,7 +17,7 @@ cloud = ''.join(f'<li{" class=hi" if t in HI else ""}>{html.escape(t)}</li>' for
 page = open(os.path.join(D, 'template.html'), encoding='utf-8').read()
 for k, v in {
     'FONT': b64('audiowide.woff2'), 'LOGO_SM': uri('logo-sm.webp'), 'LOGO_MD': uri('logo-md.webp'),
-    'PHOTO': uri('funk.webp'), 'SKYLINE': uri('skyline.webp'), 'STUDIO': uri('studio.webp'),
+    'PHOTO': uri('logo-badge.webp'), 'SKYLINE': uri('skyline.webp'), 'STUDIO': uri('studio.webp'),
     'RIDER': uri('rider.webp'), 'MATRIX': uri('matrix.webp'), 'LOOPS': uri('loops.webp'), 'CLOUD': cloud,
     'LP_URL': 'https://funkycreations.gumroad.com/l/lyricist-pro', 'TP_URL': 'https://funkycreations.gumroad.com/l/avtte',
 }.items():
