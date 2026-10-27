@@ -75,13 +75,8 @@ p { margin: 0; }
     radial-gradient(55% 60% at 24% 50%, var(--glow), transparent 70%); }
 .hero .wrap { position: relative; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(28px, 5vw, 72px); align-items: center; }
 .orbit { position: relative; width: min(440px, 100%); aspect-ratio: 1; margin-inline: auto; }
-.orbit .spin { position: absolute; inset: -4%; border-radius: 50%;
-  background: conic-gradient(from 0deg, transparent 0 8%, #ff7a26 16%, #ffd29a 22%, #ff8a3d 30%, transparent 42% 55%, #a77bff 64%, #ff6a1a 72%, #ffc078 78%, transparent 90%);
-  -webkit-mask: radial-gradient(circle, transparent 0 62%, #000 64% 70%, transparent 74%);
-          mask: radial-gradient(circle, transparent 0 62%, #000 64% 70%, transparent 74%);
-  filter: blur(3px); animation: spin 12s linear infinite; }
-.orbit .spin.wide { inset: -14%; filter: blur(18px); opacity: .7; animation-duration: 20s; animation-direction: reverse; }
-.orbit .photo { position: absolute; inset: 9%; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 2px rgba(255, 214, 170, .85), 0 0 34px 6px rgba(255, 140, 60, .55), 0 0 110px 30px rgba(255, 110, 40, .25); }
+.orbit .fire { position: absolute; inset: -32%; width: 164%; height: 164%; pointer-events: none; }
+.orbit .photo { position: absolute; inset: 9%; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 1px rgba(255, 190, 130, .35), 0 0 60px 10px rgba(255, 110, 30, .22); }
 .orbit .photo img { width: 100%; height: 100%; object-fit: cover; }
 .orbit .badge { position: absolute; right: 2%; bottom: 6%; width: 30%; animation: bob 6s ease-in-out infinite; filter: drop-shadow(0 10px 24px rgba(0,0,0,.6)); }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -179,7 +174,7 @@ footer .foot-links a:hover { color: var(--ink); }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .orbit .spin, .orbit .badge { animation: none; }
+  .orbit .badge { animation: none; }
   .js .rise { opacity: 1; transform: none; transition: none; }
   .btn, .gallery img { transition: none; }
 }
@@ -203,8 +198,7 @@ footer .foot-links a:hover { color: var(--ink); }
 <section class="hero">
   <div class="wrap">
     <div class="orbit rise" aria-hidden="true">
-      <div class="spin wide"></div>
-      <div class="spin"></div>
+      <canvas class="fire" id="fire"></canvas>
       <div class="photo"><img src="{{PHOTO}}" alt="Lyricist Pro logo"></div>
     </div>
     <div class="rise">
@@ -326,6 +320,64 @@ footer .foot-links a:hover { color: var(--ink); }
 <script>
 (function () {
   document.documentElement.classList.add('js');
+
+  // Embers: fine bits of fire that rise off the ring around the logo and drift on
+  // a slow swirling flow, white-hot to orange to deep red as they cool.
+  (function () {
+    var cv = document.getElementById('fire');
+    if (!cv || !cv.getContext) return;
+    var cx = cv.getContext('2d'), still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var W = 0, H = 0, R = 0, dpr = Math.min(devicePixelRatio || 1, 2), ps = [], t = 0, on = true;
+    function size() {
+      var r = cv.getBoundingClientRect(); W = r.width; H = r.height; R = W / 1.64 * 0.41;
+      cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    function spawn(p) {
+      var a = Math.random() * Math.PI * 2, d = R * (0.98 + Math.random() * 0.08);
+      p.x = W / 2 + Math.cos(a) * d; p.y = H / 2 + Math.sin(a) * d;
+      p.vx = 0; p.vy = 0; p.life = 0; p.max = 90 + Math.random() * 170;
+      p.s = Math.random() < 0.08 ? 1.6 + Math.random() : 0.5 + Math.random() * 0.9;
+      return p;
+    }
+    function flow(x, y) {
+      var nx = x / W - .5, ny = y / H - .5;
+      var ang = Math.atan2(ny, nx) + Math.PI / 2;               // around the logo
+      var w = Math.sin(nx * 7 + t * .6) + Math.cos(ny * 9 - t * .45) + Math.sin((nx + ny) * 11 + t * .8);
+      return [Math.cos(ang) * .35 + Math.cos(w * 1.6) * .35, Math.sin(ang) * .35 + Math.sin(w * 1.6) * .35 - .55];
+    }
+    function color(k) {                                         // k: 0 hot .. 1 cool
+      var r = 255, g = Math.round(235 - 190 * k), b = Math.round(170 * Math.max(0, 1 - k * 3));
+      return r + ',' + g + ',' + b;
+    }
+    function frame() {
+      if (!on) return;
+      t += 1 / 60;
+      cx.globalCompositeOperation = 'source-over';
+      cx.clearRect(0, 0, W, H);
+      cx.globalCompositeOperation = 'lighter'; cx.lineCap = 'round';
+      for (var i = 0; i < ps.length; i++) {
+        var p = ps[i], f = flow(p.x, p.y);
+        p.vx = p.vx * .94 + f[0] * .09; p.vy = p.vy * .94 + f[1] * .09;
+        p.x += p.vx; p.y += p.vy; p.life++;
+        var k = p.life / p.max;
+        if (k >= 1 || p.x < 0 || p.x > W || p.y < 0) { spawn(p); continue; }
+        var al = Math.min(1, p.life / 12) * (1 - k) * .9;
+        cx.strokeStyle = 'rgba(' + color(k) + ',' + al.toFixed(3) + ')';
+        cx.lineWidth = p.s * (1 - k * .5);
+        cx.beginPath(); cx.moveTo(p.x - p.vx * 4, p.y - p.vy * 4); cx.lineTo(p.x, p.y); cx.stroke();
+      }
+      if (!still) requestAnimationFrame(frame);
+    }
+    size();
+    var n = W < 400 ? 420 : 750;
+    for (var i = 0; i < n; i++) { var p = spawn({}); p.life = Math.random() * p.max; ps.push(p); }
+    if (still) { for (var j = 0; j < 120; j++) frame(); return; }
+    addEventListener('resize', size);
+    if ('IntersectionObserver' in window) new IntersectionObserver(function (es) {
+      var v = es[0].isIntersecting; if (v && !on) { on = true; requestAnimationFrame(frame); } on = v;
+    }).observe(cv);
+    requestAnimationFrame(frame);
+  })();
   var rise = document.querySelectorAll('.rise');
   if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     var io = new IntersectionObserver(function (es) {
