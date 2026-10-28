@@ -23,7 +23,7 @@
   user-select: none;
   -webkit-user-drag: none;
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
-  transform-origin: 88.5% 55%;
+  transform-origin: 49% 39%;
   animation: ghost-hand-float 2.6s ease-in-out infinite;
   transition: scale 0.09s ease-out, transform 0.35s ease-out;
 }

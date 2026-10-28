@@ -9,7 +9,7 @@ import { hasWritingAI } from '../services/customAI.js';
 import MobileC4dStrip from './MobileC4dStrip.jsx';
 import { phoneGhostFor } from './phoneGhostScripts.js';
 import { primePhoneGhost } from './PhoneGhost.jsx';
-import ghostIcon from '../assets/ghost-logo-icon.png';
+import GhostRiderMascot from '../components/GhostRiderMascot/GhostRiderMascot.jsx';
 
 /**
  * THE PHONE NAVIGATION, built from the approved landscape mockups.
@@ -446,7 +446,7 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard, onGho
                 aria-label={`Ghost demo: watch the Ghost walk through ${current ? current.label : 'this tool'}`}
                 title="Ghost demo"
               >
-                <img src={ghostIcon} alt="" width="34" height="34" draggable="false" />
+                <GhostRiderMascot variant="header" size={34} />
               </button>
             )}
             {current?.help && (
@@ -613,7 +613,7 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard, onGho
                 demo is offered here in words, not only as the icon in the bar. */}
             {hasGhost(helpTab.id) && helpTab.id === openId && (
               <button className="mob-help-ghost" onClick={startGhost}>
-                <img src={ghostIcon} alt="" width="28" height="28" draggable="false" />
+                <GhostRiderMascot variant="header" size={28} animated={false} />
                 Watch the Ghost show you
               </button>
             )}

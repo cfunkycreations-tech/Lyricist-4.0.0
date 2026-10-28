@@ -1,0 +1,178 @@
+/* Ghost Rider, the mascot. See GhostRiderMascot.jsx.
+   Only transforms, opacity and filters move: all GPU work, no layout. */
+
+.grm {
+  --grm-size: 96px;
+  --talk: 0;
+  position: relative;
+  display: inline-block;
+  width: var(--grm-size);
+  height: var(--grm-size);
+  flex: none;
+  line-height: 0;
+  vertical-align: middle;
+  user-select: none;
+}
+.grm-header { --grm-size: 40px; }
+.grm-card { --grm-size: 72px; }
+.grm-report { --grm-size: clamp(72px, 14vw, 104px); }
+.grm-loading { --grm-size: clamp(160px, 38vw, 210px); }
+.grm-welcome { --grm-size: clamp(170px, 30vw, 300px); }
+.grm-guide { --grm-size: 100%; width: 100%; height: 100%; }
+.grm.is-interactive { cursor: pointer; }
+
+.grm-float,
+.grm-act { position: absolute; inset: 0; display: block; }
+.grm-act { transform-origin: 50% 70%; }
+
+.grm-art,
+.grm-glow {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  max-width: none;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+/* The neon rim: a soft, colour-shifting glow behind the art. */
+.grm-glow {
+  filter: blur(calc(var(--grm-size) * 0.045)) saturate(1.6) brightness(1.15);
+  opacity: 0.45;
+}
+.grm-header .grm-glow { opacity: 0.3; }
+
+/* The mic: a warm gold glow on the grille. */
+.grm-mic {
+  position: absolute;
+  width: 26%;
+  height: 26%;
+  translate: -50% -50%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 214, 120, 0.85) 0%, rgba(255, 170, 60, 0.35) 40%, rgba(255, 140, 40, 0) 70%);
+  mix-blend-mode: screen;
+  opacity: calc(0.25 + var(--talk) * 0.65);
+}
+.grm-header .grm-mic { display: none; }
+
+/* ---------- motion ---------- */
+.grm:not(.is-still) .grm-float { animation: grm-float 3.5s ease-in-out infinite; }
+.grm:not(.is-still) .grm-glow { animation: grm-rim 4.2s ease-in-out infinite; }
+.grm:not(.is-still) .grm-mic { animation: grm-mic 2.6s ease-in-out infinite; }
+.grm.is-speaking:not(.is-still) .grm-act { rotate: calc(var(--talk) * -2deg); scale: calc(1 + var(--talk) * 0.025); transition: rotate 0.08s, scale 0.08s; }
+
+@keyframes grm-float {
+  0%, 100% { translate: 0 0; rotate: -1.5deg; }
+  50% { translate: 0 calc(var(--grm-size) * -0.06); rotate: 1.5deg; }
+}
+@keyframes grm-rim {
+  0%, 100% { opacity: 0.35; filter: blur(calc(var(--grm-size) * 0.045)) saturate(1.6) brightness(1.1) hue-rotate(0deg); }
+  50% { opacity: 0.6; filter: blur(calc(var(--grm-size) * 0.05)) saturate(1.9) brightness(1.3) hue-rotate(40deg); }
+}
+@keyframes grm-mic {
+  0%, 100% { scale: 0.9; }
+  50% { scale: 1.08; }
+}
+
+/* Analyzing: higher, rocking, brighter, with sparks. */
+.grm-analyzing:not(.is-still) .grm-float { animation: grm-float-high 2.4s ease-in-out infinite; }
+.grm-analyzing:not(.is-still) .grm-act { animation: grm-rock 1.2s ease-in-out infinite; }
+.grm-analyzing:not(.is-still) .grm-glow { animation-duration: 1.6s; }
+.grm-analyzing .grm-mic { opacity: 0.85; animation-duration: 0.6s !important; }
+@keyframes grm-float-high {
+  0%, 100% { translate: 0 calc(var(--grm-size) * -0.05); rotate: -2deg; }
+  50% { translate: 0 calc(var(--grm-size) * -0.12); rotate: 2deg; }
+}
+@keyframes grm-rock {
+  0%, 100% { rotate: -3deg; }
+  50% { rotate: 3deg; }
+}
+.grm-sparks { position: absolute; inset: -8%; pointer-events: none; animation: grm-orbit 3s linear infinite; }
+.grm-sparks i {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 6%; height: 6%;
+  border-radius: 50%;
+  background: hsl(calc(var(--i) * 60deg + 180deg) 100% 65%);
+  box-shadow: 0 0 calc(var(--grm-size) * 0.05) hsl(calc(var(--i) * 60deg + 180deg) 100% 60%);
+  transform: rotate(calc(var(--i) * 60deg)) translateX(calc(var(--grm-size) * 0.55));
+  animation: grm-spark 1.2s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.2s);
+}
+@keyframes grm-orbit { to { rotate: 360deg; } }
+@keyframes grm-spark { 0%, 100% { opacity: 0.2; scale: 0.6; } 50% { opacity: 1; scale: 1.1; } }
+
+/* Success: a hop with a burst of light. Error: a short puzzled tilt. Welcome: a lean in. */
+.grm-success:not(.is-still) .grm-act { animation: grm-hop 0.9s cubic-bezier(0.3, 1.6, 0.5, 1) 1; }
+.grm-success .grm-glow { opacity: 0.8; }
+@keyframes grm-hop {
+  0% { translate: 0 0; scale: 1; }
+  35% { translate: 0 calc(var(--grm-size) * -0.14); scale: 1.08; rotate: -6deg; }
+  70% { translate: 0 0; scale: 0.98; rotate: 3deg; }
+  100% { translate: 0 0; scale: 1; rotate: 0deg; }
+}
+.grm-error:not(.is-still) .grm-act { animation: grm-puzzled 0.8s ease-in-out 1; }
+@keyframes grm-puzzled {
+  0%, 100% { rotate: 0deg; }
+  30% { rotate: -9deg; }
+  60% { rotate: 6deg; }
+}
+.grm-welcome:not(.is-still) .grm-act { animation: grm-lean 1.1s ease-out 1 both; }
+@keyframes grm-lean {
+  0% { scale: 0.85; rotate: 6deg; opacity: 0; }
+  60% { scale: 1.06; rotate: -4deg; opacity: 1; }
+  100% { scale: 1.02; rotate: -2deg; }
+}
+
+/* Tap: 108 %, a tilt, a spring back, a glow pulse. */
+.grm-act.is-tapped { animation: grm-tap 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) 1 !important; }
+.grm-act.is-tapped .grm-glow { animation: grm-pulse 0.65s ease-out 1 !important; }
+@keyframes grm-tap {
+  0% { scale: 1; rotate: 0deg; }
+  30% { scale: 1.08; rotate: -7deg; }
+  60% { scale: 0.97; rotate: 4deg; }
+  100% { scale: 1; rotate: 0deg; }
+}
+@keyframes grm-pulse {
+  0% { opacity: 0.4; }
+  25% { opacity: 1; filter: blur(calc(var(--grm-size) * 0.07)) saturate(2.2) brightness(1.5); }
+  100% { opacity: 0.45; }
+}
+
+/* Off screen, a hidden tab, or reduced motion: nothing runs. */
+.grm.is-off *, .grm.is-off { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) {
+  .grm *, .grm { animation: none !important; transition: none !important; }
+}
+
+/* The loading card (GhostRiderLoading). */
+.grm-loading-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 26px 16px 22px;
+  border-radius: 12px;
+  background: radial-gradient(ellipse at 50% 40%, rgba(120, 60, 200, 0.22), rgba(16, 18, 21, 0.75) 70%);
+  border: 1px solid rgba(155, 161, 170, 0.22);
+}
+.grm-loading-line {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #e6e8eb;
+  text-align: center;
+  animation: grm-line 2.6s ease-in-out both;
+}
+@keyframes grm-line {
+  0% { opacity: 0; translate: 0 4px; }
+  15%, 85% { opacity: 1; translate: 0 0; }
+  100% { opacity: 0; }
+}
+
+/* The report's own corner for the Ghost: beside the title, never over the chart. */
+.grm-report-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.grm-report-head h4 { margin: 0 !important; flex: 1; min-width: 0; }
+@media (max-width: 520px) { .grm-report-head .grm-report { --grm-size: 64px; } }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { subscribeHand, readHand } from '../../services/ghostCursor.js';
 import { subscribeTeach, teachState } from '../../services/ghostTeach.js';
-import ghostSprite from '../../assets/ghost-sprite.png';
+import ghostSprite from '../../assets/mascot/ghost-rider-256.webp';
 import './GhostHand.css';
 
 /**
@@ -30,9 +30,9 @@ import './GhostHand.css';
  */
 
 // Where the fingertip is in the art, as a fraction of the square image.
-const TIP_X = 0.885;
-const TIP_Y = 0.55;
-const SIZE = 150;
+const TIP_X = 0.49;   // the new mascot's pointing fingertip (MASCOT.finger)
+const TIP_Y = 0.39;
+const SIZE = 130;
 
 /**
  * NEVER UNDER THE TITLE BAR. Chris's recording: the Ghost flew to the tab row
@@ -44,7 +44,7 @@ const SIZE = 150;
  *
  * The art's outline, in its own 320px square, from its opaque pixels.
  */
-const OUTLINE = [[18, 204], [28, 156], [44, 84], [170, 44], [202, 38], [220, 40], [234, 48], [248, 72], [288, 176], [150, 254], [124, 266], [88, 274], [38, 274]];
+const OUTLINE = [[26, 161], [82, 45], [104, 28], [138, 16], [171, 12], [183, 16], [206, 37], [286, 193], [293, 224], [275, 268], [231, 307], [122, 271], [56, 236], [26, 166]];
 const TURNS = [0, -15, 15, -30, 30, -45, 45, -60];
 const EDGE = 4;
 
