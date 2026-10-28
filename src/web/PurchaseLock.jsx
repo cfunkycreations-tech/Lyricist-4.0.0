@@ -31,6 +31,7 @@ import './PurchaseLock.css';
 
 const STORE = 'lyricist.unlock';
 const RECHECK_MS = 7 * 24 * 60 * 60 * 1000;
+const SUB_RECHECK_MS = 24 * 60 * 60 * 1000;     // subscriptions: daily
 const BUY_URL = 'https://gumroad.com/l/pzglwj';
 const TRIAL_OVER = 'Your 30-day trial of Lyricist Pro has ended. Get it on Gumroad to keep going; your songs are still here.';
 const trialOver = (v) => !!(v && v.trialEnds && Date.now() > v.trialEnds);
@@ -60,14 +61,14 @@ function forget() {
   try { localStorage.removeItem(STORE); } catch { /* nothing to forget */ }
 }
 
-async function ask(code, recheck) {
+async function ask(code, recheck, product = null) {
   const r = await fetch('/api/unlock', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ code, recheck }),
+    body: JSON.stringify({ code, recheck, product }),
   });
   const data = await r.json().catch(() => ({}));
-  return { ok: data.ok === true, why: data.why || '', revoked: data.revoked === true, trialEnds: Number(data.trialEnds) || 0 };
+  return { ok: data.ok === true, why: data.why || '', revoked: data.revoked === true, trialEnds: Number(data.trialEnds) || 0, plan: data.plan || '', product: data.product || '' };
 }
 
 export default function PurchaseLock({ children }) {
@@ -97,10 +98,11 @@ export default function PurchaseLock({ children }) {
       return;
     }
     const saved = readSaved();
-    if (!saved || Date.now() - (saved.checked || 0) < RECHECK_MS || navigator.onLine === false) return;
-    ask(saved.code, true)
+    const every = saved?.plan === 'monthly' || saved?.plan === 'annual' ? SUB_RECHECK_MS : RECHECK_MS;
+    if (!saved || Date.now() - (saved.checked || 0) < every || navigator.onLine === false) return;
+    ask(saved.code, true, saved.product || null)
       .then((r) => {
-        if (r.ok) save({ ...saved, checked: Date.now(), trialEnds: r.trialEnds });
+        if (r.ok) save({ ...saved, checked: Date.now(), trialEnds: r.trialEnds, plan: r.plan, product: r.product });
         else if (r.revoked) { forget(); setWhy(r.why); setOpen(false); }
       })
       .catch(() => { /* offline or Gumroad down: stay unlocked */ });
@@ -117,7 +119,7 @@ export default function PurchaseLock({ children }) {
     try {
       const r = desk ? await desk.verify(c) : await ask(c, false);
       if (r.ok) {
-        if (!desk) save({ code: c, at: Date.now(), checked: Date.now(), trialEnds: r.trialEnds });
+        if (!desk) save({ code: c, at: Date.now(), checked: Date.now(), trialEnds: r.trialEnds, plan: r.plan, product: r.product });
         setOpen(true);
       } else {
         setWhy(r.why || 'That code did not work. Copy it straight from your receipt.');
