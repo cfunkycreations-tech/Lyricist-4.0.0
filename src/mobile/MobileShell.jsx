@@ -570,6 +570,9 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard, onGho
             Funk Audio Flow OpSec (FAFO) · Austin, Texas
           </span>
           <span className="mob-support-line">
+            © 2026 Christopher Funk. All rights reserved.
+          </span>
+          <span className="mob-support-line">
             Lyricist Pro · Engine: Local/Hybrid · {analyticsEnabled() ? 'Anonymous Usage Stats' : 'Air-Gapped Safe'}
           </span>
           {/* Which build the phone is running: the day it was put online. */}

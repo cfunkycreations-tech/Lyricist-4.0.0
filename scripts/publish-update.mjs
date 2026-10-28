@@ -21,9 +21,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { loadOrCreateKey, manifestSigned, KEY_PATH } from './update-key.mjs';
+import { loadOrCreateKey, manifestSigned, signManifest, KEY_PATH } from './update-key.mjs';
 
-const REPO = 'cfunkycreations-tech/Lyricist-4.0.0';
+// Releases go to the public releases-only repo. Copies installed before the
+// move read the old source repo, so while that repo is still public the same
+// update goes there too, with its own update.json pointing at its own copy
+// (installed copies only take an installer from the repo they read).
+const REPO = 'cfunkycreations-tech/lyricist-pro-releases';
+const OLD_REPO = 'cfunkycreations-tech/Lyricist-4.0.0';
 const releaseRoot = process.env.LYRICIST_RELEASE_DIR
   || path.join(process.env.USERPROFILE || process.env.HOME || '.', 'OneDrive', 'Desktop', 'New Releases for Lyricist Pro');
 const dir = process.argv[2] || path.join(releaseRoot, 'Customer');
@@ -50,47 +55,33 @@ const staged = path.join(dir, m.asset);
 if (path.resolve(staged) !== path.resolve(setup)) fs.copyFileSync(setup, staged);
 
 const gh = spawnSync('gh', ['auth', 'status'], { shell: true, encoding: 'utf8' });
-if (gh.status === 0) {
-  console.log(`Publishing ${m.tag} with the GitHub CLI...`);
-  const r = spawnSync('gh', ['release', 'create', m.tag, `"${staged}"`, `"${manifestPath}"`,
-    '--repo', REPO, '--title', `"${title}"`, '--notes', `"${notes}"`, '--latest'], { shell: true, stdio: 'inherit' });
-  if (path.resolve(staged) !== path.resolve(setup)) fs.rmSync(staged, { force: true });
-  if (r.status !== 0) fail('The GitHub CLI could not publish it (see above).');
-  console.log(`\nPublished. Every copy of Lyricist Pro will update to ${m.version}.\n`);
-  process.exit(0);
+if (gh.status !== 0) fail('Needs the GitHub CLI: install it, then run gh auth login.');
+
+/** update.json for one repo: its own installer URL, signed again. */
+function manifestFor(repo) {
+  const mm = { ...m, url: `https://github.com/${repo}/releases/download/${m.tag}/${m.asset}` };
+  mm.sig = signManifest(mm, loadOrCreateKey());
+  const f = path.join(dir, `update.${repo.split('/')[1]}.json`);
+  fs.writeFileSync(f, JSON.stringify(mm, null, 2));
+  return f;
 }
 
-const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
-if (!token) {
-  fail('Needs the GitHub CLI (install it, then run: gh auth login) or a GH_TOKEN with repo access.');
+function publish(repo) {
+  // The asset has to be called update.json on the release, so stage it under that name.
+  const stageDir = path.join(dir, `.publish-${repo.split('/')[1]}`);
+  fs.mkdirSync(stageDir, { recursive: true });
+  const manifest = path.join(stageDir, 'update.json');
+  fs.copyFileSync(manifestFor(repo), manifest);
+  console.log(`Publishing ${m.tag} to ${repo}...`);
+  const r = spawnSync('gh', ['release', 'create', m.tag, `"${staged}"`, `"${manifest}"`,
+    '--repo', repo, '--title', `"${title}"`, '--notes', `"${notes}"`, '--latest'], { shell: true, stdio: 'inherit' });
+  fs.rmSync(stageDir, { recursive: true, force: true });
+  if (r.status !== 0) fail(`The GitHub CLI could not publish to ${repo} (see above).`);
 }
 
-const api = async (url, opts = {}) => {
-  const res = await fetch(url, {
-    ...opts,
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', ...(opts.headers || {}) },
-  });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) fail(`GitHub said ${res.status}: ${body.message || 'no reason given'}`);
-  return body;
-};
-
-console.log(`Publishing ${m.tag}...`);
-const rel = await api(`https://api.github.com/repos/${REPO}/releases`, {
-  method: 'POST',
-  body: JSON.stringify({ tag_name: m.tag, name: title, body: notes, draft: false, prerelease: false, make_latest: 'true' }),
-});
-const upload = async (file, name, type) => {
-  const size = fs.statSync(file).size;
-  console.log(`  uploading ${name} (${Math.round(size / 1048576)} MB)`);
-  await api(`https://uploads.github.com/repos/${REPO}/releases/${rel.id}/assets?name=${encodeURIComponent(name)}`, {
-    method: 'POST',
-    headers: { 'Content-Type': type, 'Content-Length': String(size) },
-    body: fs.createReadStream(file),
-    duplex: 'half',
-  });
-};
-await upload(staged, m.asset, 'application/octet-stream');
-await upload(manifestPath, 'update.json', 'application/json');
+publish(REPO);
+const vis = spawnSync('gh', ['repo', 'view', OLD_REPO, '--json', 'visibility', '--jq', '.visibility'], { shell: true, encoding: 'utf8' });
+if ((vis.stdout || '').trim() === 'PUBLIC') publish(OLD_REPO);
+else console.log(`${OLD_REPO} is private: skipped (copies installed before the move already read ${REPO}).`);
 if (path.resolve(staged) !== path.resolve(setup)) fs.rmSync(staged, { force: true });
 console.log(`\nPublished. Every copy of Lyricist Pro will update to ${m.version}.\n`);

@@ -295,7 +295,7 @@ if (!creator && !dirOnly) {
       tag,
       setup: setupName,
       asset,
-      url: `https://github.com/cfunkycreations-tech/Lyricist-4.0.0/releases/download/${tag}/${asset}`,
+      url: `https://github.com/cfunkycreations-tech/lyricist-pro-releases/releases/download/${tag}/${asset}`,
       size: fs.statSync(setupPath).size,
       sha512: hash.digest('base64'),
     };
