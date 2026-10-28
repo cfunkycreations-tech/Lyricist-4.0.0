@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import introMp4 from '../assets/blackhole/intro.mp4';
 import introPoster from '../assets/blackhole/intro_poster.webp';
+import timeline from '../assets/splash/timeline.json';
+import { makeStage, loadImages } from './splashStage.js';
 import './SplashIntro.css';
 
 /**
@@ -44,10 +46,25 @@ import './SplashIntro.css';
  * remounted, so switching tabs or coming back from the background does not
  * replay it.
  *
+ * THE PICTURE (Chris, 2026-10-28): his neon splash art, the DJ Ghost over
+ * Austin at night, with the Ghost lip-syncing the opener's voice word by word
+ * and a grin and a wink after "y'all" (splashStage.js). The video above still
+ * plays, unchanged, for its sound and as the clock: it is hidden, and the
+ * stage reads its currentTime every frame. Wide screens get the landscape
+ * art, upright phones the portrait art. If the art cannot load, the video
+ * shows as it always did.
+ *
  * It can always be left early — tap, click, Escape, space, or Skip — and
  * anyone who has asked their system for less motion never sees it at all. An
  * opener you cannot escape is an opener people uninstall.
  */
+
+
+// The two splash pictures and their face layers (scripts/splash/prep_splash.py).
+const ART = import.meta.glob('../assets/splash/*.webp', { eager: true, import: 'default' });
+const artFor = (layout) => Object.fromEntries(['plate', 'mouth', 'eyeL', 'eyeR', 'head', 'hand']
+  .map((k) => [k, ART[`../assets/splash/${layout}-${k}.webp`]]));
+const pickLayout = () => (typeof window !== 'undefined' && window.innerHeight > window.innerWidth * 1.1 ? 'phone' : 'desktop');
 
 /** Phones get the opener. Chris, 2026-10-23: keep it there. Guarded; see above. */
 const PLAY_ON_PHONE = true;
@@ -77,6 +94,8 @@ export default function SplashIntro() {
   const blockedRef = useRef(false);
   const timer = useRef(null);
   const video = useRef(null);
+  const canvas = useRef(null);
+  const [staged, setStaged] = useState(false);              // the art is up; the video only plays sound
 
   const finish = useCallback(() => {
     if (timer.current) return;
@@ -126,6 +145,31 @@ export default function SplashIntro() {
     return () => { dead = true; clearTimeout(bail); };
   }, [show, finish]);
 
+  useEffect(() => {
+    if (!show) return undefined;
+    let dead = false, raf = 0, stage = null;
+    const layout = pickLayout();
+    loadImages(artFor(layout)).then((art) => {
+      if (dead || !art.plate || !canvas.current) return;
+      stage = makeStage(canvas.current, art, timeline.layouts[layout], timeline);
+      setStaged(true);
+      const frame = () => {
+        if (dead) return;
+        raf = requestAnimationFrame(frame);
+        const c = canvas.current, v = video.current;
+        if (!c) return;
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        const w = Math.round(c.clientWidth * dpr), h = Math.round(c.clientHeight * dpr);
+        if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+        const t = v ? v.currentTime : 0;
+        stage.draw(t, dpr);
+        stage.bar(t, v?.duration || 14.2, dpr);
+      };
+      raf = requestAnimationFrame(frame);
+    });
+    return () => { dead = true; cancelAnimationFrame(raf); };
+  }, [show]);
+
   const playNow = useCallback((e) => {
     e.stopPropagation();
     const el = video.current;
@@ -157,6 +201,7 @@ export default function SplashIntro() {
     >
       <video
         ref={video}
+        className={staged ? 'is-audio-only' : ''}
         src={introMp4}
         poster={introPoster}
         autoPlay
@@ -165,6 +210,7 @@ export default function SplashIntro() {
         onEnded={finish}
         onError={finish}
       />
+      <canvas ref={canvas} className={`sintro-stage${staged ? ' is-on' : ''}`} aria-label="Lyricist Pro" />
       {blocked && (
         <button type="button" className="sintro-play" onClick={playNow}>
           Tap to play
