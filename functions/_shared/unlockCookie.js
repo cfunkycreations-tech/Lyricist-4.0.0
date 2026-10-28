@@ -31,12 +31,13 @@ export async function codeHash(code) {
   return [...d.slice(0, 8)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-/** A Set-Cookie value for this code's fingerprint. */
-export async function makeUnlock(hash, secret) {
-  const exp = Math.floor(Date.now() / 1000) + DAYS * 86400;
+/** A Set-Cookie value for this code's fingerprint. endsMs: a trial's end, so the cookie dies with it. */
+export async function makeUnlock(hash, secret, endsMs = 0) {
+  const now = Math.floor(Date.now() / 1000);
+  const exp = endsMs ? Math.min(now + DAYS * 86400, Math.floor(endsMs / 1000)) : now + DAYS * 86400;
   const body = `${exp}.${hash}`;
   const sig = b64url(await crypto.subtle.sign('HMAC', await hmacKey(secret), enc.encode(body)));
-  return `${COOKIE}=${body}.${sig}; Path=/; Max-Age=${DAYS * 86400}; HttpOnly; Secure; SameSite=Lax`;
+  return `${COOKIE}=${body}.${sig}; Path=/; Max-Age=${Math.max(0, exp - now)}; HttpOnly; Secure; SameSite=Lax`;
 }
 
 export const clearUnlock = () => `${COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;

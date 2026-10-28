@@ -20,6 +20,10 @@ import './PurchaseLock.css';
  * definite no from Gumroad (refunded, charged back, not a real code) locks the
  * phone again. No signal, or Gumroad down, never does.
  *
+ * A $0 purchase (a 100%-off code) is a 30-day trial: the checks hand back when
+ * it ends, it is kept with the code, and once it has passed the app locks with
+ * TRIAL_OVER, offline or not (licenseCheck.js, functions/api/unlock.js).
+ *
  * It stops the link being passed around. Someone who knows their way around a
  * browser could still get past it; that is the trade for a $19.99 app that
  * works offline.
@@ -28,6 +32,8 @@ import './PurchaseLock.css';
 const STORE = 'lyricist.unlock';
 const RECHECK_MS = 7 * 24 * 60 * 60 * 1000;
 const BUY_URL = 'https://gumroad.com/l/pzglwj';
+const TRIAL_OVER = 'Your 30-day trial of Lyricist Pro has ended. Get it on Gumroad to keep going; your songs are still here.';
+const trialOver = (v) => !!(v && v.trialEnds && Date.now() > v.trialEnds);
 
 const isPhoneBuild = () => typeof window !== 'undefined'
   && !import.meta.env.DEV
@@ -61,16 +67,24 @@ async function ask(code, recheck) {
     body: JSON.stringify({ code, recheck }),
   });
   const data = await r.json().catch(() => ({}));
-  return { ok: data.ok === true, why: data.why || '', revoked: data.revoked === true };
+  return { ok: data.ok === true, why: data.why || '', revoked: data.revoked === true, trialEnds: Number(data.trialEnds) || 0 };
 }
 
 export default function PurchaseLock({ children }) {
   const [desk] = useState(desktopLicense);
   const gated = !!desk || isPhoneBuild();
-  const [open, setOpen] = useState(() => !gated || (desk ? desk.unlocked() : !!readSaved()));
+  // Open or locked at launch, and why when it is a trial that ran out.
+  const [start] = useState(() => {
+    if (!gated) return { open: true, why: '' };
+    if (desk) { const open = desk.unlocked(); return { open, why: open ? '' : desk.why?.() || '' }; }
+    const saved = readSaved();
+    if (trialOver(saved)) { forget(); return { open: false, why: TRIAL_OVER }; }
+    return { open: !!saved, why: '' };
+  });
+  const [open, setOpen] = useState(start.open);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
-  const [why, setWhy] = useState('');
+  const [why, setWhy] = useState(start.why);
 
   // The weekly quiet re-check, for a phone or PC that is already unlocked.
   useEffect(() => {
@@ -86,7 +100,7 @@ export default function PurchaseLock({ children }) {
     if (!saved || Date.now() - (saved.checked || 0) < RECHECK_MS || navigator.onLine === false) return;
     ask(saved.code, true)
       .then((r) => {
-        if (r.ok) save({ ...saved, checked: Date.now() });
+        if (r.ok) save({ ...saved, checked: Date.now(), trialEnds: r.trialEnds });
         else if (r.revoked) { forget(); setWhy(r.why); setOpen(false); }
       })
       .catch(() => { /* offline or Gumroad down: stay unlocked */ });
@@ -103,7 +117,7 @@ export default function PurchaseLock({ children }) {
     try {
       const r = desk ? await desk.verify(c) : await ask(c, false);
       if (r.ok) {
-        if (!desk) save({ code: c, at: Date.now(), checked: Date.now() });
+        if (!desk) save({ code: c, at: Date.now(), checked: Date.now(), trialEnds: r.trialEnds });
         setOpen(true);
       } else {
         setWhy(r.why || 'That code did not work. Copy it straight from your receipt.');
