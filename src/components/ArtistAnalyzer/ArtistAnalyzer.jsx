@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import TabBackground from '../common/TabBackground.jsx';
 import { registerGhostActions, ghostSettle } from '../../services/ghostBus.js';
+import GhostRiderMascot, { GhostRiderLoading } from '../GhostRiderMascot/GhostRiderMascot.jsx';
 import { randomArtist, saveSunoTags } from '../../services/ghostMemory.js';
 import { applySongTags } from '../../services/songTags.js';
 import { writeStylePressure, writeMatrixWords } from '../QuantumLab/quantumFeatures.js';
@@ -75,6 +76,17 @@ export default function ArtistAnalyzer({ onGhostSend }) {
   const [analysis, setAnalysis] = useState(boot.analysis || '');
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  // Ghost Rider's mood, from the real request (never from a timer of its own).
+  const [mood, setMood] = useState('idle');
+  const wasLoading = useRef(false);
+  useEffect(() => {
+    if (loadingAnalysis) { wasLoading.current = true; setMood('analyzing'); return undefined; }
+    if (!wasLoading.current) return undefined;
+    wasLoading.current = false;
+    setMood(errorMsg ? 'error' : 'success');
+    const id = setTimeout(() => setMood('idle'), 1400);
+    return () => clearTimeout(id);
+  }, [loadingAnalysis, errorMsg]);
   // Style DNA (4.2.0) — structured fingerprint from the freeform analysis
   const [styleDNA, setStyleDNA] = useState(boot.styleDNA || null);
   const [loadingDNA, setLoadingDNA] = useState(false);
@@ -661,6 +673,11 @@ export default function ArtistAnalyzer({ onGhostSend }) {
           borderRight: '1px solid rgba(231,165,64,0.2)'
         }}
       >
+        {/* Ghost Rider's header: the mascot avatar, in his mood. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <GhostRiderMascot variant="header" state={mood} interactive label="Ghost Rider" />
+          <span style={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#e6e8eb' }}>Ghost Rider</span>
+        </div>
         <div data-help="Type the name of any artist you admire. Ghost Rider will study how they write so it can help you write in a similar style — without ever copying their actual songs.">
           <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(155,161,170,0.7)', marginBottom: 5, display: 'block' }}>
             Artist Name
@@ -850,19 +867,24 @@ export default function ArtistAnalyzer({ onGhostSend }) {
 
         {/* Error message */}
         {errorMsg && (
-          <div ref={errorRef} className="pill-red" style={{ margin: '10px 20px', padding: '10px 14px', borderRadius: 8, fontSize: '0.82rem' }}>
-            {errorMsg}
+          <div ref={errorRef} className="pill-red" style={{ margin: '10px 20px', padding: '10px 14px', borderRadius: 8, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <GhostRiderMascot variant="header" state="error" />
+            <span>{errorMsg}</span>
           </div>
         )}
 
         {/* Workspace Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20, background: 'rgba(0,0,0,0.26)' }}>
+          {loadingAnalysis && <GhostRiderLoading />}
           {analysis && (
             <div ref={reportRef} data-demo="gr-report" style={{ background: 'rgba(16,18,21,0.7)', border: '1px solid rgba(155,161,170,0.22)', borderRadius: 10, padding: 18 }}>
-              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e6e8eb', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <BookOpen size={16} />
-                Lyrical Analysis Report: {artist}
-              </h4>
+              <div className="grm-report-head">
+                <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e6e8eb', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <BookOpen size={16} />
+                  Lyrical Analysis Report: {artist}
+                </h4>
+                <GhostRiderMascot variant="report" state={mood === 'analyzing' ? 'idle' : mood} interactive />
+              </div>
               
               {/* Dynamic Emotional Arc intensity chart */}
               <div style={{ marginBottom: 18, background: 'rgba(16,18,21,0.9)', borderRadius: 8, border: '1px solid rgba(155,161,170,0.15)', padding: 12 }}>

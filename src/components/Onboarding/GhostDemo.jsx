@@ -16,9 +16,10 @@ import { holdBannerClosed } from '../../services/ghostBanner.js';
 // Chris, 2026-10-22: and it is the Ghost from the Lyricist Pro logo now, pen,
 // mic and all. The render he had cropped the tail off at the right edge; the
 // tail in ghost-logo.png was rebuilt from the logo itself (full size in
-// marketing/ghost-logo-full.png). The Ask-the-Ghost hand keeps ghost-sprite.png:
-// its fingertip is what lands on the control it presses.
-import GhostFace from '../GhostFace/GhostFace.jsx';
+// marketing/ghost-logo-full.png).
+// Chris, 2026-10-28: and now the new neon Ghost Rider mascot (GhostRiderMascot),
+// everywhere, the Ask-the-Ghost hand included.
+import GhostRiderMascot from '../GhostRiderMascot/GhostRiderMascot.jsx';
 import './GhostDemo.css';
 
 /** The phone build. App.jsx puts this class on <body>; the phone CSS hangs off it too. */
@@ -841,11 +842,11 @@ export default function GhostDemo({ tabId, onClose }) {
             aria-hidden
           >
             <div className="ghost-demo-sprite-wrap" style={{ width: fig.size, height: fig.size }}>
-              <GhostFace
+              <GhostRiderMascot
                 className="ghost-demo-sprite"
+                variant="guide"
                 kind="desktop"
                 speech={speech}
-                look={{ x: fig.flip ? -0.4 : 0.4, y: fig.below ? -0.9 : 0.9 }}
                 style={{ width: fig.size, height: fig.size }}
               />
             </div>

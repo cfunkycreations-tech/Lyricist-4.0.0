@@ -4,8 +4,7 @@ import { PROMO_LINES } from './promoLines.js';
 import { captureAll, restoreAll } from '../services/demoSafety.js';
 import { playBed, bedFor, primeBed, dropPrimedBed, PROMO_BEDS } from '../services/ghostBed.js';
 import { withFades } from '../services/clipFade.js';
-import GhostFace from '../components/GhostFace/GhostFace.jsx';
-import { FACE } from '../assets/ghost-face/layout.js';
+import GhostRiderMascot, { MASCOT } from '../components/GhostRiderMascot/GhostRiderMascot.jsx';
 import './PhoneGhost.css';
 
 /**
@@ -34,7 +33,7 @@ export function phoneGhostReady(tabId) {
 }
 
 const SIZE = 112;                 // the ghost, in CSS px (his face moves now, so it has to be big enough to see)
-const TIP = { x: FACE.tip[0], y: FACE.tip[1] }; // his mic stand's foot, as a share of the art
+const TIP = { x: MASCOT.tail[0], y: MASCOT.tail[1] }; // the bottom of his robe, as a share of the art
 const MUSIC_KEY = 'lyricistGhostMusic';
 const BED_LEVEL = 0.3;
 const BED_UNDER_VOICE = 0.12;
@@ -706,7 +705,7 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab,
         aria-label={promo ? 'Stop the promo run' : undefined}
       >
         <div className="pg-bob">
-          <GhostFace kind="phone" speech={speech} look={{ x: 0, y: below ? -0.9 : 0.9 }} />
+          <GhostRiderMascot variant="guide" kind="phone" speech={speech} />
         </div>
       </div>
 
