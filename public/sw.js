@@ -57,7 +57,7 @@ const SHELL = [
  * are never cache-first and never precached; they go straight to the network so
  * the browser's own HTTP cache decides, and a phone is never silently filled.
  */
-const HEAVY = ['/kokoro/', '/sf2/', '/ort/', '/models/', '/wizard-audio/'];
+const HEAVY = ['/kokoro/', '/sf2/', '/ort/', '/models/', '/wizard-audio/', '/ghost-lp/'];
 
 const isHeavy = (url) => HEAVY.some((d) => url.pathname.includes(d));
 /** Vite writes content-hashed names into /assets/, so they can never go stale. */
