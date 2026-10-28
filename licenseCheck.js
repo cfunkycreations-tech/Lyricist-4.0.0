@@ -8,7 +8,12 @@
  * to Gumroad and never holds the saved code.
  *
  * The rules match functions/api/unlock.js (the phone's Cloudflare check). Keep
- * PRODUCT_ID, MAX_DEVICES and the refund rules the same in both.
+ * PRODUCTS, MAX_DEVICES, the subscription and the refund rules the same in both.
+ *
+ * SUBSCRIPTIONS (2026-10-28): keys from the Monthly and Annual memberships and
+ * the Founder's Lifetime unlock too. A membership locks once Gumroad reports it
+ * ended (cancelled and past its paid period) or its renewal failed; it is
+ * checked daily while online. One-time keys, old and new, never expire.
  *
  * The creator build and `npm run dev` never ask (PurchaseLock decides that), so
  * Chris is never locked out of his own app.
@@ -29,12 +34,57 @@
 const fs = require('fs');
 const path = require('path');
 
-// Lyricist Pro (gumroad.com/l/pzglwj). Same as functions/api/unlock.js.
-const PRODUCT_ID = 'vmQgyfBzmUFRW3O8y2CeMw==';
 // One code, this many installs, phones and PCs together.
 const MAX_DEVICES = 10;
 const RECHECK_MS = 7 * 24 * 60 * 60 * 1000;
+// A subscription is checked again daily (when online), so a cancelled one
+// stops within a day of its paid period ending, not a week.
+const SUB_RECHECK_MS = 24 * 60 * 60 * 1000;
 const VERIFY = 'https://api.gumroad.com/v2/licenses/verify';
+
+// Every Lyricist Pro product a license key can come from (Chris, 2026-10-28:
+// subscriptions). The original $19.99 one-time product first, so every key
+// already out there keeps working exactly as before. Same list in
+// licenseCheck.js and functions/api/unlock.js.
+const PRODUCTS = [
+  { id: 'vmQgyfBzmUFRW3O8y2CeMw==', plan: 'onetime' },    // Lyricist Pro, $19.99 one time (gumroad.com/l/pzglwj)
+  { id: 'AU-9EFQD4l1SpTirn-tkTQ==', plan: 'lifetime' },   // Founder's Lifetime, $149 one time
+  { id: 'ZLUlZ19Y92l7PbBvjmheZw==', plan: 'monthly' },    // Monthly membership, $9.99
+  { id: 'FyE2nTV7fNtGpfdN3QYDEg==', plan: 'annual' },     // Annual membership, $99
+];
+const SUB_ENDED = 'Your Lyricist Pro subscription has ended. Renew it on Gumroad to keep going; your songs are still here.';
+const SUB_FAILED = "Your Lyricist Pro subscription payment didn't go through. Update your card on Gumroad to keep going; your songs are still here.";
+
+/** A membership that has run out: ended, or its renewal payment failed. '' while it is active. */
+function subscriptionProblem(p) {
+  const past = (v) => { const t = Date.parse(v || ''); return Number.isFinite(t) && t <= Date.now(); };
+  if (past(p.subscription_ended_at)) return SUB_ENDED;
+  if (past(p.subscription_failed_at)) return SUB_FAILED;
+  return '';
+}
+
+/**
+ * Ask Gumroad about a code against each product in turn. A code belongs to
+ * exactly one product; Gumroad answers the others with 404. Returns
+ * { res, data, plan } for the product that knows it, or the last 404.
+ * Throws when Gumroad cannot be reached.
+ */
+async function lookup(code, increment, first) {
+  const order = first ? [...PRODUCTS.filter((p) => p.id === first), ...PRODUCTS.filter((p) => p.id !== first)] : PRODUCTS;
+  let last = null;
+  for (const prod of order) {
+    const res = await fetch(VERIFY, {
+      method: 'POST',
+      body: new URLSearchParams({ product_id: prod.id, license_key: code, increment_uses_count: increment ? 'true' : 'false' }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (data.success) return { res, data, plan: prod.plan, productId: prod.id };
+    if (res.status !== 404 || data.success !== false) throw new Error(`gumroad ${res.status}`);
+    last = { res, data, plan: null, productId: null };
+  }
+  return last;
+}
+
 const TRIAL_DAYS = 30;
 // The 100%-off codes that give a trial, not a full copy. Any other free code is a full copy.
 const TRIAL_CODES = ['MATTHEW'];
@@ -74,33 +124,24 @@ function forget(userData) {
   try { fs.unlinkSync(file(userData)); } catch { /* nothing to forget */ }
 }
 
-/** { ok, trialEnds } on yes; { ok: false, why, revoked } on no; throws when Gumroad can't be reached. */
-async function ask(code, recheck) {
-  const res = await fetch(VERIFY, {
-    method: 'POST',
-    body: new URLSearchParams({
-      product_id: PRODUCT_ID,
-      license_key: code,
-      increment_uses_count: recheck ? 'false' : 'true',
-    }),
-  });
-  const data = await res.json().catch(() => ({}));
+/** { ok, trialEnds, plan, productId } on yes; { ok: false, why, revoked } on no; throws when Gumroad can't be reached. */
+async function ask(code, recheck, productId) {
+  const { data, plan, productId: pid } = await lookup(code, !recheck, productId);
   if (!data.success) {
-    // Gumroad's real "no such code" is a 404 with success: false. Anything else
-    // (rate limit, a firewall page, an outage) is not a no, so it never locks.
-    if (res.status !== 404 || data.success !== false) throw new Error(`gumroad ${res.status}`);
     return { ok: false, revoked: true, why: 'That code does not match a Lyricist Pro purchase. Copy it straight from your receipt.' };
   }
   const p = data.purchase || {};
   if (p.refunded || p.chargebacked || (p.disputed && !p.dispute_won)) {
     return { ok: false, revoked: true, why: 'That purchase was refunded, so the code no longer works.' };
   }
+  const sub = subscriptionProblem(p);
+  if (sub) return { ok: false, revoked: true, why: sub };
   if (!recheck && Number(data.uses) > MAX_DEVICES) {
     return { ok: false, why: `That code is already on ${MAX_DEVICES} devices. Email cfunkycreations@gmail.com and we will sort it out.` };
   }
   const ends = trialEnds(p);
   if (ends && Date.now() > ends) return { ok: false, revoked: true, why: TRIAL_OVER };
-  return { ok: true, trialEnds: ends };
+  return { ok: true, trialEnds: ends, plan, productId: pid };
 }
 
 /** Wire the IPC handles. Called once from main.js; userData is () => app.getPath('userData'). */
@@ -114,7 +155,7 @@ function register(ipcMain, userData) {
     if (!c || c.length > 120) return { ok: false, why: 'Type or paste the purchase code from your Gumroad receipt.' };
     try {
       const r = await ask(c, false);
-      if (r.ok) write(userData, { code: c, at: Date.now(), checked: Date.now(), trialEnds: r.trialEnds || 0 });
+      if (r.ok) write(userData, { code: c, at: Date.now(), checked: Date.now(), trialEnds: r.trialEnds || 0, plan: r.plan, productId: r.productId });
       return { ok: r.ok, why: r.why || '' };
     } catch {
       return { ok: false, why: 'Could not reach Gumroad. Unlocking needs the internet once; after that it works offline.' };
@@ -126,10 +167,11 @@ function register(ipcMain, userData) {
     const saved = read(userData);
     if (!saved) return { ok: false, revoked: true, why: '' };
     if (trialOver(saved)) return { ok: false, revoked: true, why: TRIAL_OVER };
-    if (Date.now() - (saved.checked || 0) < RECHECK_MS) return { ok: true };
+    const every = saved.plan === 'monthly' || saved.plan === 'annual' ? SUB_RECHECK_MS : RECHECK_MS;
+    if (Date.now() - (saved.checked || 0) < every) return { ok: true };
     try {
-      const r = await ask(saved.code, true);
-      if (r.ok) { write(userData, { ...saved, checked: Date.now(), trialEnds: r.trialEnds || 0 }); return { ok: true }; }
+      const r = await ask(saved.code, true, saved.productId);
+      if (r.ok) { write(userData, { ...saved, checked: Date.now(), trialEnds: r.trialEnds || 0, plan: r.plan, productId: r.productId }); return { ok: true }; }
       if (r.revoked) { forget(userData); return { ok: false, revoked: true, why: r.why }; }
       return { ok: true };
     } catch {
