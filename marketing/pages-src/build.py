@@ -15,11 +15,11 @@ PAGES = {'about': 'About', 'faq': 'FAQ', 'start': 'Get started', 'refunds': 'Ref
 CTA = '''<aside class="bh-cta">
     <img src="{{LOGO_MD}}" alt="" width="74" height="80">
     <div><h3>Lyricist Pro</h3><p>18 songwriting tools in one Windows app, plus the phone version. Lyrics and Suno tags, a full band, a mastered album.</p></div>
-    <a class="bh-btn bh-btn-hot" href="{{LP_URL}}">Get it <span class="bh-price">$19.99</span></a>
+    <a class="bh-btn bh-btn-hot" href="{{LP_URL}}">See plans <span class="bh-price">from $9.99</span></a>
   </aside>'''
 VARS = {
     'FONT': b64('audiowide.woff2'), 'LOGO_SM': uri('logo-sm.webp'), 'LOGO_MD': uri('logo-md.webp'), 'PHOTO': uri('funk.webp'),
-    'HOME': 'https://funkycreations.gumroad.com', 'LP_URL': 'https://funkycreations.gumroad.com/l/lyricist-pro',
+    'HOME': 'https://funkycreations.gumroad.com', 'LP_URL': 'https://funkycreations.gumroad.com/#pricing',   # the plans (Monthly, Annual, Founder's Lifetime)
 }
 BANNED = r'neon|midnight|rain|heartbreak|cold coffee|shadow|whisper|echo|spark|cage|gravity|chain|storm'
 os.makedirs(OUT, exist_ok=True)
