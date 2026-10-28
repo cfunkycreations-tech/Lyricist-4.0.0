@@ -117,12 +117,12 @@ let nextTrackId = 1;
  */
 const LP_ALBUM = 'Lyricist Ghost LP';
 const LP_SONGS = [
-  ['Apocolyptic Feedback Loop', '01-apocolyptic-feedback-loop.mp3'],
+  ['Apocalyptic Feedback Loop', '01-apocalyptic-feedback-loop.mp3'],
   ['Smoky Minor Loops', '02-smoky-minor-loops.mp3'],
   ['Weightless Ascension', '03-weightless-ascension.mp3'],
   ['Abattom', '04-abattom.mp3'],
-  ['Possestion Frequency', '05-possestion-frequency.mp3'],
-  ['Astal Haunting', '06-astal-haunting.mp3'],
+  ['Possession Frequency', '05-possession-frequency.mp3'],
+  ['Astral Haunting', '06-astral-haunting.mp3'],
   ['Lucid Drifter', '07-lucid-drifter.mp3'],
 ];
 const LP_BASE = `${import.meta.env.BASE_URL || './'}ghost-lp/`;
