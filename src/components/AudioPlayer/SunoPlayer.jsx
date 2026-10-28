@@ -106,6 +106,28 @@ async function fetchSunoPlaylist(id) {
 
 let nextTrackId = 1;
 
+/**
+ * THE LYRICIST GHOST LP. Chris, 2026-10-28: "All of these songs need to be
+ * baked into the app as the Lyricist Ghost LP." Seven of his tracks, in the
+ * order he made them, shipped with the app (public/ghost-lp/, 192k MP3 from
+ * his 24-bit masters). They always sit at the top of the player's list, are
+ * never saved with the user's own streams, and can't be removed. On the phone
+ * they stream from the site (the service worker leaves /ghost-lp/ to the
+ * browser's own cache, so nothing fills the phone until a song is played).
+ */
+const LP_ALBUM = 'Lyricist Ghost LP';
+const LP_SONGS = [
+  ['Apocolyptic Feedback Loop', '01-apocolyptic-feedback-loop.mp3'],
+  ['Smoky Minor Loops', '02-smoky-minor-loops.mp3'],
+  ['Weightless Ascension', '03-weightless-ascension.mp3'],
+  ['Abattom', '04-abattom.mp3'],
+  ['Possestion Frequency', '05-possestion-frequency.mp3'],
+  ['Astal Haunting', '06-astal-haunting.mp3'],
+  ['Lucid Drifter', '07-lucid-drifter.mp3'],
+];
+const LP_BASE = `${import.meta.env.BASE_URL || './'}ghost-lp/`;
+const lpTracks = () => LP_SONGS.map(([name, file]) => ({ id: nextTrackId++, name, url: LP_BASE + file, kind: 'lp', album: LP_ALBUM }));
+
 export default function SunoPlayer() {
   const audioRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -115,8 +137,8 @@ export default function SunoPlayer() {
     // saved streams are rehydrated.
     try {
       const saved = JSON.parse(localStorage.getItem(STREAM_KEY) || '[]');
-      return saved.map(t => ({ ...t, id: nextTrackId++, kind: 'stream' }));
-    } catch { return []; }
+      return [...lpTracks(), ...saved.map(t => ({ ...t, id: nextTrackId++, kind: 'stream' }))];
+    } catch { return lpTracks(); }
   });
   const [current, setCurrent] = useState(-1);
   const [playing, setPlaying] = useState(false);
@@ -325,7 +347,7 @@ export default function SunoPlayer() {
               <span className={playing ? 'suno-eq-bar on' : 'suno-eq-bar'} />
             </div>
             <div className="suno-track-name" title={track?.name}>
-              {track ? track.name : 'No track loaded — upload or stream your Suno audio'}
+              {track ? (track.album ? `${track.name} · ${track.album}` : track.name) : `Press play for the ${LP_ALBUM}, or upload / stream your own`}
             </div>
           </div>
 
@@ -401,13 +423,14 @@ export default function SunoPlayer() {
       {showList && !collapsed && (
         <div className="suno-popover suno-popover--list">
           {tracks.length === 0 && <div className="suno-empty">Playlist is empty.</div>}
+          <div className="suno-empty" style={{ textAlign: 'left', paddingBottom: 2 }}>{LP_ALBUM}</div>
           {tracks.map((t, i) => (
             <div key={t.id} className={`suno-row ${i === current ? 'suno-row--active' : ''}`}>
               <button className="suno-row-name" onClick={() => loadAndPlay(i)} title={t.name}>
                 {i === current && playing ? '▶ ' : ''}{t.name}
-                <span className="suno-row-kind">{t.kind}</span>
+                <span className="suno-row-kind">{t.kind === 'lp' ? 'Ghost LP' : t.kind}</span>
               </button>
-              <button className="suno-btn" onClick={() => removeTrack(i)} aria-label={`Remove ${t.name}`}><X size={12} /></button>
+              {t.kind !== 'lp' && <button className="suno-btn" onClick={() => removeTrack(i)} aria-label={`Remove ${t.name}`}><X size={12} /></button>}
             </div>
           ))}
         </div>
