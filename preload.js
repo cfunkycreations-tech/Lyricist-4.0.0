@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('lyricistAPI', {
     unlocked: () => { try { return ipcRenderer.sendSync('license-unlocked') === true; } catch { return false; } },
     verify: (code) => ipcRenderer.invoke('license-verify', { code }),
     recheck: () => ipcRenderer.invoke('license-recheck'),
+    why: () => { try { return String(ipcRenderer.sendSync('license-why') || ''); } catch { return ''; } },
   },
   // Their own AI server (src/services/customAI.js). Resolves { status, text } or { status: 0, error }.
   customAI: (req) => ipcRenderer.invoke('custom-ai', req),

@@ -17,6 +17,12 @@
  * is checked again quietly; only a definite no from Gumroad (refunded, charged
  * back, not a real code) locks it again. No internet or Gumroad down never does.
  * The code is never logged and never leaves this file except to Gumroad.
+ *
+ * TRIALS. Chris, 2026-10-28: a 100%-off code (MATTHEW) should be "a 30 day
+ * trial", automatically. Any purchase that cost nothing is a trial: it runs
+ * TRIAL_DAYS from the day of the sale, then locks with TRIAL_OVER. The end is
+ * saved with the code and checked at every launch, so staying offline does
+ * not stretch it. Same rule as functions/api/unlock.js.
  */
 const fs = require('fs');
 const path = require('path');
@@ -27,6 +33,16 @@ const PRODUCT_ID = 'vmQgyfBzmUFRW3O8y2CeMw==';
 const MAX_DEVICES = 10;
 const RECHECK_MS = 7 * 24 * 60 * 60 * 1000;
 const VERIFY = 'https://api.gumroad.com/v2/licenses/verify';
+const TRIAL_DAYS = 30;
+const TRIAL_OVER = 'Your 30-day trial of Lyricist Pro has ended. Get it on Gumroad to keep going; your songs are still here.';
+
+/** When a $0 purchase's trial ends (ms), or 0 for a paid purchase. */
+function trialEnds(p) {
+  if (Number(p.price) !== 0) return 0;
+  const sold = Date.parse(p.sale_timestamp || p.created_at || '');
+  return (Number.isFinite(sold) ? sold : Date.now()) + TRIAL_DAYS * 24 * 60 * 60 * 1000;
+}
+const trialOver = (v) => !!(v && v.trialEnds && Date.now() > v.trialEnds);
 
 function file(userData) { return path.join(userData(), 'license.json'); }
 
@@ -43,7 +59,7 @@ function forget(userData) {
   try { fs.unlinkSync(file(userData)); } catch { /* nothing to forget */ }
 }
 
-/** { ok } on yes; { ok: false, why, revoked } on no; throws when Gumroad can't be reached. */
+/** { ok, trialEnds } on yes; { ok: false, why, revoked } on no; throws when Gumroad can't be reached. */
 async function ask(code, recheck) {
   const res = await fetch(VERIFY, {
     method: 'POST',
@@ -67,19 +83,23 @@ async function ask(code, recheck) {
   if (!recheck && Number(data.uses) > MAX_DEVICES) {
     return { ok: false, why: `That code is already on ${MAX_DEVICES} devices. Email cfunkycreations@gmail.com and we will sort it out.` };
   }
-  return { ok: true };
+  const ends = trialEnds(p);
+  if (ends && Date.now() > ends) return { ok: false, revoked: true, why: TRIAL_OVER };
+  return { ok: true, trialEnds: ends };
 }
 
 /** Wire the IPC handles. Called once from main.js; userData is () => app.getPath('userData'). */
 function register(ipcMain, userData) {
-  ipcMain.on('license-unlocked', (event) => { event.returnValue = !!read(userData); });
+  ipcMain.on('license-unlocked', (event) => { const v = read(userData); event.returnValue = !!v && !trialOver(v); });
+  // Why the lock screen is up, when it is a trial that ran out.
+  ipcMain.on('license-why', (event) => { event.returnValue = trialOver(read(userData)) ? TRIAL_OVER : ''; });
 
   ipcMain.handle('license-verify', async (_event, { code } = {}) => {
     const c = typeof code === 'string' ? code.trim() : '';
     if (!c || c.length > 120) return { ok: false, why: 'Type or paste the purchase code from your Gumroad receipt.' };
     try {
       const r = await ask(c, false);
-      if (r.ok) write(userData, { code: c, at: Date.now(), checked: Date.now() });
+      if (r.ok) write(userData, { code: c, at: Date.now(), checked: Date.now(), trialEnds: r.trialEnds || 0 });
       return { ok: r.ok, why: r.why || '' };
     } catch {
       return { ok: false, why: 'Could not reach Gumroad. Unlocking needs the internet once; after that it works offline.' };
@@ -90,10 +110,11 @@ function register(ipcMain, userData) {
   ipcMain.handle('license-recheck', async () => {
     const saved = read(userData);
     if (!saved) return { ok: false, revoked: true, why: '' };
+    if (trialOver(saved)) return { ok: false, revoked: true, why: TRIAL_OVER };
     if (Date.now() - (saved.checked || 0) < RECHECK_MS) return { ok: true };
     try {
       const r = await ask(saved.code, true);
-      if (r.ok) { write(userData, { ...saved, checked: Date.now() }); return { ok: true }; }
+      if (r.ok) { write(userData, { ...saved, checked: Date.now(), trialEnds: r.trialEnds || 0 }); return { ok: true }; }
       if (r.revoked) { forget(userData); return { ok: false, revoked: true, why: r.why }; }
       return { ok: true };
     } catch {

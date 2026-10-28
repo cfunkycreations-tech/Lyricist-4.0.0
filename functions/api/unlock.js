@@ -21,6 +21,11 @@
  *            never locks anybody out.
  * Every yes sets the lp_unlock cookie (functions/_shared/unlockCookie.js),
  * which is what functions/_middleware.js lets in. A certain no clears it.
+ *
+ * Trials (Chris, 2026-10-28): a purchase that cost nothing, a 100%-off code,
+ * is a 30-day trial from the day of the sale. The answer carries trialEnds,
+ * the cookie expires with the trial so the site stops letting that phone in,
+ * and a trial that has run out is a certain no. Same rule as licenseCheck.js.
  */
 import { codeHash, makeUnlock, readUnlock, clearUnlock } from '../_shared/unlockCookie.js';
 
@@ -33,6 +38,15 @@ const PRODUCT_ID = 'vmQgyfBzmUFRW3O8y2CeMw==';   // Lyricist Pro (gumroad.com/l/
 const MAX_DEVICES = 10;
 
 const VERIFY = 'https://api.gumroad.com/v2/licenses/verify';
+const TRIAL_DAYS = 30;
+const TRIAL_OVER = 'Your 30-day trial of Lyricist Pro has ended. Get it on Gumroad to keep going; your songs are still here.';
+
+/** When a $0 purchase's trial ends (ms), or 0 for a paid purchase. */
+function trialEnds(p) {
+  if (Number(p.price) !== 0) return 0;
+  const sold = Date.parse(p.sale_timestamp || p.created_at || '');
+  return (Number.isFinite(sold) ? sold : Date.now()) + TRIAL_DAYS * 24 * 60 * 60 * 1000;
+}
 
 const json = (body, status = 200, cookie = null) => new Response(JSON.stringify(body), {
   status,
@@ -90,7 +104,11 @@ export async function onRequestPost({ request, env }) {
   if (!recheck && Number(data.uses) > MAX_DEVICES) {
     return json({ ok: false, why: `That code is already on ${MAX_DEVICES} devices. Email cfunkycreations@gmail.com and we will sort it out.` });
   }
-  return json({ ok: true }, 200, await makeUnlock(hash, secret));
+  const ends = trialEnds(p);
+  if (ends && Date.now() > ends) {
+    return json({ ok: false, revoked: true, why: TRIAL_OVER }, 200, clearUnlock());
+  }
+  return json({ ok: true, trialEnds: ends }, 200, await makeUnlock(hash, secret, ends));
 }
 
 export function onRequest() {
