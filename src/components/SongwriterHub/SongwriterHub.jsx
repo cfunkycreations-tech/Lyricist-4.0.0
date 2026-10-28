@@ -171,7 +171,14 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio, incoming
      * get only what those tags actually name, so a stoner rock song is never
      * filed as soul because soul was what the last song left there.
      */
-    if (newSong) {
+    // A finished Matrix song with its tags is a new song too: its tags (and
+    // the singer they name) replace the last song's, they are not mixed in.
+    if (fromQuantum && ghostRiderData.lyrics && ghostRiderData.sunoTags) {
+      store.setSunoTags?.(String(ghostRiderData.sunoTags));
+      const found = tagsFromText(ghostRiderData.sunoTags);
+      store.setStylePicks?.({ genres: found.genres, subgenres: found.subgenres, moods: found.moods });
+      store.setVoiceList?.([]);
+    } else if (newSong) {
       store.setTopic(String(ghostRiderData.topic || ''));
       store.setNotes?.('');
       store.setSunoTags?.(String(ghostRiderData.sunoTags || ''));
@@ -351,10 +358,21 @@ export default function SongwriterHub({ ghostRiderData, onSendToStudio, incoming
     const tagText = String(store.sunoTags || '').trim();
     if (tagText) {
       applySongTags(store, { text: tagText });
-      if (!(store.voiceList || []).length) {
-        const v = voicesFromText(tagText);
-        if (v.length) store.setVoiceList(v);
-      }
+      /**
+       * THE SONG'S OWN SINGER WINS.
+       *
+       * Only an empty picker used to take the voice from the tags, so a voice
+       * left from an older song beat the song's own: Chris's Taylor Swift song
+       * came out sung by a man. When the tags name the singer, that is the
+       * voice. When they only say male or female and the picks say the other,
+       * the picks are cleared so the tags' singer goes through to the caption.
+       */
+      const v = voicesFromText(tagText);
+      const picks = store.voiceList || [];
+      const said = /\bfemale\b/i.test(tagText) ? 'female' : /\bmale\b/i.test(tagText) ? 'male' : '';
+      const clash = said && picks.length && !picks.some((p) => new RegExp('\\b' + said + '\\b', 'i').test(p));
+      if (v.length) store.setVoiceList(v);
+      else if (clash) store.setVoiceList([]);
       saveSunoTags(tagText, store.artistRef || '');
     }
     setErrorMsg('');

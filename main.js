@@ -573,7 +573,7 @@ ipcMain.handle('voice-pack', async () => {
   try {
     const dir = ensureVoiceDir();
     const found = {};
-    // 20 cards now: One Man Band, Stemmer and Chopped & Screwed added clips 18,
+    // 20 cards now: Black Hole Studios, Stemmer and Chopped & Screwed added clips 18,
     // 19 and 20. This number is the CEILING on which of his own recordings get
     // found at all, so it has to move every time a card is added — a card past
     // the ceiling silently keeps the baked TTS no matter what he records.
@@ -583,7 +583,7 @@ ipcMain.handle('voice-pack', async () => {
       if (p) found[stem] = require('url').pathToFileURL(p).href;
     }
     // Ghost Demo lines baked by the Voice Lab live one level down, in
-    // voice\ghost, named by their line id (onemanband-0-say.wav ...). Any id
+    // voice\ghost, named by their line id (blackhole-0-say.wav ...). Any id
     // found here wins over the built-in clip, same rule as the cards.
     const ghost = {};
     const gdir = path.join(dir, 'ghost');
@@ -640,7 +640,7 @@ ipcMain.handle('app-log', async (event, { message }) => {
 });
 
 /**
- * One Man Band talking to a ComfyUI, local or rented.
+ * Black Hole Studios talking to a ComfyUI, local or rented.
  *
  * ComfyUI sends no CORS headers, so a browser page cannot call it at all — the
  * engine picker reported "not running" while ComfyUI was plainly running on

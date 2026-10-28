@@ -75,13 +75,8 @@ p { margin: 0; }
     radial-gradient(55% 60% at 24% 50%, var(--glow), transparent 70%); }
 .hero .wrap { position: relative; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(28px, 5vw, 72px); align-items: center; }
 .orbit { position: relative; width: min(440px, 100%); aspect-ratio: 1; margin-inline: auto; }
-.orbit .spin { position: absolute; inset: -4%; border-radius: 50%;
-  background: conic-gradient(from 0deg, transparent 0 8%, #ff7a26 16%, #ffd29a 22%, #ff8a3d 30%, transparent 42% 55%, #a77bff 64%, #ff6a1a 72%, #ffc078 78%, transparent 90%);
-  -webkit-mask: radial-gradient(circle, transparent 0 62%, #000 64% 70%, transparent 74%);
-          mask: radial-gradient(circle, transparent 0 62%, #000 64% 70%, transparent 74%);
-  filter: blur(3px); animation: spin 12s linear infinite; }
-.orbit .spin.wide { inset: -14%; filter: blur(18px); opacity: .7; animation-duration: 20s; animation-direction: reverse; }
-.orbit .photo { position: absolute; inset: 9%; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 2px rgba(255, 214, 170, .85), 0 0 34px 6px rgba(255, 140, 60, .55), 0 0 110px 30px rgba(255, 110, 40, .25); }
+.orbit .fire { position: absolute; inset: -32%; width: 164%; height: 164%; pointer-events: none; }
+.orbit .photo { position: absolute; inset: 9%; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 1px rgba(255, 190, 130, .35), 0 0 60px 10px rgba(255, 110, 30, .22); }
 .orbit .photo img { width: 100%; height: 100%; object-fit: cover; }
 .orbit .badge { position: absolute; right: 2%; bottom: 6%; width: 30%; animation: bob 6s ease-in-out infinite; filter: drop-shadow(0 10px 24px rgba(0,0,0,.6)); }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -97,6 +92,8 @@ p { margin: 0; }
 section.bay { padding-block: clamp(60px, 8vw, 110px); }
 .bay-head { display: grid; gap: 12px; max-width: 760px; margin-bottom: clamp(28px, 4vw, 48px); }
 .bay-head h2 { font-size: clamp(30px, 4.4vw, 54px); }
+.watch { border-radius: 18px; overflow: hidden; background: #000; border: 1px solid var(--line); box-shadow: 0 30px 80px -30px rgba(255, 110, 40, .35); }
+.watch video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000; }
 .record { position: relative; border: 1px solid var(--line); border-radius: 24px; overflow: hidden; background: var(--panel); }
 .record .banner { position: relative; }
 .record .banner img { width: 100%; aspect-ratio: 1600 / 538; object-fit: cover; }
@@ -179,7 +176,7 @@ footer .foot-links a:hover { color: var(--ink); }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .orbit .spin, .orbit .badge { animation: none; }
+  .orbit .badge { animation: none; }
   .js .rise { opacity: 1; transform: none; transition: none; }
   .btn, .gallery img { transition: none; }
 }
@@ -187,8 +184,9 @@ footer .foot-links a:hover { color: var(--ink); }
 
 <header class="nav">
   <div class="wrap">
-    <a class="brand" href="#top"><img src="{{LOGO_SM}}" alt="" width="34" height="37">CFunky Creations</a>
+    <a class="brand" href="#top"><img src="{{LOGO_SM}}" alt="" width="34" height="37">Funk Audio Flow OPSEC</a>
     <nav aria-label="Sections">
+      <a class="opt" href="#watch">Watch</a>
       <a class="opt" href="#lyricist">Lyricist Pro</a>
       <a class="opt" href="#suno">Suno</a>
       <a class="opt" href="#shop">Shop</a>
@@ -203,19 +201,29 @@ footer .foot-links a:hover { color: var(--ink); }
 <section class="hero">
   <div class="wrap">
     <div class="orbit rise" aria-hidden="true">
-      <div class="spin wide"></div>
-      <div class="spin"></div>
-      <div class="photo"><img src="{{PHOTO}}" alt=""></div>
+      <canvas class="fire" id="fire"></canvas>
+      <div class="photo"><img src="{{PHOTO}}" alt="Lyricist Pro logo"></div>
     </div>
     <div class="rise">
-      <p class="eyebrow">Singer-songwriter · Austin, Texas</p>
-      <h1>I built the studio <em>I couldn't afford.</em></h1>
-      <p class="lede">I'm Christopher Funk. Around Austin everybody just calls me Funk. Everything I wanted to make music with cost so much money that I taught myself to code and built it myself. Now I'm passing the savings on to you.</p>
+      <p class="eyebrow">Songwriting studio · Windows, iPhone, Android</p>
+      <h1>Write it. Hear it. <em>Master it.</em></h1>
+      <p class="lede">Lyricist Pro is a full songwriting studio in one app. Write the lyrics, get Suno-ready style tags, hear your words sung by a full band, then master the record. One payment. No subscription.</p>
       <div class="ctas">
         <a class="btn btn-hot" href="{{LP_URL}}">Get Lyricist Pro <span class="tag" data-gumroad-product="lyricist-pro" data-gumroad-field="price">$19.99</span></a>
         <a class="btn btn-ghost" href="#lyricist">See what's inside</a>
       </div>
-      <p class="sign"><b>Funk</b> · founder, CFunky Creations</p>
+      <p class="sign"><b>18 tools</b> · made in Austin, Texas by Funk Audio Flow OPSEC</p>
+    </div>
+  </div>
+</section>
+
+<section class="bay" id="watch" style="padding-top:0">
+  <div class="wrap">
+    <div class="bay-head rise"><p class="eyebrow">Watch it work</p><h2>The Ghost shows you around.</h2></div>
+    <div class="watch rise">
+      <video controls playsinline poster="{{DEMO_POSTER}}">
+        <source src="{{DEMO_VIDEO}}" type="video/mp4">
+      </video>
     </div>
   </div>
 </section>
@@ -229,9 +237,9 @@ footer .foot-links a:hover { color: var(--ink); }
           <p class="eyebrow">The flagship</p>
           <h3 style="margin-top:12px">Lyricist Pro</h3>
           <p class="tagline">Words in. Songs out.</p>
-          <p class="desc">A full songwriting studio with 18 tools in one app. Write the lyrics, get the Suno tags, hear your words sung by a full band, then master the record.</p>
+          <p class="desc">Everything from the first line to the finished, mastered record, in one app on your computer and your phone.</p>
           <ul class="ticks">
-            <li><span><b>Black Hole Studios.</b> Your lyrics, sung by a full band. Short songs run free on the cloud engine.</span></li>
+            <li><span><b>Black Hole Studios.</b> Your lyrics, sung by a full band, right inside the app.</span></li>
             <li><span><b>Ghost Rider.</b> Name any artist and write a brand-new song in their style. It never copies their lyrics.</span></li>
             <li><span><b>Suno-ready.</b> Lyrics and style tags, built to paste straight into Suno.</span></li>
             <li><span><b>The Ghost Demo.</b> Press Play Demo and the Ghost walks you through any tab, out loud.</span></li>
@@ -260,7 +268,7 @@ footer .foot-links a:hover { color: var(--ink); }
     <div class="rise">
       <p class="eyebrow">Made for Suno</p>
       <h2 style="font-size:clamp(30px,4.4vw,52px);margin-top:12px">Build the song here. Run it on Suno.</h2>
-      <p class="lede" style="margin-top:16px">I use AI too, and Suno is a great tool. It sounds best when you hand it real lyrics and the right style tags. Lyricist Pro writes both before you spend a single Suno credit.</p>
+      <p class="lede" style="margin-top:16px">Suno sounds best when you hand it real lyrics and the right style tags. Lyricist Pro writes both, so you stop burning Suno credits on guesses.</p>
     </div>
     <div class="rise">
       <div class="tagbox"><div class="lbl">Lyrics</div>[Verse 1]<br>Pawn shop guitar with a crack down the side<br>Forty dollars, and I paid it with pride</div>
@@ -326,6 +334,67 @@ footer .foot-links a:hover { color: var(--ink); }
 <script>
 (function () {
   document.documentElement.classList.add('js');
+
+  // Embers: fine multicolored bits that rise off the ring around the logo and
+  // drift on a slow swirling flow, fading as they go.
+  (function () {
+    var cv = document.getElementById('fire');
+    if (!cv || !cv.getContext) return;
+    var cx = cv.getContext('2d'), still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var W = 0, H = 0, R = 0, dpr = Math.min(devicePixelRatio || 1, 2), ps = [], t = 0, on = true;
+    function size() {
+      var r = cv.getBoundingClientRect(); W = r.width; H = r.height; R = W / 1.64 * 0.41;
+      cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    var NOTES = [0x266A, 0x266B, 0x2669, 0x266C, 0x266A, 0x266B, 0x1D11E, 0x1D122, 0x266F, 0x266D, 0x266E].map(function (c) { return String.fromCodePoint(c); });
+    function spawn(p) {
+      var a = Math.random() * Math.PI * 2, d = R * (0.98 + Math.random() * 0.08);
+      p.x = W / 2 + Math.cos(a) * d; p.y = H / 2 + Math.sin(a) * d;
+      p.vx = 0; p.vy = 0; p.life = 0; p.h = Math.floor(Math.random() * 360);
+      p.n = Math.random() < 0.05 ? NOTES[Math.floor(Math.random() * NOTES.length)] : null; p.ns = 13 + Math.random() * 11; p.r = (Math.random() - .5) * .6; p.max = 90 + Math.random() * 170;
+      p.s = Math.random() < 0.08 ? 1.6 + Math.random() : 0.5 + Math.random() * 0.9;
+      return p;
+    }
+    function flow(x, y) {
+      var nx = x / W - .5, ny = y / H - .5;
+      var ang = Math.atan2(ny, nx) + Math.PI / 2;               // around the logo
+      var w = Math.sin(nx * 7 + t * .6) + Math.cos(ny * 9 - t * .45) + Math.sin((nx + ny) * 11 + t * .8);
+      return [Math.cos(ang) * .35 + Math.cos(w * 1.6) * .35, Math.sin(ang) * .35 + Math.sin(w * 1.6) * .35 - .55];
+    }
+    function frame() {
+      if (!on) return;
+      t += 1 / 60;
+      cx.globalCompositeOperation = 'source-over';
+      cx.clearRect(0, 0, W, H);
+      cx.globalCompositeOperation = 'lighter'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+      for (var i = 0; i < ps.length; i++) {
+        var p = ps[i], f = flow(p.x, p.y);
+        p.vx = p.vx * .94 + f[0] * .09; p.vy = p.vy * .94 + f[1] * .09;
+        p.x += p.vx; p.y += p.vy; p.life++;
+        var k = p.life / p.max;
+        if (k >= 1 || p.x < 0 || p.x > W || p.y < 0) { spawn(p); continue; }
+        var al = Math.min(1, p.life / 12) * (1 - k) * .9;
+        cx.fillStyle = 'hsla(' + p.h + ',100%,' + (72 - 20 * k) + '%,' + al.toFixed(3) + ')';
+        if (p.n) {                                              // a musical note
+          cx.save(); cx.translate(p.x, p.y); cx.rotate(p.r + Math.sin(t * 2 + p.h) * .25);
+          cx.font = p.ns.toFixed(1) + 'px "Segoe UI Symbol", "Apple Symbols", "Noto Music", "Noto Sans Symbols 2", serif';
+          cx.fillText(p.n, 0, 0); cx.restore(); continue;
+        }
+        cx.beginPath(); cx.arc(p.x, p.y, p.s * (1 - k * .5), 0, 6.283); cx.fill();
+        if (p.s > 1.5) { cx.fillStyle = 'hsla(' + p.h + ',100%,55%,' + (al * .12).toFixed(3) + ')'; cx.beginPath(); cx.arc(p.x, p.y, p.s * 5, 0, 6.283); cx.fill(); }
+      }
+      if (!still) requestAnimationFrame(frame);
+    }
+    size();
+    var n = W < 400 ? 420 : 750;
+    for (var i = 0; i < n; i++) { var p = spawn({}); p.life = Math.random() * p.max; ps.push(p); }
+    if (still) { for (var j = 0; j < 120; j++) frame(); return; }
+    addEventListener('resize', size);
+    if ('IntersectionObserver' in window) new IntersectionObserver(function (es) {
+      var v = es[0].isIntersecting; if (v && !on) { on = true; requestAnimationFrame(frame); } on = v;
+    }).observe(cv);
+    requestAnimationFrame(frame);
+  })();
   var rise = document.querySelectorAll('.rise');
   if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     var io = new IntersectionObserver(function (es) {

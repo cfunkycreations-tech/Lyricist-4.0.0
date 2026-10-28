@@ -28,7 +28,7 @@ export const SLY = 'Sly Ghost';
 
 /** Tabs whose state the Ghost reads through its own describe_ action. */
 const DESCRIBED = {
-  songwriter: 'describe_songwriter', analyzer: 'describe_ghostrider', quantum: 'describe_matrix', songforge: 'describe_songforge', onemanband: 'describe_song',
+  songwriter: 'describe_songwriter', analyzer: 'describe_ghostrider', quantum: 'describe_matrix', songforge: 'describe_songforge', blackhole: 'describe_song',
 };
 
 /** What a done step cannot show yet: a song or a video takes minutes, a lesson just plays. */

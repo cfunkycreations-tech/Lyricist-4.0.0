@@ -17,8 +17,12 @@ cloud = ''.join(f'<li{" class=hi" if t in HI else ""}>{html.escape(t)}</li>' for
 page = open(os.path.join(D, 'template.html'), encoding='utf-8').read()
 for k, v in {
     'FONT': b64('audiowide.woff2'), 'LOGO_SM': uri('logo-sm.webp'), 'LOGO_MD': uri('logo-md.webp'),
-    'PHOTO': uri('funk.webp'), 'SKYLINE': uri('skyline.webp'), 'STUDIO': uri('studio.webp'),
+    'PHOTO': uri('logo-badge.webp'), 'SKYLINE': uri('skyline.webp'), 'STUDIO': uri('studio.webp'),
     'RIDER': uri('rider.webp'), 'MATRIX': uri('matrix.webp'), 'LOOPS': uri('loops.webp'), 'CLOUD': cloud,
+    # Gumroad pages only play video Gumroad hosts: this is the demo in Lyricist
+    # Pro's gallery (slot 2), the poster is in the media library.
+    'DEMO_VIDEO': 'https://public-files.gumroad.com/o7hiqpztnm5d1bexz3yz6qucvkx9',
+    'DEMO_POSTER': 'https://public-files.gumroad.com/ojmrlc9tihmpztc6ciuek94togj4',
     'LP_URL': 'https://funkycreations.gumroad.com/l/lyricist-pro', 'TP_URL': 'https://funkycreations.gumroad.com/l/avtte',
 }.items():
     page = page.replace('{{' + k + '}}', v)

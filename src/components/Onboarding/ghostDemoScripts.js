@@ -10,7 +10,7 @@ import { nextTrendingArtist } from '../../services/trendingArtists.js';
 
 export const GHOST_DEMO_TABS = new Set([
   'songwriter',
-  'onemanband',
+  'blackhole',
   'voicelab',
   'analyzer',
   'songforge',
@@ -26,7 +26,7 @@ export const GHOST_DEMO_TABS = new Set([
 
 /** @type {Record<string, { title: string, steps: object[] }>} */
 export const GHOST_DEMOS = {
-  onemanband: {
+  blackhole: {
     title: 'Black Hole Studios',
     steps: [
       {

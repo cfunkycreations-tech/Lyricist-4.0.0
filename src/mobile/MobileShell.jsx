@@ -50,7 +50,7 @@ import ghostIcon from '../assets/ghost-logo-icon.png';
    never go missing. */
 const GROUPS = [
   { name: 'Write', ids: ['songwriter', 'analyzer', 'songforge', 'quantum', 'collab', 'scratchpad'] },
-  { name: 'Make the music', ids: ['onemanband', 'booth', 'loopstation', 'voicelab', 'midistudio', 'screw', 'stemmer', 'mastering'] },
+  { name: 'Make the music', ids: ['blackhole', 'booth', 'loopstation', 'voicelab', 'midistudio', 'screw', 'stemmer', 'mastering'] },
   { name: 'Find words', ids: ['rhyme', 'thesaurus', 'dictionary'] },
   { name: 'Setup and more', ids: ['settings', 'toolshub'] },
 ];
@@ -68,7 +68,7 @@ const NEEDS_KEY = new Set(['songwriter', 'analyzer', 'songforge', 'quantum', 'vo
    shared with the guided demos; never rename them. */
 const ACTIONS = {
   songwriter: { hook: 'sw-generate', label: 'Generate' },
-  onemanband: { hook: 'omb-make', label: 'Make song' },
+  blackhole: { hook: 'omb-make', label: 'Make song' },
   analyzer: { hook: 'gr-analyze', label: 'Analyze' },
   songforge: { hook: 'sf-forge', label: 'Forge' },
   quantum: { hook: 'matrix-autocraft', label: 'Auto-Craft' },
@@ -325,7 +325,22 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard, onGho
      phone hides, so it lives in the bar on every tool that has a walkthrough.
      primePhoneGhost has to run inside this tap or an iPhone plays it silent. */
   const hasGhost = (id) => !!(onGhostDemo && id && phoneGhostFor(id));
+  /* HOLD THE GHOST BUTTON FIVE SECONDS for the promo runs (mobile/PromoPicker.jsx).
+     Chris, 2026-10-25: five, so no customer finds it by accident. A tap is
+     still the walkthrough; the tap that ends a long press is swallowed. */
+  const holdTimer = useRef(null);
+  const held = useRef(false);
+  const holdStart = () => {
+    held.current = false;
+    clearTimeout(holdTimer.current);
+    holdTimer.current = setTimeout(() => {
+      held.current = true;
+      window.dispatchEvent(new CustomEvent('lyricist:promo'));
+    }, 5000);
+  };
+  const holdEnd = () => clearTimeout(holdTimer.current);
   const startGhost = () => {
+    if (held.current) { held.current = false; return; }
     if (sheet) closeSheet();
     closeHelp();
     primePhoneGhost();
@@ -383,6 +398,7 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard, onGho
       key={t.id}
       className={`${cls} ${activeTab === t.id ? 'is-active' : ''}`}
       onClick={() => go(t.id)}
+      data-tool={t.id}
     >
       <TileIcon tab={t} />
       <span className="mob-tile-text">
@@ -422,6 +438,11 @@ export default function MobileShell({ tabs, activeTab, onSelect, onWizard, onGho
               <button
                 className="mob-icon-btn mob-ghost-btn"
                 onClick={startGhost}
+                onPointerDown={holdStart}
+                onPointerUp={holdEnd}
+                onPointerLeave={holdEnd}
+                onPointerCancel={holdEnd}
+                onContextMenu={(e) => e.preventDefault()}
                 aria-label={`Ghost demo: watch the Ghost walk through ${current ? current.label : 'this tool'}`}
                 title="Ghost demo"
               >

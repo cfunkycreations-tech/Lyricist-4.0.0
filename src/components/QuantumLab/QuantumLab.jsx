@@ -1193,10 +1193,14 @@ export default function QuantumLab({ onSendToSongwriter, onSendToForge, onGoToSe
       return;
     }
     if (onSendToSongwriter) {
+      // The sound and the SINGER go with the song. This sent no tags, so a
+      // Taylor Swift song reached Black Hole Studios with no voice on it and
+      // was sung by whatever male voice the last song left in the picker.
       onSendToSongwriter({
         lyrics: song,
         artist: 'The Matrix',
         source: 'quantum',
+        sunoTags: String(readSunoTags()?.tags || store.sunoTags || '').trim(),
         notes: `Quantum palette: ${[...new Set(cells.map((c) => c.text))].join(', ')}`,
       });
       setStatus({ lead: 'Sent to Songwriter.', rest: ` Song ${which} is in Songwriter as a full song.` });

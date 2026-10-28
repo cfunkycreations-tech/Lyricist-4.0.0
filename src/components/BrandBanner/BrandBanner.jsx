@@ -7,9 +7,15 @@ import c4dMolten from '../../assets/c4d/molten.webm';
 import c4dOrbitMp4 from '../../assets/c4d/orbit.mp4';
 import c4dLyricsMp4 from '../../assets/c4d/lyrics.mp4';
 import c4dMoltenMp4 from '../../assets/c4d/molten.mp4';
-import { useLyricStore } from '../../context/LyricStore.jsx';
+import skylineWest from '../../assets/banner/skyline-west.webp';
+import skylineEast from '../../assets/banner/skyline-east.webp';
+import sixthWest from '../../assets/banner/sixth-west.webp';
+import sixthEast from '../../assets/banner/sixth-east.webp';
+import zilkerWest from '../../assets/banner/zilker-west.webp';
+import zilkerEast from '../../assets/banner/zilker-east.webp';
+import hillsWest from '../../assets/banner/hills-west.webp';
+import hillsEast from '../../assets/banner/hills-east.webp';
 import { getAudioContext, getMasterBus } from '../../services/audioEngine.js';
-import { buildSkyline, drawSkyline } from './skyline.js';
 import './BrandBanner.css';
 
 /**
@@ -24,24 +30,39 @@ import './BrandBanner.css';
  *             playing: stars drifting in towards the logo.
  *   disc    — the Black Hole Studios loop stretched wide behind the logo, so
  *             the logo sits in the middle of the spinning disc.
- *   skyline — Austin across Lady Bird Lake, drawn like the logo's skyline
- *             (skyline.js): the real towers, the Capitol, UT, Frost,
- *             Pennybacker, moonlight towers, SRV and Willie, the bats, the
- *             grackles, a kayaker and an armadillo.
- *   info    — what's playing on the left, the song's genre, mood and topic
- *             on the right.
+ * Four are Austin, photoreal, one picture each side of the logo. Chris,
+ * 2026-10-27: the drawn skyline "looks too blocky... Make it look like the
+ * real fucking thing. Photo realistic." And the Song info side went: "It
+ * doesn't work. I don't want it up there. Replace it with two or three other
+ * scenes... anything Austin. Sixth Street, whatever you want."
+ *   skyline — the Stevie Ray Vaughan statue at Auditorium Shores with downtown
+ *             across Lady Bird Lake | the bats out of Congress Avenue Bridge,
+ *             grackles on the wire.
+ *   sixth   — Sixth Street at night | the Willie Nelson statue at ACL Live.
+ *   zilker  — kites over Zilker Park | Barton Springs Pool.
+ *   hills   — sunset over the Hill Country from Mount Bonnell | the
+ *             Pennybacker Bridge.
+ * They were made with an image model from photos of the real places
+ * (src/assets/banner/*.webp) and drift slowly while they show.
  * Three more are Cinema 4D renders, Chris's own (scripts/orbit_c4d.py,
  * lyrics_hole_c4d.py, molten_c4d.py):
  *   orbit   — the 18 tab names circling the Black Hole Studios title.
  *   lyrics  — lyric words pulled into the black hole.
  *   molten  — the molten gold pool.
- * Auto moves through all seven, twenty seconds each. The pill in the corner
+ * Auto moves through all nine, twenty seconds each. The pill in the corner
  * steps through Auto, each scene and Off; the choice is remembered.
  */
 
-const MODES = ['auto', 'bars', 'disc', 'orbit', 'lyrics', 'molten', 'skyline', 'info', 'off'];
-const LABEL = { auto: 'Auto', bars: 'Bars', disc: 'Disc', orbit: 'Orbit', lyrics: 'Lyrics', molten: 'Molten', skyline: 'Skyline', info: 'Song info', off: 'Off' };
-const ROTATION = ['orbit', 'bars', 'disc', 'lyrics', 'skyline', 'molten', 'info'];
+const MODES = ['auto', 'bars', 'disc', 'orbit', 'lyrics', 'molten', 'skyline', 'sixth', 'zilker', 'hills', 'off'];
+const LABEL = { auto: 'Auto', bars: 'Bars', disc: 'Disc', orbit: 'Orbit', lyrics: 'Lyrics', molten: 'Molten', skyline: 'Skyline', sixth: 'Sixth Street', zilker: 'Zilker', hills: 'Hill Country', off: 'Off' };
+const ROTATION = ['skyline', 'orbit', 'bars', 'sixth', 'disc', 'lyrics', 'zilker', 'molten', 'hills'];
+// The Austin pictures: [left of the logo, right of it].
+const PHOTOS = {
+  skyline: [skylineWest, skylineEast],
+  sixth: [sixthWest, sixthEast],
+  zilker: [zilkerWest, zilkerEast],
+  hills: [hillsWest, hillsEast],
+};
 // The scenes that are a video, and which clip each one plays.
 // Each is [mp4, webm]: Safari wants the mp4, and the browser takes the first it can play.
 const VIDEO_SRC = {
@@ -168,13 +189,10 @@ function drawBars(g, st, W, H, dt, t) {
 /* ── component ────────────────────────────────────────────────────────── */
 
 export default function BrandBanner() {
-  const store = useLyricStore();
   const [mode, setMode] = useState(savedMode);
   const [autoIdx, setAutoIdx] = useState(0);
-  const [nowPlaying, setNowPlaying] = useState(() => (typeof window !== 'undefined' && window.__lyricistNowPlaying) || { name: '', playing: false });
   const rootRef = useRef(null);
   const barsRef = useRef(null);
-  const skyRef = useRef(null);
   const videoRefs = useRef({});
   const sceneRef = useRef('bars');
   const shownAt = useRef({});
@@ -203,13 +221,6 @@ export default function BrandBanner() {
     prevScene.current = scene;
   }, [scene]);
 
-  // What the player has on, for the Song info side.
-  useEffect(() => {
-    const on = (e) => setNowPlaying(e.detail || { name: '', playing: false });
-    window.addEventListener('lyricist:now-playing', on);
-    return () => window.removeEventListener('lyricist:now-playing', on);
-  }, []);
-
   // A video scene only plays while it's on (or fading out); the rest sit paused.
   useEffect(() => {
     const timers = [];
@@ -222,18 +233,18 @@ export default function BrandBanner() {
     return () => timers.forEach(clearTimeout);
   }, [scene, mode]);
 
-  // Canvas scenes: size them to the banner and run one frame loop for both.
+  // The Bars canvas: size it to the banner and run its frame loop.
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return undefined;
-    const st = { level: 0, bars: null, bats: [], stars: makeStars(170, seeded(7)), analyser: null, skyline: null, W: 0, H: 0, dpr: 1 };
+    const st = { level: 0, bars: null, stars: makeStars(170, seeded(7)), analyser: null, W: 0, H: 0, dpr: 1 };
     const resize = () => {
       const W = root.clientWidth, H = root.clientHeight;
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       if (!W || !H || (W === st.W && H === st.H && dpr === st.dpr)) return;
-      Object.assign(st, { W, H, dpr, grad: null, skyline: null });
-      for (const c of [barsRef.current, skyRef.current]) {
-        if (!c) continue;
+      Object.assign(st, { W, H, dpr, grad: null });
+      const c = barsRef.current;
+      if (c) {
         c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
         c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
       }
@@ -243,12 +254,21 @@ export default function BrandBanner() {
     resize();
 
     let raf = 0, last = performance.now();
+    let folded = false;
     const live = (name, now) => sceneRef.current === name || now - (shownAt.current[name] || 0) < FADE_MS + 100;
     const frame = (now) => {
       raf = requestAnimationFrame(frame);
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
-      if (!st.W || !st.H || document.hidden) return;
+      // Folded away (the Banner pad, or the Ghost on screen): draw nothing and
+      // hold the video, then pick it back up when it opens again.
+      const fold = root.clientHeight === 0;
+      if (fold !== folded) {
+        folded = fold;
+        const v = videoRefs.current[sceneRef.current];
+        if (v) { if (fold) v.pause(); else v.play().catch(() => {}); }
+      }
+      if (fold || !st.W || !st.H || document.hidden) return;
       const t = REDUCED_MOTION ? 0 : now / 1000;
       if (live('bars', now) && barsRef.current) {
         if (!st.analyser) {
@@ -263,10 +283,6 @@ export default function BrandBanner() {
         }
         drawBars(barsRef.current.getContext('2d'), st, st.W, st.H, REDUCED_MOTION ? 0 : dt, t);
       }
-      if (live('skyline', now) && skyRef.current) {
-        if (!st.skyline) st.skyline = buildSkyline(st.W, st.H, st.dpr);
-        drawSkyline(skyRef.current.getContext('2d'), st, st.W, st.H, REDUCED_MOTION ? 0 : dt, t);
-      }
     };
     raf = requestAnimationFrame(frame);
     return () => {
@@ -275,10 +291,6 @@ export default function BrandBanner() {
       try { st.analyser?.an && getMasterBus().disconnect(st.analyser.an); } catch { /* already gone */ }
     };
   }, []);
-
-  const genres = store.genreList?.length ? store.genreList : (store.genre ? [store.genre] : []);
-  const moods = store.moodList?.length ? store.moodList : (store.mood ? [store.mood] : []);
-  const topic = (store.topic || '').trim();
 
   return (
     <div className="brand-banner" ref={rootRef} data-scene={mode === 'off' ? 'off' : scene}>
@@ -297,33 +309,18 @@ export default function BrandBanner() {
           <source src={VIDEO_SRC[name][1]} type="video/webm" />
         </video>
       ))}
-      <canvas ref={skyRef} className="bb-layer" data-on={scene === 'skyline'} aria-hidden="true" />
-      <div className="bb-layer bb-info" data-on={scene === 'info'}>
-        <div className="bb-info-side bb-info-left">
-          <div className="bb-info-lbl">
-            <span className={nowPlaying.playing ? 'bb-eq on' : 'bb-eq'} aria-hidden="true"><i /><i /><i /></span>
-            Now playing
-          </div>
-          <div className="bb-info-big" title={nowPlaying.name || undefined}>{nowPlaying.name || 'Nothing yet'}</div>
-          <div className="bb-info-small">
-            {nowPlaying.name ? (nowPlaying.playing ? 'Playing' : 'Paused') : 'Load a track in the player below'}
-          </div>
+      {Object.entries(PHOTOS).map(([name, [west, east]]) => (
+        <div key={name} className="bb-layer bb-photo" data-on={scene === name} aria-hidden="true">
+          <img className="bb-side bb-west" src={west} alt="" draggable={false} decoding="async" />
+          <img className="bb-side bb-east" src={east} alt="" draggable={false} decoding="async" />
         </div>
-        <div className="bb-info-side bb-info-right">
-          <div className="bb-info-lbl">The song</div>
-          <div className="bb-info-big">{genres.length ? genres.join(' + ') : 'No genre picked yet'}</div>
-          <div className="bb-info-small">
-            {moods.length ? moods.join(' · ') : 'No mood picked yet'}
-            {topic && <span className="bb-info-topic">“{topic.length > 60 ? `${topic.slice(0, 58)}…` : topic}”</span>}
-          </div>
-        </div>
-      </div>
+      ))}
       <img className="bb-logo" src={brandLogo} alt="Lyricist Pro, Funk Audio Flow OpSec, Austin TX" draggable={false} />
       <button
         type="button"
         className="bb-mode"
         onClick={cycle}
-        data-help="Changes what runs either side of the logo: Auto moves through them all, or pick Bars (they move to the music), Disc, Orbit, Lyrics, Molten, Skyline, Song info, or Off."
+        data-help="Changes what runs either side of the logo: Auto moves through them all, or pick Bars (they move to the music), Disc, Orbit, Lyrics, Molten, the Austin pictures (Skyline, Sixth Street, Zilker, Hill Country), or Off."
       >
         {LABEL[mode]}{mode === 'auto' ? ` · ${LABEL[scene]}` : ''}
       </button>

@@ -27,7 +27,7 @@
 
 // The legacy --lx-* anchors. They no longer rotate: rotating a green by the
 // slider is exactly how it used to end up purple. Violet and magenta keep their
-// names because OneManBand, ScrewShop and WaveSlicer read them, but they are
+// names because BlackHoleStudios, ScrewShop and WaveSlicer read them, but they are
 // the signal amber and steel now. So are the emeralds (2026-09-27): only the
 // Chopped & Screwed tab read them, and its neon green was the last accent that wasn't amber.
 const ANCHORS = {

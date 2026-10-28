@@ -11,6 +11,7 @@
  */
 import { getBuffer } from './loadBuffer.js';
 import LOOPS from '../assets/ghost-bg/beds.json';
+import PROMO from '../assets/ghost-bg/promo/promo.json';
 
 const URLS = import.meta.glob('../assets/ghost-bg/*.mp3', {
   eager: true, query: '?url', import: 'default',
@@ -20,9 +21,25 @@ export const BEDS = Object.entries(LOOPS)
   .map(([name, b]) => ({ name, url: URLS[`../assets/ghost-bg/${b.file}`], loopStart: b.loopStart, loopEnd: b.loopEnd }))
   .filter((b) => b.url);
 
+/**
+ * THE PHONE GHOST'S MUSIC: Chris's own songs, in his order (2026-10-25: "Use the
+ * first one that I sent first, and then the second one"), under the promo runs
+ * and every phone walkthrough. Each plays through once and the next follows;
+ * after the last it starts over at the first, so a long run never goes quiet.
+ * Whole songs, not loops: a seamless-loop cut of Curuspulse kept only 29 s of
+ * it. Each file is leveled to -20 LUFS like the beds, with a fade at both ends.
+ * Kept out of beds.json, which the desktop Ghost still plays.
+ */
+const PROMO_URLS = import.meta.glob('../assets/ghost-bg/promo/*.mp3', {
+  eager: true, query: '?url', import: 'default',
+});
+export const PROMO_BEDS = PROMO
+  .map((b) => ({ ...b, url: PROMO_URLS[`../assets/ghost-bg/promo/${b.file}`] }))
+  .filter((b) => b.url);
+
 // Chris: any bed on any tab is fine. Black Hole Studios gets its own track;
 // every other tab keeps the same bed from run to run.
-const BED_FOR_TAB = { onemanband: 'blackhole' };
+const BED_FOR_TAB = { blackhole: 'blackhole' };
 
 export function bedFor(tabId) {
   const named = BEDS.find((b) => b.name === BED_FOR_TAB[tabId]);
@@ -69,9 +86,12 @@ export function dropPrimedBed() {
   primed = null;
 }
 
-export function playBed(bed, { level = 0.35, fadeIn = 2 } = {}) {
+export function playBed(bedOrList, { level = 0.35, fadeIn = 2 } = {}) {
   const AC = window.AudioContext || window.webkitAudioContext;
-  if (!bed || !AC) return { level() {}, pause() {}, resume() {}, stop() {} };
+  // One bed (looped on its loop points), or a playlist played in order and
+  // round again (PROMO_BEDS).
+  const list = (Array.isArray(bedOrList) ? bedOrList : [bedOrList]).filter(Boolean);
+  if (!list.length || !AC) return { level() {}, pause() {}, resume() {}, stop() {} };
   const ctx = primed || new AC();
   primed = null;
   const gain = ctx.createGain();
@@ -89,19 +109,39 @@ export function playBed(bed, { level = 0.35, fadeIn = 2 } = {}) {
     gain.gain.setTargetAtTime(to, t, Math.max(0.01, seconds / 3));
   };
 
-  decode(bed.url, ctx).then((buffer) => {
+  // Song i, from a buffer already decoded or about to be. In a playlist each
+  // song plays once and the next one is decoded 20 s before it ends, so the
+  // change-over has no gap (decoding a whole song takes a moment on a phone).
+  // A paused run holds the context, so the timer only ever decodes early.
+  let nextBuffer = null;
+  const play = (i, bufferPromise) => bufferPromise.then((buffer) => {
     if (dead) return;
-    src = ctx.createBufferSource();
-    src.buffer = buffer;
-    src.loop = true;
-    src.loopStart = bed.loopStart;
-    src.loopEnd = bed.loopEnd;
-    src.connect(gain);
-    src.start();
-    if (paused) ctx.suspend().catch(() => {});
-    else ctx.resume().catch(() => {});
-    ramp(target, fadeIn);
+    const bed = list[i];
+    const s = ctx.createBufferSource();
+    s.buffer = buffer;
+    if (list.length === 1) {
+      s.loop = true;
+      s.loopStart = bed.loopStart;
+      s.loopEnd = bed.loopEnd;
+    } else {
+      const next = (i + 1) % list.length;
+      setTimeout(() => { if (!dead) nextBuffer = decode(list[next].url, ctx); }, Math.max(0, buffer.duration - 20) * 1000);
+      s.onended = () => {
+        if (dead || src !== s) return;
+        play(next, nextBuffer || decode(list[next].url, ctx));
+        nextBuffer = null;
+      };
+    }
+    s.connect(gain);
+    s.start();
+    src = s;
+    if (i === 0) {
+      if (paused) ctx.suspend().catch(() => {});
+      else ctx.resume().catch(() => {});
+      ramp(target, fadeIn);
+    }
   }).catch((e) => console.warn('[GhostDemo] background music did not load', e));
+  play(0, decode(list[0].url, ctx));
 
   return {
     level(to, seconds = 0.4) {

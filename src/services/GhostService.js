@@ -123,7 +123,7 @@ export async function resolveGhostModel() {
 
 const TAB_NOTES = {
   songwriter: 'Songwriter: the main writing workspace. Sections, lines, style controls.',
-  onemanband: 'Black Hole Studios: turns written words into a real sung song. It takes exactly two '
+  blackhole: 'Black Hole Studios: turns written words into a real sung song. It takes exactly two '
     + 'things and calls them what MiniMax calls them: the INPUT LYRICS (the words, with '
     + '[Verse] [Chorus] style tags for the shape) and the INPUT CAPTION (one single box of '
     + 'text describing the sound, NOT three boxes). Also genre-mood-voice pickers, length, '
@@ -312,7 +312,7 @@ ACTION NOTES:
   open_tab {"tab":"Black Hole Studios"} switches tabs, by the name on the tab.
     You rarely need it: any tab's action opens that tab by itself.
   CALL EVERY TAB BY THE NAME ON IT when you talk: Black Hole Studios (never
-    "one man band" or "onemanband"), Ghost Rider (never "analyzer"), The Matrix
+    its id "blackhole"), Ghost Rider (never "analyzer"), The Matrix
     (never "quantum"), Song Forge, Songwriter.
   THE LYRICS DO NOT USE <do> AT ALL. Write them as plain tagged text, with real
   line breaks, nothing escaped:
@@ -330,7 +330,8 @@ ACTION NOTES:
 
   append_lyrics {"text":"..."} still exists for adding a section to the end.
   set_length {"seconds":180}, set_takes {"count":2}, roll_take_number {},
-    set_engine {"engine":"cloud"|"kaggle"|"local"|"modal"}, lay_out_song {}.
+    set_engine {"engine":"cloud"|"openrouter"|"kaggle"|"local"|"modal"} ("openrouter" is
+    Lyria 3 on their OpenRouter key, paid per take), lay_out_song {}.
   make_the_song {} EMIT IT whenever they want the song made or finished. It
     starts straight away. Do not ask first and never tell them to tap anything.
   make_the_video {} makes the lyric video of the newest finished take on
@@ -383,7 +384,7 @@ ACTION NOTES:
       matrix_load_dna {} loads the Style DNA Ghost Rider sent and writes verses
         A and B under it, seeded from the DNA's images.
       matrix_send_to_forge {}  matrix_reset {}
-    Black Hole Studios (tab "onemanband"):
+    Black Hole Studios (tab "blackhole"):
       blackhole_pull_from_songwriter {} brings the Songwriter song into the Input Lyrics.
       blackhole_send_to_songwriter {} sends the Input Lyrics to Songwriter and opens it.
       write_caption {} runs MiniMax's caption skill. An empty Input Caption is

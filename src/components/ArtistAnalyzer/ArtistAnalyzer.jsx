@@ -330,6 +330,10 @@ export default function ArtistAnalyzer({ onGhostSend }) {
       const tags = await writeAnalysisTags({ artist: artistName, report: reportText, kind: KIND_NAME[tab] }, store);
       if (!tags) throw new Error('No tags came back.');
       setSunoTags(tags);
+      // Where The Matrix and Black Hole Studios read them. Only saving the song
+      // file used to put them there, so the singer never left Ghost Rider and
+      // Black Hole Studios sang with whatever voice was left over.
+      saveSunoTags(tags, artistName);
       return tags;
     } catch (e) {
       setTagsError(e?.message || 'The tags did not come back.');
@@ -361,6 +365,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
       const tags = songTags || sunoTags;
       setGhostLyrics(lyrics);
       setSunoTags(tags);
+      if (tags) saveSunoTags(tags, artist.trim());
       track('ghostrider_song_written', { sections: (lyrics.match(/^\[[^\]]+\]\s*$/gm) || []).length });
 
       /**
@@ -754,6 +759,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
           type="button"
           onClick={clearGhostRider}
           disabled={loadingAnalysis || loadingGhost}
+          data-demo="gr-clear"
           data-help="Clears the artist, the report, the Style DNA, the topic, the song and the Suno tags on this tab. Anything you saved stays saved."
           style={{
             width: '100%',
@@ -852,7 +858,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
         {/* Workspace Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20, background: 'rgba(0,0,0,0.26)' }}>
           {analysis && (
-            <div ref={reportRef} style={{ background: 'rgba(16,18,21,0.7)', border: '1px solid rgba(155,161,170,0.22)', borderRadius: 10, padding: 18 }}>
+            <div ref={reportRef} data-demo="gr-report" style={{ background: 'rgba(16,18,21,0.7)', border: '1px solid rgba(155,161,170,0.22)', borderRadius: 10, padding: 18 }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e6e8eb', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <BookOpen size={16} />
                 Lyrical Analysis Report: {artist}
@@ -956,6 +962,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
                           notify('Could not save Style DNA: ' + (e?.message || e), { tone: 'error' });
                         }
                       }}
+                      data-demo="gr-dna-send"
                       data-help="Sends this Style DNA into The Matrix as a pressure field (rhythm, density, emotional temp, image motifs) — new lyrics under that physics, never plagiarized bars."
                       style={{
                         padding: '8px 14px',
@@ -1144,6 +1151,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
                 <input
                   value={ghostTopic}
                   onChange={(e) => setGhostTopic(e.target.value)}
+                  data-demo="gr-topic"
                   data-help="Optional. Give the ghostwriter a subject for the new song. Leave it blank and it'll pick a topic that fits the artist's usual vibe."
                   placeholder="Optional Topic: e.g. childhood memories, a pawn shop guitar..."
                   style={{
@@ -1182,7 +1190,7 @@ export default function ArtistAnalyzer({ onGhostSend }) {
               {ghostLyrics && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 14 }}>
                   {/* Lyrics Display */}
-                  <div ref={lyricsRef} style={{ position: 'relative' }}>
+                  <div ref={lyricsRef} data-demo="gr-lyrics" style={{ position: 'relative' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                       <span style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', color: 'rgba(155,161,170,0.6)' }}>
                         Generated Lyrics

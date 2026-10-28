@@ -1006,7 +1006,7 @@ Match their rhyme schemes, vocabulary, and flow. Do NOT mention the artist's nam
 
 After the lyrics, on a new line write exactly this separator and nothing else:
 ---SUNO TAGS---
-Then on the very next line write 10-14 comma-separated Suno AI style keywords. STRICT RULES for the tags: NO artist names, NO real person names, NO celebrity names whatsoever. Only include: genre, subgenre, production style, mood, tempo, instruments, vocal style, era. One line only.${matrixAsk}${matrixMaterial}`;
+Then on the very next line write 10-14 comma-separated Suno AI style keywords. STRICT RULES for the tags: NO artist names, NO real person names, NO celebrity names whatsoever. Only include: genre, subgenre, production style, mood, tempo, instruments, the lead singer (always say male or female, e.g. "breathy female vocals"), era. One line only.${matrixAsk}${matrixMaterial}`;
 
   const system = 'You are an elite ghostwriter who captures the raw, authentic artistic voice, flow, cadence, vocabulary, and stylistic nuances of specific musical artists. You despise generic AI-sounding imitations. Focus on subtext, friction, and rhythm.\n' + NO_CLICHES;
   // A whole song with every chorus written out needs the room.
@@ -1067,7 +1067,7 @@ ${parts.join('\n\n')}
 
 Reply in exactly this format and nothing else. Each separator sits on its own line.
 ---SUNO TAGS---
-${String(tags || '').trim() ? 'The tags above, then up to 4 more' : '10-14'} comma-separated Suno style tags on one line: genre, subgenre, production style, mood, tempo, instruments, vocal style, era. NO artist names, NO real person names.
+${String(tags || '').trim() ? 'The tags above, then up to 4 more' : '10-14'} comma-separated Suno style tags on one line: genre, subgenre, production style, mood, tempo, instruments, the lead singer (always say male or female, e.g. "breathy female vocals"), era. NO artist names, NO real person names.
 ---MATRIX WORDS---
 ${MATRIX_WORD_COUNT + 4} comma-separated words or short phrases (1-3 words each) pulled from this song's own material: images, objects, places, actions, everyday words. They seed a word grid for writing, so make them concrete and varied, not random. ${MATRIX_WORD_RULE} One line. NO artist names.
 ${KIT_PROSE_ASK}`;
@@ -1129,7 +1129,7 @@ export async function writeAnalysisTags({ artist = '', report = '', kind = '' } 
   if (!text) throw new Error('Study the artist first.');
   const raw = await callAI([
     { role: 'system', content: 'You write the Styles line a songwriter pastes into Suno\'s create screen. Short, plain, specific. Never name a real artist or person.\n' + NO_CLICHES },
-    { role: 'user', content: `Read the ${kind ? `${kind} analysis` : 'analysis'} below and write 10-14 comma-separated Suno style tags that capture how this sound is made: genre, subgenre, production style, mood, tempo, instruments, vocal style, era. STRICT RULES: NO artist names, NO real person names, NO celebrity names whatsoever. Reply with one line of tags and nothing else.\n\nANALYSIS:\n${text.slice(0, 6000)}` },
+    { role: 'user', content: `Read the ${kind ? `${kind} analysis` : 'analysis'} below and write 10-14 comma-separated Suno style tags that capture how this sound is made: genre, subgenre, production style, mood, tempo, instruments, the lead singer (always say male or female, e.g. "breathy female vocals"), era. STRICT RULES: NO artist names, NO real person names, NO celebrity names whatsoever. Reply with one line of tags and nothing else.\n\nANALYSIS:\n${text.slice(0, 6000)}` },
   ], store.config, 0.5, 400);
   const lines = String(raw || '').split('\n').map((l) => l.trim()).filter(Boolean);
   const best = lines.reduce((a, l) => ((l.match(/,/g) || []).length > (a.match(/,/g) || []).length ? l : a), lines[0] || '');
@@ -1243,7 +1243,7 @@ export async function suggestStyleTags(text, store) {
   assertApiKey(store?.config);
   const result = await callAI([
     { role: 'system', content: 'You output only a single comma-separated line of style keywords. Nothing else.' },
-    { role: 'user', content: `Give 10-14 comma-separated style keywords for this song. STRICT: no artist names, no real person names, no celebrity names. Only genre, subgenre, production style, mood, tempo, instruments, vocal style, era. One line only.\n\n${String(text).slice(0, 3000)}` }
+    { role: 'user', content: `Give 10-14 comma-separated style keywords for this song. STRICT: no artist names, no real person names, no celebrity names. Only genre, subgenre, production style, mood, tempo, instruments, the lead singer (always say male or female, e.g. "breathy female vocals"), era. One line only.\n\n${String(text).slice(0, 3000)}` }
   ], store.config);
 
   return String(result || '').split('\n')[0].split(',').map(t => t.trim()).filter(t => t.length > 2).join(', ');

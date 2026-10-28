@@ -755,7 +755,13 @@ body.lyricist-mobile .mob-wrap > input { min-width: 0; flex-basis: 100% !importa
   .mob-root.is-tool .mob-bar { gap: 4px; padding: 0 4px; }
   .mob-root.is-tool .mob-bar .mob-icon-btn { width: 40px; }
 }
-/* In the bar: the Ghost himself is the button. */
+/* In the bar: the Ghost himself is the button. Held down it opens the promo
+   runs, so no iPhone callout or text selection may pop up over the hold. */
+.mob-ghost-btn {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
 .mob-ghost-btn img {
   display: block;
   width: 34px;

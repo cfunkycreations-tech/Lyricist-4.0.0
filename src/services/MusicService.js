@@ -39,6 +39,7 @@ const REALTIME_FACTOR = {
   // figure after the first few runs rather than left to look authoritative.
   modal: 14,
   server: 3,      // a rented 4090 class card. Nobody has measured one yet.
+  openrouter: 0.35, // Lyria 3, measured 2026-10-27: 30 s of music in 9.4 s
 };
 
 /** Kaggle spends this long before it plays a note: queue, fetch, load. */
@@ -477,7 +478,7 @@ function comfyGraph({ state, duration, seed, steps, guidance, dit }) {
     8: { class_type: 'VAEDecodeAudio', inputs: { samples: ['7', 0], vae: ['3', 0] } },
     // FLAC is the master. Mastering Studio should never receive a lossy file.
     9: { class_type: 'SaveAudioAdvanced', inputs: {
-      audio: ['8', 0], filename_prefix: 'onemanband', format: 'flac' } },
+      audio: ['8', 0], filename_prefix: 'blackhole', format: 'flac' } },
   };
 }
 
@@ -694,6 +695,131 @@ async function generateKaggle({ state, duration, seed, seeds, steps, guidance, h
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* OpenRouter (Google Lyria 3)                                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * LYRIA 3, ON THE OPENROUTER KEY HE ALREADY HAS.
+ *
+ * Chris, 2026-10-27, after the free cloud ran out of time for the day: "Is it
+ * possible to use the open router key to make music instead of using Hugging
+ * Face?" It is. Tested that day: a 30 second clip came back in 9.4 s for
+ * $0.0396, and Whisper heard every line of the lyrics exactly as written.
+ *
+ * Two models. The clip model always makes 30 seconds ($0.04), the pro model a
+ * whole song ($0.08). No daily allowance and no queue: it bills his OpenRouter
+ * credits, so an empty account is the one way it says no.
+ *
+ * The audio only comes back streamed, as base64 in choices[].delta.audio.data,
+ * with the sung lines and their times alongside as plain text.
+ */
+export const LYRIA_CLIP = 'google/lyria-3-clip-preview';
+export const LYRIA_PRO = 'google/lyria-3-pro-preview';
+/** Google's figure for the pro model: songs up to about three minutes. */
+export const LYRIA_MAX_SECONDS = 180;
+export const lyriaModelFor = (seconds) => (seconds <= 30 ? LYRIA_CLIP : LYRIA_PRO);
+/** Dollars per take, from OpenRouter's own listing. */
+export const lyriaCost = (seconds) => (seconds <= 30 ? 0.04 : 0.08);
+
+/** The caption on screen is the sound; the words go in as words to sing, exactly. */
+function lyriaPrompt(state, duration) {
+  const sound = [state.global_meta, state.vocals, state.arrangement]
+    .map((s) => String(s || '').trim()).filter(Boolean).join('\n\n');
+  const length = duration <= 30 ? '' : `Make the song about ${duration} seconds long.`;
+  const words = String(state.lyrics || '').trim();
+  if (state.instrumental || !words) {
+    return [sound, length, 'Instrumental only. No vocals and no words.'].filter(Boolean).join('\n\n');
+  }
+  return [
+    sound,
+    length,
+    'Sing these exact lyrics, word for word, in this order, and no other words. '
+      + 'The lines in square brackets are section names, not words to sing:\n\n' + words,
+  ].filter(Boolean).join('\n\n');
+}
+
+/** Base64 that may arrive as separately padded pieces: decode each piece, join the bytes. */
+function base64Bytes(b64) {
+  const parts = b64.replace(/\s+/g, '').split(/(?<==)(?=[^=])/);
+  const chunks = parts.map((p) => {
+    const bin = atob(p);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i += 1) out[i] = bin.charCodeAt(i);
+    return out;
+  });
+  const all = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
+  let at = 0;
+  for (const c of chunks) { all.set(c, at); at += c.length; }
+  return all;
+}
+
+async function generateOpenRouter({ state, duration, seed, apiKey, onProgress, signal }) {
+  const key = String(apiKey || '').trim();
+  if (!key) throw new Error('Add your OpenRouter key in Settings first. Lyria 3 runs on it.');
+  const model = lyriaModelFor(duration);
+  onProgress?.({ phase: duration <= 30 ? 'Lyria 3 is making a 30 second clip' : 'Lyria 3 is making the whole song' });
+
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    signal,
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://lyricist-pro.pages.dev',
+      'X-Title': 'Lyricist Pro',
+    },
+    body: JSON.stringify({
+      model,
+      stream: true,
+      modalities: ['text', 'audio'],
+      audio: { format: 'mp3' },
+      seed,
+      messages: [{ role: 'user', content: lyriaPrompt(state, duration) }],
+    }),
+  });
+  if (!res.ok) {
+    let msg = '';
+    try { msg = (await res.json())?.error?.message || ''; } catch { /* not json */ }
+    if (res.status === 401) throw new Error('OpenRouter did not accept your key. Check it in Settings.');
+    if (res.status === 402) {
+      throw new Error('Your OpenRouter account is out of credits. Add some at openrouter.ai/credits, then press Make the song again.');
+    }
+    throw new Error(`Lyria 3 said no (${res.status})${msg ? `: ${msg}` : ''}.`);
+  }
+
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '';
+  let b64 = '';
+  let failed = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let nl;
+    while ((nl = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, nl).trim();
+      buf = buf.slice(nl + 1);
+      if (!line.startsWith('data:')) continue;
+      const data = line.slice(5).trim();
+      if (!data || data === '[DONE]') continue;
+      let j;
+      try { j = JSON.parse(data); } catch { continue; }
+      if (j.error) failed = j.error.message || 'Lyria 3 stopped partway through.';
+      for (const ch of j.choices || []) {
+        const audio = ch.delta?.audio?.data;
+        if (audio) {
+          b64 += audio;
+          onProgress?.({ phase: 'Lyria 3 is handing the song over' });
+        }
+      }
+    }
+  }
+  if (!b64) throw new Error(failed || 'Lyria 3 finished without sending any audio. Press Make the song again.');
+  return { blob: new Blob([base64Bytes(b64)], { type: 'audio/mpeg' }), host: 'openrouter.ai' };
+}
+
 export async function generateSong({
   engine = 'cloud',
   base = 'http://127.0.0.1:8188',
@@ -707,6 +833,7 @@ export async function generateSong({
   hfToken = '',
   modalUrl = '',
   modalToken = '',
+  openRouterKey = '',
   onProgress,
   signal,
 } = {}) {
@@ -733,6 +860,8 @@ export async function generateSong({
         dit: dit || 'minimax_music3_dit_int8_convrot.safetensors',
         onProgress, signal,
       })
+    : engine === 'openrouter'
+      ? generateOpenRouter({ state, duration, seed, apiKey: openRouterKey, onProgress, signal })
     : engine === 'cloud'
       ? generateCloud({ state, duration, seed, steps, guidance, onProgress, signal, hfToken })
       : engine === 'kaggle'
@@ -804,7 +933,8 @@ export async function generateTakes({ seeds = [0], onTake, ...opts } = {}) {
         res = await generateSong({ ...opts, seed, seeds: [seed] });
       } catch (e) {
         if (opts.signal?.aborted || !made.length) throw e;
-        const final = attempt >= 2 || /out of time for today|too long for the free cloud/i.test(e.message);
+        const final = attempt >= 2
+          || /out of time for today|too long for the free cloud|out of credits|did not accept your key/i.test(e.message);
         if (final) {
           throw new Error(`Got ${made.length} of ${list.length} takes. ${e.message}`);
         }

@@ -51,7 +51,7 @@ https.request = (url, opts, cb) => {
     }
     else if (method === 'SaveKernel') {
       if (body.slug.endsWith('/lyricist-lyric-video')) V.save = body;
-      if (body.slug.endsWith('/lyricist-one-man-band')) pushedRun = (/RUN\s+=\s+"([a-z0-9]*)"/.exec(JSON.parse(body.text).cells.map((c) => c.source).join('')) || [])[1];
+      if (body.slug.endsWith('/lyricist-black-hole-studios')) pushedRun = (/RUN\s+=\s+"([a-z0-9]*)"/.exec(JSON.parse(body.text).cells.map((c) => c.source).join('')) || [])[1];
       json = { url: 'u' };
     }
     const res = new EventEmitter(); res.statusCode = status;

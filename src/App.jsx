@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LyricStoreProvider, useLyricStore } from './context/LyricStore.jsx';
 import SongwriterHub from './components/SongwriterHub/SongwriterHub.jsx';
-import OneManBand from './components/OneManBand/OneManBand.jsx';
+import BlackHoleStudios from './components/BlackHoleStudios/BlackHoleStudios.jsx';
 import ScrewShop from './components/ScrewShop/ScrewShop.jsx';
 import StartHere from './components/common/StartHere.jsx';
 import ArtistAnalyzer from './components/ArtistAnalyzer/ArtistAnalyzer.jsx';
@@ -54,11 +54,12 @@ import Stemmer from './components/Stemmer/Stemmer.jsx';
 import { useMobile } from './mobile/useMobile.js';
 import MobileShell from './mobile/MobileShell.jsx';
 import PhoneGhost from './mobile/PhoneGhost.jsx';
+import PromoPicker from './mobile/PromoPicker.jsx';
 import GhostPilotLayer from './components/Ghost/GhostPilotLayer.jsx';
 import PushHeader from './components/PushHeader/PushHeader.jsx';
 import BrandBanner from './components/BrandBanner/BrandBanner.jsx';
 import { track, isEnabled as analyticsEnabled } from './services/analytics.js';
-import { Compass, Ghost, Play, Lightbulb, KeyRound, Lock, Smartphone } from 'lucide-react';
+import { Compass, Ghost, Play, Lightbulb, KeyRound, Lock, Smartphone, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { OPEN_EVENT as PHONE_INVITE_EVENT } from './web/PhoneInvite.jsx';
 import { hasWritingAI } from './services/customAI.js';
 // The still header art is no longer imported here. The header became the
@@ -116,7 +117,7 @@ const tabs = [
   // Write / story tools first, then The Matrix
   { id: 'songwriter', icon: 'pen-line', label: 'Songwriter', blurb: 'write and rewrite lyrics', help: 'The main workspace. Set up the kind of song you want (style, mood, topic), then write and polish the lyrics line by line.' },
   // Straight after Songwriter on purpose: write the words, then hear them.
-  { id: 'onemanband', icon: 'orbit', label: 'Black Hole Studios', blurb: 'lyrics into a real song', help: 'Turns your lyrics into a real song with vocals and a full band. Pick a genre, a mood and a voice, and it writes the Input Caption for you. Free on the cloud engine, no key needed. Longer songs take longer, and it tells you how long before you start.' },
+  { id: 'blackhole', icon: 'orbit', label: 'Black Hole Studios', blurb: 'lyrics into a real song', help: 'Turns your lyrics into a real song with vocals and a full band. Pick a genre, a mood and a voice, and it writes the Input Caption for you. Free on the cloud engine, no key needed. Longer songs take longer, and it tells you how long before you start.' },
   { id: 'analyzer', icon: 'radar', label: 'Ghost Rider', blurb: 'analyse any artist\'s style', help: 'Studies any artist you name and breaks down how they write, then helps you write a NEW song in that same style. (It does not copy their actual lyrics.)' },
   { id: 'songforge', icon: 'hammer', label: 'Song Forge', blurb: 'a full song from one idea', help: 'Auto-generate a full song and cover art using your single OpenRouter key (lyrics + Nano Banana image models on OpenRouter). Song First or Art First. No Google AI Studio key.' },
   { id: 'quantum', icon: 'grid', label: 'The Matrix', blurb: 'engineer verse structure', help: 'Build a verse from a 20-tile semantic grid. Load your keywords, then hit Auto-Craft Verse for the one-click path — it spreads the energy, locks the field and writes both neural states for you. Tick Also write full songs and it goes on to write a whole song for each state, side by side, from your Matrix DNA and keywords. Everything granular (manual steps, the 9-suite feature hub, the analytical inspectors) lives in the Advanced Studio section underneath. Needs your BYOK routing key for generation.' },
@@ -269,6 +270,28 @@ function MainLayout() {
   const [quantumForgeSeed, setQuantumForgeSeed] = useState(null);
   const [showWizard, setShowWizard] = useState(false);
   const [showGhostDemo, setShowGhostDemo] = useState(false);
+  // The desktop banner, shown or folded away (the Banner pad in the header).
+  const [bannerShown, setBannerShown] = useState(() => {
+    let shown = true;
+    try { shown = localStorage.getItem('lyricistBanner') !== 'off'; } catch { /* storage blocked */ }
+    // Before the first paint, so a folded banner starts folded instead of
+    // folding itself up on every launch.
+    document.documentElement.classList.toggle('banner-hidden', !shown);
+    return shown;
+  });
+  useEffect(() => {
+    document.documentElement.classList.toggle('banner-hidden', !bannerShown);
+    try { localStorage.setItem('lyricistBanner', bannerShown ? 'on' : 'off'); } catch { /* storage blocked */ }
+  }, [bannerShown]);
+  // Promo runs (mobile/promoScripts.js): the picker opens from a long-press on
+  // the phone's Ghost button, or straight away with ?promo in the address.
+  const [promoPicker, setPromoPicker] = useState(() => new URLSearchParams(window.location.search).has('promo'));
+  const [promoRun, setPromoRun] = useState(null);
+  useEffect(() => {
+    const open = () => setPromoPicker(true);
+    window.addEventListener('lyricist:promo', open);
+    return () => window.removeEventListener('lyricist:promo', open);
+  }, []);
 
   const handleGhostSend = (data) => {
     setGhostRiderData(data);
@@ -279,7 +302,7 @@ function MainLayout() {
   const [studioIncoming, setStudioIncoming] = useState(null);
   const handleSendToStudio = (data) => {
     setStudioIncoming({ ...data, at: Date.now() });
-    setActiveTab('onemanband');
+    setActiveTab('blackhole');
   };
   /** And back: Black Hole Studios → Songwriter. */
   const [songwriterIncoming, setSongwriterIncoming] = useState(null);
@@ -326,8 +349,8 @@ function MainLayout() {
    */
   useEffect(() => registerGhostAction('open_tab', async ({ tab }) => {
     // The Ghost may say the tab's real name ("Black Hole Studios") or its id.
-    // Chris: "it's not one man band! it's black hole studio's!" The log says
-    // the name on the tab, never the id underneath.
+    // Chris: "it's black hole studio's!" The log says the name on the tab,
+    // never the id underneath.
     const raw = String(tab || '').trim();
     const bare = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
     const found = tabs.find((t) => t.id === raw)
@@ -434,8 +457,23 @@ function MainLayout() {
 
       {/* The phone has its own Ghost: no bubbles, he points and the words glow
           (Chris, 2026-10-22). The desktop keeps the walkthrough below. */}
-      {showGhostDemo && isMobile && (
-        <PhoneGhost tabId={activeTab} onClose={() => setShowGhostDemo(false)} />
+      {showGhostDemo && isMobile && !promoRun && (
+        <PhoneGhost tabId={activeTab} live={hasWritingAI(store.config)} onClose={() => setShowGhostDemo(false)} />
+      )}
+      {isMobile && promoPicker && (
+        <PromoPicker
+          onClose={() => setPromoPicker(false)}
+          onStart={(run) => { setPromoPicker(false); setShowGhostDemo(false); setPromoRun({ ...run, at: Date.now() }); }}
+        />
+      )}
+      {isMobile && promoRun && (
+        <PhoneGhost
+          key={promoRun.at}
+          tabId={activeTab}
+          promo={promoRun}
+          onRequestTab={setActiveTab}
+          onClose={() => setPromoRun(null)}
+        />
       )}
       {showGhostDemo && !isMobile && store.ghostDemoEnabled && (
         <GhostDemo
@@ -480,8 +518,8 @@ function MainLayout() {
             Background is #000, matching the app floor. The 1px hairline
             underneath comes from .header-cosmic's stylesheet rule, which
             still separates the header from the tab strip below it. */}
-        {/* THE BRAND BANNER: the logo, with bars, the disc, the skyline or the
-            song either side of it. components/BrandBanner. It sits outside
+        {/* THE BRAND BANNER: the logo, with bars, the disc or a photo of Austin
+            either side of it. components/BrandBanner. It sits outside
             .header-cosmic so the Push grid's height: auto and overflow still work. */}
         <BrandBanner />
         <div className="header-cosmic" style={{ flexShrink: 0, position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center', background: '#000', height: 96, overflow: 'hidden', width: '100%' }}>
@@ -534,6 +572,32 @@ function MainLayout() {
               <span><Compass size={18} strokeWidth={1.6} /></span>
               Take the Tour
             </button>}
+
+            {/* Banner switch. Chris, 2026-10-26: with the banner up, a tool gets
+                "two inches of space" to scroll in. Off folds it away and gives
+                the room to the tool; remembered between sessions. */}
+            <button
+              onClick={() => setBannerShown((v) => !v)}
+              aria-pressed={bannerShown}
+              data-help="Shows or hides the big Lyricist Pro banner at the top. Hide it to give the tool below the whole screen. Remembered next time."
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                padding: '4px 12px',
+                borderRadius: 9999,
+                cursor: 'pointer',
+                background: bannerShown ? 'rgba(155,161,170,0.18)' : 'rgba(78,80,83,0.15)',
+                color: bannerShown ? '#e6e8eb' : 'rgba(170,150,160,0.7)',
+                border: `1px solid ${bannerShown ? 'rgba(155,161,170,0.5)' : 'rgba(140,120,130,0.35)'}`,
+                transition: 'all 0.15s'
+              }}
+            >
+              <span>{bannerShown ? <PanelTopClose size={18} strokeWidth={1.6} /> : <PanelTopOpen size={18} strokeWidth={1.6} />}</span>
+              Banner: {bannerShown ? 'On' : 'Off'}
+            </button>
 
             {/* Ghost Demo master switch — optional; remembered between sessions */}
             <button
@@ -683,8 +747,8 @@ function MainLayout() {
           <TabPane id="songwriter" active={activeTab} opened={openedTabs}>
             <SongwriterHub ghostRiderData={ghostRiderData} onSendToStudio={handleSendToStudio} incoming={songwriterIncoming} />
           </TabPane>
-          <TabPane id="onemanband" active={activeTab} opened={openedTabs}>
-            <OneManBand onNavigate={setActiveTab} incoming={studioIncoming} onSendToSongwriter={handleSendToSongwriter} />
+          <TabPane id="blackhole" active={activeTab} opened={openedTabs}>
+            <BlackHoleStudios onNavigate={setActiveTab} incoming={studioIncoming} onSendToSongwriter={handleSendToSongwriter} />
           </TabPane>
           <TabPane id="screw" active={activeTab} opened={openedTabs}>
             <ScrewShop />

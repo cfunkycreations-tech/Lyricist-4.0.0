@@ -367,6 +367,9 @@ h1.gradient-title {
    so it never covers what he is pointing at (services/ghostBanner.js). */
 html.ghost-active { --brand-banner-h: 0px; }
 html.ghost-active .brand-banner { height: 0; }
+/* The Banner pad in the header folds it away for good (App.jsx, bannerShown). */
+html.banner-hidden { --brand-banner-h: 0px; }
+html.banner-hidden .brand-banner { height: 0; }
 /* .brand-banner itself: components/BrandBanner/BrandBanner.css. */
 
 .output-cosmic {
