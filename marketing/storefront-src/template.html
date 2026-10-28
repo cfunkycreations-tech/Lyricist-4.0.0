@@ -92,8 +92,6 @@ p { margin: 0; }
 section.bay { padding-block: clamp(60px, 8vw, 110px); }
 .bay-head { display: grid; gap: 12px; max-width: 760px; margin-bottom: clamp(28px, 4vw, 48px); }
 .bay-head h2 { font-size: clamp(30px, 4.4vw, 54px); }
-.watch { border-radius: 18px; overflow: hidden; background: #000; border: 1px solid var(--line); box-shadow: 0 30px 80px -30px rgba(255, 110, 40, .35); }
-.watch video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000; }
 .record { position: relative; border: 1px solid var(--line); border-radius: 24px; overflow: hidden; background: var(--panel); }
 .record .banner { position: relative; }
 .record .banner img { width: 100%; aspect-ratio: 1600 / 538; object-fit: cover; }
@@ -186,7 +184,6 @@ footer .foot-links a:hover { color: var(--ink); }
   <div class="wrap">
     <a class="brand" href="#top"><img src="{{LOGO_SM}}" alt="" width="34" height="37">Funk Audio Flow OPSEC</a>
     <nav aria-label="Sections">
-      <a class="opt" href="#watch">Watch</a>
       <a class="opt" href="#lyricist">Lyricist Pro</a>
       <a class="opt" href="#suno">Suno</a>
       <a class="opt" href="#shop">Shop</a>
@@ -213,17 +210,6 @@ footer .foot-links a:hover { color: var(--ink); }
         <a class="btn btn-ghost" href="#lyricist">See what's inside</a>
       </div>
       <p class="sign"><b>18 tools</b> · made in Austin, Texas by Funk Audio Flow OPSEC</p>
-    </div>
-  </div>
-</section>
-
-<section class="bay" id="watch" style="padding-top:0">
-  <div class="wrap">
-    <div class="bay-head rise"><p class="eyebrow">Watch it work</p><h2>The Ghost shows you around.</h2></div>
-    <div class="watch rise">
-      <video controls playsinline poster="{{DEMO_POSTER}}">
-        <source src="{{DEMO_VIDEO}}" type="video/mp4">
-      </video>
     </div>
   </div>
 </section>
@@ -258,7 +244,7 @@ footer .foot-links a:hover { color: var(--ink); }
       <figure class="rise"><img src="{{STUDIO}}" alt="Black Hole Studios screen" width="960" height="864"><figcaption>Black Hole Studios<span>Lyrics in, a real song out.</span></figcaption></figure>
       <figure class="rise"><img src="{{RIDER}}" alt="Ghost Rider screen" width="960" height="864"><figcaption>Ghost Rider<span>Any artist's style, your words.</span></figcaption></figure>
       <figure class="rise"><img src="{{MATRIX}}" alt="The Matrix word grid" width="960" height="864"><figcaption>The Matrix<span>A verse from word tiles.</span></figcaption></figure>
-      <figure class="rise"><img src="{{LOOPS}}" alt="RC-Funk 5000 and Chopped and Screwed" width="960" height="864"><figcaption>The studio<span>Loop it, screw it, master it.</span></figcaption></figure>
+      <figure class="rise"><img src="{{LOOPS}}" alt="RC-Funk 5000 and Chopped and Screwed" width="960" height="864"><figcaption>The Studio<span>Loop it, screw it, master it.</span></figcaption></figure>
     </div>
   </div>
 </section>
