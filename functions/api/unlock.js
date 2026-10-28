@@ -22,8 +22,9 @@
  * Every yes sets the lp_unlock cookie (functions/_shared/unlockCookie.js),
  * which is what functions/_middleware.js lets in. A certain no clears it.
  *
- * Trials (Chris, 2026-10-28): a purchase that cost nothing, a 100%-off code,
- * is a 30-day trial from the day of the sale. The answer carries trialEnds,
+ * Trials (Chris, 2026-10-28): a $0 purchase made with a trial code (MATTHEW)
+ * is a 30-day trial from the day of the sale; other free codes, and every $0
+ * purchase from before trials existed (FUNKPHONE), are full copies. The answer carries trialEnds,
  * the cookie expires with the trial so the site stops letting that phone in,
  * and a trial that has run out is a certain no. Same rule as licenseCheck.js.
  */
@@ -39,12 +40,25 @@ const MAX_DEVICES = 10;
 
 const VERIFY = 'https://api.gumroad.com/v2/licenses/verify';
 const TRIAL_DAYS = 30;
+// The 100%-off codes that give a trial, not a full copy. Any other free code is a full copy.
+const TRIAL_CODES = ['MATTHEW'];
+// Trials began 2026-10-28; a $0 purchase before then is a full copy.
+const TRIALS_FROM = Date.parse('2026-10-28T00:00:00Z');
 const TRIAL_OVER = 'Your 30-day trial of Lyricist Pro has ended. Get it on Gumroad to keep going; your songs are still here.';
 
-/** When a $0 purchase's trial ends (ms), or 0 for a paid purchase. */
+/**
+ * When a trial ends (ms), or 0 for a purchase that is not a trial. A trial is
+ * a $0 purchase made with one of TRIAL_CODES. Every $0 purchase from before
+ * trials existed (TRIALS_FROM) stays a full copy whatever its code, so the
+ * copies Chris already gave away (FUNKPHONE) never lock.
+ */
 function trialEnds(p) {
   if (Number(p.price) !== 0) return 0;
   const sold = Date.parse(p.sale_timestamp || p.created_at || '');
+  if (Number.isFinite(sold) && sold < TRIALS_FROM) return 0;
+  const oc = p.offer_code;
+  const name = String((oc && typeof oc === 'object' ? oc.code || oc.name : oc) || '').trim().toUpperCase();
+  if (name && !TRIAL_CODES.includes(name)) return 0;
   return (Number.isFinite(sold) ? sold : Date.now()) + TRIAL_DAYS * 24 * 60 * 60 * 1000;
 }
 

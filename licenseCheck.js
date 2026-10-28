@@ -19,8 +19,10 @@
  * The code is never logged and never leaves this file except to Gumroad.
  *
  * TRIALS. Chris, 2026-10-28: a 100%-off code (MATTHEW) should be "a 30 day
- * trial", automatically. Any purchase that cost nothing is a trial: it runs
- * TRIAL_DAYS from the day of the sale, then locks with TRIAL_OVER. The end is
+ * trial", automatically. A $0 purchase made with one of TRIAL_CODES runs
+ * TRIAL_DAYS from the day of the sale, then locks with TRIAL_OVER. Any other
+ * free code is a full copy, and so is every $0 purchase from before trials
+ * existed: Chris's own FUNKPHONE code runs his and Michelle's apps. The end is
  * saved with the code and checked at every launch, so staying offline does
  * not stretch it. Same rule as functions/api/unlock.js.
  */
@@ -34,12 +36,25 @@ const MAX_DEVICES = 10;
 const RECHECK_MS = 7 * 24 * 60 * 60 * 1000;
 const VERIFY = 'https://api.gumroad.com/v2/licenses/verify';
 const TRIAL_DAYS = 30;
+// The 100%-off codes that give a trial, not a full copy. Any other free code is a full copy.
+const TRIAL_CODES = ['MATTHEW'];
+// Trials began 2026-10-28; a $0 purchase before then is a full copy.
+const TRIALS_FROM = Date.parse('2026-10-28T00:00:00Z');
 const TRIAL_OVER = 'Your 30-day trial of Lyricist Pro has ended. Get it on Gumroad to keep going; your songs are still here.';
 
-/** When a $0 purchase's trial ends (ms), or 0 for a paid purchase. */
+/**
+ * When a trial ends (ms), or 0 for a purchase that is not a trial. A trial is
+ * a $0 purchase made with one of TRIAL_CODES. Every $0 purchase from before
+ * trials existed (TRIALS_FROM) stays a full copy whatever its code, so the
+ * copies Chris already gave away (FUNKPHONE) never lock.
+ */
 function trialEnds(p) {
   if (Number(p.price) !== 0) return 0;
   const sold = Date.parse(p.sale_timestamp || p.created_at || '');
+  if (Number.isFinite(sold) && sold < TRIALS_FROM) return 0;
+  const oc = p.offer_code;
+  const name = String((oc && typeof oc === 'object' ? oc.code || oc.name : oc) || '').trim().toUpperCase();
+  if (name && !TRIAL_CODES.includes(name)) return 0;
   return (Number.isFinite(sold) ? sold : Date.now()) + TRIAL_DAYS * 24 * 60 * 60 * 1000;
 }
 const trialOver = (v) => !!(v && v.trialEnds && Date.now() > v.trialEnds);
