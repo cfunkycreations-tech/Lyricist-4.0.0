@@ -74,7 +74,7 @@ function GrowBox({ value, minRows = 3, className = '', ...rest }) {
 }
 import {
   buildState, composeCaption, detectComfy, estimateSeconds, generateTakes, sectionBudget,
-  SECONDS_PER_SECTION, SEED_MAX, safeSeed,
+  SECONDS_PER_SECTION, SEED_MAX, safeSeed, lyriaCost, LYRIA_MAX_SECONDS,
 } from '../../services/MusicService.js';
 import { useLyricStore } from '../../context/LyricStore.jsx';
 import {
@@ -84,7 +84,7 @@ import { askToPing, pingSongDone } from '../../web/songDone.js';
 import { notify, ask as askDialog } from '../../services/dialog.js';
 import { blendLabel } from '../../utils/blend.js';
 import { saveRecording, listRecordings, deleteRecording } from '../../services/RecordingsStore.js';
-import './OneManBand.css';
+import './BlackHoleStudios.css';
 import bhLoop from '../../assets/blackhole/bh_loop.webm';
 import bhStill from '../../assets/blackhole/bh_still.webp';
 import bhAnim from '../../assets/blackhole/bh_loop.webp';
@@ -108,11 +108,10 @@ const APPLE_WEBKIT = typeof navigator !== 'undefined' && (
 /**
  * BLACK HOLE STUDIOS — your words, sung by a full band.
  *
- * Renamed by Chris, 2026-09-12, from One Man Band: *"I don't like that fucking
- * name, we're getting rid of it."* The file, the folder and the tab id stay
- * `onemanband` on purpose — they are load-bearing (saved takes, the Ghost's tab
- * router, the background video, every `omb-` class in the CSS) and renaming
- * them would be a rename of the plumbing, not of the thing the user sees.
+ * Chris, 2026-09-12, on the old name: *"I don't like that fucking name, we're
+ * getting rid of it."* The tab was renamed then, and on 2026-10-27 the rest
+ * went too: this file, its folder, the tab id (`blackhole`), the Ghost's clips
+ * and the background art. Only the short `omb-` CSS class prefix is left.
  *
  * Three things decide how this is built, all learned the hard way:
  *
@@ -366,7 +365,7 @@ function picksForSkill({ genres = [], moods = [], voices = [], instrumental = fa
   return out.join(' ');
 }
 
-export default function OneManBand({ onNavigate, incoming, onSendToSongwriter } = {}) {
+export default function BlackHoleStudios({ onNavigate, incoming, onSendToSongwriter } = {}) {
   const store = useLyricStore();
   const [lyrics, setLyrics] = useState(
     '[Verse]\nSteel in my hands and the sun going down\n'
@@ -422,6 +421,8 @@ export default function OneManBand({ onNavigate, incoming, onSendToSongwriter } 
   const [showAll, setShowAll] = useState(false);
 
   const [engine, setEngine] = useState('cloud');
+  // Lyria 3 runs on the same OpenRouter key the writing tools use.
+  const hasOpenRouterKey = Boolean(String(store.config?.openRouterApiKey || '').trim());
   const [comfy, setComfy] = useState(null);
   const [kaggle, setKaggle] = useState(null);
   // OPEN BY DEFAULT WHEN NOTHING IS SET UP, and it sits ABOVE the engine row
@@ -924,6 +925,7 @@ export default function OneManBand({ onNavigate, incoming, onSendToSongwriter } 
         steps,
         guidance,
         hfToken: store.config?.huggingFaceToken || '',
+        openRouterKey: store.config?.openRouterApiKey || '',
         // Only read when engine === 'modal'; the other engines ignore them.
         modalUrl: store.config?.modalUrl || '',
         modalToken: store.config?.modalToken || '',
@@ -1474,12 +1476,13 @@ export default function OneManBand({ onNavigate, incoming, onSendToSongwriter } 
     roll_take_number: () => { roll(); return 'rolled a new take number'; },
     set_engine: ({ engine: e }) => {
       const want = String(e || '').toLowerCase();
-      if (!['cloud', 'kaggle', 'local', 'modal'].includes(want)) throw new Error(`"${e}" is not one of the four`);
+      if (!['cloud', 'openrouter', 'kaggle', 'local', 'modal'].includes(want)) throw new Error(`"${e}" is not one of the five`);
+      if (want === 'openrouter' && !hasOpenRouterKey) throw new Error('there is no OpenRouter key yet, add it in Settings first');
       if (want === 'kaggle' && !kaggle?.connected) throw new Error('Kaggle is not connected yet, open Set-up first');
       if (want === 'local' && !comfy) throw new Error('this computer is not set up for it yet, open Set-up first');
       if (want === 'modal' && !store.config?.modalUrl) throw new Error('Modal is not set up yet, add its address in Settings first');
       setEngine(want);
-      return `switched it to ${want === 'cloud' ? 'the free cloud' : want === 'kaggle' ? 'Kaggle' : want === 'modal' ? 'Modal' : 'this computer'}`;
+      return `switched it to ${want === 'cloud' ? 'the free cloud' : want === 'openrouter' ? 'Lyria 3 on OpenRouter' : want === 'kaggle' ? 'Kaggle' : want === 'modal' ? 'Modal' : 'this computer'}`;
     },
     /**
      * A SONG THAT HAS ITS SHAPE KEEPS IT. The journey run pulled a finished
@@ -1543,7 +1546,7 @@ export default function OneManBand({ onNavigate, incoming, onSendToSongwriter } 
 
   return (
     <div className="omb">
-      <TabBackground name="onemanband" />
+      <TabBackground name="blackhole" />
       <div className="omb-veil" aria-hidden="true" />
 
       <div className="omb-wrap">
@@ -1607,6 +1610,16 @@ export default function OneManBand({ onNavigate, incoming, onSendToSongwriter } 
           <button type="button" className="omb-eng" aria-pressed={engine === 'cloud'}
                   onClick={() => setEngine('cloud')}>
             <span className="omb-dot" />Free cloud <span className="omb-cost free">$0</span>
+          </button>
+          {/* LYRIA 3 (Chris, 2026-10-27): Google's music model on the OpenRouter
+              key he already has. No daily allowance; each take is paid from
+              his OpenRouter credits, so the price sits right on the button. */}
+          <button type="button" className="omb-eng" aria-pressed={engine === 'openrouter'}
+                  disabled={!hasOpenRouterKey} onClick={() => setEngine('openrouter')}>
+            <span className="omb-dot" />Lyria 3{' '}
+            <span className="omb-cost">
+              {hasOpenRouterKey ? `$${lyriaCost(seconds).toFixed(2)} a take · OpenRouter` : 'add your OpenRouter key'}
+            </span>
           </button>
           {/* KAGGLE IS A REAL ENGINE NOW, not a line of advice in a warning.
               It is the only free route to a full length song. */}
@@ -1927,6 +1940,18 @@ export default function OneManBand({ onNavigate, incoming, onSendToSongwriter } 
 
               <div className="omb-go">
                 <div className="omb-est"><span>This will take</span><b>{prettyTime(estimate)}</b></div>
+                {engine === 'openrouter' && (
+                  <div className="omb-est">
+                    <span>From your OpenRouter credits</span>
+                    <b>${(lyriaCost(seconds) * takeCount).toFixed(2)}</b>
+                  </div>
+                )}
+                {engine === 'openrouter' && seconds > LYRIA_MAX_SECONDS && (
+                  <p className="omb-warn">
+                    Lyria 3 makes songs up to about three minutes, so this one will come out around
+                    three minutes rather than {Math.round(seconds / 60)}.
+                  </p>
+                )}
                 {/* The free cloud allocates about 2.15x the song length in GPU
                     time and a single call is capped, so it refuses anything much
                     past 45 seconds. Say so here rather than let them wait for a
@@ -1950,7 +1975,7 @@ export default function OneManBand({ onNavigate, incoming, onSendToSongwriter } 
                 )}
                 {error && <p className="omb-error">{error}</p>}
                 {!error && phase === 'saved to Recordings' && <p className="omb-ok">Saved to Recordings</p>}
-                <div className="omb-credit">Music by MiniMax-Music3</div>
+                <div className="omb-credit">Music by {engine === 'openrouter' ? 'Google Lyria 3' : 'MiniMax-Music3'}</div>
               </div>
             </div>
           </section>

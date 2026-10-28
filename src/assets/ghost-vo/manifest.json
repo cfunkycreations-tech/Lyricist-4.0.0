@@ -1,69 +1,69 @@
 {
-  "onemanband-0-say": {
+  "blackhole-0-say": {
     "text": "Remote session on Black Hole Studios. This is the tab that takes the words you wrote and sings them back to you, with a full band behind them.",
     "words": 28
   },
-  "onemanband-1-say": {
+  "blackhole-1-say": {
     "text": "Simple hides the deep knobs. Full Control shows every one of them. Nothing is buried behind a menu either way.",
     "words": 20
   },
-  "onemanband-2-say": {
+  "blackhole-2-say": {
     "text": "Where it runs. Free cloud costs nothing and is also the fastest, so it is the default. It tops out around forty five seconds of music. Kaggle and this computer both make full length songs, and both are free as well.",
     "words": 41
   },
-  "onemanband-3-say": {
+  "blackhole-3-say": {
     "text": "Set-up is how you switch Kaggle on, and it is worth doing before anything else. It is three steps. Open Kaggle, click Create New Token, and paste the long code they show you into the box. Once, and it stays done.",
     "words": 41
   },
-  "onemanband-4-say": {
+  "blackhole-4-say": {
     "text": "Pull from Songwriter drops the lyrics you already wrote straight in, sections and all. You never retype anything.",
     "words": 18
   },
-  "onemanband-5-say": {
+  "blackhole-5-say": {
     "text": "These bracket tags are the real structure. Verse, Chorus, Bridge. The words carry the mood, but these decide the shape of the song. Tap one to add it.",
     "words": 28
   },
-  "onemanband-6-say": {
+  "blackhole-6-say": {
     "text": "Your lyrics live here. Read them back before you start, because a typo costs you the whole run.",
     "words": 18
   },
-  "onemanband-7-say": {
+  "blackhole-7-say": {
     "text": "Genre, mood and voice. Two hundred and forty one genres, and each one brings its own real instruments into the description.",
     "words": 21
   },
-  "onemanband-8-say": {
+  "blackhole-8-say": {
     "text": "This is the Input Caption, and it is the single biggest lever on how the song comes out. It gets written for you from your three picks, and you can edit every word of it.",
     "words": 35
   },
-  "onemanband-9-say": {
+  "blackhole-9-say": {
     "text": "Rewrite with AI hands it to the music model’s own caption writer, free, on their server. It rewrites the sound and leaves your lyrics alone.",
     "words": 25
   },
-  "onemanband-10-say": {
+  "blackhole-10-say": {
     "text": "And this is the whole prompt, exactly as it gets sent. The Input Caption and the Input Lyrics, together, nothing hidden from you. Copy it puts the lot on your clipboard, which is also what you paste into anything else.",
     "words": 40
   },
-  "onemanband-11-say": {
+  "blackhole-11-say": {
     "text": "Takes at once. Two is the default, because two versions of the same song give you something to choose between. On Kaggle they are made side by side on its two graphics cards, so asking for two costs about what one costs.",
     "words": 42
   },
-  "onemanband-12-say": {
+  "blackhole-12-say": {
     "text": "The take number is the roll of the dice. Same words, new number, a different performance every time. It gets saved with the song so you can find your way back to one you liked.",
     "words": 35
   },
-  "onemanband-13-say": {
+  "blackhole-13-say": {
     "text": "It tells you how long before you commit, not after. A long song on free hardware is a real wait. Kaggle is honest rather than quick: about seventeen minutes for thirty seconds of music. You should know that going in.",
     "words": 40
   },
-  "onemanband-14-say": {
+  "blackhole-14-say": {
     "text": "Make the song starts it. I am not pressing it for you, because that spends real time on the free servers, and this is your quota not mine.",
     "words": 28
   },
-  "onemanband-15-say": {
+  "blackhole-15-say": {
     "text": "Music by MiniMax Music 3, credited right here, because their licence asks for it and that is only fair.",
     "words": 19
   },
-  "onemanband-16-say": {
+  "blackhole-16-say": {
     "text": "That is Black Hole Studios. Write the words in Songwriter, sing them here, then polish in Mastering Studio.",
     "words": 18
   },

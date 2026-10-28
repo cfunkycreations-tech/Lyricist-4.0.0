@@ -61,7 +61,7 @@ So let's write.`
   {
     // Black Hole Studios sits straight after Songwriter in the tab bar for the same
     // reason it sits here: you write the words, then you hear them.
-    id: 4, icon: 'orbit', title: 'Black Hole Studios, hear your words sung', tab: 'onemanband', audio: 'card-18.mp3',
+    id: 4, icon: 'orbit', title: 'Black Hole Studios, hear your words sung', tab: 'blackhole', audio: 'card-18.mp3',
     script: `Black Hole Studios. Where your words become a real song.
 
 Write your Input Lyrics, pick a genre, a mood and a voice, and it writes the Input Caption for you. Then it sings it back with a full band behind it.

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LyricStoreProvider, useLyricStore } from './context/LyricStore.jsx';
 import SongwriterHub from './components/SongwriterHub/SongwriterHub.jsx';
-import OneManBand from './components/OneManBand/OneManBand.jsx';
+import BlackHoleStudios from './components/BlackHoleStudios/BlackHoleStudios.jsx';
 import ScrewShop from './components/ScrewShop/ScrewShop.jsx';
 import StartHere from './components/common/StartHere.jsx';
 import ArtistAnalyzer from './components/ArtistAnalyzer/ArtistAnalyzer.jsx';
@@ -117,7 +117,7 @@ const tabs = [
   // Write / story tools first, then The Matrix
   { id: 'songwriter', icon: 'pen-line', label: 'Songwriter', blurb: 'write and rewrite lyrics', help: 'The main workspace. Set up the kind of song you want (style, mood, topic), then write and polish the lyrics line by line.' },
   // Straight after Songwriter on purpose: write the words, then hear them.
-  { id: 'onemanband', icon: 'orbit', label: 'Black Hole Studios', blurb: 'lyrics into a real song', help: 'Turns your lyrics into a real song with vocals and a full band. Pick a genre, a mood and a voice, and it writes the Input Caption for you. Free on the cloud engine, no key needed. Longer songs take longer, and it tells you how long before you start.' },
+  { id: 'blackhole', icon: 'orbit', label: 'Black Hole Studios', blurb: 'lyrics into a real song', help: 'Turns your lyrics into a real song with vocals and a full band. Pick a genre, a mood and a voice, and it writes the Input Caption for you. Free on the cloud engine, no key needed. Longer songs take longer, and it tells you how long before you start.' },
   { id: 'analyzer', icon: 'radar', label: 'Ghost Rider', blurb: 'analyse any artist\'s style', help: 'Studies any artist you name and breaks down how they write, then helps you write a NEW song in that same style. (It does not copy their actual lyrics.)' },
   { id: 'songforge', icon: 'hammer', label: 'Song Forge', blurb: 'a full song from one idea', help: 'Auto-generate a full song and cover art using your single OpenRouter key (lyrics + Nano Banana image models on OpenRouter). Song First or Art First. No Google AI Studio key.' },
   { id: 'quantum', icon: 'grid', label: 'The Matrix', blurb: 'engineer verse structure', help: 'Build a verse from a 20-tile semantic grid. Load your keywords, then hit Auto-Craft Verse for the one-click path — it spreads the energy, locks the field and writes both neural states for you. Tick Also write full songs and it goes on to write a whole song for each state, side by side, from your Matrix DNA and keywords. Everything granular (manual steps, the 9-suite feature hub, the analytical inspectors) lives in the Advanced Studio section underneath. Needs your BYOK routing key for generation.' },
@@ -302,7 +302,7 @@ function MainLayout() {
   const [studioIncoming, setStudioIncoming] = useState(null);
   const handleSendToStudio = (data) => {
     setStudioIncoming({ ...data, at: Date.now() });
-    setActiveTab('onemanband');
+    setActiveTab('blackhole');
   };
   /** And back: Black Hole Studios → Songwriter. */
   const [songwriterIncoming, setSongwriterIncoming] = useState(null);
@@ -349,8 +349,8 @@ function MainLayout() {
    */
   useEffect(() => registerGhostAction('open_tab', async ({ tab }) => {
     // The Ghost may say the tab's real name ("Black Hole Studios") or its id.
-    // Chris: "it's not one man band! it's black hole studio's!" The log says
-    // the name on the tab, never the id underneath.
+    // Chris: "it's black hole studio's!" The log says the name on the tab,
+    // never the id underneath.
     const raw = String(tab || '').trim();
     const bare = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
     const found = tabs.find((t) => t.id === raw)
@@ -518,8 +518,8 @@ function MainLayout() {
             Background is #000, matching the app floor. The 1px hairline
             underneath comes from .header-cosmic's stylesheet rule, which
             still separates the header from the tab strip below it. */}
-        {/* THE BRAND BANNER: the logo, with bars, the disc, the skyline or the
-            song either side of it. components/BrandBanner. It sits outside
+        {/* THE BRAND BANNER: the logo, with bars, the disc or a photo of Austin
+            either side of it. components/BrandBanner. It sits outside
             .header-cosmic so the Push grid's height: auto and overflow still work. */}
         <BrandBanner />
         <div className="header-cosmic" style={{ flexShrink: 0, position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center', background: '#000', height: 96, overflow: 'hidden', width: '100%' }}>
@@ -747,8 +747,8 @@ function MainLayout() {
           <TabPane id="songwriter" active={activeTab} opened={openedTabs}>
             <SongwriterHub ghostRiderData={ghostRiderData} onSendToStudio={handleSendToStudio} incoming={songwriterIncoming} />
           </TabPane>
-          <TabPane id="onemanband" active={activeTab} opened={openedTabs}>
-            <OneManBand onNavigate={setActiveTab} incoming={studioIncoming} onSendToSongwriter={handleSendToSongwriter} />
+          <TabPane id="blackhole" active={activeTab} opened={openedTabs}>
+            <BlackHoleStudios onNavigate={setActiveTab} incoming={studioIncoming} onSendToSongwriter={handleSendToSongwriter} />
           </TabPane>
           <TabPane id="screw" active={activeTab} opened={openedTabs}>
             <ScrewShop />

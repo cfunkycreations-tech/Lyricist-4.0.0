@@ -132,7 +132,7 @@ export default function SunoPlayer() {
 
   const track = current >= 0 ? tracks[current] : null;
 
-  // Tells the logo banner what's on (its Song info side).
+  // Tells anything listening what's on (lyricist:now-playing).
   useEffect(() => {
     const detail = { name: track?.name || '', playing };
     window.__lyricistNowPlaying = detail;

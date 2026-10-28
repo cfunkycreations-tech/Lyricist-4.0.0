@@ -59,9 +59,14 @@ const API = 'https://api.kaggle.com/v1';
 const SERVICE = 'kernels.KernelsApiService';
 /** Where a pasted code gets checked, and where its username comes from. */
 const OAUTH_SERVICE = 'security.OAuthService';
-/** The slug we own inside the user's own account. Same notebook, updated each run. */
-const SLUG = 'lyricist-one-man-band';
-const TITLE = 'Lyricist One Man Band';
+/**
+ * The slug we own inside the user's own account. Same notebook, updated each run.
+ * Renamed 2026-10-27 with the tab (Chris: "get rid of" the old name). The first
+ * run after that makes this notebook fresh; the old one is left untouched in
+ * their account and can be deleted there.
+ */
+const SLUG = 'lyricist-black-hole-studios';
+const TITLE = 'Lyricist Black Hole Studios';
 /**
  * THE 12 GB MODEL, SAVED ONCE IN THEIR OWN ACCOUNT.
  *

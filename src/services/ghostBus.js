@@ -121,7 +121,7 @@ const ACTION_TAB = [
   [/^ghostrider_/, 'analyzer'],
   [/^songforge_/, 'songforge'],
   [/^matrix_/, 'quantum'],
-  [/^(blackhole_|set_lyrics$|append_lyrics$|write_caption$|set_caption$|set_length$|set_takes$|roll_take_number$|set_engine$|lay_out_song$|make_the_song$|make_the_video$|stop$)/, 'onemanband'],
+  [/^(blackhole_|set_lyrics$|append_lyrics$|write_caption$|set_caption$|set_length$|set_takes$|roll_take_number$|set_engine$|lay_out_song$|make_the_song$|make_the_video$|stop$)/, 'blackhole'],
 ];
 export const tabForAction = (name) => ACTION_TAB.find(([re]) => re.test(name))?.[1] || null;
 
@@ -139,7 +139,7 @@ const waitFor = async (name, ms) => {
  * answer). The flight recorder writes it after every action, so a log shows
  * not just what the Ghost pressed but what the tab held afterwards.
  */
-const DESCRIBER = { songwriter: 'describe_songwriter', analyzer: 'describe_ghostrider', quantum: 'describe_matrix', songforge: 'describe_songforge', onemanband: 'describe_song' };
+const DESCRIBER = { songwriter: 'describe_songwriter', analyzer: 'describe_ghostrider', quantum: 'describe_matrix', songforge: 'describe_songforge', blackhole: 'describe_song' };
 export async function peekTabs(tabIds = null) {
   const out = [];
   const wanted = tabIds ? new Set(tabIds.map((id) => DESCRIBER[id]).filter(Boolean)) : null;

@@ -50,7 +50,7 @@ import ghostIcon from '../assets/ghost-logo-icon.png';
    never go missing. */
 const GROUPS = [
   { name: 'Write', ids: ['songwriter', 'analyzer', 'songforge', 'quantum', 'collab', 'scratchpad'] },
-  { name: 'Make the music', ids: ['onemanband', 'booth', 'loopstation', 'voicelab', 'midistudio', 'screw', 'stemmer', 'mastering'] },
+  { name: 'Make the music', ids: ['blackhole', 'booth', 'loopstation', 'voicelab', 'midistudio', 'screw', 'stemmer', 'mastering'] },
   { name: 'Find words', ids: ['rhyme', 'thesaurus', 'dictionary'] },
   { name: 'Setup and more', ids: ['settings', 'toolshub'] },
 ];
@@ -68,7 +68,7 @@ const NEEDS_KEY = new Set(['songwriter', 'analyzer', 'songforge', 'quantum', 'vo
    shared with the guided demos; never rename them. */
 const ACTIONS = {
   songwriter: { hook: 'sw-generate', label: 'Generate' },
-  onemanband: { hook: 'omb-make', label: 'Make song' },
+  blackhole: { hook: 'omb-make', label: 'Make song' },
   analyzer: { hook: 'gr-analyze', label: 'Analyze' },
   songforge: { hook: 'sf-forge', label: 'Forge' },
   quantum: { hook: 'matrix-autocraft', label: 'Auto-Craft' },

@@ -1,7 +1,7 @@
 /**
  * LYRICIST KAGGLE RELAY
  *
- * One Man Band is the best thing in Lyricist and it is the one feature that
+ * Black Hole Studios is the best thing in Lyricist and it is the one feature that
  * cannot work in a browser on its own. A phone cannot call Kaggle's API
  * directly: the browser blocks the cross-origin request and Kaggle sends no
  * CORS headers, so the call dies before it leaves the device.
@@ -26,7 +26,7 @@
  * WHAT IT GUARDS AGAINST
  *   - Becoming an open proxy. Only the Kaggle hosts below are reachable.
  *   - Other sites spending the request quota. Origin must be on the list.
- *   - Surprises. Only the exact methods One Man Band needs are allowed.
+ *   - Surprises. Only the exact methods Black Hole Studios needs are allowed.
  *
  * DEPLOY: see README.md. Free tier is 100,000 requests a day, which at a 20
  * second poll is roughly 250 full songs a day. Waiting on a fetch does not
@@ -116,7 +116,7 @@ export default {
       return deny(401, 'Send your own Kaggle token in the Authorization header', origin);
     }
 
-    /* ---- The API calls One Man Band makes ---------------------------- */
+    /* ---- The API calls Black Hole Studios makes ---------------------------- */
     // /api/{service}/{method}
     const api = url.pathname.match(/^\/api\/([^/]+)\/([^/]+)$/);
     if (api) {

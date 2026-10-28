@@ -1,6 +1,6 @@
 # Lyricist Kaggle relay
 
-A CORS shim so **One Man Band works on a phone**. Nothing more.
+A CORS shim so **Black Hole Studios works on a phone**. Nothing more.
 
 A browser cannot call Kaggle's API directly: the request is cross-origin and
 Kaggle sends no CORS headers, so it dies before it leaves the device. This

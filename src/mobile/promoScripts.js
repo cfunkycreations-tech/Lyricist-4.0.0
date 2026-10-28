@@ -170,7 +170,7 @@ function studioSteps({ outro }) {
   let takesBefore = 0;
   return [
     {
-      wait: () => shownPane('onemanband') && !!String($('[data-demo="omb-lyrics"]')?.value || text('[data-demo="omb-lyrics"]')).trim(),
+      wait: () => shownPane('blackhole') && !!String($('[data-demo="omb-lyrics"]')?.value || text('[data-demo="omb-lyrics"]')).trim(),
       at: '[data-demo="omb-lyrics"]', timeout: 15000,
     },
     { target: '[data-demo="omb-lyrics"]', glow: ['.omb-picks'], id: 'bh-arrived' },

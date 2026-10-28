@@ -69,7 +69,7 @@ console.log('--- machinery never reaches the screen ---');
 console.log('--- which tab owns an action ---');
 ok('songwriter_*  -> songwriter', tabForAction('songwriter_write_song') === 'songwriter');
 ok('ghostrider_*  -> analyzer', tabForAction('ghostrider_save_song') === 'analyzer');
-ok('set_lyrics    -> onemanband', tabForAction('set_lyrics') === 'onemanband');
+ok('set_lyrics    -> blackhole', tabForAction('set_lyrics') === 'blackhole');
 ok('matrix_*      -> quantum', tabForAction('matrix_autocraft') === 'quantum');
 
 console.log('--- a refusal is reported as a refusal ---');
@@ -211,11 +211,11 @@ console.log('\n--- Sly Ghost: checks every job step, never breaks a job ---');
   ok('a style report is not lyrics', newBanned([], ['GHOST RIDER TAB\nIts style report starts: echoes of the delta'], '').length === 0);
   ok('the verdict reads MISSED with its reason', readVerdict('MISSED: no lyrics in Songwriter').note === 'no lyrics in Songwriter');
   ok('anything else reads as done', readVerdict('Looks good, DONE.').missed === false);
-  const TABS = [{ id: 'songwriter', label: 'Songwriter' }, { id: 'onemanband', label: 'Black Hole Studios' }, { id: 'loopstation', label: 'RC-Funk 5000' }];
+  const TABS = [{ id: 'songwriter', label: 'Songwriter' }, { id: 'blackhole', label: 'Black Hole Studios' }, { id: 'loopstation', label: 'RC-Funk 5000' }];
   ok('a button-driven tab not on screen gets opened', prepTab('Start the drum machine on RC-Funk 5000', { tabs: TABS, visible: 'songwriter' })?.id === 'loopstation');
   ok('the tab already on screen is left alone', prepTab('Start RC-Funk 5000', { tabs: TABS, visible: 'loopstation' }) === null);
   ok('a tab whose actions are live is left to the bus', prepTab('Send it to Black Hole Studios', { tabs: TABS, visible: 'songwriter', available: ['describe_song'] }) === null);
-  ok('a never-opened tab with actions gets opened', prepTab('Send it to Black Hole Studios', { tabs: TABS, visible: 'songwriter', available: [] })?.id === 'onemanband');
+  ok('a never-opened tab with actions gets opened', prepTab('Send it to Black Hole Studios', { tabs: TABS, visible: 'songwriter', available: [] })?.id === 'blackhole');
 }
 
 console.log(bad ? `\nGhost check FAILED: ${bad} of ${n}.` : `\nGhost check passed: ${n} checks.`);

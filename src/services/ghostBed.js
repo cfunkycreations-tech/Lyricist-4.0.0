@@ -39,7 +39,7 @@ export const PROMO_BEDS = PROMO
 
 // Chris: any bed on any tab is fine. Black Hole Studios gets its own track;
 // every other tab keeps the same bed from run to run.
-const BED_FOR_TAB = { onemanband: 'blackhole' };
+const BED_FOR_TAB = { blackhole: 'blackhole' };
 
 export function bedFor(tabId) {
   const named = BEDS.find((b) => b.name === BED_FOR_TAB[tabId]);
