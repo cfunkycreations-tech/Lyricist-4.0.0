@@ -121,11 +121,21 @@ for name, L in LAYOUT.items():
         big = int(np.argmax(sizes)) + 1
         cy = ndimage.center_of_mass(lab == big)[0]
         top = np.nonzero((lab == big).any(1))[0][0]
+        bx = np.nonzero((lab == big).any(0))[0]
+        span = bx[-1] - bx[0]
+        by = np.nonzero((lab == big).any(1))[0]
+        bottom, height = by[-1], by[-1] - by[0]
         for i in range(1, n + 1):
             if i == big:
                 continue
             ys = np.nonzero((lab == i).any(1))[0]
-            if ys.mean() < cy or ys[0] < top:
+            xs = np.nonzero((lab == i).any(0))[0]
+            # The chin line sits under the middle of the mouth; strands of
+            # hair at the box's corners do not (they showed as a light patch
+            # moving with the jaw on the phone).
+            under = (xs[0] > bx[0] + span * 0.15 and xs[-1] < bx[-1] - span * 0.15
+                     and ys[0] < bottom + height * 0.25)
+            if ys.mean() < cy or ys[0] < top or not under:
                 keep &= lab != i
     mouth = np.zeros((H, W), bool)
     mouth[y0:y1, x0:x1] = sub & keep
