@@ -840,7 +840,7 @@ function MainLayout() {
             <span className="deck-mark">FAFO</span>
             <span className="deck-text">
               <b>Funk Audio Flow OpSec (FAFO)</b>
-              <i>Austin, Texas</i>
+              <i>Austin, Texas · © 2026 Christopher Funk. All rights reserved.</i>
             </span>
           </div>
 

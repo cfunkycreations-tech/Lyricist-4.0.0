@@ -36,7 +36,13 @@ const { spawn } = require('child_process');
 const { Readable } = require('stream');
 const { pipeline } = require('stream/promises');
 
-const REPO = 'cfunkycreations-tech/Lyricist-4.0.0';
+// Updates come from a public repo that holds nothing but releases (installers
+// and update.json). The source repo, Lyricist-4.0.0, is made private
+// (Chris, 2026-10-28: copyright and the free creator build were public).
+// Installers are still accepted from the old repo, for the one update that
+// moved everyone over.
+const REPO = 'cfunkycreations-tech/lyricist-pro-releases';
+const OLD_REPO = 'cfunkycreations-tech/Lyricist-4.0.0';
 // GitHub redirects this to the newest release's own copy of the file, so the
 // app needs no token, no API and no rate limit.
 const MANIFEST = `https://github.com/${REPO}/releases/latest/download/update.json`;
@@ -131,8 +137,9 @@ function register({ app, ipcMain, net, BrowserWindow, manifestUrl = MANIFEST, fo
       const build = Number(m.build);
       if (!(build > mine.build) || m.edition !== 'customer' || !m.url || !m.sha512 || !m.size) return null;
       if (!signedBy(m, mine.key)) return null;
-      // The installer only ever comes from this repo's own releases.
-      if (!force && !String(m.url).startsWith(`https://github.com/${REPO}/releases/download/`)) return null;
+      // The installer only ever comes from our own releases.
+      const from = String(m.url);
+      if (!force && ![REPO, OLD_REPO].some((r) => from.startsWith(`https://github.com/${r}/releases/download/`))) return null;
       if (ready && ready.build >= build) return ready;
 
       fs.mkdirSync(dir, { recursive: true });
