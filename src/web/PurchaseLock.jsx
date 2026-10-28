@@ -20,7 +20,7 @@ import './PurchaseLock.css';
  * definite no from Gumroad (refunded, charged back, not a real code) locks the
  * phone again. No signal, or Gumroad down, never does.
  *
- * A $0 purchase (a 100%-off code) is a 30-day trial: the checks hand back when
+ * A $0 purchase made with a trial code (MATTHEW) is a 30-day trial: the checks hand back when
  * it ends, it is kept with the code, and once it has passed the app locks with
  * TRIAL_OVER, offline or not (licenseCheck.js, functions/api/unlock.js).
  *
