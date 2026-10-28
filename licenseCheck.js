@@ -44,9 +44,9 @@ const TRIAL_OVER = 'Your 30-day trial of Lyricist Pro has ended. Get it on Gumro
 
 /**
  * When a trial ends (ms), or 0 for a purchase that is not a trial. A trial is
- * a $0 purchase made with one of TRIAL_CODES. Every $0 purchase from before
- * trials existed (TRIALS_FROM) stays a full copy whatever its code, so the
- * copies Chris already gave away (FUNKPHONE) never lock.
+ * a $0 purchase made with one of TRIAL_CODES (Chris: "Just apply this to the
+ * fucking Matthew code. That's it."). Everything else is a full copy, and so is
+ * every purchase from before trials existed (TRIALS_FROM), so FUNKPHONE never locks.
  */
 function trialEnds(p) {
   if (Number(p.price) !== 0) return 0;
@@ -54,7 +54,7 @@ function trialEnds(p) {
   if (Number.isFinite(sold) && sold < TRIALS_FROM) return 0;
   const oc = p.offer_code;
   const name = String((oc && typeof oc === 'object' ? oc.code || oc.name : oc) || '').trim().toUpperCase();
-  if (name && !TRIAL_CODES.includes(name)) return 0;
+  if (!TRIAL_CODES.includes(name)) return 0;  // MATTHEW only; no code named, no trial
   return (Number.isFinite(sold) ? sold : Date.now()) + TRIAL_DAYS * 24 * 60 * 60 * 1000;
 }
 const trialOver = (v) => !!(v && v.trialEnds && Date.now() > v.trialEnds);
