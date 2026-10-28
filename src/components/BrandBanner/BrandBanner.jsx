@@ -15,6 +15,9 @@ import zilkerWest from '../../assets/banner/zilker-west.webp';
 import zilkerEast from '../../assets/banner/zilker-east.webp';
 import hillsWest from '../../assets/banner/hills-west.webp';
 import hillsEast from '../../assets/banner/hills-east.webp';
+import skylineEastClean from '../../assets/banner/skyline-east-clean.webp';
+import zilkerWestClean from '../../assets/banner/zilker-west-clean.webp';
+import { makeSide } from './austin.js';
 import { getAudioContext, getMasterBus } from '../../services/audioEngine.js';
 import './BrandBanner.css';
 
@@ -43,7 +46,11 @@ import './BrandBanner.css';
  *   hills   — sunset over the Hill Country from Mount Bonnell | the
  *             Pennybacker Bridge.
  * They were made with an image model from photos of the real places
- * (src/assets/banner/*.webp) and drift slowly while they show.
+ * (src/assets/banner/*.webp). Chris, 2026-10-28: "all banner scenes need to
+ * be animated... HEAVY ANIMATION", clouds, buildings and the lake
+ * "psychedelic". Each side is a canvas animated in code (austin.js): melting
+ * clouds, breathing buildings, rolling water, turning rainbow washes,
+ * twinkling lights, bats, flocks, kites, grackles, traffic and boats.
  * Three more are Cinema 4D renders, Chris's own (scripts/orbit_c4d.py,
  * lyrics_hole_c4d.py, molten_c4d.py):
  *   orbit   — the 18 tab names circling the Black Hole Studios title.
@@ -56,13 +63,15 @@ import './BrandBanner.css';
 const MODES = ['auto', 'bars', 'disc', 'orbit', 'lyrics', 'molten', 'skyline', 'sixth', 'zilker', 'hills', 'off'];
 const LABEL = { auto: 'Auto', bars: 'Bars', disc: 'Disc', orbit: 'Orbit', lyrics: 'Lyrics', molten: 'Molten', skyline: 'Skyline', sixth: 'Sixth Street', zilker: 'Zilker', hills: 'Hill Country', off: 'Off' };
 const ROTATION = ['skyline', 'orbit', 'bars', 'sixth', 'disc', 'lyrics', 'zilker', 'molten', 'hills'];
-// The Austin pictures: [left of the logo, right of it].
+// The Austin scenes: [left of the logo, right of it], each [picture name, photo,
+// the photo with its kites or birds painted out (austin.js puts them back moving)].
 const PHOTOS = {
-  skyline: [skylineWest, skylineEast],
-  sixth: [sixthWest, sixthEast],
-  zilker: [zilkerWest, zilkerEast],
-  hills: [hillsWest, hillsEast],
+  skyline: [['skyline-west', skylineWest], ['skyline-east', skylineEast, skylineEastClean]],
+  sixth: [['sixth-west', sixthWest], ['sixth-east', sixthEast]],
+  zilker: [['zilker-west', zilkerWest, zilkerWestClean], ['zilker-east', zilkerEast]],
+  hills: [['hills-west', hillsWest], ['hills-east', hillsEast]],
 };
+const loadImg = (src) => { if (!src) return null; const i = new Image(); i.decoding = 'async'; i.src = src; return i; };
 // The scenes that are a video, and which clip each one plays.
 // Each is [mp4, webm]: Safari wants the mp4, and the browser takes the first it can play.
 const VIDEO_SRC = {
@@ -194,6 +203,9 @@ export default function BrandBanner() {
   const rootRef = useRef(null);
   const barsRef = useRef(null);
   const videoRefs = useRef({});
+  // The Austin canvases, { scene: [left, right] }, and their animators (made on first show).
+  const photoRefs = useRef({});
+  const sides = useRef({});
   const sceneRef = useRef('bars');
   const shownAt = useRef({});
 
@@ -283,6 +295,23 @@ export default function BrandBanner() {
         }
         drawBars(barsRef.current.getContext('2d'), st, st.W, st.H, REDUCED_MOTION ? 0 : dt, t);
       }
+      // The Austin scenes, each side its own canvas.
+      for (const name of Object.keys(PHOTOS)) {
+        if (!live(name, now)) continue;
+        PHOTOS[name].forEach(([pic, src, clean], i) => {
+          const c = photoRefs.current[name]?.[i];
+          if (!c) return;
+          const key = `${name}${i}`;
+          if (!sides.current[key]) sides.current[key] = makeSide(pic, { img: loadImg(src), clean: loadImg(clean) }, i ? 1 : 0);
+          const cw = c.clientWidth, ch = c.clientHeight;
+          if (!cw || !ch) return;
+          const pw = Math.round(cw * st.dpr), ph = Math.round(ch * st.dpr);
+          if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
+          const g = c.getContext('2d');
+          g.setTransform(st.dpr, 0, 0, st.dpr, 0, 0);
+          sides.current[key].draw(g, cw, ch, st.dpr, t);
+        });
+      }
     };
     raf = requestAnimationFrame(frame);
     return () => {
@@ -309,10 +338,15 @@ export default function BrandBanner() {
           <source src={VIDEO_SRC[name][1]} type="video/webm" />
         </video>
       ))}
-      {Object.entries(PHOTOS).map(([name, [west, east]]) => (
+      {Object.keys(PHOTOS).map((name) => (
         <div key={name} className="bb-layer bb-photo" data-on={scene === name} aria-hidden="true">
-          <img className="bb-side bb-west" src={west} alt="" draggable={false} decoding="async" />
-          <img className="bb-side bb-east" src={east} alt="" draggable={false} decoding="async" />
+          {[0, 1].map((i) => (
+            <canvas
+              key={i}
+              ref={(el) => { (photoRefs.current[name] ||= [])[i] = el; }}
+              className={`bb-side ${i ? 'bb-east' : 'bb-west'}`}
+            />
+          ))}
         </div>
       ))}
       <img className="bb-logo" src={brandLogo} alt="Lyricist Pro, Funk Audio Flow OpSec, Austin TX" draggable={false} />
