@@ -57,3 +57,10 @@
   font-size: 15px; letter-spacing: .08em; text-transform: uppercase;
   box-shadow: 0 6px 30px rgba(255, 138, 61, .45);
 }
+
+/* The splash art (splashStage.js) over the video, which then only plays the
+   sound and keeps the time. Cover, never stretched: the art is painted for
+   its own shape and the stage crops the edges evenly. */
+.sintro-stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 500ms ease; }
+.sintro-stage.is-on { opacity: 1; }
+.sintro video.is-audio-only { opacity: 0; }
