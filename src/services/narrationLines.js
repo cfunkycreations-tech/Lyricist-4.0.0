@@ -25,11 +25,11 @@ export function ghostLines() {
   // The two lines GhostDemo speaks itself, outside any script.
   lines.push({
     id: 'system-0-notabdemo', tabId: 'system', step: 0, field: 'notabdemo',
-    text: 'Dictionary, Thesaurus, and the simple tools do not get a remote demo. Use Tips ON and hover instead. Ghost Demo is for the harder tabs.',
+    text: 'Nah, this one’s easy as hell. It doesn’t need a walkthrough. Dictionary, Thesaurus and the simple tools explain themselves. Turn Tips on and hover over stuff. I save the tours for the hard tabs.',
   });
   lines.push({
     id: 'system-0-finished', tabId: 'system', step: 0, field: 'finished',
-    text: 'Remote demo finished. Your own work has been put back exactly as you left it. The demo never keeps anything.',
+    text: 'That’s the tour. Your stuff is back exactly how you left it. I don’t keep anything.',
   });
   return lines;
 }
