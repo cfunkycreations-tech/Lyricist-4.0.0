@@ -42,3 +42,6 @@
 @media (prefers-reduced-motion: reduce) {
   .bb-layer { transition: none; }
 }
+.bb-austin-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.bb-austin-back { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(16px) saturate(1.3) brightness(.75); transform: scale(1.25); z-index: 1; }
+.bb-austin-gl { z-index: 2; object-fit: contain; }
