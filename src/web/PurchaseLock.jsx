@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import logo from '../assets/brand-logo.webp';
 import './PurchaseLock.css';
 
 /**
@@ -134,7 +133,6 @@ export default function PurchaseLock({ children }) {
   return (
     <div className="plock">
       <form className="plock-card" onSubmit={unlock}>
-        <img className="plock-logo" src={logo} alt="Lyricist Pro" />
         <h1>{desk ? 'Lyricist Pro' : 'Black Hole Studios'}</h1>
         <p className="plock-lede">Enter the purchase code from your Gumroad receipt. Once per {desk ? 'computer' : 'phone'}.</p>
         <input

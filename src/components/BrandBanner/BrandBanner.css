@@ -26,13 +26,7 @@
    track holds the six twice, so sliding it by half loops without a seam. Each
    picture carries its own badge, so the logo fades out while they show. */
 .bb-austin { background: #000; overflow: hidden; }
-.bb-austin-track {
-  display: flex; height: 100%; width: max-content;
-  animation: bb-austin-glide 120s linear infinite; animation-play-state: paused;
-}
-.bb-austin[data-on="true"] .bb-austin-track { animation-play-state: running; }
-.bb-austin-img { height: 100%; width: auto; flex: none; display: block; user-select: none; }
-@keyframes bb-austin-glide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.bb-austin-gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
 /* The switch, bottom right. */
 .bb-mode {
@@ -47,5 +41,4 @@
 
 @media (prefers-reduced-motion: reduce) {
   .bb-layer { transition: none; }
-  .bb-austin-track { animation: none; }
 }
