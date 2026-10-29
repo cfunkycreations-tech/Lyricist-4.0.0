@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { subscribeHand, readHand } from '../../services/ghostCursor.js';
 import { subscribeTeach, teachState } from '../../services/ghostTeach.js';
 import ghostSprite from '../../assets/mascot/ghost-rider-256.webp';
+import { MASCOT } from '../GhostRiderMascot/GhostRiderMascot.jsx';
 import './GhostHand.css';
 
 /**
@@ -30,8 +31,7 @@ import './GhostHand.css';
  */
 
 // Where the fingertip is in the art, as a fraction of the square image.
-const TIP_X = 0.49;   // the new mascot's pointing fingertip (MASCOT.finger)
-const TIP_Y = 0.39;
+const [TIP_X, TIP_Y] = MASCOT.finger;
 const SIZE = 130;
 
 /**
@@ -44,7 +44,7 @@ const SIZE = 130;
  *
  * The art's outline, in its own 320px square, from its opaque pixels.
  */
-const OUTLINE = [[26, 161], [82, 45], [104, 28], [138, 16], [171, 12], [183, 16], [206, 37], [286, 193], [293, 224], [275, 268], [231, 307], [122, 271], [56, 236], [26, 166]];
+const OUTLINE = MASCOT.outline;
 const TURNS = [0, -15, 15, -30, 30, -45, 45, -60];
 const EDGE = 4;
 
@@ -108,8 +108,8 @@ export default function GhostHand() {
   const turn = { transform: `rotate(${fit.deg}deg) scaleX(${fit.mirror ? -1 : 1})` };
 
   // The bubble sits above the Ghost's head and flips to stay on screen.
-  const headX = -SIZE * (TIP_X - 0.7) * (fit.mirror ? -1 : 1);
-  const headY = -SIZE * (TIP_Y - 0.2);
+  const headX = SIZE * (0.43 - TIP_X) * (fit.mirror ? -1 : 1);
+  const headY = SIZE * (0.25 - TIP_Y);
   const flipX = x < 330;
   const flipY = y < 190;
 

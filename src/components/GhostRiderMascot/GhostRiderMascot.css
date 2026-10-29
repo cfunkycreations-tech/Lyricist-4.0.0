@@ -57,6 +57,13 @@
 }
 .grm-header .grm-mic { display: none; }
 
+/* Lip sync: the four mouths sit over the base art; the one for the current
+   --talk level (data-mouth, set by the speech loop) is shown. 0 is the base. */
+.grm-mouth { opacity: 0; }
+.grm[data-mouth="1"] .grm-m1,
+.grm[data-mouth="2"] .grm-m2,
+.grm[data-mouth="3"] .grm-m3 { opacity: 1; }
+
 /* ---------- motion ---------- */
 .grm:not(.is-still) .grm-float { animation: grm-float 3.5s ease-in-out infinite; }
 .grm:not(.is-still) .grm-glow { animation: grm-rim 4.2s ease-in-out infinite; }

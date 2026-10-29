@@ -2,6 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import art512 from '../../assets/mascot/ghost-rider-512.webp';
 import art256 from '../../assets/mascot/ghost-rider-256.webp';
 import art128 from '../../assets/mascot/ghost-rider-128.png';
+import m512 from '../../assets/mascot/ghost-rider-512-m1.webp';
+import m512b from '../../assets/mascot/ghost-rider-512-m2.webp';
+import m512c from '../../assets/mascot/ghost-rider-512-m3.webp';
+import m256 from '../../assets/mascot/ghost-rider-256-m1.webp';
+import m256b from '../../assets/mascot/ghost-rider-256-m2.webp';
+import m256c from '../../assets/mascot/ghost-rider-256-m3.webp';
 import './GhostRiderMascot.css';
 
 /**
@@ -37,10 +43,15 @@ import './GhostRiderMascot.css';
 
 // Where things are on the art, as a share of the square it is framed in.
 export const MASCOT = {
-  mic: [0.31, 0.40],        // the mic grille
-  finger: [0.49, 0.39],     // the pointing fingertip
-  tail: [0.70, 0.93],       // the bottom of his robe: where he "stands" when pointing from above
+  finger: [0.813, 0.436],   // the pointing fingertip
+  tail: [0.496, 0.961],     // the bottom of him, where he fades out
+  outline: [[139, 6], [169, 13], [202, 40], [260, 140], [162, 307], [93, 271], [81, 253], [58, 125], [64, 97], [118, 14]], // his silhouette in a 320 px square
 };
+// The crown-and-headphones Ghost (Chris's approved art; parts from the Cinema 4D
+// handoff). He points right, like the old art, so figureAt() and GhostHand still
+// hang him up-left of the pointer. Four mouths (closed, small, wide, round) are
+// whole-Ghost pictures swapped by --talk; the first is the base art.
+const MOUTHS = { 512: [m512, m512b, m512c], 256: [m256, m256b, m256c] };
 
 const FPS = 25;
 const loaders = {
@@ -92,12 +103,14 @@ export default function GhostRiderMascot({
       }
       talk += (want - talk) * 0.35;
       rootRef.current?.style.setProperty('--talk', talk.toFixed(3));
+      if (rootRef.current) rootRef.current.dataset.mouth = String(Math.min(3, Math.round(talk * 3)));
     };
     raf = requestAnimationFrame(frame);
     return () => { dead = true; cancelAnimationFrame(raf); };
   }, [Boolean(speech), kind, still]);
 
   const src = variant === 'header' ? art128 : (variant === 'card' || variant === 'report') ? art256 : art512;
+  const mouths = speech ? MOUTHS[src === art256 ? 256 : 512] : null;
   const tap = (e) => {
     if (interactive && !still) setTapped((n) => n + 1);
     onClick?.(e);
@@ -122,7 +135,9 @@ export default function GhostRiderMascot({
         <span key={`${state}-${tapped}`} className={`grm-act${tapped ? ' is-tapped' : ''}`}>
           <img className="grm-glow" src={src} alt="" draggable="false" decoding="async" />
           <img className="grm-art" src={src} alt="" draggable="false" decoding="async" />
-          <span className="grm-mic" style={{ left: `${MASCOT.mic[0] * 100}%`, top: `${MASCOT.mic[1] * 100}%` }} />
+          {mouths && mouths.map((m, i) => (
+            <img key={i} className={`grm-art grm-mouth grm-m${i + 1}`} src={m} alt="" draggable="false" decoding="async" />
+          ))}
           {state === 'analyzing' && !still && (
             <span className="grm-sparks">{[0, 1, 2, 3, 4, 5].map((i) => <i key={i} style={{ '--i': i }} />)}</span>
           )}

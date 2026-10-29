@@ -19,7 +19,7 @@ import { holdBannerClosed } from '../../services/ghostBanner.js';
 // marketing/ghost-logo-full.png).
 // Chris, 2026-10-28: and now the new neon Ghost Rider mascot (GhostRiderMascot),
 // everywhere, the Ask-the-Ghost hand included.
-import GhostRiderMascot from '../GhostRiderMascot/GhostRiderMascot.jsx';
+import GhostRiderMascot, { MASCOT } from '../GhostRiderMascot/GhostRiderMascot.jsx';
 import './GhostDemo.css';
 
 /** The phone build. App.jsx puts this class on <body>; the phone CSS hangs off it too. */
@@ -156,12 +156,16 @@ function freeBand() {
  * always knows where he is.
  */
 function figureAt(tx, ty) {
-  const size = onPhone() ? 80 : 112;
-  const below = ty - (size + 10) < freeBand().top + 6;
-  const flip = tx - size + 16 < 4;
-  const left = flip ? tx + 14 : tx - size + 16;
-  const top = below ? ty + 30 : ty - size - 6;
-  return { size, below, flip, left, top, right: left + size, bottom: top + size + 6 };
+  // His fingertip sits on the pointer; his body hangs to the left of it (mirrored
+  // to the right when the left edge would cut him off).
+  const size = onPhone() ? 110 : 150;
+  const [fx, fy] = MASCOT.finger;
+  const flip = tx - fx * size < 4;
+  const left = flip ? tx - (1 - fx) * size : tx - fx * size;
+  const rawTop = ty - fy * size;
+  const below = rawTop + size * 0.06 < freeBand().top + 6;
+  const top = below ? freeBand().top + 6 - size * 0.06 : rawTop;
+  return { size, below, flip, left, top, right: left + size, bottom: top + size };
 }
 
 /** Keep a centred bubble clear of the bar. */
