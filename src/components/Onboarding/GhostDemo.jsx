@@ -618,7 +618,7 @@ export default function GhostDemo({ tabId, onClose }) {
     if (!demo) {
       setStatusLine('This tab uses Tips hover — no walkthrough needed.');
       setBubble({
-        text: 'Nah, this one’s easy as hell, no walkthrough needed. Dictionary, Thesaurus and the simple tools explain themselves. Turn Tips on and hover over stuff. I save the tours for the hard tabs.',
+        text: 'Nah, this one’s easy as hell. It doesn’t need a walkthrough. Dictionary, Thesaurus and the simple tools explain themselves. Turn Tips on and hover over stuff. I save the tours for the hard tabs.',
         x: Math.max(16, window.innerWidth / 2 - 170),
         y: belowBar(Math.max(90, window.innerHeight / 2 - 50)),
         visible: true,
