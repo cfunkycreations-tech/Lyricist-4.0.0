@@ -56,3 +56,7 @@
 .bb-music-btn:hover, .bb-music-btn:focus-visible, .bb-music-btn.is-on { opacity: 1; border-color: rgba(255, 170, 90, .7); }
 .bb-music-btn.is-on { color: #ffd08a; }
 .bb-music-phone { left: 8px; bottom: 6px; }
+
+/* Bright enough to find: it was at 55% and nobody saw it. */
+.bb-music-btn { opacity: 1; font-size: 13px; padding: 7px 14px; color: #ffd08a; background: rgba(10, 6, 4, .78); border-color: rgba(255, 190, 90, .75); box-shadow: 0 0 14px rgba(255, 150, 40, .35); }
+.bb-music-phone .bb-music-btn { font-size: 14px; padding: 5px 11px; }
