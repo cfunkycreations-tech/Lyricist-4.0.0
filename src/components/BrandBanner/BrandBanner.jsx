@@ -7,6 +7,7 @@ import c4dOrbitMp4 from '../../assets/c4d/orbit.mp4';
 import c4dLyricsMp4 from '../../assets/c4d/lyrics.mp4';
 import c4dMoltenMp4 from '../../assets/c4d/molten.mp4';
 import AustinGL from './AustinGL.jsx';
+import BannerMusicButton from './BannerMusicButton.jsx';
 import { getAudioContext, getMasterBus } from '../../services/audioEngine.js';
 import './BrandBanner.css';
 
@@ -291,6 +292,7 @@ export default function BrandBanner() {
       <div className="bb-layer bb-austin" data-on={scene === 'austin'} aria-hidden="true">
         <AustinGL on={scene === 'austin'} />
       </div>
+      <BannerMusicButton className="bb-music-desktop" />
       <button
         type="button"
         className="bb-mode"
