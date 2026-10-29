@@ -25,7 +25,7 @@ export function ghostLines() {
   // The two lines GhostDemo speaks itself, outside any script.
   lines.push({
     id: 'system-0-notabdemo', tabId: 'system', step: 0, field: 'notabdemo',
-    text: 'Nah, this one’s easy, no walkthrough needed. Dictionary, Thesaurus and the simple tools explain themselves. Turn Tips on and hover over stuff. I save the tours for the hard tabs.',
+    text: 'Nah, this one’s easy as hell, no walkthrough needed. Dictionary, Thesaurus and the simple tools explain themselves. Turn Tips on and hover over stuff. I save the tours for the hard tabs.',
   });
   lines.push({
     id: 'system-0-finished', tabId: 'system', step: 0, field: 'finished',

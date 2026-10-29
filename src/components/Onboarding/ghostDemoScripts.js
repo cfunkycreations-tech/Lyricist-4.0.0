@@ -30,7 +30,7 @@ export const GHOST_DEMOS = {
     title: 'Black Hole Studios',
     steps: [
       {
-        say: 'Okay, Black Hole Studios. This is the tab that takes the words you wrote and sings them back to you, with a whole band behind them. Lowkey the coolest tab in here.',
+        say: 'Okay, Black Hole Studios. This is the tab that takes the words you wrote and sings them back to you, with a whole band behind them. Lowkey the coolest shit in here.',
         wait: 3600,
       },
       {
@@ -67,7 +67,7 @@ export const GHOST_DEMOS = {
       },
       {
         target: '.omb-sheet',
-        say: 'Your lyrics live here. Read them back before you start, because one typo and the whole run is cooked.',
+        say: 'Your lyrics live here. Read them back before you start, because one typo and the whole damn run is cooked.',
         action: 'point',
         wait: 3600,
       },
@@ -110,7 +110,7 @@ export const GHOST_DEMOS = {
       {
         target: '.omb-est',
         desktopOnly: true,   // Kaggle / this computer: Windows only, see GhostDemo runsHere
-        say: 'It tells you how long before you commit, not after. Real talk, a long song on free hardware is a wait. Kaggle is honest, not quick. About seventeen minutes for thirty seconds of music. Now you know.',
+        say: 'It tells you how long before you commit, not after. Real talk, a long song on free hardware is a wait. Kaggle is honest, not quick. About seventeen damn minutes for thirty seconds of music. Now you know.',
         action: 'point',
         wait: 5200,
       },
@@ -143,7 +143,7 @@ export const GHOST_DEMOS = {
     title: 'The Matrix',
     steps: [
       {
-        say: 'Okay, The Matrix. Don’t panic, there’s zero code in here. Every step is a numbered button, and I’m hitting them in order. Follow me.',
+        say: 'Okay, The Matrix. Don’t panic, there’s zero fucking code in here. Every step is a numbered button, and I’m hitting them in order. Follow me.',
         wait: 3200,
       },
       {
@@ -173,7 +173,7 @@ export const GHOST_DEMOS = {
       },
       {
         target: '.ql-tile',
-        say: 'Now tap any tile to pour heat into it. Go wild, tap as many as you want.',
+        say: 'Now tap any tile to pour heat into it. Go nuts, tap as many as you damn well want.',
         action: 'click',
         wait: 2500,
       },
@@ -261,7 +261,7 @@ export const GHOST_DEMOS = {
       },
       {
         target: '.stemmer-grid',
-        say: 'When it’s done, you get Vocals, Drums, Bass, Guitar, Keys and Other, each on its own row. Mute it, solo it, save it as a WAV. You’re running the board now.',
+        say: 'When it’s done, you get Vocals, Drums, Bass, Guitar, Keys and Other, each on its own row. Mute it, solo it, save it as a WAV. You’re running the board now. Hell yeah.',
         action: 'point',
         wait: 3600,
       },
@@ -293,7 +293,7 @@ export const GHOST_DEMOS = {
       },
       {
         target: '[data-demo="rc-play"]',
-        say: 'Play All starts every loop you’ve got. Nothing recorded yet? It’ll tell you, no shade. Record Track 1 first if you want the full stack.',
+        say: 'Play All starts every loop you’ve got. Nothing recorded yet? It’ll call your ass out. Nicely. Record Track 1 first if you want the full stack.',
         action: 'click',
         wait: 3200,
       },
@@ -310,7 +310,7 @@ export const GHOST_DEMOS = {
         wait: 3600,
       },
       {
-        say: 'Stack up to four tracks. Mute them, set the volume, add some FX. That’s the looper. You’re a whole band now.',
+        say: 'Stack up to four tracks. Mute them, set the volume, add some FX. That’s the looper. You’re a whole band now. Badass.',
         wait: 3000,
       },
     ],
@@ -342,7 +342,7 @@ export const GHOST_DEMOS = {
         action: 'point',
         optional: true,
         whenMissing:
-          'Write Lyrics isn’t on screen yet. It only pops up after an analysis finishes. Run Analyze on a real artist with your key set, and it shows up right under the report. It writes you a new verse in their pocket. It never copies their actual words. We don’t do that here.',
+          'Write Lyrics isn’t on screen yet. It only pops up after an analysis finishes. Run Analyze on a real artist with your key set, and it shows up right under the report. It writes you a new verse in their pocket. It never copies their actual words. We don’t do that shit here.',
         wait: 3200,
       },
       {
@@ -372,7 +372,7 @@ export const GHOST_DEMOS = {
         target: '[data-demo="sw-structure"]',
         say: 'Start with the structure. That’s the skeleton of the song, which parts go in what order. Verse, chorus, verse, chorus, bridge. No clue what you want? Grab a preset. Those are just the shapes most songs already use.',
         action: 'point',
-        then: 'Get the shape down first, so you don’t write four fire lines and then have nowhere to put them.',
+        then: 'Get the shape down first, so you don’t write four fire lines and then have nowhere to put the damn things.',
         wait: 3800,
       },
       {
@@ -406,7 +406,7 @@ export const GHOST_DEMOS = {
         target: '[data-demo="sf-mode"]',
         say: 'First, pick what comes first. Song First writes the lyrics, then paints a cover to match. Art First flips it. You make or upload a picture, and the song gets written from that. Same tools, different starting line.',
         action: 'point',
-        then: 'No clue what you want yet? Go Art First. It’s way easier to vibe off a picture than a blank page.',
+        then: 'No clue what you want yet? Go Art First. It’s way easier to vibe off a picture than stare at a blank fucking page.',
         wait: 3600,
       },
       {
@@ -436,7 +436,7 @@ export const GHOST_DEMOS = {
     title: 'Recording Booth',
     steps: [
       {
-        say: 'This is the Recording Booth. It records straight into Lyricist Pro. Harmonica, guitar, singing, humming, whatever. Catch the idea the second it hits, before it dips. I’m only pointing in here, because pressing Record would turn your mic on.',
+        say: 'This is the Recording Booth. It records straight into Lyricist Pro. Harmonica, guitar, singing, humming, whatever. Catch the idea the second it hits, before that shit dips. I’m only pointing in here, because pressing Record would turn your mic on.',
         wait: 3600,
       },
       {
@@ -487,7 +487,7 @@ export const GHOST_DEMOS = {
       },
       {
         target: '[data-demo="vl-direction"]',
-        say: 'Direction tells a Gemini voice who’s talking and how. Like, a tired old bluesman taking his time. And it actually listens. Unlike some people.',
+        say: 'Direction tells a Gemini voice who’s talking and how. Like, a tired old bluesman taking his sweet ass time. And it actually listens. Unlike some people.',
         action: 'point',
         wait: 3000,
       },
@@ -519,7 +519,7 @@ export const GHOST_DEMOS = {
       },
       {
         target: '[data-demo="midi-convert"]',
-        say: 'This is the converter. Feed it audio. A hummed voice memo, a guitar riff, a take from the Recording Booth. It figures out which notes were played and builds them into the sequencer. Humming a melody you can’t play is a hundred percent valid.',
+        say: 'This is the converter. Feed it audio. A hummed voice memo, a guitar riff, a take from the Recording Booth. It figures out which notes were played and builds them into the sequencer. Can’t play it for shit? Hum it. That’s a hundred percent valid.',
         action: 'point',
         then: 'When it’s done, you get a green line telling you what it converted and how many notes it found.',
         wait: 4000,
@@ -553,7 +553,7 @@ export const GHOST_DEMOS = {
       },
       {
         target: '[data-demo="master-chain"]',
-        say: 'This is the signal path, and it runs on every track. In order: a three-band EQ for bass, mids and treble, a compressor to glue it together, a limiter so it never clips, and loudness capped just under max so nothing distorts. Start with a preset. You don’t need to understand any of it to use it.',
+        say: 'This is the signal path, and it runs on every track. In order: a three-band EQ for bass, mids and treble, a compressor to glue it together, a limiter so it never clips, and loudness capped just under max so nothing distorts. Start with a preset. You don’t need to know what the hell any of it means to use it.',
         action: 'point',
         then: 'Change anything here and every track re-masters itself with the new settings. No redoing them one by one.',
         wait: 4200,
@@ -599,7 +599,7 @@ export const GHOST_DEMOS = {
       },
       {
         target: '.screw-cols .screw-card:nth-of-type(2)',
-        say: 'Screwed is the speed. The whole track slows down and the pitch sinks with it, because nothing corrects it. That sinking voice? That’s the whole point.',
+        say: 'Screwed is the speed. The whole track slows down and the pitch sinks with it, because nothing corrects it. That sinking voice? That’s the whole damn point.',
         action: 'point',
         wait: 4600,
       },
@@ -642,7 +642,7 @@ export const GHOST_DEMOS = {
     title: 'Settings',
     steps: [
       {
-        say: 'Settings. Quick one, I promise. Your keys are what unlock the whole studio.',
+        say: 'Settings. Quick as hell, I promise. Your keys are what unlock the whole studio.',
         wait: 2600,
       },
       {
