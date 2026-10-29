@@ -865,11 +865,12 @@ body.lyricist-mobile .desktop-only { display: none !important; }
   .mob-sheet { top: calc(44px + var(--mob-top) + 6px); }
 }
 
-/* ── the Cinema 4D strip on the launcher (phone held sideways) ───────────── */
+/* ── the strip on the launcher: the Austin Ghost pictures, and sideways the
+      Cinema 4D renders too (MobileC4dStrip.jsx) ─────────────────────────── */
 .mob-c4d {
   position: relative;
   flex: 0 0 auto;
-  height: 96px;
+  height: clamp(96px, 30vw, 140px);
   overflow: hidden;
   border-radius: 12px;
   border: 1px solid rgba(231, 165, 64, 0.30);
@@ -886,6 +887,15 @@ body.lyricist-mobile .desktop-only { display: none !important; }
   pointer-events: none;
 }
 .mob-c4d-v[data-on="true"] { opacity: 1; }
+/* The six pictures whole, side by side, gliding left; twice over, so half a slide loops. */
+.mob-austin { overflow: hidden; }
+.mob-austin-track {
+  display: flex; height: 100%; width: max-content;
+  animation: mob-austin-glide 90s linear infinite; animation-play-state: paused;
+}
+.mob-austin[data-on="true"][data-run="true"] .mob-austin-track { animation-play-state: running; }
+.mob-austin-img { height: 100%; width: auto; flex: none; display: block; }
+@keyframes mob-austin-glide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
 /* No backdrop blur anywhere on the phone: the floor is flat black, so it only
    smears panel edges and the strip under the bar. Panels keep their colour. */

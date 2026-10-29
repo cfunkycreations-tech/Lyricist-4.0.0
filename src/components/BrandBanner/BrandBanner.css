@@ -27,16 +27,19 @@
    and crop top and bottom around the middle. */
 .bb-orbit, .bb-lyrics, .bb-molten { object-fit: cover; object-position: 50% 50%; background: #000; }
 
-/* The Austin pictures: one each side of the logo, drifting slowly while on. */
-.bb-photo { background: #000; }
-.bb-side {
-  position: absolute; top: 0; height: 100%; object-fit: cover;
-  width: calc(50% + 1px);
-  transform: scale(1.02); transition: transform 22s linear;
+/* Chris's six Austin Ghost pictures, whole and side by side, gliding left. The
+   track holds the six twice, so sliding it by half loops without a seam. Each
+   picture carries its own badge, so the logo fades out while they show. */
+.bb-austin { background: #000; overflow: hidden; }
+.bb-austin-track {
+  display: flex; height: 100%; width: max-content;
+  animation: bb-austin-glide 120s linear infinite; animation-play-state: paused;
 }
-.bb-west { left: 0; object-position: 0% 55%; transform-origin: 0% 60%; }
-.bb-east { right: 0; object-position: 100% 55%; transform-origin: 100% 60%; }
-.bb-photo[data-on="true"] .bb-side { transform: scale(1.08); }
+.bb-austin[data-on="true"] .bb-austin-track { animation-play-state: running; }
+.bb-austin-img { height: 100%; width: auto; flex: none; display: block; user-select: none; }
+@keyframes bb-austin-glide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.bb-logo { transition: opacity 1.4s ease; }
+.bb-logo[data-hide="true"] { opacity: 0; }
 
 /* The switch, bottom right. */
 .bb-mode {
@@ -51,5 +54,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .bb-layer { transition: none; }
-  .bb-side { transition: none; }
+  .bb-austin-track { animation: none; }
 }

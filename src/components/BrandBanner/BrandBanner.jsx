@@ -7,14 +7,7 @@ import c4dMolten from '../../assets/c4d/molten.webm';
 import c4dOrbitMp4 from '../../assets/c4d/orbit.mp4';
 import c4dLyricsMp4 from '../../assets/c4d/lyrics.mp4';
 import c4dMoltenMp4 from '../../assets/c4d/molten.mp4';
-import skylineWest from '../../assets/banner/skyline-west.webp';
-import skylineEast from '../../assets/banner/skyline-east.webp';
-import sixthWest from '../../assets/banner/sixth-west.webp';
-import sixthEast from '../../assets/banner/sixth-east.webp';
-import zilkerWest from '../../assets/banner/zilker-west.webp';
-import zilkerEast from '../../assets/banner/zilker-east.webp';
-import hillsWest from '../../assets/banner/hills-west.webp';
-import hillsEast from '../../assets/banner/hills-east.webp';
+import { AUSTIN_GHOST } from './austinGhost.js';
 import { getAudioContext, getMasterBus } from '../../services/audioEngine.js';
 import './BrandBanner.css';
 
@@ -30,39 +23,25 @@ import './BrandBanner.css';
  *             playing: stars drifting in towards the logo.
  *   disc    — the Black Hole Studios loop stretched wide behind the logo, so
  *             the logo sits in the middle of the spinning disc.
- * Four are Austin, photoreal, one picture each side of the logo. Chris,
- * 2026-10-27: the drawn skyline "looks too blocky... Make it look like the
- * real fucking thing. Photo realistic." And the Song info side went: "It
- * doesn't work. I don't want it up there. Replace it with two or three other
- * scenes... anything Austin. Sixth Street, whatever you want."
- *   skyline — the Stevie Ray Vaughan statue at Auditorium Shores with downtown
- *             across Lady Bird Lake | the bats out of Congress Avenue Bridge,
- *             grackles on the wire.
- *   sixth   — Sixth Street at night | the Willie Nelson statue at ACL Live.
- *   zilker  — kites over Zilker Park | Barton Springs Pool.
- *   hills   — sunset over the Hill Country from Mount Bonnell | the
- *             Pennybacker Bridge.
- * They were made with an image model from photos of the real places
- * (src/assets/banner/*.webp) and drift slowly while they show.
+ *   austin  — Chris's six Austin Ghost pictures (2026-10-28), side by side
+ *             and gliding slowly across the whole banner. Each one already has
+ *             the Ghost and the LYRICIST PRO badge in it, so the logo above
+ *             steps aside while they show. They replaced the four ghost-less
+ *             Austin photo scenes (skyline, sixth, zilker, hills), which Chris
+ *             threw out: "Where are the 6 fucking chatgpt images i sent you?"
  * Three more are Cinema 4D renders, Chris's own (scripts/orbit_c4d.py,
  * lyrics_hole_c4d.py, molten_c4d.py):
  *   orbit   — the 18 tab names circling the Black Hole Studios title.
  *   lyrics  — lyric words pulled into the black hole.
  *   molten  — the molten gold pool.
- * Auto moves through all nine, twenty seconds each. The pill in the corner
- * steps through Auto, each scene and Off; the choice is remembered.
+ * The banner opens on Austin. The pill in the corner steps through Austin,
+ * Auto (every scene, twenty seconds each), each scene and Off; the choice is
+ * remembered.
  */
 
-const MODES = ['auto', 'bars', 'disc', 'orbit', 'lyrics', 'molten', 'skyline', 'sixth', 'zilker', 'hills', 'off'];
-const LABEL = { auto: 'Auto', bars: 'Bars', disc: 'Disc', orbit: 'Orbit', lyrics: 'Lyrics', molten: 'Molten', skyline: 'Skyline', sixth: 'Sixth Street', zilker: 'Zilker', hills: 'Hill Country', off: 'Off' };
-const ROTATION = ['skyline', 'orbit', 'bars', 'sixth', 'disc', 'lyrics', 'zilker', 'molten', 'hills'];
-// The Austin pictures: [left of the logo, right of it].
-const PHOTOS = {
-  skyline: [skylineWest, skylineEast],
-  sixth: [sixthWest, sixthEast],
-  zilker: [zilkerWest, zilkerEast],
-  hills: [hillsWest, hillsEast],
-};
+const MODES = ['austin', 'auto', 'bars', 'disc', 'orbit', 'lyrics', 'molten', 'off'];
+const LABEL = { austin: 'Austin', auto: 'Auto', bars: 'Bars', disc: 'Disc', orbit: 'Orbit', lyrics: 'Lyrics', molten: 'Molten', off: 'Off' };
+const ROTATION = ['austin', 'orbit', 'bars', 'disc', 'lyrics', 'molten'];
 // The scenes that are a video, and which clip each one plays.
 // Each is [mp4, webm]: Safari wants the mp4, and the browser takes the first it can play.
 const VIDEO_SRC = {
@@ -74,7 +53,8 @@ const VIDEO_SRC = {
 const VIDEO_SCENES = Object.keys(VIDEO_SRC);
 const ROTATE_MS = 20000;
 const FADE_MS = 1400;
-const MODE_KEY = 'lyricistBannerMode';
+// A new key, so a choice saved before the Austin Ghost pictures existed does not hide them.
+const MODE_KEY = 'lyricistBannerMode2';
 const LOGO_ASPECT = 605 / 660;
 const REDUCED_MOTION = typeof window !== 'undefined'
   && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -82,8 +62,8 @@ const REDUCED_MOTION = typeof window !== 'undefined'
 function savedMode() {
   try {
     const m = localStorage.getItem(MODE_KEY);
-    return MODES.includes(m) ? m : 'auto';
-  } catch { return 'auto'; }
+    return MODES.includes(m) ? m : 'austin';
+  } catch { return 'austin'; }
 }
 
 // Small seeded random so the stars start in the same places.
@@ -309,18 +289,26 @@ export default function BrandBanner() {
           <source src={VIDEO_SRC[name][1]} type="video/webm" />
         </video>
       ))}
-      {Object.entries(PHOTOS).map(([name, [west, east]]) => (
-        <div key={name} className="bb-layer bb-photo" data-on={scene === name} aria-hidden="true">
-          <img className="bb-side bb-west" src={west} alt="" draggable={false} decoding="async" />
-          <img className="bb-side bb-east" src={east} alt="" draggable={false} decoding="async" />
+      {/* Twice over, so the strip loops without a seam. */}
+      <div className="bb-layer bb-austin" data-on={scene === 'austin'} aria-hidden="true">
+        <div className="bb-austin-track">
+          {[...AUSTIN_GHOST, ...AUSTIN_GHOST].map((src, i) => (
+            <img key={i} className="bb-austin-img" src={src} alt="" draggable={false} decoding="async" />
+          ))}
         </div>
-      ))}
-      <img className="bb-logo" src={brandLogo} alt="Lyricist Pro, Funk Audio Flow OpSec, Austin TX" draggable={false} />
+      </div>
+      <img
+        className="bb-logo"
+        data-hide={scene === 'austin'}
+        src={brandLogo}
+        alt="Lyricist Pro, Funk Audio Flow OpSec, Austin TX"
+        draggable={false}
+      />
       <button
         type="button"
         className="bb-mode"
         onClick={cycle}
-        data-help="Changes what runs either side of the logo: Auto moves through them all, or pick Bars (they move to the music), Disc, Orbit, Lyrics, Molten, the Austin pictures (Skyline, Sixth Street, Zilker, Hill Country), or Off."
+        data-help="Changes what runs in the banner: Austin (the Ghost around Austin), Auto (moves through them all), Bars (they move to the music), Disc, Orbit, Lyrics, Molten, or Off."
       >
         {LABEL[mode]}{mode === 'auto' ? ` · ${LABEL[scene]}` : ''}
       </button>
