@@ -5,7 +5,7 @@ import c4dMolten from '../assets/c4d/molten.webm';
 import c4dOrbitMp4 from '../assets/c4d/orbit.mp4';
 import c4dLyricsMp4 from '../assets/c4d/lyrics.mp4';
 import c4dMoltenMp4 from '../assets/c4d/molten.mp4';
-import { AUSTIN_GHOST } from '../components/BrandBanner/austinGhost.js';
+import AustinGL from '../components/BrandBanner/AustinGL.jsx';
 
 // The strip at the top of the phone's launcher, scrolling away with it. The
 // desktop banner is switched off on a phone, so this is where the phone shows
@@ -57,13 +57,8 @@ export default function MobileC4dStrip({ active }) {
 
   return (
     <div className="mob-c4d" aria-hidden="true">
-      {/* Twice over, so the glide loops without a seam. */}
       <div className="mob-c4d-v mob-austin" data-on={slide === 0} data-run={active && !reduced}>
-        <div className="mob-austin-track">
-          {[...AUSTIN_GHOST, ...AUSTIN_GHOST].map((src, i) => (
-            <img key={i} className="mob-austin-img" src={src} alt="" draggable={false} decoding="async" />
-          ))}
-        </div>
+        <AustinGL on={slide === 0 && active && !reduced} />
       </div>
       {landscape && !reduced && CLIPS.map(([mp4, webm], i) => (
         <video

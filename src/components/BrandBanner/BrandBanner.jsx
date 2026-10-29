@@ -6,7 +6,7 @@ import c4dMolten from '../../assets/c4d/molten.webm';
 import c4dOrbitMp4 from '../../assets/c4d/orbit.mp4';
 import c4dLyricsMp4 from '../../assets/c4d/lyrics.mp4';
 import c4dMoltenMp4 from '../../assets/c4d/molten.mp4';
-import { AUSTIN_GHOST } from './austinGhost.js';
+import AustinGL from './AustinGL.jsx';
 import { getAudioContext, getMasterBus } from '../../services/audioEngine.js';
 import './BrandBanner.css';
 
@@ -288,14 +288,10 @@ export default function BrandBanner() {
           <source src={VIDEO_SRC[name][1]} type="video/webm" />
         </video>
       ))}
-      {/* Twice over, so the strip loops without a seam. */}
       <div className="bb-layer bb-austin" data-on={scene === 'austin'} aria-hidden="true">
-        <div className="bb-austin-track">
-          {[...AUSTIN_GHOST, ...AUSTIN_GHOST].map((src, i) => (
-            <img key={i} className="bb-austin-img" src={src} alt="" draggable={false} decoding="async" />
-          ))}
-        </div>
-      </div>      <button
+        <AustinGL on={scene === 'austin'} />
+      </div>
+      <button
         type="button"
         className="bb-mode"
         onClick={cycle}
