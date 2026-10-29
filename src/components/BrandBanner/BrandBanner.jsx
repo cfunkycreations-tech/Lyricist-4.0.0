@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import brandLogo from '../../assets/brand-logo.webp';
 import bhLoop from '../../assets/blackhole/bh_loop.webm';
 import c4dOrbit from '../../assets/c4d/orbit.webm';
 import c4dLyrics from '../../assets/c4d/lyrics.webm';
@@ -296,15 +295,7 @@ export default function BrandBanner() {
             <img key={i} className="bb-austin-img" src={src} alt="" draggable={false} decoding="async" />
           ))}
         </div>
-      </div>
-      <img
-        className="bb-logo"
-        data-hide={scene === 'austin'}
-        src={brandLogo}
-        alt="Lyricist Pro, Funk Audio Flow OpSec, Austin TX"
-        draggable={false}
-      />
-      <button
+      </div>      <button
         type="button"
         className="bb-mode"
         onClick={cycle}
