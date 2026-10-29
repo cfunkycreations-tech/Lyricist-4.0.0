@@ -1,7 +1,9 @@
 import { createGL, program, texture, upload, target, bindTex, loadImage } from './gl.js';
 import { SCENE_FS, TRANSITION_FS, COPY_FS } from './shaders.js';
 import { SCENES, BPM } from './scenes.js';
-import { Traffic, Boat, Bats, Birds, Windows, Splashes } from './overlay.js';
+import { Traffic, Boat, Bats, Birds, Windows, Splashes, Notes, Waveform, GhostReveal } from './overlay.js';
+import ghostUrl from '../../../assets/banner/scenes/ghost.png';
+import fontUrl from '../../../assets/banner/scenes/audiowide.woff2';
 
 /**
  * THE AUSTIN BANNER ENGINE. Chris's own prototype (banner-new/prototype/js/main.js),
@@ -16,7 +18,9 @@ import { Traffic, Boat, Bats, Birds, Windows, Splashes } from './overlay.js';
  * banner is not showing it.
  */
 const TRANS = 1.6;           // seconds of kaleidoscope between scenes
-const ORDER = ['downtown', 'barton', 'pennybacker', 'zilker', 'congress', 'sixth'];
+// Every scene of the prototype that is a picture of its own, ending on the Ghost and logo reveal.
+const ORDER = ['downtown', 'barton', 'pennybacker', 'zilker', 'congress', 'sixth', 'willie', 'reveal'];
+const ghostArt = {};
 const FX_KEYS = {
   A: ['sky', 'water', 'wind', 'neon'],
   B: ['soundwave', 'ribbons', 'vortex', 'haze'],
@@ -74,7 +78,13 @@ export function createAustinEngine(canvas, { isOn = () => true, maxWidth = 768, 
     if (sc.bats) parts.push(Bats(sc.bats, seed++));
     if (sc.birds) parts.push(Birds(sc.birds, seed++));
     if (sc.swimmers) parts.push(Splashes(sc.swimmers, seed++));
-    if (sc.windows && asset.lightsOnBuildings.length) parts.unshift(Windows(asset.lightsOnBuildings, seed++, { chase: sc.id === 'sixth', max: sc.windows }));
+    if (sc.windows && asset.lightsOnBuildings.length) parts.unshift(Windows(asset.lightsOnBuildings, seed++, { chase: sc.id === 'sixth' || sc.id === 'willie', max: sc.windows }));
+    if (sc.reveal) {
+      parts.push(Waveform(seed++, { y: 0.86, amp: 0.035, hue: 280 }));
+      parts.push(Notes(seed++, { n: 10, area: [0.05, 0.1, 0.95, 0.95] }));
+      sc._ghost = GhostReveal(ghostArt);
+      parts.push(sc._ghost);
+    }
     return parts;
   }
 
@@ -159,7 +169,7 @@ export function createAustinEngine(canvas, { isOn = () => true, maxWidth = 768, 
     gl.uniform1f(L.uIntensity, state.intensity);
     gl.uniform1f(L.uAspect, W / H);
     gl.uniform1f(L.uImgAspect, asset.aspect);
-    gl.uniform1f(L.uDim, 1);
+    gl.uniform1f(L.uDim, sc.dim ? 1 - sc.dim * ease(local / 2.5) : 1);
     gl.uniform1f(L.uOcclude, sc.occlude ?? 1);
     gl.uniform3f(L.uCam, cam.px, cam.py, cam.zoom);
     gl.uniform2f(L.uCamCentre, cam.x, cam.y);
@@ -199,6 +209,7 @@ export function createAustinEngine(canvas, { isOn = () => true, maxWidth = 768, 
     const sc = list[i];
     const next = list[(i + 1) % list.length];
     const toEnd = sc.seconds - local;
+    if (sc._ghost && local < 0.05) sc._ghost.reset();
     renderScene(sc, local, rtA, ovA, dt);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, W, H);
@@ -235,6 +246,11 @@ export function createAustinEngine(canvas, { isOn = () => true, maxWidth = 768, 
   // The first picture starts the show; the rest load behind it, one at a time.
   (async () => {
     try {
+      try {
+        const font = new FontFace('Audiowide', `url(${fontUrl})`);
+        document.fonts.add(await font.load());
+        ghostArt.ghost = await loadImage(ghostUrl);
+      } catch { /* the finale falls back to a system font */ }
       for (const sc of scenes) { if (dead) return; await loadScene(sc.img); }
     } catch (err) { console.warn('Austin banner: a picture would not load', err); }
   })();
