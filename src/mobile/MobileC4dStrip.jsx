@@ -6,6 +6,7 @@ import c4dOrbitMp4 from '../assets/c4d/orbit.mp4';
 import c4dLyricsMp4 from '../assets/c4d/lyrics.mp4';
 import c4dMoltenMp4 from '../assets/c4d/molten.mp4';
 import AustinGL from '../components/BrandBanner/AustinGL.jsx';
+import BannerMusicButton from '../components/BrandBanner/BannerMusicButton.jsx';
 
 // The strip at the top of the phone's launcher, scrolling away with it. The
 // desktop banner is switched off on a phone, so this is where the phone shows
@@ -56,10 +57,11 @@ export default function MobileC4dStrip({ active }) {
   }, [slide, rotating]);
 
   return (
-    <div className="mob-c4d" aria-hidden="true">
+    <div className="mob-c4d">
       <div className="mob-c4d-v mob-austin" data-on={slide === 0} data-run={active && !reduced}>
         <AustinGL on={slide === 0 && active && !reduced} />
       </div>
+      <BannerMusicButton className="bb-music-phone" />
       {landscape && !reduced && CLIPS.map(([mp4, webm], i) => (
         <video
           key={webm}
