@@ -618,7 +618,7 @@ export default function GhostDemo({ tabId, onClose }) {
     if (!demo) {
       setStatusLine('This tab uses Tips hover — no walkthrough needed.');
       setBubble({
-        text: 'Dictionary, Thesaurus, and the simple tools don’t get a walkthrough. Use Tips ON and hover. Ghost Demo is for Quantum Lab, Ghost Rider, Song Forge, RC-Funk 5000, MIDI, Mastering, and the other hard tabs.',
+        text: 'Nah, this one’s easy as hell, no walkthrough needed. Dictionary, Thesaurus and the simple tools explain themselves. Turn Tips on and hover over stuff. I save the tours for the hard tabs.',
         x: Math.max(16, window.innerWidth / 2 - 170),
         y: belowBar(Math.max(90, window.innerHeight / 2 - 50)),
         visible: true,
