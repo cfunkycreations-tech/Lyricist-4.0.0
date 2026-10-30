@@ -7,6 +7,8 @@
 // ============================================================
 
 import { nextTrendingArtist } from '../../services/trendingArtists.js';
+import { randomMatrixWords } from '../../services/matrixWords.js';
+
 
 export const GHOST_DEMO_TABS = new Set([
   'songwriter',
@@ -150,7 +152,7 @@ export const GHOST_DEMOS = {
         target: '[data-demo="ql-keywords"]',
         say: 'Step one, your words. Click the keyword box and type literally anything you want in the song. I’ll put some in.',
         action: 'type',
-        typeText: 'pawn shop, borrowed truck, last paycheck, empty highway, static, fever',
+        typeText: () => randomMatrixWords(20), // Chris: twenty words, not five
         wait: 2600,
       },
       {

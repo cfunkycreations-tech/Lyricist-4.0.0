@@ -39,6 +39,7 @@
 // ============================================================
 
 import { nextTrendingArtist } from '../services/trendingArtists.js';
+import { randomMatrixWords } from '../services/matrixWords.js';
 import { promoLines } from './promoLines.js';
 import { riderFailed, riderAnalyzed, riderWritten, riderExtrasReady, matrixBusy, matrixHasSongs } from './ghostWaits.js';
 
@@ -139,7 +140,7 @@ export const PHONE_GHOST = {
       { line: "Welcome to The Matrix. Relax, no pills. You feed it words, it writes you two full songs. Simple as." },
       {
         target: '[data-demo="ql-keywords"]', action: 'type',
-        typeText: 'pawn shop, borrowed truck, last paycheck, empty highway, fever',
+        typeText: () => randomMatrixWords(20),
         line: "Type your own words in here. Or skip the typing: Ghost Rider and the Suno kit can send their words straight in. I'll throw a few in. Random, but make it art.",
       },
       { target: '[data-demo="ql-load"]', action: 'click', line: "Then load them into the grid. Watch it fill up. Oddly satisfying." },
