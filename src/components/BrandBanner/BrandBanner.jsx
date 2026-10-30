@@ -1,11 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import bhLoop from '../../assets/blackhole/bh_loop.webm';
-import c4dOrbit from '../../assets/c4d/orbit.webm';
-import c4dLyrics from '../../assets/c4d/lyrics.webm';
-import c4dMolten from '../../assets/c4d/molten.webm';
-import c4dOrbitMp4 from '../../assets/c4d/orbit.mp4';
-import c4dLyricsMp4 from '../../assets/c4d/lyrics.mp4';
-import c4dMoltenMp4 from '../../assets/c4d/molten.mp4';
 import AustinGL from './AustinGL.jsx';
 import BannerMusicButton from './BannerMusicButton.jsx';
 import { getAudioContext, getMasterBus } from '../../services/audioEngine.js';
@@ -39,17 +32,13 @@ import './BrandBanner.css';
  * remembered.
  */
 
-const MODES = ['austin', 'auto', 'bars', 'disc', 'orbit', 'lyrics', 'molten', 'off'];
-const LABEL = { austin: 'Austin', auto: 'Auto', bars: 'Bars', disc: 'Disc', orbit: 'Orbit', lyrics: 'Lyrics', molten: 'Molten', off: 'Off' };
-const ROTATION = ['austin', 'orbit', 'bars', 'disc', 'lyrics', 'molten'];
+const MODES = ['austin', 'auto', 'bars', 'off'];
+const LABEL = { austin: 'Austin', auto: 'Auto', bars: 'Bars', off: 'Off' };
+const ROTATION = ['austin', 'bars'];
 // The scenes that are a video, and which clip each one plays.
 // Each is [mp4, webm]: Safari wants the mp4, and the browser takes the first it can play.
-const VIDEO_SRC = {
-  disc: [null, bhLoop],
-  orbit: [c4dOrbitMp4, c4dOrbit],
-  lyrics: [c4dLyricsMp4, c4dLyrics],
-  molten: [c4dMoltenMp4, c4dMolten],
-};
+// Chris, 2026-10-30: the Cinema 4D clips (Orbit, Lyrics, Molten) and the Disc loop are gone.
+const VIDEO_SRC = {};
 const VIDEO_SCENES = Object.keys(VIDEO_SRC);
 const ROTATE_MS = 20000;
 const FADE_MS = 1400;
