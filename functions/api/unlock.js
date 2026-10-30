@@ -26,7 +26,7 @@
  * membership that ended or failed to renew is a certain no, and a subscriber's
  * cookie lasts 35 days, renewed by the weekly re-check.
  * Trials (Chris, 2026-10-28): a $0 purchase made with a trial code (MATTHEW)
- * is a 30-day trial from the day of the sale; other free codes, and every $0
+ * is a 7-day trial from the day of the sale; other free codes, and every $0
  * purchase from before trials existed (FUNKPHONE), are full copies. The answer carries trialEnds,
  * the cookie expires with the trial so the site stops letting that phone in,
  * and a trial that has run out is a certain no. Same rule as licenseCheck.js.
@@ -84,12 +84,12 @@ async function lookup(code, increment, first) {
   }
   return last;
 }
-const TRIAL_DAYS = 30;
+const TRIAL_DAYS = 7;
 // The 100%-off codes that give a trial, not a full copy. Any other free code is a full copy.
 const TRIAL_CODES = ['MATTHEW'];
 // Trials began 2026-10-28; a $0 purchase before then is a full copy.
 const TRIALS_FROM = Date.parse('2026-10-28T00:00:00Z');
-const TRIAL_OVER = 'Your 30-day trial of Lyricist Pro has ended. Get it on Gumroad to keep going; your songs are still here.';
+const TRIAL_OVER = 'Your 7-day trial of Lyricist Pro has ended. Get it on Gumroad to keep going; your songs are still here.';
 
 /**
  * When a trial ends (ms), or 0 for a purchase that is not a trial. A trial is

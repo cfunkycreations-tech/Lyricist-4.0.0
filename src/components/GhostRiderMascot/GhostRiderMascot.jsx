@@ -1,13 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import art512 from '../../assets/mascot/ghost-rider-512.webp';
-import art256 from '../../assets/mascot/ghost-rider-256.webp';
-import art128 from '../../assets/mascot/ghost-rider-128.png';
-import m512 from '../../assets/mascot/ghost-rider-512-m1.webp';
-import m512b from '../../assets/mascot/ghost-rider-512-m2.webp';
-import m512c from '../../assets/mascot/ghost-rider-512-m3.webp';
-import m256 from '../../assets/mascot/ghost-rider-256-m1.webp';
-import m256b from '../../assets/mascot/ghost-rider-256-m2.webp';
-import m256c from '../../assets/mascot/ghost-rider-256-m3.webp';
+import idleM1 from '../../assets/ghost-poses/ghost-idle-m1.webp';
+import idleM2 from '../../assets/ghost-poses/ghost-idle-m2.webp';
+import idleM3 from '../../assets/ghost-poses/ghost-idle-m3.webp';
+import pointingM1 from '../../assets/ghost-poses/ghost-pointing-m1.webp';
+import pointingM2 from '../../assets/ghost-poses/ghost-pointing-m2.webp';
+import pointingM3 from '../../assets/ghost-poses/ghost-pointing-m3.webp';
+import poseIdle from '../../assets/ghost-poses/ghost-idle.webp';
+import posePointing from '../../assets/ghost-poses/ghost-pointing.webp';
+import poseSinging from '../../assets/ghost-poses/ghost-singing.webp';
+import poseDj from '../../assets/ghost-poses/ghost-dj.webp';
+import poseThinking from '../../assets/ghost-poses/ghost-thinking.webp';
+import poseCelebrating from '../../assets/ghost-poses/ghost-celebrating.webp';
+import poseSleepy from '../../assets/ghost-poses/ghost-sleepy.webp';
 import './GhostRiderMascot.css';
 
 /**
@@ -19,7 +23,9 @@ import './GhostRiderMascot.css';
  *   variant  'header' (36-44 px) | 'card' | 'report' (72-110 px, its own
  *            space) | 'loading' (160-220 px) | 'welcome' (hero) | 'guide'
  *            (the walkthrough Ghost; size from the parent)
- *   state    'idle' | 'analyzing' | 'success' | 'error' | 'welcome'
+ *   state    'idle' | 'analyzing' | 'success' | 'error' | 'welcome' | 'sleepy'
+ *   pose     'idle' | 'pointing' | 'singing' | 'dj' | 'thinking' | 'celebrating' | 'sleepy'
+ *            (optional; see POSES. Overrides the pose the state would pick)
  *   speech   () => ({ id, t }) | null   the line he is speaking (walkthroughs)
  *   kind     'phone' | 'desktop'        which measured clips the ids belong to
  *
@@ -43,15 +49,31 @@ import './GhostRiderMascot.css';
 
 // Where things are on the art, as a share of the square it is framed in.
 export const MASCOT = {
-  finger: [0.813, 0.436],   // the pointing fingertip
-  tail: [0.496, 0.961],     // the bottom of him, where he fades out
-  outline: [[139, 6], [169, 13], [202, 40], [260, 140], [162, 307], [93, 271], [81, 253], [58, 125], [64, 97], [118, 14]], // his silhouette in a 320 px square
+  finger: [0.955, 0.412],   // the pointing fingertip
+  tail: [0.587, 0.963],     // the bottom of him, where he fades out
+  outline: [[155, 9], [214, 22], [316, 135], [239, 269], [189, 309], [109, 291], [62, 199], [68, 122]], // his silhouette in a 320 px square
 };
-// The crown-and-headphones Ghost (Chris's approved art; parts from the Cinema 4D
-// handoff). He points right, like the old art, so figureAt() and GhostHand still
-// hang him up-left of the pointer. Four mouths (closed, small, wide, round) are
-// whole-Ghost pictures swapped by --talk; the first is the base art.
-const MOUTHS = { 512: [m512, m512b, m512c], 256: [m256, m256b, m256c] };
+// The crown-and-headphones Ghost, redrawn 2026-10-30 (Chris's art, ChatGPT, true
+// transparency, lined up on the head by registration so no pose makes him jump).
+// The walkthrough Ghost points right, so figureAt() and GhostHand still hang him
+// up-left of the pointer. Each base has three mouths (small "ah", wide, round "oh")
+// as whole-Ghost pictures swapped by --talk; the base art is the resting grin.
+const MOUTHS = { idle: [idleM1, idleM2, idleM3], pointing: [pointingM1, pointingM2, pointingM3] };
+
+/**
+ * THE SEVEN POSES (Chris, 2026-10-30: the ones on the Gumroad page belong in the
+ * app too). Whole-Ghost pictures, 512 px squares. A pose is only shown while he
+ * is not speaking, because the lip-sync mouths are cut for the base art. With no
+ * `pose` prop the state picks one: working shows him thinking, done shows him
+ * celebrating, an error shows him puzzled (thinking), `sleepy` is for idle empty
+ * states. Otherwise he rests in idle, and the walkthrough Ghost (variant 'guide')
+ * in pointing, which figureAt() and GhostHand are built around.
+ */
+export const POSES = {
+  idle: poseIdle, pointing: posePointing, singing: poseSinging, dj: poseDj,
+  thinking: poseThinking, celebrating: poseCelebrating, sleepy: poseSleepy,
+};
+const POSE_FOR_STATE = { analyzing: 'thinking', success: 'celebrating', error: 'thinking', sleepy: 'sleepy' };
 
 const FPS = 25;
 const loaders = {
@@ -61,7 +83,7 @@ const loaders = {
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 export default function GhostRiderMascot({
-  variant = 'card', state = 'idle', animated = true, interactive = false,
+  variant = 'card', state = 'idle', pose, animated = true, interactive = false,
   speech, kind = 'phone', label, size, className = '', style, onClick,
 }) {
   const rootRef = useRef(null);
@@ -109,8 +131,9 @@ export default function GhostRiderMascot({
     return () => { dead = true; cancelAnimationFrame(raf); };
   }, [Boolean(speech), kind, still]);
 
-  const src = variant === 'header' ? art128 : (variant === 'card' || variant === 'report') ? art256 : art512;
-  const mouths = speech ? MOUTHS[src === art256 ? 256 : 512] : null;
+  const base = variant === 'guide' ? 'pointing' : 'idle';
+  const src = POSES[speech ? base : (pose || POSE_FOR_STATE[state] || base)];
+  const mouths = speech ? MOUTHS[base] : null;
   const tap = (e) => {
     if (interactive && !still) setTapped((n) => n + 1);
     onClick?.(e);

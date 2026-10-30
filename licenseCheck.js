@@ -23,7 +23,7 @@
  * back, not a real code) locks it again. No internet or Gumroad down never does.
  * The code is never logged and never leaves this file except to Gumroad.
  *
- * TRIALS. Chris, 2026-10-28: a 100%-off code (MATTHEW) should be "a 30 day
+ * TRIALS. Chris, 2026-10-28: a 100%-off code (MATTHEW) should be "a 7 day
  * trial", automatically. A $0 purchase made with one of TRIAL_CODES runs
  * TRIAL_DAYS from the day of the sale, then locks with TRIAL_OVER. Any other
  * free code is a full copy, and so is every $0 purchase from before trials
@@ -85,12 +85,12 @@ async function lookup(code, increment, first) {
   return last;
 }
 
-const TRIAL_DAYS = 30;
+const TRIAL_DAYS = 7;
 // The 100%-off codes that give a trial, not a full copy. Any other free code is a full copy.
 const TRIAL_CODES = ['MATTHEW'];
 // Trials began 2026-10-28; a $0 purchase before then is a full copy.
 const TRIALS_FROM = Date.parse('2026-10-28T00:00:00Z');
-const TRIAL_OVER = 'Your 30-day trial of Lyricist Pro has ended. Get it on Gumroad to keep going; your songs are still here.';
+const TRIAL_OVER = 'Your 7-day trial of Lyricist Pro has ended. Get it on Gumroad to keep going; your songs are still here.';
 
 /**
  * When a trial ends (ms), or 0 for a purchase that is not a trial. A trial is

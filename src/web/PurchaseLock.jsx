@@ -19,7 +19,7 @@ import './PurchaseLock.css';
  * definite no from Gumroad (refunded, charged back, not a real code) locks the
  * phone again. No signal, or Gumroad down, never does.
  *
- * A $0 purchase made with a trial code (MATTHEW) is a 30-day trial: the checks hand back when
+ * A $0 purchase made with a trial code (MATTHEW) is a 7-day trial: the checks hand back when
  * it ends, it is kept with the code, and once it has passed the app locks with
  * TRIAL_OVER, offline or not (licenseCheck.js, functions/api/unlock.js).
  *
@@ -32,7 +32,7 @@ const STORE = 'lyricist.unlock';
 const RECHECK_MS = 7 * 24 * 60 * 60 * 1000;
 const SUB_RECHECK_MS = 24 * 60 * 60 * 1000;     // subscriptions: daily
 const BUY_URL = 'https://gumroad.com/l/pzglwj';
-const TRIAL_OVER = 'Your 30-day trial of Lyricist Pro has ended. Get it on Gumroad to keep going; your songs are still here.';
+const TRIAL_OVER = 'Your 7-day trial of Lyricist Pro has ended. Get it on Gumroad to keep going; your songs are still here.';
 const trialOver = (v) => !!(v && v.trialEnds && Date.now() > v.trialEnds);
 
 const isPhoneBuild = () => typeof window !== 'undefined'
