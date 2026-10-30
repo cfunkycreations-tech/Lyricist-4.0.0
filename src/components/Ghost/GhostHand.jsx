@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { subscribeHand, readHand } from '../../services/ghostCursor.js';
 import { subscribeTeach, teachState } from '../../services/ghostTeach.js';
-import ghostSprite from '../../assets/mascot/ghost-rider-256.webp';
+import ghostSprite from '../../assets/ghost-poses/ghost-pointing.webp';
 import { MASCOT } from '../GhostRiderMascot/GhostRiderMascot.jsx';
 import './GhostHand.css';
 

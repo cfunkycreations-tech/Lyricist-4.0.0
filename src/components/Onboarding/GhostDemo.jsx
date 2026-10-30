@@ -2,7 +2,7 @@ import { withFades } from '../../services/clipFade.js';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { getGhostDemo } from './ghostDemoScripts.js';
 import { captureAll, restoreAll } from '../../services/demoSafety.js';
-import { playBed, bedFor } from '../../services/ghostBed.js';
+import { playBed, bedFor, PROMO_BEDS } from '../../services/ghostBed.js';
 import { holdBannerClosed } from '../../services/ghostBanner.js';
 // The ghost portrait (ghost.demo.png) was stripped 2026-08-27 with the rest of
 // the artwork. Chris, later same day, watching a test recording: *"if you built
@@ -356,7 +356,7 @@ export default function GhostDemo({ tabId, onClose }) {
     if (!musicOnRef.current || !bedWantedRef.current || bedRef.current) return;
     const a = audioRef.current;
     const talking = a && !a.paused && !a.ended;
-    bedRef.current = playBed(bedFor(tabAtStartRef.current), { level: talking ? BED_UNDER_VOICE : BED_LEVEL });
+    bedRef.current = playBed(PROMO_BEDS.length ? PROMO_BEDS : bedFor(tabAtStartRef.current), { level: talking ? BED_UNDER_VOICE : BED_LEVEL });
     if (pauseRef.current) bedRef.current.pause();
   }, []);
   const stopBed = useCallback((fade) => {

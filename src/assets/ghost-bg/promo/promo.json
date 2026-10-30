@@ -1,4 +1,47 @@
 [
-  { "file": "promo-1-haunted-groove.mp3", "title": "Haunted Groove", "by": "Mr. Funk" },
-  { "file": "promo-2-curuspulse.mp3", "title": "Curuspulse", "by": "Mr. Funk" }
+  {
+    "file": "promo-1-haunted-groove.mp3",
+    "title": "Haunted Groove",
+    "by": "Mr. Funk"
+  },
+  {
+    "file": "promo-2-curuspulse.mp3",
+    "title": "Curuspulse",
+    "by": "Mr. Funk"
+  },
+  {
+    "file": "promo-3-apocalyptic-feedback-loop.mp3",
+    "title": "Apocalyptic Feedback Loop",
+    "by": "Mr. Funk"
+  },
+  {
+    "file": "promo-4-smoky-minor-loops.mp3",
+    "title": "Smoky Minor Loops",
+    "by": "Mr. Funk"
+  },
+  {
+    "file": "promo-5-weightless-ascension.mp3",
+    "title": "Weightless Ascension",
+    "by": "Mr. Funk"
+  },
+  {
+    "file": "promo-6-abattom.mp3",
+    "title": "Abattom",
+    "by": "Mr. Funk"
+  },
+  {
+    "file": "promo-7-possession-frequency.mp3",
+    "title": "Possession Frequency",
+    "by": "Mr. Funk"
+  },
+  {
+    "file": "promo-8-astral-haunting.mp3",
+    "title": "Astral Haunting",
+    "by": "Mr. Funk"
+  },
+  {
+    "file": "promo-9-lucid-drifter.mp3",
+    "title": "Lucid Drifter",
+    "by": "Mr. Funk"
+  }
 ]
