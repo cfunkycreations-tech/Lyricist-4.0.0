@@ -71,5 +71,6 @@
 }
 .gnp.pg-gnp.is-promo {
   bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
-  padding: 5px 12px;
 }
+/* A real slider on a phone needs a thumb a finger can find. */
+.gnp.pg-gnp .gnp-vol { width: 96px; height: 28px; }

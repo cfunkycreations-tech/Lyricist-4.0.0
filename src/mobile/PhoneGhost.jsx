@@ -732,7 +732,8 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab,
         </div>
       </div>
 
-      <GhostNowPlaying controls={!promo} className={`pg-gnp ${promo ? 'is-promo' : ''}`} />
+      {/* Promo runs too: Chris wants the music's volume in reach while he watches one. */}
+      <GhostNowPlaying className={`pg-gnp ${promo ? 'is-promo' : ''}`} />
 
       {!promo && <div className="pg-controls">
         <button type="button" className="pg-btn" onClick={() => setPaused((p) => !p)} aria-label={paused ? 'Keep going' : 'Pause the Ghost'}>
