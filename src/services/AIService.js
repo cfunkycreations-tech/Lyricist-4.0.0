@@ -370,7 +370,15 @@ async function guardedCall(messages, config, modelId, customTemp, customMax) {
    * hunting for other models. The model is fine; it ran out of room. Give the
    * SAME model the room, and ask it to think briefly.
    */
-  if (!attemptResult.raw.trim() && (attemptResult.finish === 'length' || attemptResult.thought)) {
+  /*
+   * Any empty reply gets the second try, not just one flagged "length" or
+   * carrying a thinking trace. DeepSeek v4.1 Flash came back empty twice in one
+   * promo run (2026-10-31) with neither flag set, and the app gave up on the
+   * spot. An empty reply is never worth keeping, so one roomier try costs
+   * nothing that matters.
+   */
+  if (!attemptResult.raw.trim()) {
+    console.warn(`[Lyricist] ${attemptResult.asked} sent back nothing (finish: ${attemptResult.finish || 'none'}, thought: ${attemptResult.thought}). Trying once more with more room.`);
     const cap = customMax ?? config?.maxTokens ?? 2000;
     try {
       const roomy = await singleCall(
@@ -378,6 +386,7 @@ async function guardedCall(messages, config, modelId, customTemp, customMax) {
         Math.min(16000, Math.max(8000, cap * 4)),
       );
       if (roomy.raw.trim()) attemptResult = roomy;
+      else console.warn(`[Lyricist] Second try was empty too (finish: ${roomy.finish || 'none'}).`);
     } catch (e) {
       console.warn(`Second try with more room failed on ${attemptResult.asked}:`, e.message);
     }
