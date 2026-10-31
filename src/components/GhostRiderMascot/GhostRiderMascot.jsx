@@ -91,6 +91,10 @@ export default function GhostRiderMascot({
   speechRef.current = speech;
   const [tapped, setTapped] = useState(0);
   const [offscreen, setOffscreen] = useState(false);
+  // Whether a line is playing right now. `speech` is always passed to the
+  // walkthrough Ghost, so it only means "he may talk", not "he is talking".
+  const [voiced, setVoiced] = useState(false);
+  const voicedRef = useRef(false);
   const still = !animated || reducedMotion();
 
   // Pause when off screen.
@@ -123,6 +127,7 @@ export default function GhostRiderMascot({
           want = (Math.sin(now / 95) + Math.sin(now / 41) * 0.6 + 1.6) / 3.2;
         }
       }
+      if (!!sp !== voicedRef.current) { voicedRef.current = !!sp; setVoiced(!!sp); }
       talk += (want - talk) * 0.35;
       rootRef.current?.style.setProperty('--talk', talk.toFixed(3));
       if (rootRef.current) rootRef.current.dataset.mouth = String(Math.min(3, Math.round(talk * 3)));
@@ -132,8 +137,10 @@ export default function GhostRiderMascot({
   }, [Boolean(speech), kind, still]);
 
   const base = variant === 'guide' ? 'pointing' : 'idle';
-  const src = POSES[speech ? base : (pose || POSE_FOR_STATE[state] || base)];
-  const mouths = speech ? MOUTHS[base] : null;
+  // A pose shows while he is quiet; the lip-sync mouths are cut for the base art.
+  const talkingNow = speech && (voiced || still);
+  const src = POSES[talkingNow ? base : (pose || POSE_FOR_STATE[state] || base)];
+  const mouths = talkingNow ? MOUTHS[base] : null;
   const tap = (e) => {
     if (interactive && !still) setTapped((n) => n + 1);
     onClick?.(e);
@@ -144,7 +151,7 @@ export default function GhostRiderMascot({
     <span
       ref={rootRef}
       className={[
-        'grm', `grm-${variant}`, `grm-${state}`,
+        'grm', `grm-${variant}`, `grm-${state}`, pose && !talkingNow ? `grm-pose-${pose}` : '',
         still ? 'is-still' : '', offscreen ? 'is-off' : '', speech ? 'is-speaking' : '',
         interactive ? 'is-interactive' : '', className,
       ].filter(Boolean).join(' ')}
@@ -155,7 +162,7 @@ export default function GhostRiderMascot({
       onClick={interactive || onClick ? tap : undefined}
     >
       <span className="grm-float">
-        <span key={`${state}-${tapped}`} className={`grm-act${tapped ? ' is-tapped' : ''}`}>
+        <span key={`${state}-${talkingNow ? 'talk' : pose || ''}-${tapped}`} className={`grm-act${tapped ? ' is-tapped' : ''}`}>
           <img className="grm-glow" src={src} alt="" draggable="false" decoding="async" />
           <img className="grm-art" src={src} alt="" draggable="false" decoding="async" />
           {mouths && mouths.map((m, i) => (
