@@ -92,7 +92,8 @@ const TRIALS_FROM = Date.parse('2026-10-28T00:00:00Z');
 const TRIAL_OVER = 'Your 7-day trial of Lyricist Pro has ended. Get it on Gumroad to keep going; your songs are still here.';
 
 /**
- * When a trial ends (ms), or 0 for a purchase that is not a trial. A trial is
+ * When a trial ends (ms), 0 for a purchase that is not a trial, or null when
+ * the trial date is unavailable. A trial is
  * a $0 purchase made with one of TRIAL_CODES (Chris: "Just apply this to the
  * fucking Matthew code. That's it."). Everything else is a full copy, and so is
  * every purchase from before trials existed (TRIALS_FROM), so FUNKPHONE never locks.
@@ -104,7 +105,9 @@ function trialEnds(p) {
   const oc = p.offer_code;
   const name = String((oc && typeof oc === 'object' ? oc.code || oc.name : oc) || '').trim().toUpperCase();
   if (!TRIAL_CODES.includes(name)) return 0;  // MATTHEW only; no code named, no trial
-  return (Number.isFinite(sold) ? sold : Date.now()) + TRIAL_DAYS * 24 * 60 * 60 * 1000;
+  // A missing date cannot establish when a trial ends. Do not start it over.
+  if (!Number.isFinite(sold)) return null;
+  return sold + TRIAL_DAYS * 24 * 60 * 60 * 1000;
 }
 
 const json = (body, status = 200, cookie = null) => new Response(JSON.stringify(body), {
@@ -159,6 +162,9 @@ export async function onRequestPost({ request, env }) {
     return json({ ok: false, why: `That code is already on ${MAX_DEVICES} devices. Email cfunkycreations@gmail.com and we will sort it out.` });
   }
   const ends = trialEnds(p);
+  if (ends === null) {
+    return json({ ok: false, why: 'The trial purchase date could not be verified. Try again later or contact support.' }, 502);
+  }
   if (ends && Date.now() > ends) {
     return json({ ok: false, revoked: true, why: TRIAL_OVER }, 200, clearUnlock());
   }
