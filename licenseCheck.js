@@ -147,6 +147,8 @@ async function ask(code, recheck, productId) {
 /** Wire the IPC handles. Called once from main.js; userData is () => app.getPath('userData'). */
 function register(ipcMain, userData) {
   ipcMain.on('license-unlocked', (event) => { const v = read(userData); event.returnValue = !!v && !trialOver(v); });
+  // When the trial ends (ms), 0 for a full copy. Never the code itself.
+  ipcMain.on('license-trial-ends', (event) => { const v = read(userData); event.returnValue = (v && Number(v.trialEnds)) || 0; });
   // Why the lock screen is up, when it is a trial that ran out.
   ipcMain.on('license-why', (event) => { event.returnValue = trialOver(read(userData)) ? TRIAL_OVER : ''; });
 

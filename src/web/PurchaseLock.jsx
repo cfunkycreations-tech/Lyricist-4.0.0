@@ -35,6 +35,21 @@ const BUY_URL = 'https://gumroad.com/l/pzglwj';
 const TRIAL_OVER = 'Your 7-day trial of Lyricist Pro has ended. Get it on Gumroad to keep going; your songs are still here.';
 const trialOver = (v) => !!(v && v.trialEnds && Date.now() > v.trialEnds);
 
+// "5 days left" for a MATTHEW trial, with a way to buy. Nothing shows for a full copy.
+function TrialBadge({ desk }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 60 * 1000); return () => clearInterval(t); }, []);
+  const ends = desk ? desk.trialEnds?.() || 0 : readSaved()?.trialEnds || 0;
+  if (!ends || now > ends) return null;
+  const days = Math.max(1, Math.ceil((ends - now) / 86400000));
+  return (
+    <a className="plock-trial" href={BUY_URL} target="_blank" rel="noopener noreferrer"
+      title="Your free trial. Tap to get Lyricist Pro on Gumroad.">
+      {days} day{days === 1 ? '' : 's'} left · Buy
+    </a>
+  );
+}
+
 const isPhoneBuild = () => typeof window !== 'undefined'
   && !import.meta.env.DEV
   && /^https?:$/.test(window.location.protocol)
@@ -107,7 +122,7 @@ export default function PurchaseLock({ children }) {
       .catch(() => { /* offline or Gumroad down: stay unlocked */ });
   }, [gated, desk]);
 
-  if (open) return children;
+  if (open) return <>{children}<TrialBadge desk={desk} /></>;
 
   const unlock = async (e) => {
     e.preventDefault();
