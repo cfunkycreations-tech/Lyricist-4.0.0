@@ -12,7 +12,11 @@ Baseline: `main` commit `44a3e0185279bebe0612b0a601bc1aa86dd7316c`, checked out 
 - `npm run build:web`: passed. The build emitted large-chunk warnings. Generated tracked files were restored after the check; the shallow clone makes generated history-based changes incomplete.
 - `node scripts/find-cycles.mjs`: reports one cycle between `src/context/LyricStore.jsx` and `src/services/styleBridge.js`. The bridge deliberately defers some initialization; establish actual impact and add coverage before refactoring.
 
-## Security triage
+## Security updates applied
+
+Updated the lockfile to resolve patched compatible versions of DOMPurify (3.4.17), protobufjs (7.6.6), tar (7.5.22), and Zod (4.6.7). Afterward `npm audit --omit=dev` reported no critical or moderate findings and three high-severity entries in the same Kokoro / Transformers / sharp dependency chain; investigate runtime reachability and compatible upstream fixes. Preflight, 41 Ghost checks, song payload checks, and a Vite renderer build passed after the update. Windows installer and real-device tests remain outstanding. Advisory counts can change over time.
+
+## Initial security triage (before updates)
 
 `npm audit --omit=dev` reported seven affected dependency entries: one critical, five high, and one moderate. These are dependency advisory classifications, not proof that an attack is reachable in Lyricist. Establish runtime exposure and safe fixes before release.
 
