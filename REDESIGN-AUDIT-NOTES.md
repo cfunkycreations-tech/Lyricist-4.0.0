@@ -32,7 +32,7 @@ Review Electron IPC sender validation, exposed bridges, custom AI and ComfyUI ne
 
 The unlock endpoint now rejects valid JSON that is not an object (including null) with the normal 400 response instead of throwing. `node scripts/unlock-input-check.mjs` covers malformed inputs and missing configuration. `node scripts/unlock-cookie-check.mjs` verifies signed cookies, tampering, wrong secrets, expiry, and security attributes. Both passed. The offline caption-skill and Kaggle parser/notebook checks also passed; live OpenRouter, Kaggle, and Gumroad integration checks were not run.
 
-Follow-up: both license implementations calculate a fresh seven-day trial expiry when a trial purchase has no parseable sale timestamp. Verify Gumroad's actual purchase data and decide how to handle missing dates without accidentally locking out legitimate customers.
+Both license implementations now treat a missing trial purchase date as an uncertain verification, rather than restarting the trial. Existing customers remain unlocked during an uncertain recheck; a new activation receives an error instead of being silently granted a fresh trial. `node scripts/license-flow-check.mjs` passed simulated activation, recheck, outage, refund, unknown purchase, missing-date trial, active trial, and grandfathered purchase cases. These are mocked tests; live Gumroad responses and real devices still need verification.
 
 ## Remaining work
 
