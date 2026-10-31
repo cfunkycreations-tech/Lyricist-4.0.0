@@ -1,0 +1,76 @@
+.gnp {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+  color: #e6e8eb;
+  font-family: var(--faf-font, inherit);
+  font-size: 0.72rem;
+  line-height: 1.2;
+  pointer-events: auto;
+}
+.gnp-note { color: #ffd08a; }
+.gnp-credit {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gnp-credit b { font-weight: 700; color: #f2f5fa; }
+.gnp-by { opacity: 0.75; }
+.gnp-skip {
+  flex: none;
+  min-width: 32px;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(230, 232, 235, 0.3);
+  background: transparent;
+  color: #f2f5fa;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.gnp-skip:hover { border-color: rgba(231, 165, 64, 0.7); }
+.gnp-skip:active { transform: scale(0.94); }
+.gnp-vol {
+  flex: none;
+  width: 72px;
+  accent-color: #e7a540;
+  cursor: pointer;
+}
+
+/* In the desktop demo bar: its own row under the buttons, so the bar never
+   grows wider than the window. */
+.ghost-demo-bar:has(.gnp) {
+  flex-wrap: wrap;
+  justify-content: center;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  row-gap: 4px;
+  border-radius: 22px;
+}
+.ghost-demo-bar .gnp {
+  order: 99;
+  flex-basis: 100%;
+  justify-content: center;
+}
+
+/* On the phone: its own pill just above the Ghost's buttons (or at the very
+   bottom in a promo run, which has no buttons). */
+.gnp.pg-gnp {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+  max-width: calc(100vw - 24px);
+  padding: 4px 6px 4px 12px;
+  border-radius: 999px;
+  background: rgba(10, 11, 13, 0.88);
+  border: 1px solid rgba(230, 232, 235, 0.18);
+}
+.gnp.pg-gnp.is-promo {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+}
+/* A real slider on a phone needs a thumb a finger can find. */
+.gnp.pg-gnp .gnp-vol { width: 96px; height: 28px; }

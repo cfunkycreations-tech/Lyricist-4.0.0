@@ -4,6 +4,7 @@ import { getGhostDemo } from './ghostDemoScripts.js';
 import { captureAll, restoreAll } from '../../services/demoSafety.js';
 import { playBed, bedFor, PROMO_BEDS, ghostPlaylist } from '../../services/ghostBed.js';
 import { holdBannerClosed } from '../../services/ghostBanner.js';
+import GhostNowPlaying from '../GhostNowPlaying/GhostNowPlaying.jsx';
 // The ghost portrait (ghost.demo.png) was stripped 2026-08-27 with the rest of
 // the artwork. Chris, later same day, watching a test recording: *"if you built
 // it right, I don't want the cursor to say remote on it. It needs to look like
@@ -947,6 +948,7 @@ export default function GhostDemo({ tabId, onClose }) {
         >
           {musicOn ? 'Music On' : 'Music Off'}
         </button>
+        <GhostNowPlaying />
 
         <button
           type="button"

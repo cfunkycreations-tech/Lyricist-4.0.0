@@ -109,9 +109,14 @@ export function cleanMatrixWords(block, artistName, { motifs = [] } = {}) {
   const terms = nameTerms(artistName);
   const named = (w) => terms.some((t) => String(w).toLowerCase().includes(t));
   const seen = new Set();
+  // Comma-separated on one line is what we ask for, but models also hand back
+  // one word per line or a numbered list. Reading only the first line then sent
+  // The Matrix a single word (promo run, 2026-10-31: "spare key" and nothing
+  // else). Read the whole first block, up to a blank line.
+  const firstBlock = String(block || '').trim().split(/\n\s*\n/)[0];
   const words = clicheFree(
-    String(block || '').trim().split('\n')[0].split(',')
-      .map((w) => w.replace(/^["'\s]+|["'.\s]+$/g, ''))
+    firstBlock.split(/[,\n]/)
+      .map((w) => w.replace(/^\s*(?:\d+[.)]|[-*•])\s*/, '').replace(/^["'\s]+|["'.\s]+$/g, ''))
       .filter((w) => w.length > 1 && w.length < 40 && !named(w) && !SOUND_TERMS.test(w) && !CRITIC_TERMS.test(w))
   ).filter((w) => {
     const k = w.toLowerCase();
