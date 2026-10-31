@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Copy, Trash2, Check, Save } from 'lucide-react';
+import GhostPose from '../GhostRiderMascot/GhostPose.jsx';
 import { ask, notify } from '../../services/dialog.js';
 import { saveText } from '../../services/saveText.js';
 
@@ -166,6 +167,7 @@ export default function Scratchpad() {
 
       {/* ── The page itself: full bleed, edge to edge ── */}
       <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex' }}>
+        {!text && <GhostPose pose="sleepy" size={120} style={{ position: 'absolute', right: 36, bottom: 40, zIndex: 1 }} />}
         <textarea
           className="keep-face"
           value={text}

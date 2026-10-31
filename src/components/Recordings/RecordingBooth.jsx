@@ -7,6 +7,7 @@ import {
 import { getAudioContext, resumeAudio, decodeBlob } from '../../services/audioEngine.js';
 import { audioBufferToWav } from '../../utils/wavEncoder.js';
 
+import GhostPose from '../GhostRiderMascot/GhostPose.jsx';
 import TabBackground from '../common/TabBackground.jsx';
 // Recording Booth — Lyricist 4.1.3
 // Record harmonica, guitar, singing — anything — straight into the app with a
@@ -292,6 +293,7 @@ export default function RecordingBooth({ onNavigate }) {
 
           {!recordings.length && (
             <div className="card-cosmic" style={{ borderRadius: 12, padding: 30, textAlign: 'center', color: 'rgba(230,232,235,0.65)', fontSize: '0.8rem' }}>
+              <div><GhostPose pose="sleepy" size={96} /></div>
               Nothing recorded yet. Hit <strong>Start Recording</strong> and hum, strum, or blow the idea
               before it gets away — it'll be saved here.
             </div>

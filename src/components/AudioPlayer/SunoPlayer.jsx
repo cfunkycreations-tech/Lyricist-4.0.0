@@ -3,6 +3,7 @@ import {
   Play, Pause, SkipBack, SkipForward, Upload, Link2, ListMusic,
   Volume2, VolumeX, X, ChevronDown, ChevronUp
 } from 'lucide-react';
+import GhostPose from '../GhostRiderMascot/GhostPose.jsx';
 import { connectMediaElement, resumeAudio } from '../../services/audioEngine.js';
 
 // Persistent Suno audio player — Lyricist 4.1.3
@@ -341,6 +342,7 @@ export default function SunoPlayer() {
         <>
           {/* Track identity */}
           <div className="suno-track-info">
+            {playing && <GhostPose pose="singing" size={38} />}
             <div className="suno-eq" aria-hidden="true">
               <span className={playing ? 'suno-eq-bar on' : 'suno-eq-bar'} />
               <span className={playing ? 'suno-eq-bar on' : 'suno-eq-bar'} />

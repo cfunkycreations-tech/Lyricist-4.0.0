@@ -14,6 +14,7 @@ import { registerGhostActions, ghostSettle } from '../../services/ghostBus.js';
 
 import TabBackground from '../common/TabBackground.jsx';
 import { Icon } from '../common/Glyph.jsx';
+import GhostPose from '../GhostRiderMascot/GhostPose.jsx';
 import SunoKitPanel, { useSunoKit } from '../common/SunoKit.jsx';
 import { hasWritingAI } from '../../services/customAI.js';
 const SURPRISE_TOPICS = [
@@ -138,6 +139,14 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
   // After any run that ends in a song or a message, scroll the results into view.
   const outRef = useRef(null);
   const [reveal, setReveal] = useState(0);
+  // Ghost celebrates for a few seconds each time a new song lands.
+  const [cheer, setCheer] = useState(false);
+  useEffect(() => {
+    if (!result) { setCheer(false); return undefined; }
+    setCheer(true);
+    const t = setTimeout(() => setCheer(false), 6000);
+    return () => clearTimeout(t);
+  }, [result?.title, Boolean(result)]);
   const showResults = () => setReveal((n) => n + 1);
   useEffect(() => {
     if (!reveal) return;
@@ -682,6 +691,7 @@ export default function SongForge({ onSongForged, quantumSeed, onQuantumSeedCons
 
           {result && (
             <div className="songforge-results">
+              {cheer && <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center' }}><GhostPose pose="celebrating" size={96} /></div>}
               {/* Lyrics panel */}
               <div className="card-cosmic" style={{ borderRadius: 12, padding: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 10, flexWrap: 'wrap' }}>
