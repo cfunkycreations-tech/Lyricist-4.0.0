@@ -119,6 +119,9 @@ const json = (body, status = 200, cookie = null) => new Response(JSON.stringify(
 export async function onRequestPost({ request, env }) {
   let input = {};
   try { input = await request.json(); } catch { /* answered below */ }
+  // Valid JSON can still be null or a primitive, rather than the expected object.
+  // Treat it like any other missing code instead of throwing a server error.
+  if (!input || typeof input !== 'object' || Array.isArray(input)) input = {};
   const code = typeof input.code === 'string' ? input.code.trim() : '';
   if (!code || code.length > 120) {
     return json({ ok: false, why: 'Type or paste the purchase code from your Gumroad receipt.' }, 400);
