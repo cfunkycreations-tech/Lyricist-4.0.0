@@ -64,7 +64,8 @@
      whole face, not each layer, or every patch would cast its own shadow. */
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.7));
 }
-.pg-ghost.is-flip .gf { transform: scaleX(-1); }
+.pg-ghost.is-flip .gf,
+.pg-ghost.is-flip .grm { transform: scaleX(-1); }
 /* A promo run has no buttons on screen: tapping him stops it. */
 .pg-ghost.is-tappable { pointer-events: auto; cursor: pointer; }
 @keyframes pg-bob {

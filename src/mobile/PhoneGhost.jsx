@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { phoneGhostFor, phoneGhostKey } from './phoneGhostScripts.js';
 import { PROMO_LINES } from './promoLines.js';
 import { captureAll, restoreAll } from '../services/demoSafety.js';
-import { playBed, bedFor, primeBed, dropPrimedBed, PROMO_BEDS } from '../services/ghostBed.js';
+import { playBed, bedFor, primeBed, dropPrimedBed, PROMO_BEDS, ghostPlaylist } from '../services/ghostBed.js';
 import { withFades } from '../services/clipFade.js';
 import GhostRiderMascot, { MASCOT } from '../components/GhostRiderMascot/GhostRiderMascot.jsx';
 import './PhoneGhost.css';
@@ -35,8 +35,10 @@ export function phoneGhostReady(tabId) {
 const SIZE = 112;                 // the ghost, in CSS px (his face moves now, so it has to be big enough to see)
 const TIP = { x: MASCOT.tail[0], y: MASCOT.tail[1] }; // the bottom of his robe, as a share of the art
 const MUSIC_KEY = 'lyricistGhostMusic';
-const BED_LEVEL = 0.3;
-const BED_UNDER_VOICE = 0.12;
+// One steady level, low enough to sit under his voice and still be heard. It used
+// to jump up between lines and duck for each one, which pumped (Chris, 2026-10-30).
+const BED_LEVEL = 0.9;
+const BED_UNDER_VOICE = BED_LEVEL;
 
 /**
  * iPHONE ONLY PLAYS SOUND THAT STARTS INSIDE A TAP, and the Ghost starts talking
@@ -122,9 +124,10 @@ function topLimit() {
  * words (the spot is the top edge of the lit area). `below` hangs him under
  * the lit area instead, for when there is no room above it.
  */
-function ghostSpot(x, y, below) {
-  const flip = x - TIP.x * SIZE < 6;                          // no room on the left: mirror him
-  const left = flip ? x - (1 - TIP.x) * SIZE : x - TIP.x * SIZE;
+function ghostSpot(x, y, below, flip) {
+  const W = window.innerWidth;
+  const raw = flip ? x - (1 - TIP.x) * SIZE : x - TIP.x * SIZE;
+  const left = Math.max(2, Math.min(W - SIZE - 2, raw));
   const top = below ? y + 10 : y - TIP.y * SIZE;
   return { left, top, flip };
 }
@@ -159,7 +162,7 @@ function stepPlan(demo, live) {
 
 // Chris's own songs under every phone walkthrough and promo run (2026-10-25:
 // "It's got the old music"). The old beds only if his are missing.
-const ghostMusic = (tabId) => (PROMO_BEDS.length ? PROMO_BEDS : bedFor(tabId));
+const ghostMusic = (tabId) => (PROMO_BEDS.length ? ghostPlaylist() : bedFor(tabId));
 
 /**
  * Start a clip, or give up. iPhone can leave play() pending for good when a
@@ -186,6 +189,7 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab,
   const [point, setPoint] = useState({ x: window.innerWidth * 0.5, y: window.innerHeight * 0.42 });
   const [pointing, setPointing] = useState(false);   // the glowing dot at his stand's foot
   const [below, setBelow] = useState(false);         // hanging under the lit area
+  const [faceLeft, setFaceLeft] = useState(false);    // turned round to point left
   const [tapping, setTapping] = useState(false);
   const [spot, setSpot] = useState(null);             // the lit area around what he is on
   const [leaving, setLeaving] = useState(false);
@@ -319,8 +323,13 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab,
     const bottom = window.innerHeight - 96;             // clear of Pause / Music / Stop
     const x = Math.min(window.innerWidth - 14, Math.max(14, box.left + Math.min((box.right - box.left) / 2, 110)));
     const roomAbove = box.top - TIP.y * SIZE >= topLimit();
-    if (roomAbove) return { x, y: box.top + 4, below: false };
-    return { x, y: Math.min(bottom - SIZE, box.bottom - 4), below: true };
+    // He points to his right. He turns round to point left when the lit area
+    // lies to the left of the spot, or, if it is centred on it, when the spot is
+    // over on the right half of the screen (Chris, 2026-10-30).
+    const mid = (box.left + box.right) / 2;
+    const faceLeft = Math.abs(mid - x) > 24 ? mid < x : x > window.innerWidth / 2;
+    if (roomAbove) return { x, y: box.top + 4, below: false, faceLeft };
+    return { x, y: Math.min(bottom - SIZE, box.bottom - 4), below: true, faceLeft };
   };
 
   /**
@@ -379,7 +388,7 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab,
     setSpot(box);
     const aim = aimAt(box);
     setPointing(false);
-    setBelow(aim.below);
+    setBelow(aim.below); setFaceLeft(aim.faceLeft);
     await flyTo(aim.x, aim.y, id);
     if (isDead(id)) return null;
     setPointing(true);
@@ -407,7 +416,7 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab,
   };
 
   const sayFromMiddle = async (s, i, id) => {
-    unglow(); setSpot(null); setPointing(false); setBelow(false);
+    unglow(); setSpot(null); setPointing(false); setBelow(false); setFaceLeft(false);
     await flyTo(window.innerWidth * 0.5, window.innerHeight * 0.45, id);
     if (isDead(id)) return;
     await say(clipOf(s, i), lineOf(s), id);
@@ -490,7 +499,7 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab,
           box = nb;
           setSpot(nb);
           const aim = aimAt(nb);
-          setBelow(aim.below);
+          setBelow(aim.below); setFaceLeft(aim.faceLeft);
           await flyTo(aim.x, aim.y, id, 320);
         }
       }
@@ -509,7 +518,9 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab,
     const el = await findShown(s.read, 5000, id);
     if (isDead(id)) return;
     if (!el) { await sayFromMiddle(s, i, id); return; }
-    unglow(); setSpot(null); setPointing(false); setBelow(false);
+    // He rides the right edge, so he faces left: pointing in at the text that
+    // scrolls past, not out of the screen.
+    unglow(); setSpot(null); setPointing(false); setBelow(false); setFaceLeft(true);
     const sc = scrollParent(el);
     const page = sc === document.scrollingElement || sc === document.documentElement;
     const viewTop = page ? 0 : sc.getBoundingClientRect().top;
@@ -674,7 +685,7 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab,
     else if (!bedRef.current && !deadRef.current) bedRef.current = playBed(ghostMusic(tabId), { level: BED_LEVEL });
   };
 
-  const g = ghostSpot(point.x, point.y, below);
+  const g = ghostSpot(point.x, point.y, below, faceLeft);
   // His mouth: which clip is playing and how far in. Null while he is quiet.
   const speech = useCallback(() => {
     const a = audioRef.current;

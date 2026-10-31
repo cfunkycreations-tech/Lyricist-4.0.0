@@ -37,6 +37,25 @@ export const PROMO_BEDS = PROMO
   .map((b) => ({ ...b, url: PROMO_URLS[`../assets/ghost-bg/promo/${b.file}`] }))
   .filter((b) => b.url);
 
+/**
+ * THE NINE, STARTING SOMEWHERE NEW EVERY TIME. Chris, 2026-10-30: he kept hearing
+ * the same song because every run began at track 1. Each call hands back the
+ * playlist starting one song further on (remembered across launches, first
+ * start picked at random), so back-to-back demos never open on the same track
+ * and all nine get played.
+ */
+const START_KEY = 'lyricistGhostMusicStart';
+export function ghostPlaylist() {
+  if (PROMO_BEDS.length < 2) return PROMO_BEDS;
+  let n = Math.floor(Math.random() * PROMO_BEDS.length);
+  try {
+    const saved = parseInt(localStorage.getItem(START_KEY), 10);
+    if (Number.isFinite(saved)) n = (saved + 1) % PROMO_BEDS.length;
+    localStorage.setItem(START_KEY, String(n));
+  } catch { /* storage blocked: the random start still varies */ }
+  return [...PROMO_BEDS.slice(n), ...PROMO_BEDS.slice(0, n)];
+}
+
 // Chris: any bed on any tab is fine. Black Hole Studios gets its own track;
 // every other tab keeps the same bed from run to run.
 const BED_FOR_TAB = { blackhole: 'blackhole' };

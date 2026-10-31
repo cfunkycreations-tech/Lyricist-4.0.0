@@ -2,7 +2,7 @@ import { withFades } from '../../services/clipFade.js';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { getGhostDemo } from './ghostDemoScripts.js';
 import { captureAll, restoreAll } from '../../services/demoSafety.js';
-import { playBed, bedFor, PROMO_BEDS } from '../../services/ghostBed.js';
+import { playBed, bedFor, PROMO_BEDS, ghostPlaylist } from '../../services/ghostBed.js';
 import { holdBannerClosed } from '../../services/ghostBanner.js';
 // The ghost portrait (ghost.demo.png) was stripped 2026-08-27 with the rest of
 // the artwork. Chris, later same day, watching a test recording: *"if you built
@@ -149,19 +149,21 @@ function freeBand() {
 
 /**
  * Where the ghost hangs for a pointer at (tx, ty), in viewport pixels. Above
- * and to the left of it normally; below it when he is up against the bar; to
- * its right when the left edge would cut him off, which on a phone is most
- * controls in the left half. Smaller on a phone, where 112px is a quarter of
+ * and to the left of it normally; below it when he is up against the bar;
+ * pinned to the left edge when the pointer is too near it. Smaller on a phone, where 112px is a quarter of
  * the screen's width. The render and placeBubble both read this, so the bubble
  * always knows where he is.
  */
 function figureAt(tx, ty) {
-  // His fingertip sits on the pointer; his body hangs to the left of it (mirrored
-  // to the right when the left edge would cut him off).
+  // His fingertip sits on the pointer; his body hangs to the left of it (pinned
+  // to the left edge when the pointer is too near it).
   const size = onPhone() ? 110 : 150;
   const [fx, fy] = MASCOT.finger;
-  const flip = tx - fx * size < 4;
-  const left = flip ? tx - (1 - fx) * size : tx - fx * size;
+  // He points to his right, so he never turns round: out at the left edge he
+  // stays on screen and points IN at the pointer's side, not off the edge
+  // (Chris, 2026-10-30).
+  const flip = false;
+  const left = Math.max(4, tx - fx * size);
   const rawTop = ty - fy * size;
   const below = rawTop + size * 0.06 < freeBand().top + 6;
   const top = below ? freeBand().top + 6 - size * 0.06 : rawTop;
@@ -344,8 +346,9 @@ export default function GhostDemo({ tabId, onClose }) {
   // Background music under the narration. Its own button, on by default and
   // remembered. Ducked while the Ghost is talking, back up between lines.
   const MUSIC_KEY = 'lyricistGhostMusic';
-  const BED_LEVEL = 0.35;
-  const BED_UNDER_VOICE = 0.15;
+  // One steady level under his voice: ducking per line made the music pump.
+  const BED_LEVEL = 0.9;
+  const BED_UNDER_VOICE = BED_LEVEL;
   const [musicOn, setMusicOn] = useState(() => {
     try { return localStorage.getItem(MUSIC_KEY) !== 'off'; } catch { return true; }
   });
@@ -356,7 +359,7 @@ export default function GhostDemo({ tabId, onClose }) {
     if (!musicOnRef.current || !bedWantedRef.current || bedRef.current) return;
     const a = audioRef.current;
     const talking = a && !a.paused && !a.ended;
-    bedRef.current = playBed(PROMO_BEDS.length ? PROMO_BEDS : bedFor(tabAtStartRef.current), { level: talking ? BED_UNDER_VOICE : BED_LEVEL });
+    bedRef.current = playBed(PROMO_BEDS.length ? ghostPlaylist() : bedFor(tabAtStartRef.current), { level: talking ? BED_UNDER_VOICE : BED_LEVEL });
     if (pauseRef.current) bedRef.current.pause();
   }, []);
   const stopBed = useCallback((fade) => {
