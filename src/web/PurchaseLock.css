@@ -43,3 +43,15 @@
   .plock-lede, .plock-why { font-size: 13px; }
   .plock-code, .plock-go { padding: 9px 12px; }
 }
+
+/* Trial countdown: small pill, top right on desktop, above the bottom edge on phones. */
+.plock-trial {
+  position: fixed; top: 6px; right: 10px; z-index: 9000;
+  padding: 4px 11px; border-radius: 999px; text-decoration: none;
+  font: 700 0.7rem/1.2 system-ui, sans-serif; letter-spacing: 0.03em; color: #1a1030;
+  background: linear-gradient(90deg, #ffd84a, #ff9ad8); box-shadow: 0 0 10px rgba(255, 120, 220, 0.55);
+}
+.plock-trial:hover { filter: brightness(1.1); }
+@media (max-width: 767px) {
+  .plock-trial { top: auto; right: auto; left: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); }
+}
