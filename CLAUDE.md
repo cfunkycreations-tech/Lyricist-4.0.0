@@ -1,5 +1,9 @@
 # CLAUDE.md
 
+## Owner's notice: isolated redesign branch
+
+`redesign/full-audit` is Funk's separate workspace for Codex's Lyricist Pro audit, security hardening, redesign, and future feature work. It is intentionally separate from the existing app and `main`. Claude and other assistants: please leave this branch and its work untouched unless Funk explicitly asks you to work on it. Do not merge, reset, delete, rebase, or push changes to it on your own. Continue normal work on the branch Funk specifies. See `REDESIGN-AUDIT-NOTES.md` for the initial audit status.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Working rules
