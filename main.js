@@ -1,6 +1,7 @@
 const { app, BrowserWindow, session, ipcMain, Menu, MenuItem, clipboard, shell, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { safeFolderName } = require('./safeFolderName');
 const demucsLocal = require('./demucsLocal');
 const comfySetup = require('./comfySetup');
 const kaggleCloud = require('./kaggleCloud');
@@ -914,7 +915,7 @@ ipcMain.handle('pick-sample-folder', async (event) => {
  */
 ipcMain.handle('save-stems', async (event, { songName, files }) => {
   try {
-    const safeSong = String(songName || 'Stems').replace(/[\\/:*?"<>|]/g, '-').slice(0, 120).trim() || 'Stems';
+    const safeSong = safeFolderName(songName, 'Stems');
     const dir = path.join(app.getPath('documents'), 'Lyricist Stems', safeSong);
     fs.mkdirSync(dir, { recursive: true });
     let written = 0;
@@ -1247,7 +1248,7 @@ ipcMain.handle('read-sample-file', async (event, { filePath } = {}) => {
 // Called via window.lyricistAPI.saveAlbum(albumName, files).
 ipcMain.handle('save-album', async (event, { albumName, files }) => {
   try {
-    const safeAlbum = String(albumName || 'Untitled Album').replace(/[\\/:*?"<>|]/g, '-').slice(0, 120);
+    const safeAlbum = safeFolderName(albumName, 'Untitled Album');
     const dir = path.join(app.getPath('documents'), 'Lyricist Albums', safeAlbum);
     fs.mkdirSync(dir, { recursive: true });
     for (const f of files || []) {
