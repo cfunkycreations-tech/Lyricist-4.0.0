@@ -38,6 +38,7 @@
     "files": [
       "dist/**/*",
       "main.js",
+      "safeFolderName.js",
       "preload.js",
       "demucsLocal.js",
       "comfySetup.js",
