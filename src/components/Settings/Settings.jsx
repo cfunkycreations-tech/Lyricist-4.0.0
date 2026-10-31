@@ -7,7 +7,7 @@ import { notify, ask } from '../../services/dialog.js';
 import { normalizeApiKey } from '../../services/AIService.js';
 import { listModels, verifyModel, probeModel } from '../../services/openrouter.js';
 import { IMAGE_MODELS, DEFAULT_IMAGE_MODEL } from '../../services/GeminiService.js';
-import { PRISM_NAMES, ACCENT_PRESETS, accentHex, getPrism } from '../../services/prismTheme.js';
+import { PRISM_NAMES, ACCENT_PRESETS, accentHex, getPrism, setPrism } from '../../services/prismTheme.js';
 import { SURFACES, getSurface, setSurface } from '../../services/surfaceTheme.js';
 import { isEnabled as analyticsEnabled, optIn, optOut } from '../../services/analytics.js';
 import { Icon } from '../common/Glyph.jsx';
@@ -483,8 +483,7 @@ export default function Settings() {
     // component in the tree. Mirroring it to localStorage and firing one event
     // is far simpler than threading it through, and it survives a restart.
     if (field === 'prism') {
-      localStorage.setItem('lyricistPrism', String(next));
-      window.dispatchEvent(new Event('lyricist-prism'));
+      setPrism(next);
     }
     setSaved(false);
   };
