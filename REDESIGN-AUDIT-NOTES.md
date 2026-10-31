@@ -34,6 +34,10 @@ The unlock endpoint now rejects valid JSON that is not an object (including null
 
 Both license implementations now treat a missing trial purchase date as an uncertain verification, rather than restarting the trial. Existing customers remain unlocked during an uncertain recheck; a new activation receives an error instead of being silently granted a fresh trial. `node scripts/license-flow-check.mjs` passed simulated activation, recheck, outage, refund, unknown purchase, missing-date trial, active trial, and grandfathered purchase cases. These are mocked tests; live Gumroad responses and real devices still need verification.
 
+## Startup reliability
+
+The accent theme previously accessed localStorage before the React error boundary, so blocked browser storage could prevent startup. Theme storage access is now guarded; when saving is unavailable, color changes work in memory for the current session. `node scripts/prism-storage-check.mjs`, purchase-flow checks, preflight, and a Vite renderer build passed. Full UI and device testing remain outstanding.
+
 ## Remaining work
 
 Run desktop production build and Windows installer/runtime checks, exercise the phone PWA on actual iOS and Android devices, test licensing and connected services with appropriate credentials, audit the remaining code and infrastructure, fix and regression-test confirmed issues, review phone ergonomics and accessibility, and research current Suno/Udio workflows before prioritizing compatible feature ideas. A passing build does not establish that every feature works or that the app is secure.
