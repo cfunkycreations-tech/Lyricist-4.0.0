@@ -87,13 +87,29 @@ function hslToRgb(h, s, l) {
 // The slider's meaning changed with the arc. A value saved before it (0 was the
 // old cyan default) would land somewhere arbitrary, so it is reset to home once.
 const ARC_KEY = 'lyricistPrismArc';
+let sessionPrism = null;
 
 /** The app-wide setting. Written by Settings, read by everything. */
 export function getPrism() {
-  const stored = localStorage.getItem('lyricistPrism');
-  if (stored === null || localStorage.getItem(ARC_KEY) !== '1') return PRISM_HOME;
-  const raw = Number(stored);
-  return Number.isFinite(raw) ? Math.min(1, Math.max(0, raw)) : PRISM_HOME;
+  if (sessionPrism !== null) return sessionPrism;
+  try {
+    const stored = localStorage.getItem('lyricistPrism');
+    if (stored === null || localStorage.getItem(ARC_KEY) !== '1') return PRISM_HOME;
+    const raw = Number(stored);
+    return Number.isFinite(raw) ? Math.min(1, Math.max(0, raw)) : PRISM_HOME;
+  } catch { return PRISM_HOME; }
+}
+
+/** Keep the chosen color usable for this session even if storage is blocked. */
+export function setPrism(value) {
+  const n = Number(value);
+  const next = Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : PRISM_HOME;
+  try {
+    localStorage.setItem('lyricistPrism', String(next));
+    localStorage.setItem(ARC_KEY, '1');
+    sessionPrism = null;
+  } catch { sessionPrism = next; }
+  window.dispatchEvent(new Event('lyricist-prism'));
 }
 
 export function prismName(t = getPrism()) {
@@ -128,10 +144,12 @@ export function applyPrism(t = getPrism()) {
  * also on `storage` so a second window stays in step with the first.
  */
 export function startPrism() {
-  if (localStorage.getItem(ARC_KEY) !== '1') {
-    localStorage.setItem('lyricistPrism', String(PRISM_HOME));
-    localStorage.setItem(ARC_KEY, '1');
-  }
+  try {
+    if (localStorage.getItem(ARC_KEY) !== '1') {
+      localStorage.setItem('lyricistPrism', String(PRISM_HOME));
+      localStorage.setItem(ARC_KEY, '1');
+    }
+  } catch { /* storage blocked: use the default for this session */ }
   applyPrism();
   window.addEventListener('lyricist-prism', () => applyPrism());
   window.addEventListener('storage', (e) => {
