@@ -1,0 +1,31 @@
+.gpose { position: relative; display: inline-block; width: var(--gpose-size, 56px); height: var(--gpose-size, 56px); flex: none; pointer-events: none; }
+.gpose-pop, .gpose img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: contain; }
+.gpose-glow { filter: blur(7px) saturate(1.6); opacity: 0.4; }
+.gpose-pop { transform-origin: 50% 80%; animation: gpose-in 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) both; }
+.gpose-fx { position: absolute; left: 62%; top: 14%; font-style: normal; font-weight: 800; font-size: calc(var(--gpose-size, 56px) * 0.26); color: #ffd84a; text-shadow: 0 0 6px #ff4fd8; opacity: 0; }
+
+/* singing: sway to the tune, notes drift up */
+.gpose-singing .gpose-art, .gpose-singing .gpose-glow { animation: gpose-sing 1.3s ease-in-out infinite; transform-origin: 50% 90%; }
+.gpose-singing .gpose-fx { animation: gpose-rise 2.4s ease-out infinite; animation-delay: calc(var(--i) * 0.8s); }
+/* dj: bounce on the beat (120 bpm) */
+.gpose-dj .gpose-art, .gpose-dj .gpose-glow { animation: gpose-beat 0.5s ease-in-out infinite; transform-origin: 50% 100%; }
+/* sleepy: slow breathing, z's float */
+.gpose-sleepy .gpose-art, .gpose-sleepy .gpose-glow { animation: gpose-breathe 4s ease-in-out infinite; transform-origin: 50% 100%; }
+.gpose-sleepy .gpose-fx { color: #9fd8ff; text-shadow: 0 0 6px #4f7bff; animation: gpose-rise 3.2s ease-out infinite; animation-delay: calc(var(--i) * 1.05s); }
+/* celebrating: hop, confetti burst */
+.gpose-celebrating .gpose-art, .gpose-celebrating .gpose-glow { animation: gpose-hop 0.9s cubic-bezier(0.3, 1.6, 0.5, 1) 3, gpose-bob 2.6s ease-in-out 2.7s infinite; transform-origin: 50% 100%; }
+.gpose-celebrating .gpose-fx { left: 50%; top: 40%; animation: gpose-burst 1.4s ease-out 2; animation-delay: calc(var(--i) * 0.08s); --dx: calc((var(--i) - 2) * 38%); }
+
+@keyframes gpose-in { from { transform: scale(0.6) translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes gpose-sing { 0%, 100% { transform: rotate(-4deg) translateY(0); } 50% { transform: rotate(4deg) translateY(-3%); } }
+@keyframes gpose-beat { 0%, 100% { transform: scale(1, 1); } 12% { transform: scale(1.05, 0.93); } 55% { transform: scale(0.98, 1.04) translateY(-4%); } }
+@keyframes gpose-breathe { 0%, 100% { transform: scale(1, 1) rotate(-1deg); } 50% { transform: scale(1.03, 1.05) rotate(1deg); } }
+@keyframes gpose-hop { 0% { transform: translateY(0) scale(1, 1); } 30% { transform: translateY(-16%) scale(0.96, 1.07) rotate(-5deg); } 60% { transform: translateY(0) scale(1.06, 0.94); } 100% { transform: translateY(0) scale(1, 1); } }
+@keyframes gpose-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4%); } }
+@keyframes gpose-rise { 0% { transform: translate(0, 10%) scale(0.6); opacity: 0; } 20% { opacity: 1; } 100% { transform: translate(12%, -120%) scale(1.1); opacity: 0; } }
+@keyframes gpose-burst { 0% { transform: translate(0, 0) scale(0.4); opacity: 1; } 100% { transform: translate(var(--dx), -150%) scale(1.2) rotate(120deg); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .gpose *, .gpose { animation: none !important; }
+  .gpose-fx { display: none; }
+}

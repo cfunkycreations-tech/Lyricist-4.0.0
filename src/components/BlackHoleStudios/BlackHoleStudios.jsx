@@ -89,6 +89,7 @@ import bhLoop from '../../assets/blackhole/bh_loop.webm';
 import bhStill from '../../assets/blackhole/bh_still.webp';
 import bhAnim from '../../assets/blackhole/bh_loop.webp';
 import { Dices } from 'lucide-react';
+import GhostPose from '../GhostRiderMascot/GhostPose.jsx';
 import { useLogged } from '../../services/useLogged.js';
 import { hasWritingAI } from '../../services/customAI.js';
 
@@ -1554,7 +1555,7 @@ export default function BlackHoleStudios({ onNavigate, incoming, onSendToSongwri
         <header className="omb-top">
           <div className="omb-id">
             <div className="omb-brand">Lyricist Pro 4.2.0</div>
-            <h1 className="omb-title">Black Hole Studios</h1>
+            <h1 className="omb-title">Black Hole Studios{busy && <GhostPose pose="dj" size={54} style={{ marginLeft: 14, verticalAlign: 'middle' }} />}</h1>
             <p className="omb-tag">
               Your words, sung by a full band. <b>No per-song fees.</b> Faster if you have the hardware.
             </p>
