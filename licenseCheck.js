@@ -105,7 +105,10 @@ function trialEnds(p) {
   const oc = p.offer_code;
   const name = String((oc && typeof oc === 'object' ? oc.code || oc.name : oc) || '').trim().toUpperCase();
   if (!TRIAL_CODES.includes(name)) return 0;  // MATTHEW only; no code named, no trial
-  return (Number.isFinite(sold) ? sold : Date.now()) + TRIAL_DAYS * 24 * 60 * 60 * 1000;
+  // An absent date must not silently restart the trial on every verification.
+  // Throwing treats this as an uncertain response, not a revoked license.
+  if (!Number.isFinite(sold)) throw new Error('trial purchase date unavailable');
+  return sold + TRIAL_DAYS * 24 * 60 * 60 * 1000;
 }
 const trialOver = (v) => !!(v && v.trialEnds && Date.now() > v.trialEnds);
 
