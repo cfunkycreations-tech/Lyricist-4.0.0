@@ -105,17 +105,58 @@ export function dropPrimedBed() {
   primed = null;
 }
 
+/**
+ * NOW PLAYING, SKIP AND VOLUME (item 3, 2026-10-31). The listener's own volume
+ * is a second gain after the run's level, so ducking and fades never fight it,
+ * and it is remembered across launches. The credit shows the song from
+ * promo.json; skip jumps the playing bed to the next song in its playlist.
+ */
+const VOLUME_KEY = 'lyricistGhostMusicVolume';
+let volume = 1;
+try {
+  const v = parseFloat(localStorage.getItem(VOLUME_KEY));
+  if (Number.isFinite(v)) volume = Math.min(1, Math.max(0, v));
+} catch { /* storage blocked: full volume */ }
+const volumeNodes = new Set();
+export const getMusicVolume = () => volume;
+export function setMusicVolume(v) {
+  volume = Math.min(1, Math.max(0, Number(v) || 0));
+  try { localStorage.setItem(VOLUME_KEY, String(volume)); } catch { /* storage blocked */ }
+  for (const n of volumeNodes) {
+    try { n.gain.setTargetAtTime(volume, n.context.currentTime, 0.03); } catch { /* closed */ }
+  }
+  emit();
+}
+
+let nowPlaying = null;          // { title, by } of the bed that is sounding
+let activeSkip = null;          // skip() of the bed that set nowPlaying
+const listeners = new Set();
+function emit() { for (const cb of listeners) cb(nowPlaying, volume); }
+export function onNowPlaying(cb) {
+  listeners.add(cb);
+  cb(nowPlaying, volume);
+  return () => listeners.delete(cb);
+}
+/** Next song in whatever playlist is playing now. False if there is none. */
+export function skipBed() {
+  return activeSkip ? activeSkip() : false;
+}
+
 export function playBed(bedOrList, { level = 0.35, fadeIn = 2 } = {}) {
   const AC = window.AudioContext || window.webkitAudioContext;
   // One bed (looped on its loop points), or a playlist played in order and
   // round again (PROMO_BEDS).
   const list = (Array.isArray(bedOrList) ? bedOrList : [bedOrList]).filter(Boolean);
-  if (!list.length || !AC) return { level() {}, pause() {}, resume() {}, stop() {} };
+  if (!list.length || !AC) return { level() {}, pause() {}, resume() {}, stop() {}, skip() { return false; } };
   const ctx = primed || new AC();
   primed = null;
   const gain = ctx.createGain();
   gain.gain.value = 0;
-  gain.connect(ctx.destination);
+  const vol = ctx.createGain();
+  vol.gain.value = volume;
+  gain.connect(vol);
+  vol.connect(ctx.destination);
+  volumeNodes.add(vol);
   let src = null;
   let dead = false;
   let paused = false;
@@ -133,9 +174,40 @@ export function playBed(bedOrList, { level = 0.35, fadeIn = 2 } = {}) {
   // change-over has no gap (decoding a whole song takes a moment on a phone).
   // A paused run holds the context, so the timer only ever decodes early.
   let nextBuffer = null;
+  let at = 0;
+  let skipping = false;
+  const credit = (bed) => {
+    activeSkip = list.length > 1 ? skip : null;
+    nowPlaying = bed.title ? { title: bed.title, by: bed.by || '' } : null;
+    emit();
+  };
+  const uncredit = () => {
+    volumeNodes.delete(vol);
+    if (activeSkip !== skip) return;
+    activeSkip = null;
+    nowPlaying = null;
+    emit();
+  };
+  // Dip out, start the next song, come back up. Ignored while one is decoding.
+  function skip() {
+    if (dead || skipping || !src || list.length < 2) return false;
+    skipping = true;
+    const old = src;
+    src = null;
+    ramp(0, 0.25);
+    const next = (at + 1) % list.length;
+    const buf = nextBuffer || decode(list[next].url, ctx);
+    nextBuffer = null;
+    setTimeout(() => {
+      try { old.onended = null; old.stop(); } catch { /* already stopped */ }
+      play(next, buf).finally(() => { skipping = false; });
+    }, 300);
+    return true;
+  }
   const play = (i, bufferPromise) => bufferPromise.then((buffer) => {
     if (dead) return;
     const bed = list[i];
+    at = i;
     const s = ctx.createBufferSource();
     s.buffer = buffer;
     if (list.length === 1) {
@@ -144,7 +216,7 @@ export function playBed(bedOrList, { level = 0.35, fadeIn = 2 } = {}) {
       s.loopEnd = bed.loopEnd;
     } else {
       const next = (i + 1) % list.length;
-      setTimeout(() => { if (!dead) nextBuffer = decode(list[next].url, ctx); }, Math.max(0, buffer.duration - 20) * 1000);
+      setTimeout(() => { if (!dead && at === i) nextBuffer = decode(list[next].url, ctx); }, Math.max(0, buffer.duration - 20) * 1000);
       s.onended = () => {
         if (dead || src !== s) return;
         play(next, nextBuffer || decode(list[next].url, ctx));
@@ -154,10 +226,13 @@ export function playBed(bedOrList, { level = 0.35, fadeIn = 2 } = {}) {
     s.connect(gain);
     s.start();
     src = s;
-    if (i === 0) {
+    credit(bed);
+    if (i === 0 && !skipping) {
       if (paused) ctx.suspend().catch(() => {});
       else ctx.resume().catch(() => {});
       ramp(target, fadeIn);
+    } else if (skipping) {
+      ramp(target, 0.5);
     }
   }).catch((e) => console.warn('[GhostDemo] background music did not load', e));
   play(0, decode(list[0].url, ctx));
@@ -175,9 +250,11 @@ export function playBed(bedOrList, { level = 0.35, fadeIn = 2 } = {}) {
       paused = false;
       if (!dead) ctx.resume().catch(() => {});
     },
+    skip,
     stop(fadeOut = 1.2) {
       if (dead) return;
       dead = true;
+      uncredit();
       if (!src || ctx.state !== 'running') { ctx.close().catch(() => {}); return; }
       ramp(0, fadeOut);
       setTimeout(() => ctx.close().catch(() => {}), fadeOut * 1000 + 150);

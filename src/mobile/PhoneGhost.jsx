@@ -3,6 +3,7 @@ import { phoneGhostFor, phoneGhostKey } from './phoneGhostScripts.js';
 import { PROMO_LINES } from './promoLines.js';
 import { captureAll, restoreAll } from '../services/demoSafety.js';
 import { playBed, bedFor, primeBed, dropPrimedBed, PROMO_BEDS, ghostPlaylist } from '../services/ghostBed.js';
+import GhostNowPlaying from '../components/GhostNowPlaying/GhostNowPlaying.jsx';
 import { withFades } from '../services/clipFade.js';
 import GhostRiderMascot, { MASCOT } from '../components/GhostRiderMascot/GhostRiderMascot.jsx';
 import './PhoneGhost.css';
@@ -730,6 +731,8 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab,
           <GhostRiderMascot variant="guide" kind="phone" speech={speech} pose={mood || undefined} state={mood === 'thinking' ? 'analyzing' : 'idle'} />
         </div>
       </div>
+
+      <GhostNowPlaying controls={!promo} className={`pg-gnp ${promo ? 'is-promo' : ''}`} />
 
       {!promo && <div className="pg-controls">
         <button type="button" className="pg-btn" onClick={() => setPaused((p) => !p)} aria-label={paused ? 'Keep going' : 'Pause the Ghost'}>
