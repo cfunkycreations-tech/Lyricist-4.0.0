@@ -183,3 +183,16 @@
 .grm-report-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
 .grm-report-head h4 { margin: 0 !important; flex: 1; min-width: 0; }
 @media (max-width: 520px) { .grm-report-head .grm-report { --grm-size: 64px; } }
+
+/* Poses (the `pose` prop, shown while he is quiet): each one moves its own way,
+   and a change of pose pops in instead of snapping. */
+.grm[class*="grm-pose-"]:not(.is-still) .grm-act { animation: grm-pose-in 0.4s cubic-bezier(0.3, 1.5, 0.5, 1) both; }
+.grm-pose-dj:not(.is-still) .grm-art, .grm-pose-dj:not(.is-still) .grm-glow { animation: grm-pose-beat 0.5s ease-in-out infinite; transform-origin: 50% 100%; }
+.grm-pose-singing:not(.is-still) .grm-art, .grm-pose-singing:not(.is-still) .grm-glow { animation: grm-pose-sing 1.3s ease-in-out infinite; transform-origin: 50% 90%; }
+.grm-pose-celebrating:not(.is-still) .grm-art, .grm-pose-celebrating:not(.is-still) .grm-glow { animation: grm-pose-hop 0.9s cubic-bezier(0.3, 1.6, 0.5, 1) infinite; transform-origin: 50% 100%; }
+.grm-pose-thinking:not(.is-still) .grm-art, .grm-pose-thinking:not(.is-still) .grm-glow { animation: grm-pose-ponder 2.2s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes grm-pose-in { from { transform: scale(0.82); opacity: 0.4; } to { transform: none; opacity: 1; } }
+@keyframes grm-pose-beat { 0%, 100% { transform: scale(1, 1); } 12% { transform: scale(1.05, 0.93); } 55% { transform: scale(0.98, 1.04) translateY(-4%); } }
+@keyframes grm-pose-sing { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg) translateY(-3%); } }
+@keyframes grm-pose-hop { 0%, 100% { transform: translateY(0) scale(1, 1); } 30% { transform: translateY(-12%) scale(0.96, 1.06) rotate(-4deg); } 60% { transform: translateY(0) scale(1.05, 0.95); } }
+@keyframes grm-pose-ponder { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(3deg) translateY(-2%); } }

@@ -190,6 +190,10 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab,
   const [pointing, setPointing] = useState(false);   // the glowing dot at his stand's foot
   const [below, setBelow] = useState(false);         // hanging under the lit area
   const [faceLeft, setFaceLeft] = useState(false);    // turned round to point left
+  // His pose between lines (Chris, 2026-10-31: "use the animations where and
+  // when needed"): thinking while a result is on its way, a celebration when it
+  // lands, singing along while the finished song plays. '' = pointing.
+  const [mood, setMood] = useState('');
   const [tapping, setTapping] = useState(false);
   const [spot, setSpot] = useState(null);             // the lit area around what he is on
   const [leaving, setLeaving] = useState(false);
@@ -468,6 +472,7 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab,
     let box = at ? await pointAt(at, [], id) : null;
     if (!at) await flyTo(window.innerWidth * 0.5, window.innerHeight * 0.45, id);
     if (isDead(id)) return false;
+    setMood('thinking');
     let talking = say(clipOf(s, i), lineOf(s), id);
     let speaking = true;
     talking.then(() => { speaking = false; });
@@ -505,7 +510,10 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab,
       }
       await wait(250, id);
     }
-    await talking;                       // he finishes his sentence either way
+    // He finishes his sentence either way, but a clip that never ends can't hold the run.
+    await Promise.race([talking, wait(12000, id)]);
+    if (ok) { setMood('celebrating'); await wait(1400, id); }
+    setMood('');
     return ok;
   };
 
@@ -520,7 +528,7 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab,
     if (!el) { await sayFromMiddle(s, i, id); return; }
     // He rides the right edge, so he faces left: pointing in at the text that
     // scrolls past, not out of the screen.
-    unglow(); setSpot(null); setPointing(false); setBelow(false); setFaceLeft(true);
+    unglow(); setSpot(null); setPointing(false); setBelow(false); setFaceLeft(true); setMood('');
     const sc = scrollParent(el);
     const page = sc === document.scrollingElement || sc === document.documentElement;
     const viewTop = page ? 0 : sc.getBoundingClientRect().top;
@@ -563,8 +571,10 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab,
     if (isDead(id)) return;
     await press(el, id);
     try { el.currentTime = 0; await el.play(); } catch { /* the controls are still there to tap */ }
+    setMood('singing');
     const t0 = Date.now();
     while (!isDead(id) && !el.ended && Date.now() - t0 < (s.ms || 40000)) await wait(200, id);
+    setMood('celebrating');              // and through the outro
     await wait(500, id);
   };
 
@@ -619,6 +629,7 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab,
         continue;
       }
 
+      setMood('');
       if (!(await pointAt(el, s.glow, id))) return;
       await say(clipOf(s, i), lineOf(s), id);
       if (isDead(id)) return;
@@ -716,7 +727,7 @@ export default function PhoneGhost({ tabId, onClose, promo = null, onRequestTab,
         aria-label={promo ? 'Stop the promo run' : undefined}
       >
         <div className="pg-bob">
-          <GhostRiderMascot variant="guide" kind="phone" speech={speech} />
+          <GhostRiderMascot variant="guide" kind="phone" speech={speech} pose={mood || undefined} state={mood === 'thinking' ? 'analyzing' : 'idle'} />
         </div>
       </div>
 
