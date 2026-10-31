@@ -28,6 +28,12 @@ Updated the lockfile to resolve patched compatible versions of DOMPurify (3.4.17
 
 Review Electron IPC sender validation, exposed bridges, custom AI and ComfyUI network access, file access, update and licensing flows, Cloudflare functions and relay, secret handling, and PWA content security. Confirm applicable findings with tests and avoid breaking user-configured local or remote AI servers.
 
+## Phone purchase gate audit
+
+The unlock endpoint now rejects valid JSON that is not an object (including null) with the normal 400 response instead of throwing. `node scripts/unlock-input-check.mjs` covers malformed inputs and missing configuration. `node scripts/unlock-cookie-check.mjs` verifies signed cookies, tampering, wrong secrets, expiry, and security attributes. Both passed. The offline caption-skill and Kaggle parser/notebook checks also passed; live OpenRouter, Kaggle, and Gumroad integration checks were not run.
+
+Follow-up: both license implementations calculate a fresh seven-day trial expiry when a trial purchase has no parseable sale timestamp. Verify Gumroad's actual purchase data and decide how to handle missing dates without accidentally locking out legitimate customers.
+
 ## Remaining work
 
 Run desktop production build and Windows installer/runtime checks, exercise the phone PWA on actual iOS and Android devices, test licensing and connected services with appropriate credentials, audit the remaining code and infrastructure, fix and regression-test confirmed issues, review phone ergonomics and accessibility, and research current Suno/Udio workflows before prioritizing compatible feature ideas. A passing build does not establish that every feature works or that the app is secure.
